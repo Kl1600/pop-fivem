@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 author 'KL'
-description 'tabernac DUI engine'
+description 'POP DUI engine'
 version '2.6'
 
 client_scripts {
