@@ -1,0 +1,159 @@
+/* pop_bennys : panneau latéral sobre. Le kit (kit/pop.css) fournit variables, fondu et boutons. */
+
+#bennys {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 320px;
+  max-height: 80vh;
+  box-sizing: border-box;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+[dir="rtl"] #bennys { right: auto; left: 24px; }
+
+/* Les notifications du kit passent à côté du panneau pendant la session. */
+body.bennys-open .pop-hud { right: calc(24px + 320px + 12px); }
+[dir="rtl"] body.bennys-open .pop-hud { right: auto; left: calc(24px + 320px + 12px); }
+
+.bennys-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Onglets ---- */
+#bennys-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Boutons neutres du panneau : bordure discrète, accent seulement si actif. */
+#bennys .bennys-opt,
+#bennys .bennys-ghost {
+  border-color: rgba(255, 255, 255, 0.18);
+  padding: 4px 8px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+#bennys .bennys-opt:hover,
+#bennys .bennys-ghost:hover { background: rgba(255, 255, 255, 0.08); }
+#bennys .bennys-opt.is-on { border-color: var(--pop-accent); color: var(--pop-accent); }
+
+/* ---- Lignes ---- */
+#bennys-items {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-inline-end: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+#bennys-items::-webkit-scrollbar { width: 4px; }
+#bennys-items::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+
+.bennys-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bennys-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.bennys-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.bennys-price {
+  flex: 0 0 auto;
+  font-size: var(--pop-size-sm);
+  color: var(--pop-accent);
+}
+
+/* list : ‹ valeur › */
+.bennys-stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bennys-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--pop-size-sm);
+  color: var(--pop-muted);
+  overflow-wrap: anywhere;
+}
+#bennys .bennys-step {
+  flex: 0 0 auto;
+  width: 28px;
+  padding: 2px 0;
+  border-color: rgba(255, 255, 255, 0.18);
+  line-height: 1.4;
+}
+#bennys .bennys-step:hover { background: rgba(255, 255, 255, 0.08); }
+#bennys .bennys-step:disabled { opacity: 0.3; cursor: default; background: transparent; }
+[dir="rtl"] .bennys-step { transform: scaleX(-1); }
+
+/* toggle / néons */
+.bennys-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Pastilles 24 px, 6 par ligne */
+.bennys-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 24px);
+  gap: 8px;
+  padding: 2px;
+}
+.bennys-swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.bennys-swatch.is-on {
+  outline: 2px solid var(--pop-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Pied ---- */
+.bennys-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+#bennys-total {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.bennys-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bennys-actions .pop-button {
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+}
+#bennys-confirm:disabled { opacity: 0.4; cursor: default; background: transparent; }
+
+#bennys button:focus { outline: none; }
+#bennys .bennys-swatch.is-on:focus { outline: 2px solid var(--pop-accent); }

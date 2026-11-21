@@ -1,0 +1,37 @@
+-- Português
+Locales['pt'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancelar',
+    confirm            = 'Confirmar',
+    close              = 'Fechar',
+    interact           = 'Interagir',
+    progress_cancelled = 'Ação cancelada',
+    no_permission      = 'Você não tem permissão',
+    wrong_job          = 'Você não tem o emprego necessário',
+    too_far            = 'Você está longe demais',
+    not_enough_money   = 'Dinheiro insuficiente',
+    missing_item       = 'Você precisa de: %s',
+    inventory_full     = 'Seu inventário está cheio',
+    cooldown           = 'Aguarde %s s',
+    busy               = 'Você já está ocupado',
+    error              = 'Algo deu errado',
+
+    -- Textes propres au script :
+    blip               = 'Aluguel de bicicletas',
+    rent_target        = 'Alugar %s ($ %s)',
+    return_target      = 'Devolver o veículo',
+    rented             = 'Alugado por %s min. Caução de $ %s devolvida no retorno',
+    rented_plain       = 'Alugado por %s min',
+    returned           = 'Veículo devolvido, caução de $ %s reembolsada',
+    returned_plain     = 'Veículo devolvido',
+    returned_damaged   = 'Veículo devolvido danificado: caução retida',
+    expiring           = 'Seu aluguel termina em 2 minutos',
+    expired            = 'Aluguel encerrado: veículo recolhido, caução retida',
+    lost               = 'Veículo alugado perdido: caução retida',
+    already_renting    = 'Você já tem um aluguel',
+    no_rental          = 'Você não tem nenhum aluguel',
+    vehicle_not_here   = 'Traga o veículo para perto do balcão',
+    vehicle_occupied   = 'Desça do veículo primeiro',
+    spawn_blocked      = 'A vaga está ocupada',
+    timer_label        = 'Aluguel',
+}

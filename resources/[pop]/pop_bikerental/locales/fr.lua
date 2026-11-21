@@ -1,0 +1,37 @@
+-- Français
+Locales['fr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuler',
+    confirm            = 'Confirmer',
+    close              = 'Fermer',
+    interact           = 'Interagir',
+    progress_cancelled = 'Action annulée',
+    no_permission      = "Vous n'avez pas la permission",
+    wrong_job          = "Vous n'avez pas le métier requis",
+    too_far            = 'Vous êtes trop loin',
+    not_enough_money   = "Pas assez d'argent",
+    missing_item       = 'Il vous faut : %s',
+    inventory_full     = 'Votre inventaire est plein',
+    cooldown           = 'Patientez encore %s s',
+    busy               = 'Vous êtes déjà occupé',
+    error              = 'Une erreur est survenue',
+
+    -- Textes propres au script :
+    blip               = 'Location de vélos',
+    rent_target        = 'Louer %s (%s $)',
+    return_target      = 'Rendre le véhicule',
+    rented             = 'Loué pour %s min. Caution de %s $ rendue au retour',
+    rented_plain       = 'Loué pour %s min',
+    returned           = 'Véhicule rendu, caution de %s $ rendue',
+    returned_plain     = 'Véhicule rendu',
+    returned_damaged   = 'Véhicule rendu abîmé : caution gardée',
+    expiring           = 'Votre location se termine dans 2 minutes',
+    expired            = 'Location terminée : véhicule repris, caution gardée',
+    lost               = 'Véhicule de location perdu : caution gardée',
+    already_renting    = 'Vous avez déjà une location',
+    no_rental          = "Vous n'avez aucune location",
+    vehicle_not_here   = 'Ramenez le véhicule près du comptoir',
+    vehicle_occupied   = "Descendez d'abord du véhicule",
+    spawn_blocked      = 'La place est occupée',
+    timer_label        = 'Location',
+}

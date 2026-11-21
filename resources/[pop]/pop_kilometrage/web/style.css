@@ -1,0 +1,19 @@
+/* pop_kilometrage : pastille discrète en bas à droite. */
+#km {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--pop-bg);
+  font-size: var(--pop-size);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+#km-unit {
+  font-size: var(--pop-size-sm);
+  color: var(--pop-muted);
+}
+
+[dir="rtl"] #km { right: auto; left: 24px; }

@@ -15,7 +15,7 @@ pop_dealing (tab_dealing), pop_weed (tab_weed), pop_territories (vg_territories)
 pop_inventory (tab_inventory, gros chantier) + modules séparés : pop_vehiclekeys, pop_douilles, pop_sabot, pop_paintgun, pop_radio, pop_chargeurs
 
 ## Vague 3 — Véhicules
-pop_vehiclepersistence, pop_kilometrage, pop_bennys, pop_enterprisegarage, pop_traffic (vg_sultan_traffic), pop_bikerental
+pop_vehiclepersistence, pop_kilometrage, pop_bennys, pop_enterprisegarage, pop_bikerental
 
 ## Vague 4 — Métiers et gestion
 pop_interim, pop_management, pop_admin, pop_police (tab_police + tab_police80), pop_medexam, pop_bank, pop_exchange, pop_livraison
@@ -29,6 +29,6 @@ pop_hud, pop_chat, pop_emotes, pop_affiche, pop_boards, pop_charcreator, pop_clo
 | 0 | terminée |
 | 1 | terminée |
 | 2 | terminée |
-| 3 | en cours |
-| 4 | à faire |
+| 3 | terminée |
+| 4 | en cours |
 | 5 | à faire |
