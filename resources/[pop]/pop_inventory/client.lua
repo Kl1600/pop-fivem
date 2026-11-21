@@ -141,7 +141,11 @@ local function toggleInventory()
 end
 
 -- Commande simple (utilisée aussi par d'autres scripts) + touche I.
-RegisterCommand('pop_inventory', toggleInventory, false)
+RegisterCommand('pop_inventory', function()
+  -- Ancien raccourci TAB resté sur certains PC : géré par +pop_inventory_key
+  if IsControlPressed(0, 37) or IsDisabledControlPressed(0, 37) then return end
+  toggleInventory()
+end, false)
 RegisterCommand('pop_inventory_alt', toggleInventory, false)
 RegisterKeyMapping('pop_inventory_alt', 'Inventaire : ouvrir / fermer (touche 2)', 'keyboard', 'I')
 
@@ -212,127 +216,28 @@ RegisterKeyMapping('pop_inventory_slot4', 'Outil (Lampe UV...)', 'keyboard', '4'
 
 
 -- =====================================================================
---  TAB : appui court = inventaire, maintenu = roue des armes (maison)
+--  TAB : appui court = inventaire, maintenu = roue des armes NATIVE de GTA
+--  (la roue de GTA s'ouvre toute seule quand on maintient TAB).
 -- =====================================================================
-local WHEEL_HOLD_MS = 220
-local WHEEL_SLOTS = {
-  { slot = 'weapon_long',   label = 'Arme lourde' },
-  { slot = 'weapon_pistol', label = 'Pistolet' },
-  { slot = 'weapon_tazer',  label = 'Tazer' },
-  { slot = 'weapon_misc',   label = 'Arme blanche' },
-  { slot = 'weapon_tool',   label = 'Outil' },
-  { slot = 'unarmed',       label = 'Mains nues' },
-}
-local wheelOpen, tabHeld, tabDownAt = false, false, 0
-
-local function buildWheelSlots()
-  local list = {}
-  for _, w in ipairs(WHEEL_SLOTS) do
-    local entry = { slot = w.slot, label = w.label, empty = true }
-    if w.slot == 'unarmed' then
-      entry.empty = false
-    else
-      local item = currentEquipment[w.slot]
-      if item then
-        local defId = (type(item) == 'table' and item.defId) or item
-        local def = Config.Items and Config.Items[defId]
-        if def then
-          entry.empty = false
-          entry.label = def.label or w.label
-          entry.icon = def.icon
-        end
-      end
-    end
-    list[#list + 1] = entry
-  end
-  return list
-end
-
-local function setWheelFocus(on)
-  if on then
-    SetNuiFocus(true, true)
-    SetNuiFocusKeepInput(true) -- le jeu reçoit encore le relâchement de TAB
-  else
-    SetNuiFocusKeepInput(false)
-    SetNuiFocus(false, false)
-  end
-end
-
-local function openWheel()
-  if wheelOpen or isOpen then return end
-  wheelOpen = true
-  setWheelFocus(true)
-  SendNUIMessage({ action = 'wheelOpen', slots = buildWheelSlots() })
-  CreateThread(function()
-    while wheelOpen do
-      -- caméra et tir bloqués pendant la sélection, déplacement libre
-      DisableControlAction(0, 1, true); DisableControlAction(0, 2, true)
-      DisableControlAction(0, 24, true); DisableControlAction(0, 25, true)
-      DisableControlAction(0, 257, true); DisableControlAction(0, 142, true)
-      DisableControlAction(0, 106, true)
-      Wait(0)
-    end
-  end)
-end
-
-local function closeWheel()
-  if not wheelOpen then return end
-  wheelOpen = false
-  SendNUIMessage({ action = 'wheelClose' }) -- la NUI répond avec wheelPick
-  setWheelFocus(false)
-end
-
-RegisterNUICallback('wheelPick', function(data, cb)
-  cb('ok')
-  if wheelOpen then -- choix au clic : on ferme ici
-    wheelOpen = false
-    tabHeld = false
-    setWheelFocus(false)
-  end
-  local slot = data and data.slot
-  if not slot then return end
-  SetTimeout(120, function()
-    local ped = PlayerPedId()
-    if slot == 'unarmed' then
-      SetCurrentPedWeapon(ped, GetHashKey('WEAPON_UNARMED'), true)
-      return
-    end
-    local item = currentEquipment[slot]
-    local defId = item and ((type(item) == 'table' and item.defId) or item)
-    local def = defId and Config.Items and Config.Items[defId]
-    -- Déjà en main : on ne range pas (la roue sert à choisir, pas à basculer)
-    if def and def.weaponHash and GetSelectedPedWeapon(ped) == GetHashKey(def.weaponHash) then return end
-    switchToWeaponSlot(slot)
-  end)
-end)
+local TAP_MAX_MS = 220
+local tabHeld, tabDownAt = false, 0
 
 RegisterCommand('+pop_inventory_key', function()
-  if isOpen or wheelOpen or IsNuiFocused() then return end
+  if isOpen or IsNuiFocused() then return end
   tabHeld = true
-  local t = GetGameTimer()
-  tabDownAt = t
-  CreateThread(function()
-    while tabHeld and tabDownAt == t do
-      if GetGameTimer() - t >= WHEEL_HOLD_MS then
-        openWheel()
-        return
-      end
-      Wait(0)
-    end
-  end)
+  tabDownAt = GetGameTimer()
 end, false)
 
 RegisterCommand('-pop_inventory_key', function()
   if not tabHeld then return end
   tabHeld = false
-  if wheelOpen then
-    closeWheel()
-  elseif GetGameTimer() - tabDownAt < WHEEL_HOLD_MS then
+  -- Appui bref = inventaire ; maintenu = c'était la roue des armes de GTA
+  if GetGameTimer() - tabDownAt < TAP_MAX_MS and not IsPedDeadOrDying(PlayerPedId(), true) then
     toggleInventory()
   end
 end, false)
 
-RegisterKeyMapping('+pop_inventory_key', 'Inventaire (appui) / roue des armes (maintenir)', 'keyboard', 'TAB')
+RegisterKeyMapping('+pop_inventory_key', 'Inventaire (appui court sur TAB)', 'keyboard', 'TAB')
 
 CreateThread(function()
   -- Natives localisées : boucle obligatoirement par frame (DisableControlAction ne vaut que pour la frame courante)
@@ -340,11 +245,10 @@ CreateThread(function()
   local HideHudAndRadarThisFrame, DisplayRadar = HideHudAndRadarThisFrame, DisplayRadar
   while true do
     Wait(0)
-    -- Suppress native weapon wheel
-    HudWeaponWheelIgnoreSelection()
-    DisableControlAction(0, 37, true) -- Disable TAB (Weapon Wheel)
-    
     if isOpen then
+      -- Roue des armes GTA bloquée seulement pendant que l'inventaire est ouvert
+      HudWeaponWheelIgnoreSelection()
+      DisableControlAction(0, 37, true)
       -- Disable other controls if needed when UI is open
       DisableControlAction(0, 1, true) -- LookLeftRight
       DisableControlAction(0, 2, true) -- LookUpDown
