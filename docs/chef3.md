@@ -32,9 +32,11 @@ Scripts : pop_grandtheftauto, pma_voice_challenge, ultra-voltlab, kq_lasers (man
 - pop_livraison : délais max de chargement, `/previewlivraison` réservé aux admins.
 - interact-sound / chHyperSound : sons relayés limités (distance, volume, débit), relais client de chHyperSound coupé.
 
+### Fait (publication 2)
+- chHyperSound : suppression, avec l'accord du client, des fichiers privés de `sounds/` (page Gmail sauvegardée, photos, vidéos .mp4, zips/rar). Vérifié par grep : aucun script ne les utilisait. Tous les .ogg et .mp3 sont gardés. Le déploiement (`mirror --delete`) les retire aussi du serveur.
+
 ### Reste
 - Tester la mission en jeu avec le client.
-- `chHyperSound/sounds/` contient des fichiers privés (page Gmail, photos, zips) : à supprimer avec l'accord du client.
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).
 
 ### Bugs connus / à vérifier en jeu
