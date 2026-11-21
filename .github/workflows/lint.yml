@@ -17,8 +17,11 @@ jobs:
           sudo apt-get install -y -qq lua5.4 luarocks
           sudo luarocks install luacheck
 
-      - name: Luacheck
-        run: luacheck resources templates
+      - name: Luacheck (fondation)
+        run: luacheck templates
+
+      - name: Lua syntax (scripts convertis)
+        run: find resources -name '*.lua' -print0 | xargs -0 -r -n1 luac5.4 -p
 
       - name: JS syntax
         run: |

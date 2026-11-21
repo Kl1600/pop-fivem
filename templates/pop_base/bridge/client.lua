@@ -205,6 +205,13 @@ function Bridge.Notify(msg, notifyType, duration)
     duration = tonumber(duration) or 5000
     local mode = Bridge.NotifySystem
 
+    -- Notifications POP (ancien style « notification ») : prioritaires si la ressource tourne.
+    if (Config.Notify == 'auto' or Config.Notify == 'pop_notify') and RES ~= 'pop_notify'
+        and GetResourceState('pop_notify') == 'started' then
+        local ok = pcall(function() exports.pop_notify:Notify(msg, notifyType, duration) end)
+        if ok then return end
+    end
+
     if mode == 'framework' then
         if Bridge.Framework == 'esx' and ESX then
             return ESX.ShowNotification(msg, notifyType, duration)

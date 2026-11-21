@@ -1,7 +1,0 @@
-CREATE TABLE IF NOT EXISTS pop_clothes_outfits (
-    identifier VARCHAR(191) COLLATE utf8mb4_bin NOT NULL,
-    model VARCHAR(8) NOT NULL,
-    selections LONGTEXT NOT NULL,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (identifier, model)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
