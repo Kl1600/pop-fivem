@@ -100,9 +100,49 @@ lib.callback.register('pop_affiche:server:getAffiches', function(source)
     end
 end)
 
+-- --- VALIDATION ---
+local lastAction = {}  -- [src] = GetGameTimer() du dernier enregistrement/suppression
+local ACTION_COOLDOWN = 2000
+local MAX_DISTANCE = 30.0
+
+local function OnCooldown(src)
+    local now = GetGameTimer()
+    if lastAction[src] and now - lastAction[src] < ACTION_COOLDOWN then return true end
+    lastAction[src] = now
+    return false
+end
+
+local function IsVec(t)
+    return type(t) == 'table' and type(t.x) == 'number' and type(t.y) == 'number' and type(t.z) == 'number'
+        and t.x == t.x and t.y == t.y and t.z == t.z
+end
+
+-- Lien d'image : http(s) seulement, sans espace ni guillemet ni chevron
+local function CleanUrl(url)
+    if type(url) ~= 'string' or url == '' or #url > 2048 then return nil end
+    if not url:match('^https?://[%w%-%.]+') then return nil end
+    if url:find('[%s"\'<>`\\]') then return nil end
+    return url
+end
+
+local function PlayerNear(src, p)
+    local ped = GetPlayerPed(src)
+    return ped ~= 0 and #(GetEntityCoords(ped) - vector3(p.x, p.y, p.z)) <= MAX_DISTANCE
+end
+
+local function GetAfficheRow(dbId)
+    local ok, row = pcall(function() return MySQL.single.await('SELECT * FROM pop_affiche WHERE id = ?', { dbId }) end)
+    if not ok or not row then return nil end
+    if type(row.pos) == 'string' then row.pos = json.decode(row.pos) end
+    if type(row.normal) == 'string' then row.normal = json.decode(row.normal) end
+    return row
+end
+
+AddEventHandler('playerDropped', function() lastAction[source] = nil end)
+
 RegisterNetEvent('pop_affiche:server:saveAffiche', function(data)
     local src = source
-    
+
     -- Sécurité serveur : Vérification du statut VIP avant enregistrement
     if not IsPlayerVIP(src) then
         print("^1[Affiche-Hack-Warning]^7 Tentative d'enregistrement d'affiche sans statut VIP par " .. GetPlayerName(src) .. " (ID: " .. tostring(src) .. ")")
@@ -110,53 +150,53 @@ RegisterNetEvent('pop_affiche:server:saveAffiche', function(data)
         return
     end
 
-    if type(data) ~= 'table' or type(data.image_url) ~= 'string' or data.image_url == '' then
-        print("^1[Affiche]^7 image_url manquant ou vide")
-        return
-    end
-    if string.len(data.image_url) > 2048 then
-        return
-    end
+    if type(data) ~= 'table' then return end
     if data.dbId ~= nil and type(data.dbId) ~= 'number' then return end
-    if not data.dbId then
-        -- Validation de la nouvelle affiche (taille et distance du joueur)
-        local p = data.pos
-        if type(p) ~= 'table' or type(p.x) ~= 'number' or type(p.y) ~= 'number' or type(p.z) ~= 'number'
-            or type(data.normal) ~= 'table' or type(data.width) ~= 'number' or type(data.height) ~= 'number'
-            or data.width <= 0 or data.height <= 0 or data.width > 20.0 or data.height > 20.0 then
-            return
-        end
-        local ped = GetPlayerPed(src)
-        if ped == 0 or #(GetEntityCoords(ped) - vector3(p.x, p.y, p.z)) > 30.0 then return end
+    local url = CleanUrl(data.image_url)
+    if not url then
+        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = 'Lien invalide : utilisez un lien http(s) vers une image.' })
+        return
     end
-
-    local function broadcast(syncData)
-        TriggerClientEvent('pop_affiche:client:notifyUpdate', -1, syncData)
-    end
+    if OnCooldown(src) then return end
 
     if data.dbId then
+        local row = GetAfficheRow(data.dbId)
+        if not row or not IsVec(row.pos) or not PlayerNear(src, row.pos) then return end
         local success, err = pcall(function()
-            MySQL.update.await('UPDATE pop_affiche SET image_url = ? WHERE id = ?', { data.image_url, data.dbId })
+            MySQL.update.await('UPDATE pop_affiche SET image_url = ? WHERE id = ?', { url, data.dbId })
         end)
         if success then
-            broadcast(data)
+            -- On ne rediffuse que des champs propres
+            TriggerClientEvent('pop_affiche:client:notifyUpdate', -1, {
+                dbId = data.dbId, image_url = url, pos = row.pos, normal = row.normal, width = row.width, height = row.height,
+            })
         else
             print("^1[Affiche-SQL-Error]^7 Echec UPDATE ID " .. tostring(data.dbId) .. " : " .. tostring(err))
             TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = 'Erreur SQL lors de la mise à jour !' })
         end
     else
-        local success, err = pcall(function()
+        -- Validation de la nouvelle affiche (taille et distance du joueur)
+        local p, n = data.pos, data.normal
+        if not IsVec(p) or not IsVec(n) or type(data.width) ~= 'number' or type(data.height) ~= 'number'
+            or data.width <= 0 or data.height <= 0 or data.width > 20.0 or data.height > 20.0 then
+            return
+        end
+        if not PlayerNear(src, p) then return end
+        local pos = { x = p.x, y = p.y, z = p.z }
+        local normal = { x = n.x, y = n.y, z = n.z }
+
+        local success, id = pcall(function()
             return MySQL.insert.await([[
                 INSERT INTO pop_affiche (image_url, pos, normal, width, height)
                 VALUES (?, ?, ?, ?, ?)
-            ]], { data.image_url, json.encode(data.pos), json.encode(data.normal), data.width, data.height })
+            ]], { url, json.encode(pos), json.encode(normal), data.width, data.height })
         end)
-        if success then
-            local id = err -- pcall returns status flag + result values
-            data.dbId = id
-            broadcast(data)
+        if success and id then
+            TriggerClientEvent('pop_affiche:client:notifyUpdate', -1, {
+                dbId = id, image_url = url, pos = pos, normal = normal, width = data.width, height = data.height,
+            })
         else
-            print("^1[Affiche-SQL-Error]^7 Echec INSERT : " .. tostring(err))
+            print("^1[Affiche-SQL-Error]^7 Echec INSERT : " .. tostring(id))
             TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = 'Erreur SQL lors de la creation !' })
         end
     end
@@ -164,7 +204,7 @@ end)
 
 RegisterNetEvent('pop_affiche:server:deleteAffiche', function(dbId)
     local src = source
-    
+
     -- Sécurité serveur : Vérification du statut VIP avant suppression
     if not IsPlayerVIP(src) then
         print("^1[Affiche-Hack-Warning]^7 Tentative de suppression d'affiche sans statut VIP par " .. GetPlayerName(src) .. " (ID: " .. tostring(src) .. ")")
@@ -173,6 +213,9 @@ RegisterNetEvent('pop_affiche:server:deleteAffiche', function(dbId)
     end
 
     if type(dbId) ~= 'number' then return end
+    if OnCooldown(src) then return end
+    local row = GetAfficheRow(dbId)
+    if not row or not IsVec(row.pos) or not PlayerNear(src, row.pos) then return end
     local success, err = pcall(function()
         MySQL.update.await('DELETE FROM pop_affiche WHERE id = ?', { dbId })
     end)

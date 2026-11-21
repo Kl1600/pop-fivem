@@ -8,7 +8,30 @@ local previewPanelId = nil
 local currentEditingId = nil
 local OpenEditor, RegisterPanelInteraction, RequestBoardData -- déclarations anticipées
 
+local LOAD_DISTANCE = 40.0
+local UNLOAD_DISTANCE = 60.0
+local FIT_TYPES = { fill = true, cover = true, contain = true }
+
 -- --- HELPERS ---
+local function IsVec(t)
+    return type(t) == 'table' and type(t.x) == 'number' and type(t.y) == 'number' and type(t.z) == 'number'
+end
+
+-- Image acceptée : dessin (data:image) ou fichier du script
+local function IsSafeUrl(url)
+    if type(url) ~= 'string' or url == '' then return false end
+    return url:sub(1, 11) == 'data:image/' or url:sub(1, 22) == 'nui://pop_boards/html/'
+end
+
+-- Détruit le panneau DUI (mémoire GPU) ; il sera recréé à l'approche
+local function UnloadBoard(dbId)
+    if panels[dbId] then
+        exports["pop_duiengine"]:DestroyPanel(panels[dbId])
+        panels[dbId] = nil
+        exports.ox_target:removeZone('board_' .. dbId)
+    end
+end
+
 local function RotToDir(rot)
     local z = math.rad(rot.z)
     local x = math.rad(rot.x)
@@ -252,11 +275,16 @@ CreateThread(function()
         local count = 0
         for dbId, data in pairs(panelData) do
             local boardId = tonumber(dbId)
-            if not panels[boardId] then
+            if boardId and IsVec(data.pos) and panels[boardId] then
+                -- Trop loin : on libère le DUI
+                if #(pCoords - vector3(data.pos.x, data.pos.y, data.pos.z)) > UNLOAD_DISTANCE then
+                    UnloadBoard(boardId)
+                end
+            elseif boardId and IsVec(data.pos) then
                 local bPos = vector3(data.pos.x, data.pos.y, data.pos.z)
                 local dist = #(pCoords - bPos)
                 
-                if dist < 40.0 then
+                if dist < LOAD_DISTANCE then
                     if data.url and data.url ~= "" then
                         -- On a déjà l'URL (nouveau board ou déjà fetch), on l'affiche
                         TriggerEvent('pop_boards:client:addBoard', data)
@@ -274,8 +302,10 @@ CreateThread(function()
 end)
 
 RegisterNetEvent('pop_boards:client:notifyUpdate', function(data)
-    if not data or not data.dbId then return end
+    if type(data) ~= 'table' or not data.dbId then return end
     local dbId = tonumber(data.dbId)
+    if not dbId then return end
+    data.url = nil -- l'image n'arrive que par requestData
     
     -- On décode les positions si nécessaire
     if type(data.pos) == 'string' then data.pos = json.decode(data.pos) end
@@ -290,11 +320,10 @@ RegisterNetEvent('pop_boards:client:notifyUpdate', function(data)
         -- Only invalidate the URL if it wasn't the player who just saved it
         if currentEditingId ~= dbId then
             panelData[dbId].url = nil 
-            -- We don't want to destroy the panel if only props changed, duiengine usually handles scaling
-            -- But for boards, we often need to refresh the DUI url if resW/resH changed
-            local duiId = panels[dbId]
-            if duiId then
-                -- Optional: Request update but keep drawing until new one arrives
+            -- Panneau affiché : on recrée avec la nouvelle position/taille et on redemande l'image
+            if panels[dbId] then
+                UnloadBoard(dbId)
+                requestedBoards[dbId] = nil
                 RequestBoardData(dbId)
             end
         end
@@ -316,12 +345,14 @@ RegisterNetEvent('pop_boards:client:receiveMetadata', function(data)
 end)
 
 RegisterNetEvent('pop_boards:client:syncBoardUrlChunk', function(dbId, chunk, isLast)
+    if type(dbId) ~= 'number' or type(chunk) ~= 'string' then return end
     if not boardSyncData[dbId] then boardSyncData[dbId] = {} end
     table.insert(boardSyncData[dbId], chunk)
     
     if isLast then
         local fullUrl = table.concat(boardSyncData[dbId])
         boardSyncData[dbId] = nil
+        if not IsSafeUrl(fullUrl) then return end
         
         if panelData[dbId] then
             panelData[dbId].url = fullUrl
@@ -352,8 +383,12 @@ end)
 RegisterNetEvent('pop_boards:client:addBoard', function(data)
     if not data or not data.dbId then return end
     data.dbId = tonumber(data.dbId)
-    if panels[data.dbId] then return end
-    if not data.url or data.url == "" then return end
+    if not data.dbId or panels[data.dbId] then return end
+    if not IsSafeUrl(data.url) then return end
+    if not IsVec(data.pos) or not IsVec(data.normal) or type(data.width) ~= 'number' or type(data.height) ~= 'number' then return end
+    if not FIT_TYPES[data.fitType] then data.fitType = 'fill' end
+    data.resW = tonumber(data.resW) or 1024
+    data.resH = tonumber(data.resH) or 1024
 
     local pos = data.pos
     if type(pos) == 'table' then pos = vector3(pos.x, pos.y, pos.z) end
@@ -388,12 +423,15 @@ RegisterNetEvent('pop_boards:client:addBoard', function(data)
 end)
 
 RegisterNetEvent('pop_boards:client:removeBoard', function(dbId)
-    if panels[dbId] then
-        exports["pop_duiengine"]:DestroyPanel(panels[dbId])
-        panels[dbId] = nil
-        panelData[dbId] = nil
-        exports.ox_target:removeZone('board_' .. dbId)
-    end
+    dbId = tonumber(dbId)
+    if not dbId then return end
+    UnloadBoard(dbId)
+    panelData[dbId] = nil
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for id in pairs(panels) do UnloadBoard(id) end
 end)
 
 RegisterNetEvent('pop_boards:client:updateBoardTexture', function(dbId, data)

@@ -32,11 +32,19 @@ local function URLEncode(str)
 end
 
 -- --- AFFICHE LIFECYCLE ---
+local LOAD_DISTANCE = 40.0
+local UNLOAD_DISTANCE = 60.0
+
+local function IsVec(t)
+    return type(t) == 'table' and type(t.x) == 'number' and type(t.y) == 'number' and type(t.z) == 'number'
+end
+
 local function AddAffiche(data)
     if not data or not data.dbId then return end
     data.dbId = tonumber(data.dbId)
-    if panels[data.dbId] then return end
-    if not data.image_url or data.image_url == '' then return end
+    if not data.dbId or panels[data.dbId] then return end
+    if type(data.image_url) ~= 'string' or data.image_url == '' then return end
+    if not IsVec(data.pos) or not IsVec(data.normal) or type(data.width) ~= 'number' or type(data.height) ~= 'number' then return end
 
     local pos    = type(data.pos)    == 'table' and vector3(data.pos.x, data.pos.y, data.pos.z)    or data.pos
     local normal = type(data.normal) == 'table' and vector3(data.normal.x, data.normal.y, data.normal.z) or data.normal
@@ -128,14 +136,20 @@ local function AddAffiche(data)
     })
 end
 
-local function RemoveAffiche(dbId)
+-- Détruit le panneau DUI (libère la mémoire) ; forget = oublie aussi les données
+local function UnloadAffiche(dbId, forget)
     dbId = tonumber(dbId)
+    if not dbId then return end
     if panels[dbId] then
         exports["pop_duiengine"]:DestroyPanel(panels[dbId])
-        panels[dbId]    = nil
-        panelData[dbId] = nil
+        panels[dbId] = nil
         exports.ox_target:removeZone('affiche_' .. dbId)
     end
+    if forget then panelData[dbId] = nil end
+end
+
+local function RemoveAffiche(dbId)
+    UnloadAffiche(dbId, true)
 end
 
 -- --- NUI CALLBACKS ---
@@ -278,6 +292,8 @@ RegisterNetEvent('pop_affiche:client:notifyUpdate', function(data)
     if type(data.pos)    == 'string' then data.pos    = json.decode(data.pos) end
     if type(data.normal) == 'string' then data.normal = json.decode(data.normal) end
 
+    if not data.dbId or not IsVec(data.pos) then return end
+
     if panelData[data.dbId] then
         for k, v in pairs(data) do panelData[data.dbId][k] = v end
         local duiId = panels[data.dbId]
@@ -288,7 +304,7 @@ RegisterNetEvent('pop_affiche:client:notifyUpdate', function(data)
         panelData[data.dbId] = data
         -- Création immédiate du panel sans attendre la boucle de 1s
         local pCoords = GetEntityCoords(PlayerPedId())
-        if #(pCoords - vector3(data.pos.x, data.pos.y, data.pos.z)) < 40.0 then
+        if #(pCoords - vector3(data.pos.x, data.pos.y, data.pos.z)) < LOAD_DISTANCE then
             AddAffiche(data)
         end
     end
@@ -328,14 +344,16 @@ CreateThread(function()
     while true do
         local pCoords = GetEntityCoords(PlayerPedId())
         for dbId, data in pairs(panelData) do
-            if type(data.pos) ~= 'table' then goto continue end
-            local id = tonumber(dbId)
-            if not panels[id] and data.image_url and data.image_url ~= '' then
-                if #(pCoords - vector3(data.pos.x, data.pos.y, data.pos.z)) < 40.0 then
+            if IsVec(data.pos) then
+                local id = tonumber(dbId)
+                local dist = #(pCoords - vector3(data.pos.x, data.pos.y, data.pos.z))
+                if panels[id] then
+                    -- Trop loin : on détruit le DUI (mémoire GPU), il sera recréé en revenant
+                    if dist > UNLOAD_DISTANCE then UnloadAffiche(id, false) end
+                elseif dist < LOAD_DISTANCE and data.image_url and data.image_url ~= '' then
                     AddAffiche(data)
                 end
             end
-            ::continue::
         end
         Wait(1000)
     end
@@ -354,4 +372,9 @@ CreateThread(function()
             panelData[a.id] = a
         end
     end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for id in pairs(panels) do UnloadAffiche(id, false) end
 end)
