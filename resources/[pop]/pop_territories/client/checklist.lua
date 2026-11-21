@@ -38,7 +38,7 @@ local function nuiShow(v)
     SendNUIMessage({ type = 'cl_show', visible = v })
 
     -- On décale les notifications dynamiquement pour ne pas superposer
-    TriggerEvent('notification:client:setRaised', v, 420)
+    TriggerEvent('notification:client:setRaised', v, Config.ChecklistRaise)
 end
 
 local function updateVisibility()
@@ -74,7 +74,7 @@ CreateThread(function()
 
     while true do
         local ok, count = pcall(function()
-            return exports['pop_inventory']:getItemCount('pochonweed')
+            return exports['pop_inventory']:getItemCount(Config.WeedItem)
         end)
 
         local currentWeed = (ok and type(count) == 'number' and count > 0)
@@ -87,7 +87,7 @@ CreateThread(function()
         end
 
         updateVisibility()
-        Wait(1500)
+        Wait(Config.ChecklistInterval)
     end
 end)
 

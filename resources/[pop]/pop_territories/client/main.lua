@@ -3,10 +3,9 @@
 -- Loadbar de progression du crew (dans la zone) + indicateur de contrôle au survol carte
 -- ─────────────────────────────────────────────
 
-local ESX = exports['es_extended']:getSharedObject()
-
 local control     = {}    -- [zoneId] = payload de contrôle (diffusé par le serveur)
-local myProgress  = {}    -- [zoneId] = { share, threshold, color, controlled }
+-- [zoneId] = { share, threshold, color, controlled } : rempli mais pas encore lu (loadbar dans checklist.lua)
+local myProgress  = {} -- luacheck: ignore 241
 local playerZone  = nil   -- zone de vente où le joueur se trouve physiquement
 
 -- ─────────────────────────────────────────────
@@ -104,12 +103,12 @@ CreateThread(function()
             -- checklist.lua écoute cet évènement local (entrée / sortie de zone)
             TriggerEvent('pop_territories:zoneChanged', id)
             if id then
-                ESX.TriggerServerCallback('pop_territories:getMyShare', function(res)
+                Callback.Trigger('pop_territories:getMyShare', function(res)
                     myProgress[id] = res
                 end, id)
             end
         end
-        Wait(1000)
+        Wait(Config.ZoneCheckInterval)
     end
 end)
 
@@ -143,15 +142,15 @@ CreateThread(function()
             if p and p.label then
                 local pct = math.floor((p.share or 0.0) + 0.5)
                 if p.controlled then
-                    txt = ('Contrôlé par %s — %d%%'):format(p.label, pct)
+                    txt = L('map_controlled', p.label, pct)
                 else
-                    txt = ('Disputé · %s en tête — %d%%'):format(p.label, pct)
+                    txt = L('map_disputed', p.label, pct)
                 end
                 if p.color then r, g, b = p.color[1], p.color[2], p.color[3] end
             else
-                txt = ('%s — territoire non contrôlé'):format(Territories.label(playerZone))
+                txt = L('map_uncontrolled', Territories.label(playerZone))
             end
-            if p and p.atWar then txt = txt .. '  [GUERRE]' end
+            if p and p.atWar then txt = txt .. L('map_war_tag') end
             drawHudText(txt, 0.5, 0.062, 0.40, r, g, b)
             Wait(0)
         else

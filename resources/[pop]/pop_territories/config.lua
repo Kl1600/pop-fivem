@@ -1,7 +1,25 @@
 Config = {}
 
-Config.Debug = false  -- prints serveur pour debug
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false  -- prints serveur + notifications de debug
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
 
+------------------------------------------------------------------------
+-- pop_territories
+------------------------------------------------------------------------
 -- ─────────────────────────────────────────────
 -- Réglages généraux de la guerre de territoires
 -- ─────────────────────────────────────────────
@@ -59,3 +77,15 @@ Config.Zones = {
     ['vespucci_beach'] = { label = 'Vespucci Beach',    center = vec3(-1223.0, -1481.0, 4.4), radius = 250.0 },
     ['sandy_shores']   = { label = 'Sandy Shores',      center = vec3(1850.0, 3700.0, 33.5),  radius = 400.0 },
 }
+
+-- ─────────────────────────────────────────────
+-- Réglages techniques (valeurs d'origine)
+-- ─────────────────────────────────────────────
+
+Config.WeedItem          = 'pochonweed' -- objet qui affiche le guide (checklist) à gauche
+Config.ChecklistInterval = 1500         -- ms entre deux vérifications de l'objet (checklist)
+Config.ChecklistRaise    = 420          -- décalage des notifications quand le guide est affiché
+Config.ZoneCheckInterval = 1000         -- ms entre deux détections de zone côté client
+Config.NotifyDuration    = 6000         -- notifications de crew (prise de contrôle, guerre)
+Config.CommandNotifyDuration = 7000     -- /territory dans un territoire
+Config.NoZoneNotifyDuration  = 5000     -- /territory hors territoire
