@@ -115,6 +115,7 @@ local function startExam(targetPed)
   CreateThread(function()
     local myPed = PlayerPedId()
     local bodyParts = Config.BodyParts
+    local lastSend = 0
     while examining do
       if not DoesEntityExist(targetPed) then break end
 
@@ -122,6 +123,11 @@ local function startExam(targetPed)
       if dist > Config.MaxExamDistance then break end
 
       if IsControlJustReleased(0, Config.CloseControl) then break end
+
+      -- Touche de fermeture lue à chaque frame, affichage envoyé toutes les ~33 ms
+      local now = GetGameTimer()
+      if now - lastSend < 33 then Wait(0) goto continue end
+      lastSend = now
 
       -- Données live (relit le statebag à chaque frame au cas où ça change)
       data = Player(serverId).state.medInjuries or data or {}
@@ -146,6 +152,7 @@ local function startExam(targetPed)
 
       SendNUIMessage({ action = 'update', parts = parts })
       Wait(0)
+      ::continue::
     end
     stopExam()
   end)

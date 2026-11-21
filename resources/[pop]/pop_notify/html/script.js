@@ -27,7 +27,7 @@ function renderChecklistSteps() {
         const s = checklistSteps[n];
         const row = document.createElement('div');
         row.className = 'checklist-step' + (s.done ? ' done' : '');
-        row.innerHTML = '<span class="cl-check">' + (s.done ? '✔' : '-') + '</span>' + (s.label || '');
+        row.innerHTML = '<span class="cl-check">' + (s.done ? '✔' : '-') + '</span>' + safeHtml(s.label);
         container.appendChild(row);
     });
 }
@@ -38,7 +38,7 @@ function showChecklistCard(title) {
     if (!container) return;
     container.insertAdjacentHTML('afterbegin', `
         <div class="notif-card checklist-style" id="checklist-card">
-            <div class="checklist-title" id="checklist-title">${title || 'LIVRAISON'}</div>
+            <div class="checklist-title" id="checklist-title">${safeHtml(title || 'LIVRAISON')}</div>
             <div class="checklist-steps" id="checklist-steps"></div>
         </div>`);
 }
@@ -66,6 +66,65 @@ function handleChecklistMessage(data) {
     }
 }
 
+// ── Sécurité : seul un HTML simple est accepté dans les textes ──────────────
+// Balises autorisées : span (style color / font-weight / font-style), br, b, strong, i, em.
+const ALLOWED_TAGS = { SPAN: true, BR: true, B: true, STRONG: true, I: true, EM: true };
+const ALLOWED_STYLES = ['color', 'font-weight', 'font-style'];
+
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
+}
+
+function cleanNode(node, out) {
+    node.childNodes.forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) {
+            out.appendChild(document.createTextNode(child.textContent));
+        } else if (child.nodeType === Node.ELEMENT_NODE && ALLOWED_TAGS[child.tagName]) {
+            const el = document.createElement(child.tagName.toLowerCase());
+            if (child.tagName === 'SPAN' || child.tagName === 'I') {
+                ALLOWED_STYLES.forEach(prop => {
+                    const v = child.style.getPropertyValue(prop);
+                    if (v && !/url\(|expression/i.test(v)) el.style.setProperty(prop, v);
+                });
+                // Icônes Font Awesome (<i class="fas fa-...">) : classes simples seulement
+                if (child.tagName === 'I' && /^[\w\s-]+$/.test(child.className)) el.className = child.className;
+            }
+            cleanNode(child, el);
+            out.appendChild(el);
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+            cleanNode(child, out); // balise refusée : on garde seulement son texte
+        }
+    });
+}
+
+function safeHtml(str) {
+    if (str === undefined || str === null) return '';
+    const tpl = document.createElement('template');
+    tpl.innerHTML = String(str);
+    const box = document.createElement('div');
+    cleanNode(tpl.content, box);
+    return box.innerHTML;
+}
+
+// Adresse d'image : nui://, https:// ou chemin local, sans guillemets
+function safeUrl(str) {
+    const v = String(str ?? '');
+    if (/^(https?:\/\/|nui:\/\/|\.?\/?[\w-]+\/)/i.test(v) || /^[\w./-]+$/.test(v)) return escapeHtml(v);
+    return '';
+}
+
+// Couleur CSS simple (#hex, rgb/rgba, nom)
+function safeColor(str, fallback) {
+    const v = String(str ?? '');
+    return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|[a-z]+)$/i.test(v) ? v : fallback;
+}
+
+// Classe d'icône Font Awesome
+function safeIcon(str, fallback) {
+    const v = String(str ?? '');
+    return /^[\w\s-]+$/.test(v) ? v : fallback;
+}
+
 let notifCounter = 0;
 function createNotification(d) {
     const container = document.getElementById('notify-container');
@@ -77,10 +136,10 @@ function createNotification(d) {
         // --- STYLE : BIG IMAGE ---
         html = `
         <div class="notif-card big-image" id="notif-${id}">
-            <img src="${d.image}" class="img-bg">
+            <img src="${safeUrl(d.image)}" class="img-bg">
             <div class="img-content">
-                <div class="img-title">${d.title || ''}</div>
-                <div class="img-message">${d.message || ''}</div>
+                <div class="img-title">${safeHtml(d.title)}</div>
+                <div class="img-message">${safeHtml(d.message)}</div>
             </div>
             <div class="progress" id="p-${id}"></div>
         </div>`;
@@ -89,11 +148,11 @@ function createNotification(d) {
         html = `
         <div class="notif-card logo-style" id="notif-${id}">
             <div class="logo-container">
-                <img src="${d.logo}">
+                <img src="${safeUrl(d.logo)}">
             </div>
             <div class="logo-text">
-                <div class="logo-title">${d.title || ''}</div>
-                <div class="logo-message">${d.message || ''}</div>
+                <div class="logo-title">${safeHtml(d.title)}</div>
+                <div class="logo-message">${safeHtml(d.message)}</div>
             </div>
             <div class="progress" id="p-${id}"></div>
         </div>`;
@@ -104,18 +163,18 @@ function createNotification(d) {
         <div class="notif-card advanced" id="notif-${id}">
             <div class="adv-header">
                 <div class="adv-title-box">
-                    <i class="${d.icon || 'fas fa-user'}"></i> 
-                    <span class="adv-title">${d.title}</span>
+                    <i class="${safeIcon(d.icon, 'fas fa-user')}"></i> 
+                    <span class="adv-title">${safeHtml(d.title)}</span>
                 </div>
-                ${d.badge ? `<span class="adv-badge" style="background:${d.badgeColor || '#e74c3c'}">${d.badge}</span>` : ''}
+                ${d.badge ? `<span class="adv-badge" style="background:${safeColor(d.badgeColor, '#e74c3c')}">${safeHtml(d.badge)}</span>` : ''}
             </div>
             <div class="adv-body">
                 <div class="adv-msg-line">
                     <i class="fas fa-location-dot"></i>
-                    <div>${d.message}</div>
+                    <div>${safeHtml(d.message)}</div>
                 </div>
             </div>
-            ${d.sideText ? `<div class="adv-side">${d.sideText}</div>` : ''}
+            ${d.sideText ? `<div class="adv-side">${safeHtml(d.sideText)}</div>` : ''}
             <div class="progress" id="p-${id}"></div>
         </div>`;
     // Remplacez la partie "STYLE : SIMPLE" dans votre script.js par ceci :
@@ -124,9 +183,9 @@ function createNotification(d) {
         html = `
         <div class="notif-card simple" id="notif-${id}">
             <div class="simple-circle">
-                <i class="${d.icon || 'fas fa-dollar-sign'}"></i>
+                <i class="${safeIcon(d.icon, 'fas fa-dollar-sign')}"></i>
             </div>
-            <div class="simple-message">${d.message}</div>
+            <div class="simple-message">${safeHtml(d.message)}</div>
             <div class="progress" id="p-${id}"></div>
         </div>`;
     }

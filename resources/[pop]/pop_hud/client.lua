@@ -10,10 +10,26 @@ local function hidePmaVoiceUi()
     exports['pma-voice']:setVoiceProperty('uiEnabled', false)
 end
 
+-- Une fois au démarrage, puis à chaque (re)démarrage de pma-voice
 CreateThread(function()
-    while true do
-        hidePmaVoiceUi()
-        Wait(5000)
+    Wait(2000)
+    hidePmaVoiceUi()
+end)
+
+AddEventHandler('onClientResourceStart', function(res)
+    if res == 'pma-voice' then
+        SetTimeout(1000, hidePmaVoiceUi)
+    end
+end)
+
+-- HUD affiché seulement une fois le personnage chargé (pas sous l'écran de connexion)
+local playerReady = false
+CreateThread(function()
+    if GetResourceState('es_extended') == 'started' then
+        local ok, ESX = pcall(function() return exports['es_extended']:getSharedObject() end)
+        if ok and ESX and ESX.IsPlayerLoaded and ESX.IsPlayerLoaded() then
+            playerReady = true -- relance de la ressource en cours de jeu
+        end
     end
 end)
 
@@ -55,7 +71,11 @@ local last = {}
 CreateThread(function()
     local playerId = PlayerId()
     while true do
-        local health = GetEntityHealth(PlayerPedId()) - 100
+        -- Vie en % (le max diffère entre ped homme 200 et femme 175)
+        local ped = PlayerPedId()
+        local maxHealth = GetEntityMaxHealth(ped) - 100
+        local health = maxHealth > 0 and math.floor((GetEntityHealth(ped) - 100) / maxHealth * 100 + 0.5) or 0
+        local showHud = toghud and playerReady and not LocalPlayer.state.charcreatorOpen
         local _, _, _, hours, minutes = GetLocalTime()
 
         -- Voice Mode (pma-voice)
@@ -68,15 +88,15 @@ CreateThread(function()
         local isTalking = NetworkIsPlayerTalking(playerId)
         local hasRadio  = LocalPlayer.state.hasRadio == true
 
-        if last.show ~= toghud or last.health ~= health or last.food ~= hudFood or last.water ~= hudWater
+        if last.show ~= showHud or last.health ~= health or last.food ~= hudFood or last.water ~= hudWater
             or last.hours ~= hours or last.minutes ~= minutes or last.voiceMode ~= voiceMode
             or last.isTalking ~= isTalking or last.hasRadio ~= hasRadio then
-            last.show, last.health, last.food, last.water = toghud, health, hudFood, hudWater
+            last.show, last.health, last.food, last.water = showHud, health, hudFood, hudWater
             last.hours, last.minutes, last.voiceMode = hours, minutes, voiceMode
             last.isTalking, last.hasRadio = isTalking, hasRadio
             SendNUIMessage({
                 action    = 'updateStatusHud',
-                show      = toghud,
+                show      = showHud,
                 health    = health,
                 food      = hudFood,
                 water     = hudWater,
@@ -123,7 +143,7 @@ CreateThread(function()
         -- Force radar visibility (hide when pause menu is active, HUD toggle is
         -- disabled, ou pendant le créateur de personnage -> évite le clignotement)
         local pauseActive = IsPauseMenuActive()
-        if pauseActive or not toghud or LocalPlayer.state.charcreatorOpen then
+        if pauseActive or not toghud or not playerReady or LocalPlayer.state.charcreatorOpen then
             DisplayRadar(false)
         else
             DisplayRadar(true)
@@ -156,10 +176,16 @@ end)
 -- Re-initialize on player loaded or spawned to prevent default rect map overrides
 RegisterNetEvent('esx:playerLoaded')
 AddEventHandler('esx:playerLoaded', function()
+    playerReady = true
     CreateThread(function()
         Wait(2000) -- Wait for spawn sequences to settle
         InitMinimap()
     end)
+end)
+
+RegisterNetEvent('esx:onPlayerLogout')
+AddEventHandler('esx:onPlayerLogout', function()
+    playerReady = false
 end)
 
 RegisterNetEvent('playerSpawned')
@@ -179,3 +205,8 @@ local function updateAdminOverlay(show, activeReports)
 end
 
 exports('updateAdminOverlay', updateAdminOverlay)
+
+-- Fermeture de la checklist mécanique depuis la NUI
+RegisterNUICallback('closeChecklist', function(_, cb)
+    cb('ok')
+end)

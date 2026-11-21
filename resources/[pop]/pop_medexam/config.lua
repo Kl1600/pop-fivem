@@ -4,8 +4,9 @@ Config = {}
 Config.DevMode = false
 
 -- Jobs autorisés à examiner un joueur
+-- (nom du job ESX : 'ambulance' = job médical standard d'ESX ; 'youtool' retiré, nom inconnu)
 Config.EmsJobs = {
-  ['youtool'] = true,
+  ['ambulance'] = true,
   ['ems']       = true,
 }
 

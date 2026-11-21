@@ -187,9 +187,9 @@ Citizen.CreateThread(function()
             end
         end
 
-        -- Chaque frame seulement si un élément est à portée (suivi fluide), sinon 500 ms
+        -- Élément à portée : mise à jour toutes les ~30 ms (lissée en CSS), sinon 500 ms
         if hasElements then
-            Wait(0)
+            Wait(30)
         else
             Wait(500)
         end

@@ -6,13 +6,14 @@ local Doors = {}        -- doorId -> { model, coords(vec3), distance, item, jobs
 --  HELPERS
 -- =====================================================================
 local function notify(text, kind, time)
-    if Config.ESX_Notify then
-        exports['esx_notify']:Notify(kind or 'info', time or 2000, text)
-    elseif GetResourceState('pop_notify') == 'started' then
+    -- esx_notify n'est pas installé : pop_notify d'abord, esx_notify seulement s'il tourne
+    if GetResourceState('pop_notify') == 'started' then
         local icon = (kind == 'error') and 'fas fa-triangle-exclamation' or 'fas fa-key'
         exports['pop_notify']:ShowNotify({ icon = icon, message = text, duration = time or 3000 })
     elseif ESX and ESX.ShowNotification then
         ESX.ShowNotification(text)
+    elseif Config.ESX_Notify and GetResourceState('esx_notify') == 'started' then
+        exports['esx_notify']:Notify(kind or 'info', time or 2000, text)
     else
         Config.Custom_Notify(text, time or 2000, kind or 'info')
     end
@@ -45,7 +46,8 @@ end
 -- Le joueur a-t-il accès à cette porte ? (feedback local ; le serveur revérifie)
 local function hasAccess(d)
     if d.item and d.item ~= '' and d.item ~= false then
-        return (exports.pop_inventory:getItemCount(d.item) or 0) > 0, true
+        local ok, count = pcall(function() return exports.pop_inventory:getItemCount(d.item) end)
+        return ok and (tonumber(count) or 0) > 0, true
     end
     local jobs = d.jobs
     if jobs == false or jobs == nil then return true, false end

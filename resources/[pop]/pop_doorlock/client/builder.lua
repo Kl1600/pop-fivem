@@ -8,13 +8,13 @@ local selected  = {}      -- [entityHandle] = { model, coords{x,y,z} }
 --  NOTIF LOCALE
 -- =====================================================================
 local function notifyLocal(text, kind)
-    if Config.ESX_Notify then
-        exports['esx_notify']:Notify(kind or 'info', 3000, text)
-    elseif GetResourceState('pop_notify') == 'started' then
+    if GetResourceState('pop_notify') == 'started' then
         local icon = (kind == 'error') and 'fas fa-triangle-exclamation' or 'fas fa-door-open'
         exports['pop_notify']:ShowNotify({ icon = icon, message = text, duration = 3000 })
     elseif ESX and ESX.ShowNotification then
         ESX.ShowNotification(text)
+    elseif Config.ESX_Notify and GetResourceState('esx_notify') == 'started' then
+        exports['esx_notify']:Notify(kind or 'info', 3000, text)
     else
         Config.Custom_Notify(text, 3000, kind or 'info')
     end

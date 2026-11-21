@@ -1,5 +1,6 @@
-fx_version 'bodacious'
+fx_version 'cerulean'
 games { 'gta5' }
+lua54 'yes'
 
 description "Vision v1 Map"
 author 'KL'

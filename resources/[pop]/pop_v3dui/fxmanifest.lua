@@ -1,5 +1,6 @@
 fx_version 'cerulean'
 game 'gta5'
+lua54 'yes'
 
 author 'KL'
 description '3D NUI System - Modern 3D UI with HTML/CSS rendering'

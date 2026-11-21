@@ -2,6 +2,7 @@ const MAX_HEALTH_WIDTH = 272;
 const MAX_VBAR_HEIGHT  = 82;
 
 let bigmapHidden = false;
+let hudWanted = false; // dernier état demandé par le Lua (joueur chargé, HUD actif)
 
 const healthBar  = document.getElementById('healthBar');
 const foodFill   = document.getElementById('foodFill');
@@ -18,7 +19,8 @@ window.addEventListener('message', function(event) {
 
 	switch (data.action) {
 		case 'updateStatusHud':
-			hudEl.style.display = (data.show && !bigmapHidden) ? 'block' : 'none';
+			hudWanted = data.show === true;
+			hudEl.style.display = (hudWanted && !bigmapHidden) ? 'block' : 'none';
 
 			// Health bar width + color
 			const hp = Math.max(0, Math.min(100, data.health));
@@ -71,7 +73,7 @@ window.addEventListener('message', function(event) {
 
 		case 'displayUI':
 			bigmapHidden = false;
-			hudEl.style.display = 'block';
+			hudEl.style.display = hudWanted ? 'block' : 'none';
 			break;
 
 		case 'updateAdminOverlay':
@@ -93,7 +95,7 @@ window.closeChecklist = () => {
 	if (checklist) {
 		checklist.style.display = 'none';
 	}
-	$.post('https://pop_hud/closeChecklist', JSON.stringify({}));
+	fetch(`https://${GetParentResourceName()}/closeChecklist`, { method: 'POST', body: JSON.stringify({}) }).catch(() => {});
 };
 
 // ── Admin Overlay ─────────────────────────────────────────────────────────────

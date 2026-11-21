@@ -28,7 +28,7 @@ body {
     position: absolute;
     pointer-events: none;
     transform: translate(-50%, -50%) scale(var(--rsp, 1));
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, left 30ms linear, top 30ms linear;
 }
 
 /* Style: Default Text */

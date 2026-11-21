@@ -211,8 +211,8 @@ local function playerHasAccess(src, doorId)
 
     -- 2) Item simple (legacy, via getItemCount)
     if d.item and d.item ~= '' then
-        local count = exports.pop_inventory:getItemCount(src, d.item) or 0
-        return count > 0
+        local ok, count = pcall(function() return exports.pop_inventory:getItemCount(src, d.item) end)
+        return ok and (tonumber(count) or 0) > 0
     end
 
     -- 3) Jobs
