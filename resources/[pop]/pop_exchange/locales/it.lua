@@ -1,0 +1,42 @@
+-- Italiano
+Locales['it'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annulla',
+    confirm            = 'Conferma',
+    close              = 'Chiudi',
+    interact           = 'Interagisci',
+    progress_cancelled = 'Azione annullata',
+    no_permission      = 'Non hai il permesso',
+    wrong_job          = 'Non hai il lavoro richiesto',
+    too_far            = 'Sei troppo lontano',
+    not_enough_money   = 'Soldi insufficienti',
+    missing_item       = 'Ti serve: %s',
+    inventory_full     = 'Il tuo inventario è pieno',
+    cooldown           = 'Attendi ancora %s s',
+    busy               = 'Sei già occupato',
+    error              = 'Qualcosa è andato storto',
+
+    -- Textes propres au script :
+    blip_name      = 'Cambiavalute',
+    target_talk    = 'Parla con il cambiavalute',
+    ui_title       = 'Cambiavalute',
+    ui_rate        = '%s %s = %s %s',
+    ui_balance     = 'Hai: %s',
+    ui_remaining   = "Disponibile quest'ora: %s",
+    ui_amount      = 'Importo',
+    ui_max         = 'Max',
+    ui_receive     = 'Ricevi: %s %s',
+    currency_cash  = 'Dollari',
+    currency_bank  = 'Dollari (banca)',
+    currency_black = 'Denaro sporco',
+    currency_pesos = 'Pesos',
+    currency_markedbills = 'Banconote segnate', -- offre QBCore/Qbox (README)
+    exchanged      = 'Hai dato %s e ricevuto %s',
+    invalid_amount = 'Importo non valido',
+    offer_unknown  = 'Questo cambio non è disponibile qui',
+    not_enough     = 'Non ne hai abbastanza',
+    amount_too_low = 'Importo troppo basso',
+    hourly_limit   = 'Limite orario raggiunto (restano %s)',
+    police_alert   = 'Segnalato un cambio di denaro sospetto',
+    police_blip    = 'Cambio sospetto',
+}

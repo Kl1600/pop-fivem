@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <title>POP</title>
+  <link rel="stylesheet" href="kit/pop.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Panneau d'administration (masqué par défaut). Tous les textes viennent des locales. -->
+  <div id="admin" class="pop-panel pop-fade" role="dialog">
+    <header class="adm-head">
+      <span class="adm-title" data-locale="title"></span>
+      <button type="button" class="adm-link" id="close" data-locale="close"></button>
+    </header>
+
+    <nav class="adm-tabs" role="tablist">
+      <button type="button" class="adm-tab" role="tab" data-tab="players" data-locale="tab_players"></button>
+      <button type="button" class="adm-tab" role="tab" data-tab="self" data-locale="tab_self"></button>
+      <button type="button" class="adm-tab" role="tab" data-tab="server" data-locale="tab_server"></button>
+      <button type="button" class="adm-tab" role="tab" data-tab="bans" data-locale="tab_bans"></button>
+    </nav>
+
+    <!-- Joueurs -->
+    <section class="adm-view" data-view="players">
+      <div id="player-browse" class="adm-browse">
+        <div class="adm-tools">
+          <input id="search" class="adm-input" type="text" maxlength="32" autocomplete="off" spellcheck="false">
+          <button type="button" id="refresh" class="pop-button" data-locale="refresh"></button>
+        </div>
+        <div id="player-list" class="adm-list"></div>
+        <p id="no-players" class="pop-small adm-empty pop-hidden" data-locale="no_players"></p>
+      </div>
+
+      <div id="player-card" class="adm-card pop-hidden">
+        <button type="button" id="back" class="adm-link" data-locale="back"></button>
+        <div class="adm-card-head">
+          <span id="card-name" class="adm-name" dir="auto"></span>
+          <span id="card-id" class="pop-small"></span>
+        </div>
+        <div id="card-fivem" class="pop-small adm-ellipsis" dir="auto"></div>
+        <div class="adm-meta pop-small">
+          <span id="card-ping"></span>
+          <span id="card-warns"></span>
+          <span id="card-frozen" class="adm-badge" data-locale="frozen"></span>
+        </div>
+
+        <div id="card-actions" class="adm-grid">
+          <button type="button" class="pop-button" data-act="goto" data-locale="act_goto"></button>
+          <button type="button" class="pop-button" data-act="bring" data-locale="act_bring"></button>
+          <button type="button" class="pop-button" data-act="spectate" data-locale="act_spectate"></button>
+          <button type="button" class="pop-button" data-act="freeze"></button>
+          <button type="button" class="pop-button" data-act="heal" data-locale="act_heal"></button>
+          <button type="button" class="pop-button" data-act="revive" data-locale="act_revive"></button>
+        </div>
+
+        <div id="sanction" class="adm-block">
+          <input id="reason" class="adm-input" type="text" maxlength="200" autocomplete="off">
+          <label id="duration-field" class="adm-field">
+            <span class="pop-small" data-locale="duration"></span>
+            <select id="duration" class="adm-input"></select>
+          </label>
+          <div class="adm-grid adm-grid-3">
+            <button type="button" class="pop-button adm-danger" data-act="warn" data-locale="act_warn"></button>
+            <button type="button" class="pop-button adm-danger" data-act="kick" data-locale="act_kick"></button>
+            <button type="button" class="pop-button adm-danger" data-act="ban" data-locale="act_ban"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Moi -->
+    <section class="adm-view pop-hidden" data-view="self">
+      <div class="adm-block">
+        <button type="button" class="adm-toggle" role="switch" id="toggle-noclip" data-act="noclip">
+          <span data-locale="self_noclip"></span><span class="adm-state pop-small"></span>
+        </button>
+        <button type="button" class="adm-toggle" role="switch" id="toggle-invisible" data-act="invisible">
+          <span data-locale="self_invisible"></span><span class="adm-state pop-small"></span>
+        </button>
+      </div>
+      <div id="self-care" class="adm-grid">
+        <button type="button" class="pop-button" id="self-heal" data-act="heal" data-locale="self_heal"></button>
+        <button type="button" class="pop-button" id="self-revive" data-act="revive" data-locale="self_revive"></button>
+      </div>
+      <div id="vehicle-block" class="adm-block">
+        <h2 class="adm-section" data-locale="vehicle_title"></h2>
+        <input id="vehicle-model" class="adm-input" type="text" maxlength="32" autocomplete="off" spellcheck="false">
+        <div class="adm-grid adm-grid-3">
+          <button type="button" class="pop-button" id="vehicle-spawn" data-act="vehicle_spawn" data-locale="vehicle_spawn"></button>
+          <button type="button" class="pop-button" id="vehicle-fix" data-act="vehicle_fix" data-locale="vehicle_fix"></button>
+          <button type="button" class="pop-button" id="vehicle-delete" data-act="vehicle_delete" data-locale="vehicle_delete"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Serveur -->
+    <section class="adm-view pop-hidden" data-view="server">
+      <div id="world-block" class="adm-block">
+        <h2 class="adm-section" data-locale="world_title"></h2>
+        <p id="world-off" class="pop-small adm-empty" data-locale="world_disabled"></p>
+        <div id="world-form" class="adm-block">
+          <label class="adm-field">
+            <span class="pop-small" data-locale="world_weather"></span>
+            <select id="world-weather" class="adm-input"></select>
+          </label>
+          <div class="adm-grid">
+            <label class="adm-field">
+              <span class="pop-small" data-locale="world_hour"></span>
+              <input id="world-hour" class="adm-input" type="number" min="0" max="23" step="1">
+            </label>
+            <label class="adm-field">
+              <span class="pop-small" data-locale="world_minute"></span>
+              <input id="world-minute" class="adm-input" type="number" min="0" max="59" step="1">
+            </label>
+          </div>
+          <label class="adm-check">
+            <input id="world-freeze" type="checkbox">
+            <span data-locale="world_freeze"></span>
+          </label>
+          <button type="button" class="pop-button" id="world-apply" data-act="world" data-locale="world_apply"></button>
+        </div>
+      </div>
+      <div id="announce-block" class="adm-block">
+        <h2 class="adm-section" data-locale="announce_title"></h2>
+        <textarea id="announce-text" class="adm-input" maxlength="200" rows="3"></textarea>
+        <button type="button" class="pop-button" id="announce-send" data-act="announce" data-locale="announce_send"></button>
+      </div>
+    </section>
+
+    <!-- Bans -->
+    <section class="adm-view pop-hidden" data-view="bans">
+      <div id="ban-list" class="adm-bans"></div>
+      <p id="bans-empty" class="pop-small adm-empty pop-hidden" data-locale="bans_empty"></p>
+    </section>
+  </div>
+
+  <!-- Indicateur des modes (noclip / invisible / spectate) -->
+  <div id="admin-hud" class="pop-panel pop-fade"></div>
+
+  <!-- Bannières : annonce puis avertissement en dessous -->
+  <div id="admin-banners">
+    <div id="admin-announce" class="pop-panel pop-fade pop-hidden">
+      <div class="adm-banner-head pop-accent" data-locale="announce_header"></div>
+      <div id="announce-message" class="adm-banner-text" dir="auto"></div>
+    </div>
+    <div id="admin-warn" class="pop-panel pop-fade pop-hidden">
+      <div class="adm-banner-head adm-danger-text" data-locale="warn_header"></div>
+      <div id="warn-reason" class="adm-banner-text" dir="auto"></div>
+    </div>
+  </div>
+
+  <script src="kit/pop.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

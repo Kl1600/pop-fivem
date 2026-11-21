@@ -1,0 +1,42 @@
+-- Español
+Locales['es'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancelar',
+    confirm            = 'Confirmar',
+    close              = 'Cerrar',
+    interact           = 'Interactuar',
+    progress_cancelled = 'Acción cancelada',
+    no_permission      = 'No tienes permiso',
+    wrong_job          = 'No tienes el trabajo necesario',
+    too_far            = 'Estás demasiado lejos',
+    not_enough_money   = 'No tienes suficiente dinero',
+    missing_item       = 'Necesitas: %s',
+    inventory_full     = 'Tu inventario está lleno',
+    cooldown           = 'Espera %s s',
+    busy               = 'Ya estás ocupado',
+    error              = 'Algo salió mal',
+
+    -- Textes propres au script :
+    blip_name      = 'Casa de cambio',
+    target_talk    = 'Hablar con el cambista',
+    ui_title       = 'Casa de cambio',
+    ui_rate        = '%s %s = %s %s',
+    ui_balance     = 'Tienes: %s',
+    ui_remaining   = 'Disponible esta hora: %s',
+    ui_amount      = 'Cantidad',
+    ui_max         = 'Máx.',
+    ui_receive     = 'Recibes: %s %s',
+    currency_cash  = 'Dólares',
+    currency_bank  = 'Dólares (banco)',
+    currency_black = 'Dinero sucio',
+    currency_pesos = 'Pesos',
+    currency_markedbills = 'Billetes marcados', -- offre QBCore/Qbox (README)
+    exchanged      = 'Has dado %s y recibido %s',
+    invalid_amount = 'Cantidad no válida',
+    offer_unknown  = 'Este cambio no está disponible aquí',
+    not_enough     = 'No tienes suficiente',
+    amount_too_low = 'Cantidad demasiado baja',
+    hourly_limit   = 'Límite por hora alcanzado (quedan %s)',
+    police_alert   = 'Cambio de dinero sospechoso denunciado',
+    police_blip    = 'Cambio sospechoso',
+}

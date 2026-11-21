@@ -1,0 +1,43 @@
+-- العربية
+Locales['ar'] = {
+    _rtl = true,
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'إلغاء',
+    confirm            = 'تأكيد',
+    close              = 'إغلاق',
+    interact           = 'تفاعل',
+    progress_cancelled = 'تم إلغاء الإجراء',
+    no_permission      = 'ليس لديك صلاحية',
+    wrong_job          = 'ليست لديك الوظيفة المطلوبة',
+    too_far            = 'أنت بعيد جدًا',
+    not_enough_money   = 'لا تملك مالًا كافيًا',
+    missing_item       = 'تحتاج إلى: %s',
+    inventory_full     = 'حقيبتك ممتلئة',
+    cooldown           = 'يرجى الانتظار %s ث',
+    busy               = 'أنت مشغول بالفعل',
+    error              = 'حدث خطأ ما',
+
+    -- Textes propres au script :
+    blip_name      = 'مكتب صرافة',
+    target_talk    = 'تحدث إلى الصراف',
+    ui_title       = 'مكتب صرافة',
+    ui_rate        = '%s %s = %s %s',
+    ui_balance     = 'لديك: %s',
+    ui_remaining   = 'المتاح هذه الساعة: %s',
+    ui_amount      = 'المبلغ',
+    ui_max         = 'الحد الأقصى',
+    ui_receive     = 'ستستلم: %s %s',
+    currency_cash  = 'دولار',
+    currency_bank  = 'دولار (بنك)',
+    currency_black = 'أموال قذرة',
+    currency_pesos = 'بيزو',
+    currency_markedbills = 'أوراق نقدية معلّمة', -- offre QBCore/Qbox (README)
+    exchanged      = 'أعطيت %s واستلمت %s',
+    invalid_amount = 'مبلغ غير صالح',
+    offer_unknown  = 'هذا الصرف غير متاح هنا',
+    not_enough     = 'لا تملك ما يكفي',
+    amount_too_low = 'المبلغ منخفض جدًا',
+    hourly_limit   = 'تم بلوغ الحد بالساعة (المتبقي %s)',
+    police_alert   = 'تم الإبلاغ عن صرف أموال مشبوه',
+    police_blip    = 'صرف مشبوه',
+}

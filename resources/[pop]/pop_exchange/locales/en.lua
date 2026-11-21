@@ -1,0 +1,42 @@
+-- English (default and fallback)
+Locales['en'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancel',
+    confirm            = 'Confirm',
+    close              = 'Close',
+    interact           = 'Interact',
+    progress_cancelled = 'Action cancelled',
+    no_permission      = "You don't have permission",
+    wrong_job          = "You don't have the required job",
+    too_far            = 'You are too far away',
+    not_enough_money   = 'Not enough money',
+    missing_item       = 'You need: %s',
+    inventory_full     = 'Your inventory is full',
+    cooldown           = 'Please wait %ss',
+    busy               = 'You are already busy',
+    error              = 'Something went wrong',
+
+    -- Textes propres au script :
+    blip_name      = 'Currency exchange',
+    target_talk    = 'Talk to the money changer',
+    ui_title       = 'Currency exchange',
+    ui_rate        = '%s %s = %s %s',
+    ui_balance     = 'You have: %s',
+    ui_remaining   = 'Available this hour: %s',
+    ui_amount      = 'Amount',
+    ui_max         = 'Max',
+    ui_receive     = 'You receive: %s %s',
+    currency_cash  = 'Dollars',
+    currency_bank  = 'Dollars (bank)',
+    currency_black = 'Dirty money',
+    currency_pesos = 'Pesos',
+    currency_markedbills = 'Marked bills', -- offre QBCore/Qbox (README)
+    exchanged      = 'You gave %s and received %s',
+    invalid_amount = 'Invalid amount',
+    offer_unknown  = "This exchange isn't available here",
+    not_enough     = "You don't have enough",
+    amount_too_low = 'Amount too low',
+    hourly_limit   = 'Hourly limit reached (%s left)',
+    police_alert   = 'Suspicious money exchange reported',
+    police_blip    = 'Suspicious exchange',
+}

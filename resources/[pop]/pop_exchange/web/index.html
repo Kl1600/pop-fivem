@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <title>POP Exchange</title>
+  <link rel="stylesheet" href="kit/pop.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="exchange" class="pop-panel pop-fade">
+    <div class="ex-head">
+      <span class="ex-title" data-locale="ui_title"></span>
+      <button class="pop-button ex-close" id="ex-close" data-locale="close"></button>
+    </div>
+
+    <div id="ex-offers" class="ex-offers"></div>
+
+    <div class="ex-info">
+      <span id="ex-balance" class="pop-small"></span>
+      <span id="ex-remaining" class="pop-small"></span>
+    </div>
+
+    <div class="ex-input">
+      <input id="ex-amount" type="number" min="1" step="1">
+      <button class="pop-button" id="ex-max" data-locale="ui_max"></button>
+    </div>
+
+    <div id="ex-preview" class="pop-accent ex-preview"></div>
+
+    <button class="pop-button ex-confirm" id="ex-confirm" data-locale="confirm"></button>
+    <div id="ex-status" class="pop-small ex-status"></div>
+  </div>
+
+  <script src="kit/pop.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

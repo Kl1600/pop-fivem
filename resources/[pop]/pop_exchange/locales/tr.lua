@@ -1,0 +1,42 @@
+-- Türkçe
+Locales['tr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'İptal',
+    confirm            = 'Onayla',
+    close              = 'Kapat',
+    interact           = 'Etkileşim',
+    progress_cancelled = 'İşlem iptal edildi',
+    no_permission      = 'Bunun için yetkin yok',
+    wrong_job          = 'Gerekli mesleğe sahip değilsin',
+    too_far            = 'Çok uzaktasın',
+    not_enough_money   = 'Yeterli paran yok',
+    missing_item       = 'Gerekli: %s',
+    inventory_full     = 'Envanterin dolu',
+    cooldown           = 'Lütfen %s sn bekle',
+    busy               = 'Zaten meşgulsün',
+    error              = 'Bir şeyler ters gitti',
+
+    -- Textes propres au script :
+    blip_name      = 'Döviz bürosu',
+    target_talk    = 'Sarrafla konuş',
+    ui_title       = 'Döviz bürosu',
+    ui_rate        = '%s %s = %s %s',
+    ui_balance     = 'Sende: %s',
+    ui_remaining   = 'Bu saat kullanılabilir: %s',
+    ui_amount      = 'Miktar',
+    ui_max         = 'Maks.',
+    ui_receive     = 'Alacağın: %s %s',
+    currency_cash  = 'Dolar',
+    currency_bank  = 'Dolar (banka)',
+    currency_black = 'Kara para',
+    currency_pesos = 'Peso',
+    currency_markedbills = 'İşaretli banknotlar', -- offre QBCore/Qbox (README)
+    exchanged      = '%s verdin ve %s aldın',
+    invalid_amount = 'Geçersiz miktar',
+    offer_unknown  = 'Bu değişim burada yapılamaz',
+    not_enough     = 'Yeterince yok',
+    amount_too_low = 'Miktar çok düşük',
+    hourly_limit   = 'Saatlik limite ulaşıldı (%s kaldı)',
+    police_alert   = 'Şüpheli para değişimi bildirildi',
+    police_blip    = 'Şüpheli değişim',
+}

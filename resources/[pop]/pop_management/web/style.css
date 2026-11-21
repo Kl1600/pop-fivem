@@ -1,0 +1,204 @@
+/* pop_management : styles propres au script (le kit web/kit/pop.css reste intact). */
+
+/* ---- Blocs ---- */
+#mgmt-panel,
+#mgmt-invoice,
+#mgmt-offer {
+  position: fixed;
+  right: 24px;
+  box-sizing: border-box;
+  max-width: calc(100vw - 48px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+#mgmt-panel { width: 380px; top: 10%; max-height: 80vh; }
+#mgmt-invoice { width: 300px; top: 10%; max-height: 80vh; overflow-y: auto; }
+#mgmt-offer { width: 280px; bottom: 14%; gap: 6px; }
+#mgmt-offer.is-visible { pointer-events: none; }
+
+[dir="rtl"] #mgmt-panel,
+[dir="rtl"] #mgmt-invoice,
+[dir="rtl"] #mgmt-offer { right: auto; left: 24px; }
+
+/* ---- Utilitaires ---- */
+.mgmt-strong { font-weight: 600; }
+.mgmt-grow { flex: 1 1 0; min-width: 0; }
+.mgmt-end { text-align: end; flex-shrink: 0; }
+.mgmt-num { white-space: nowrap; unicode-bidi: isolate; }
+.mgmt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.mgmt-field { display: flex; flex-direction: column; gap: 4px; }
+
+/* ---- En-tête ---- */
+.mgmt-head { display: flex; align-items: flex-start; gap: 12px; }
+
+.mgmt-link {
+  font: inherit;
+  font-size: var(--pop-size-sm);
+  color: var(--pop-muted);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.mgmt-link:hover { color: var(--pop-text); }
+
+/* ---- Onglets ---- */
+.mgmt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mgmt-tab {
+  font: inherit;
+  color: var(--pop-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 4px 0 6px;
+  cursor: pointer;
+}
+.mgmt-tab:hover { color: var(--pop-text); }
+.mgmt-tab.is-active { color: var(--pop-text); border-bottom-color: var(--pop-accent); }
+
+/* ---- Vues et listes défilantes ---- */
+.mgmt-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.mgmt-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.mgmt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.mgmt-list > li { padding: 8px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.mgmt-list > li:first-child { border-top: 0; }
+.mgmt-list::-webkit-scrollbar { width: 4px; }
+.mgmt-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 2px; }
+
+/* ---- Employés ---- */
+.mgmt-emp { display: flex; align-items: center; gap: 8px; }
+.mgmt-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+.mgmt-dot.is-online { background: var(--pop-accent); }
+.mgmt-meta { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.mgmt-actions,
+.mgmt-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  padding-inline-start: 16px;
+}
+.mgmt-inline .mgmt-input { flex: 1 1 0; min-width: 0; }
+
+/* Liste des personnes proches */
+.mgmt-pick {
+  font: inherit;
+  color: var(--pop-text);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: start;
+  cursor: pointer;
+}
+.mgmt-pick:hover { color: var(--pop-accent); }
+
+/* ---- Historique ---- */
+.mgmt-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.mgmt-in { color: var(--pop-accent); }
+.mgmt-out { color: var(--pop-danger); }
+
+/* ---- Boutons ---- */
+.mgmt-btn {
+  font: inherit;
+  font-size: var(--pop-size-sm);
+  color: var(--pop-text);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--pop-radius);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.mgmt-btn:hover { border-color: var(--pop-accent); }
+.mgmt-btn.is-danger:hover { border-color: var(--pop-danger); color: var(--pop-danger); }
+
+.mgmt-btn.is-armed,
+.pop-button.is-armed,
+.mgmt-btn.is-armed:hover,
+.pop-button.is-armed:hover {
+  border-color: var(--pop-danger);
+  background: var(--pop-danger);
+  color: var(--pop-text);
+}
+
+.mgmt-btn:disabled,
+.pop-button:disabled,
+.mgmt-pick:disabled,
+.mgmt-input:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ---- Champs ---- */
+.mgmt-input {
+  font: inherit;
+  color: var(--pop-text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--pop-radius);
+  padding: 6px 8px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  user-select: text;
+}
+.mgmt-input:focus { border-color: var(--pop-accent); }
+.mgmt-input.is-invalid { border-color: var(--pop-danger); }
+.mgmt-input::-webkit-outer-spin-button,
+.mgmt-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+select.mgmt-input option { background: #0e0e11; color: var(--pop-text); }
+
+/* ---- Offre ---- */
+.mgmt-keys { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 2px; }
+.mgmt-keys > span { display: inline-flex; align-items: center; gap: 6px; }
+
+.mgmt-timer {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.mgmt-timer-fill {
+  height: 100%;
+  background: var(--pop-accent);
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+[dir="rtl"] .mgmt-timer-fill { transform-origin: right center; }

@@ -1,0 +1,42 @@
+-- Deutsch
+Locales['de'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Abbrechen',
+    confirm            = 'Bestätigen',
+    close              = 'Schließen',
+    interact           = 'Interagieren',
+    progress_cancelled = 'Aktion abgebrochen',
+    no_permission      = 'Dazu hast du keine Berechtigung',
+    wrong_job          = 'Du hast nicht den erforderlichen Job',
+    too_far            = 'Du bist zu weit entfernt',
+    not_enough_money   = 'Nicht genug Geld',
+    missing_item       = 'Du brauchst: %s',
+    inventory_full     = 'Dein Inventar ist voll',
+    cooldown           = 'Bitte warte noch %s s',
+    busy               = 'Du bist bereits beschäftigt',
+    error              = 'Etwas ist schiefgelaufen',
+
+    -- Textes propres au script :
+    blip_name      = 'Wechselstube',
+    target_talk    = 'Mit dem Geldwechsler sprechen',
+    ui_title       = 'Wechselstube',
+    ui_rate        = '%s %s = %s %s',
+    ui_balance     = 'Du hast: %s',
+    ui_remaining   = 'Diese Stunde verfügbar: %s',
+    ui_amount      = 'Betrag',
+    ui_max         = 'Max',
+    ui_receive     = 'Du erhältst: %s %s',
+    currency_cash  = 'Dollar',
+    currency_bank  = 'Dollar (Bank)',
+    currency_black = 'Schwarzgeld',
+    currency_pesos = 'Pesos',
+    currency_markedbills = 'Markierte Scheine', -- offre QBCore/Qbox (README)
+    exchanged      = 'Du hast %s gegeben und %s erhalten',
+    invalid_amount = 'Ungültiger Betrag',
+    offer_unknown  = 'Dieser Tausch ist hier nicht verfügbar',
+    not_enough     = 'Du hast nicht genug',
+    amount_too_low = 'Betrag zu niedrig',
+    hourly_limit   = 'Stundenlimit erreicht (%s übrig)',
+    police_alert   = 'Verdächtiger Geldwechsel gemeldet',
+    police_blip    = 'Verdächtiger Geldwechsel',
+}

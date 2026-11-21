@@ -1,0 +1,42 @@
+-- Nederlands
+Locales['nl'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuleren',
+    confirm            = 'Bevestigen',
+    close              = 'Sluiten',
+    interact           = 'Interactie',
+    progress_cancelled = 'Actie geannuleerd',
+    no_permission      = 'Je hebt geen toestemming',
+    wrong_job          = 'Je hebt niet de vereiste baan',
+    too_far            = 'Je bent te ver weg',
+    not_enough_money   = 'Niet genoeg geld',
+    missing_item       = 'Je hebt nodig: %s',
+    inventory_full     = 'Je inventaris is vol',
+    cooldown           = 'Wacht nog %s s',
+    busy               = 'Je bent al bezig',
+    error              = 'Er is iets misgegaan',
+
+    -- Textes propres au script :
+    blip_name      = 'Wisselkantoor',
+    target_talk    = 'Praat met de geldwisselaar',
+    ui_title       = 'Wisselkantoor',
+    ui_rate        = '%s %s = %s %s',
+    ui_balance     = 'Je hebt: %s',
+    ui_remaining   = 'Beschikbaar dit uur: %s',
+    ui_amount      = 'Bedrag',
+    ui_max         = 'Max',
+    ui_receive     = 'Je ontvangt: %s %s',
+    currency_cash  = 'Dollars',
+    currency_bank  = 'Dollars (bank)',
+    currency_black = 'Zwart geld',
+    currency_pesos = 'Pesos',
+    currency_markedbills = 'Gemerkte biljetten', -- offre QBCore/Qbox (README)
+    exchanged      = 'Je gaf %s en ontving %s',
+    invalid_amount = 'Ongeldig bedrag',
+    offer_unknown  = 'Deze wissel is hier niet beschikbaar',
+    not_enough     = 'Je hebt niet genoeg',
+    amount_too_low = 'Bedrag te laag',
+    hourly_limit   = 'Uurlimiet bereikt (nog %s)',
+    police_alert   = 'Verdachte geldwissel gemeld',
+    police_blip    = 'Verdachte wissel',
+}
