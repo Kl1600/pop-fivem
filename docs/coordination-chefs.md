@@ -31,7 +31,7 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 
 ## 3. Règles de travail entre Chefs (anti-conflit)
 
-1. **Le Chef 1 coordonne** : il répartit les tâches du client entre les Chefs (voir `docs/en-cours.md`) et garde les fichiers communs. Le client peut aussi donner une tâche directement à un Chef : celui-ci l'inscrit dans `docs/en-cours.md` avant de commencer.
+1. **Les tâches viennent du client, au moment voulu**, transmises par le Chef 1 (sous forme de prompt) ou données directement. Sans tâche, un Chef attend. Le Chef 1 garde les fichiers communs.
 2. **Avant de toucher un script**, lire `docs/en-cours.md`. Si un autre Chef y travaille déjà, ne pas y toucher : prévenir le client.
    Sinon, ajouter une ligne `pop_xxx : Chef N (tâche)` dans ce fichier, la pousser tout de suite, et la retirer à la fin.
 3. Travailler sur sa branche (`chefN/...`), puis publier ainsi :
