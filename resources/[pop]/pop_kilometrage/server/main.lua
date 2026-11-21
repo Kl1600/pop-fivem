@@ -2,8 +2,8 @@
 -- Sauvegarde le kilometrage de chaque vehicule (par plaque) en base de donnees.
 -- Les mises a jour sont mises en tampon et ecrites en une seule requete groupee.
 
-local FLUSH_INTERVAL = 60000 -- ms entre deux ecritures groupees
-local MAX_STEP_KM    = 10.0  -- saut maximal accepte entre deux mises a jour
+local FLUSH_INTERVAL = tonumber(Config.FlushInterval) or 60000 -- ms entre deux ecritures groupees
+local MAX_STEP_KM    = tonumber(Config.MaxStepKm) or 10.0      -- saut maximal accepte entre deux mises a jour
 
 local pending = {}  -- [plate] = mileage a ecrire
 local known   = {}  -- [plate] = dernier kilometrage connu (anti-triche)
@@ -27,11 +27,11 @@ local function flush()
     local query = 'INSERT INTO vehicle_mileage (plate, mileage) VALUES '
         .. string.rep('(?, ?)', rows, ', ')
         .. ' ON DUPLICATE KEY UPDATE mileage = VALUES(mileage)'
-    exports.oxmysql:execute(query, params)
+    MySQL.update(query, params)
 end
 
 CreateThread(function()
-    exports.oxmysql:execute([[
+    MySQL.query([[
         CREATE TABLE IF NOT EXISTS vehicle_mileage (
             plate   VARCHAR(12) NOT NULL PRIMARY KEY,
             mileage FLOAT NOT NULL DEFAULT 0
@@ -62,7 +62,7 @@ RegisterNetEvent('pop_kilometrage:server:requestMileage', function(plate)
         TriggerClientEvent('pop_kilometrage:client:receiveMileage', src, plate, pending[plate])
         return
     end
-    exports.oxmysql:scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(mileage)
+    MySQL.scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(mileage)
         if known[plate] == nil then known[plate] = tonumber(mileage) or 0 end
         TriggerClientEvent('pop_kilometrage:client:receiveMileage', src, plate, known[plate])
     end)
@@ -94,7 +94,7 @@ RegisterNetEvent('pop_kilometrage:server:updateMileage', function(plate, mileage
     -- Premiere valeur : on lit d'abord la base (plus de valeur acceptee les yeux fermes)
     if loading[plate] then return end
     loading[plate] = true
-    exports.oxmysql:scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(dbMileage)
+    MySQL.scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(dbMileage)
         loading[plate] = nil
         if known[plate] == nil then known[plate] = tonumber(dbMileage) or 0 end
         applyMileage(plate, mileage)
@@ -110,7 +110,7 @@ end)
 exports('GetMileage', function(plate, cb)
     plate = normalPlate(plate)
     if pending[plate] then return cb(pending[plate]) end
-    exports.oxmysql:scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(mileage)
+    MySQL.scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(mileage)
         cb(mileage or 0)
     end)
 end)
