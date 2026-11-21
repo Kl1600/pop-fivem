@@ -51,7 +51,8 @@ jobs:
             set sftp:auto-confirm yes;
             set net:max-retries 2;
             open -u \"$SFTP_USER\",\"$SFTP_PASSWORD\" -p \"${SFTP_PORT:-22}\" sftp://$SFTP_HOST;
-            mkdir -p -f \"$SFTP_REMOTE_PATH\";
-            mirror -R --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md \"resources/[pop]/\" \"$SFTP_REMOTE_PATH\";
+            mkdir -p -f '$SFTP_REMOTE_PATH';
+            lcd 'resources/[pop]';
+            mirror -R --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md . '$SFTP_REMOTE_PATH';
             bye
           "
