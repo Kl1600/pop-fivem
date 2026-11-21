@@ -20,6 +20,80 @@ local function sendNui(action, payload)
   SendNUIMessage(payload or { action = action })
 end
 
+-- =====================================================================
+--  PED DE PRÉVISUALISATION (clone du joueur affiché dans la zone Vêtements)
+--  La NUI envoie la zone écran à occuper (pedRect). Le clone devient
+--  transparent quand on glisse un vêtement dessus (pedHover).
+-- =====================================================================
+local previewPed = nil
+local previewRect = { cx = 0.764, top = 0.22, height = 0.47 }
+local previewActive = false
+
+local function stopInvPedPreview()
+  previewActive = false
+  if previewPed and DoesEntityExist(previewPed) then DeleteEntity(previewPed) end
+  previewPed = nil
+end
+
+local function startInvPedPreview()
+  if previewActive then return end
+  previewActive = true
+  CreateThread(function()
+    local playerPed = PlayerPedId()
+    local model = GetEntityModel(playerPed)
+    RequestModel(model)
+    local t = GetGameTimer()
+    while not HasModelLoaded(model) and GetGameTimer() - t < 3000 do Wait(0) end
+    local c = GetEntityCoords(playerPed) - vector3(0.0, 0.0, 15.0)
+    previewPed = CreatePed(26, model, c.x, c.y, c.z, 0.0, false, false)
+    if not previewPed or previewPed == 0 then previewActive = false return end
+    ClonePedToTarget(playerPed, previewPed)
+    SetEntityInvincible(previewPed, true)
+    SetEntityCollision(previewPed, false, false)
+    SetEntityCanBeDamaged(previewPed, false)
+    SetBlockingOfNonTemporaryEvents(previewPed, true)
+    SetPedCanBeTargetted(previewPed, false)
+    FreezeEntityPosition(previewPed, true)
+    SetEntityAlpha(previewPed, 255, false)
+    local lastClone = GetGameTimer()
+
+    while previewActive and isOpen and DoesEntityExist(previewPed) do
+      -- Taille à l'écran : distance calculée pour que le ped (~1,85 m) occupe la zone.
+      local fov = GetGameplayCamFov()
+      local depth = 1.85 / (previewRect.height * 2.0 * math.tan(math.rad(fov) / 2.0))
+      local world, normal = GetWorldCoordFromScreenCoord(previewRect.cx, previewRect.top + previewRect.height * 0.47)
+      local pos = world + normal * depth
+      local camRot = GetGameplayCamRot(2)
+      SetEntityCoordsNoOffset(previewPed, pos.x, pos.y, pos.z, false, false, false)
+      SetEntityRotation(previewPed, 0.0, 0.0, camRot.z + 180.0, 2, false)
+      -- Suit les changements de vêtements du joueur
+      if GetGameTimer() - lastClone > 750 then
+        lastClone = GetGameTimer()
+        ClonePedToTarget(PlayerPedId(), previewPed)
+      end
+      Wait(0)
+    end
+    stopInvPedPreview()
+  end)
+end
+
+RegisterNUICallback('pedRect', function(data, cb)
+  if type(data) == 'table' and tonumber(data.cx) and tonumber(data.top) and tonumber(data.height) then
+    previewRect.cx = tonumber(data.cx)
+    previewRect.top = tonumber(data.top)
+    previewRect.height = math.max(0.1, tonumber(data.height))
+  end
+  cb('ok')
+end)
+
+RegisterNUICallback('pedHover', function(data, cb)
+  if previewPed and DoesEntityExist(previewPed) then
+    -- Transparent mais garde la forme du ped
+    SetEntityAlpha(previewPed, (data and data.hover) and 110 or 255, false)
+  end
+  cb('ok')
+end)
+
 local function openUi()
   if isOpen then
     return
@@ -72,7 +146,8 @@ local function openUi()
     weaponAttachments = Config.WeaponAttachments or {},
     attachmentItems = attachmentItems,
   })
-  TriggerScreenblurFadeIn(500)
+  -- Pas de flou d'écran : il flouterait aussi le ped de prévisualisation.
+  startInvPedPreview()
   local coords = GetEntityCoords(PlayerPedId())
   TriggerServerEvent('pop_inventory:server:requestState', { x = coords.x, y = coords.y, z = coords.z })
   TriggerServerEvent('pop_inventory:server:adminCheck')
@@ -83,6 +158,7 @@ local function closeUi()
     return
   end
   isOpen = false
+  stopInvPedPreview()
   SendNUIMessage({ action = 'close' })
   
   CreateThread(function()
