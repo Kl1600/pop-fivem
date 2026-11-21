@@ -23,7 +23,8 @@ Config.Locations = {
     },
     -- Location 2 : Vanguard Bikerental (Mexico)
     {
-        spawnCoords = vector4(1882.6793, 3696.5371, 32.6095, 218.7509),
+        -- 4 m devant les véhicules exposés (même cap), le point d'origine était sur le vélo exposé
+        spawnCoords = vector4(1885.1800, 3693.4200, 32.6095, 218.7509),
         displayVehicles = {
             {
                 model = 'inductor',

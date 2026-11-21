@@ -30,7 +30,42 @@ AddEventHandler('grandtheftauto:client:ShowNotify', function(data)
     ShowNotification(data.message, data.duration)
 end)
 
-local activePrompts = {}
+-- Chargements avec délai max (plus de boucle infinie si un modèle n'existe pas)
+function LoadModel(model, timeoutMs)
+    local hash = type(model) == 'number' and model or GetHashKey(model)
+    if not IsModelInCdimage(hash) then return nil end
+    RequestModel(hash)
+    local limit = GetGameTimer() + (timeoutMs or 5000)
+    while not HasModelLoaded(hash) do
+        if GetGameTimer() > limit then return nil end
+        Wait(10)
+    end
+    return hash
+end
+
+-- Renvoie le hash du premier modèle disponible parmi la liste
+function LoadFirstModel(list)
+    for _, m in ipairs(list) do
+        if m then
+            local hash = LoadModel(m)
+            if hash then return hash end
+        end
+    end
+    return nil
+end
+
+function LoadAnimDict(dict, timeoutMs)
+    if not DoesAnimDictExist(dict) then return false end
+    RequestAnimDict(dict)
+    local limit = GetGameTimer() + (timeoutMs or 5000)
+    while not HasAnimDictLoaded(dict) do
+        if GetGameTimer() > limit then return false end
+        Wait(10)
+    end
+    return true
+end
+
+activePrompts = {}
 
 function ShowPrompt(id, coords, text, icon)
     local uiType = Config.UI or 'esx'
@@ -70,423 +105,183 @@ function HidePrompt(id)
 end
 
 -- ==========================================
--- CONFIGURATION ET CRÉATION DES 23 LASERS
+-- LASERS DE SÉCURITÉ (kq_lasers, facultatif)
 -- ==========================================
+-- Créés au lancement du casse (pas au démarrage de la ressource) et éteints par défaut.
+-- Si kq_lasers est absent ou ne démarre pas (licence), la mission continue sans lasers.
 
--- LASER 1
--- Lasers (kq_lasers) : facultatifs. Si la ressource est absente ou refuse de démarrer
--- (licence), la mission continue sans lasers au lieu de planter.
-local function SafeCreateLaser(id, data)
-    local dummy = { SetActive = function() end }
-    if GetResourceState('kq_lasers') ~= 'started' then return dummy end
-    local ok, laser = pcall(function() return SafeCreateLaser(id, data) end)
-    if ok and laser then return laser end
-    return dummy
+local LaserPoints = {
+    { vector3(-57.153, 64.519, 70.600), vector3(-59.235, 66.098, 74.006) },
+    { vector3(-62.561, 65.485, 70.616), vector3(-55.872, 62.558, 73.966) },
+    { vector3(-60.953, 70.252, 70.616), vector3(-70.540, 70.550, 74.032) },
+    { vector3(-73.168, 70.077, 70.615), vector3(-71.556, 74.149, 74.033) },
+    { vector3(-66.260, 72.684, 70.615), vector3(-71.196, 66.654, 74.032) },
+    { vector3(-72.306, 74.974, 70.615), vector3(-74.276, 70.850, 74.032) },
+    { vector3(-63.622, 71.386, 70.615), vector3(-76.291, 69.335, 73.020) },
+    { vector3(-56.634, 68.014, 70.616), vector3(-63.154, 66.729, 74.006) },
+    { vector3(-62.969, 65.034, 74.006), vector3(-59.910, 68.502, 70.616) },
+    { vector3(-68.120, 77.455, 72.918), vector3(-71.873, 71.447, 70.629) },
+    { vector3(-67.584, 71.863, 74.032), vector3(-69.374, 65.338, 71.534) },
+    { vector3(-79.970, 73.918, 71.704), vector3(-76.041, 71.395, 70.615) },
+    { vector3(-69.873, 74.781, 74.033), vector3(-76.042, 76.807, 70.615) },
+    { vector3(-74.655, 70.445, 70.615), vector3(-76.440, 72.670, 74.020) },
+    { vector3(-70.106, 73.888, 73.510), vector3(-57.158, 68.629, 70.616) },
+    { vector3(-56.238, 68.734, 74.033), vector3(-63.947, 72.486, 70.615) },
+    { vector3(-67.246, 64.109, 72.967), vector3(-61.745, 67.988, 70.616) },
+    { vector3(-58.657, 72.421, 74.032), vector3(-59.259, 68.589, 70.616) },
+    { vector3(-62.939, 75.054, 72.598), vector3(-60.672, 72.811, 70.615) },
+    { vector3(-56.502, 68.483, 70.616), vector3(-53.087, 70.831, 73.388) },
+    { vector3(-68.050, 67.081, 70.615), vector3(-65.585, 65.563, 74.006) },
+    { vector3(-66.985, 65.808, 70.615), vector3(-69.140, 67.203, 74.006) },
+    { vector3(-78.223, 78.288, 70.615), vector3(-79.313, 71.184, 74.033) },
+}
+
+local lasers = {}
+
+local function CreateLasers()
+    if #lasers > 0 then return end
+    if GetResourceState('kq_lasers') ~= 'started' then return end
+    for i, pts in ipairs(LaserPoints) do
+        local ok, laser = pcall(function()
+            return exports['kq_lasers']:CreateLaser('thornton_laser' .. i, {
+                origin = pts[1],
+                endPoint = pts[2],
+                maxLength = 15.0,
+                damage = 5,
+                ragdoll = false,
+                cooldown = 10000,
+                active = false,
+                triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = {} } }
+            })
+        end)
+        if ok and laser then lasers[#lasers + 1] = laser end
+    end
 end
 
-local laserData1 = {
-    origin = vector3(-57.153, 64.519, 70.600),
-    endPoint = vector3(-59.235, 66.098, 74.006),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser1 = SafeCreateLaser('thornton_laser1', laserData1)
+local function SetLasers(active)
+    if active then CreateLasers() end
+    for _, laser in ipairs(lasers) do
+        pcall(function() laser.SetActive(active) end)
+    end
+end
 
--- LASER 2
-local laserData2 = {
-    origin = vector3(-62.561, 65.485, 70.616),
-    endPoint = vector3(-55.872, 62.558, 73.966),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser2 = SafeCreateLaser('thornton_laser2', laserData2)
+local function DeleteLasers()
+    for _, laser in ipairs(lasers) do
+        pcall(function() laser.Delete() end)
+    end
+    lasers = {}
+end
 
--- LASER 3
-local laserData3 = {
-    origin = vector3(-60.953, 70.252, 70.616),
-    endPoint = vector3(-70.540, 70.550, 74.032),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser3 = SafeCreateLaser('thornton_laser3', laserData3)
-
--- LASER 4
-local laserData4 = {
-    origin = vector3(-73.168, 70.077, 70.615),
-    endPoint = vector3(-71.556, 74.149, 74.033),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser4 = SafeCreateLaser('thornton_laser4', laserData4)
-
--- LASER 5
-local laserData5 = {
-    origin = vector3(-66.260, 72.684, 70.615),
-    endPoint = vector3(-71.196, 66.654, 74.032),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser5 = SafeCreateLaser('thornton_laser5', laserData5)
-
--- LASER 6
-local laserData6 = {
-    origin = vector3(-72.306, 74.974, 70.615),
-    endPoint = vector3(-74.276, 70.850, 74.032),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser6 = SafeCreateLaser('thornton_laser6', laserData6)
-
--- LASER 7
-local laserData7 = {
-    origin = vector3(-63.622, 71.386, 70.615),
-    endPoint = vector3(-76.291, 69.335, 73.020),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser7 = SafeCreateLaser('thornton_laser7', laserData7)
-
--- LASER 8
-local laserData8 = {
-    origin = vector3(-56.634, 68.014, 70.616),
-    endPoint = vector3(-63.154, 66.729, 74.006),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser8 = SafeCreateLaser('thornton_laser8', laserData8)
-
--- LASER 9
-local laserData9 = {
-    origin = vector3(-62.969, 65.034, 74.006),
-    endPoint = vector3(-59.910, 68.502, 70.616),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser9 = SafeCreateLaser('thornton_laser9', laserData9)
-
--- LASER 10
-local laserData10 = {
-    origin = vector3(-68.120, 77.455, 72.918),
-    endPoint = vector3(-71.873, 71.447, 70.629),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser10 = SafeCreateLaser('thornton_laser10', laserData10)
-
--- LASER 11
-local laserData11 = {
-    origin = vector3(-67.584, 71.863, 74.032),
-    endPoint = vector3(-69.374, 65.338, 71.534),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser11 = SafeCreateLaser('thornton_laser11', laserData11)
-
--- LASER 12
-local laserData12 = {
-    origin = vector3(-79.970, 73.918, 71.704),
-    endPoint = vector3(-76.041, 71.395, 70.615),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser12 = SafeCreateLaser('thornton_laser12', laserData12)
-
--- LASER 13
-local laserData13 = {
-    origin = vector3(-69.873, 74.781, 74.033),
-    endPoint = vector3(-76.042, 76.807, 70.615),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser13 = SafeCreateLaser('thornton_laser13', laserData13)
-
--- LASER 14
-local laserData14 = {
-    origin = vector3(-74.655, 70.445, 70.615),
-    endPoint = vector3(-76.440, 72.670, 74.020),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser14 = SafeCreateLaser('thornton_laser14', laserData14)
-
--- LASER 15
-local laserData15 = {
-    origin = vector3(-70.106, 73.888, 73.510),
-    endPoint = vector3(-57.158, 68.629, 70.616),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser15 = SafeCreateLaser('thornton_laser15', laserData15)
-
--- LASER 16
-local laserData16 = {
-    origin = vector3(-56.238, 68.734, 74.033),
-    endPoint = vector3(-63.947, 72.486, 70.615),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser16 = SafeCreateLaser('thornton_laser16', laserData16)
-
--- LASER 17
-local laserData17 = {
-    origin = vector3(-67.246, 64.109, 72.967),
-    endPoint = vector3(-61.745, 67.988, 70.616),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser17 = SafeCreateLaser('thornton_laser17', laserData17)
-
--- LASER 18
-local laserData18 = {
-    origin = vector3(-58.657, 72.421, 74.032),
-    endPoint = vector3(-59.259, 68.589, 70.616),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser18 = SafeCreateLaser('thornton_laser18', laserData18)
-
--- LASER 19
-local laserData19 = {
-    origin = vector3(-62.939, 75.054, 72.598),
-    endPoint = vector3(-60.672, 72.811, 70.615),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser19 = SafeCreateLaser('thornton_laser19', laserData19)
-
--- LASER 20
-local laserData20 = {
-    origin = vector3(-56.502, 68.483, 70.616),
-    endPoint = vector3(-53.087, 70.831, 73.388),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser20 = SafeCreateLaser('thornton_laser20', laserData20)
-
--- LASER 21
-local laserData21 = {
-    origin = vector3(-68.050, 67.081, 70.615),
-    endPoint = vector3(-65.585, 65.563, 74.006),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser21 = SafeCreateLaser('thornton_laser21', laserData21)
-
--- LASER 22
-local laserData22 = {
-    origin = vector3(-66.985, 65.808, 70.615),
-    endPoint = vector3(-69.140, 67.203, 74.006),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser22 = SafeCreateLaser('thornton_laser22', laserData22)
-
--- LASER 23
-local laserData23 = {
-    origin = vector3(-78.223, 78.288, 70.615),
-    endPoint = vector3(-79.313, 71.184, 74.033),
-    maxLength = 15.0,
-    damage = 5,
-    ragdoll = false,
-    alarms = { 'lsia' },
-    triggers = { { event = 'grandtheftauto:alarme', type = 'client', parameters = { title = 'Laser tripped!', message = 'a security laser at the LSIA has been tripped.', jobs = { 'police' } } } }
-}
-local laser23 = SafeCreateLaser('thornton_laser23', laserData23)
-
+AddEventHandler('mission:local:lasers', function(active) SetLasers(active == true) end)
 
 -- ==========================================
--- COMMANDES DE CONTRÔLE GLOBAL
+-- COUPURE DE COURANT
 -- ==========================================
+local blackoutOn = false
+function Blackout(state)
+    blackoutOn = state == true
+    SetArtificialLightsState(blackoutOn)
+    SetArtificialLightsStateAffectsVehicles(false)
+end
+AddEventHandler('mission:local:blackout', function(state) Blackout(state) end)
 
-RegisterCommand('laseron', function()
-    laser1.SetActive(true)
-    laser2.SetActive(true)
-    laser3.SetActive(true)
-    laser4.SetActive(true)
-    laser5.SetActive(true)
-    laser6.SetActive(true)
-    laser7.SetActive(true)
-    laser8.SetActive(true)
-    laser9.SetActive(true)
-    laser10.SetActive(true)
-    laser11.SetActive(true)
-    laser12.SetActive(true)
-    laser13.SetActive(true)
-    laser14.SetActive(true)
-    laser15.SetActive(true)
-    laser16.SetActive(true)
-    laser17.SetActive(true)
-    laser18.SetActive(true)
-    laser19.SetActive(true)
-    laser20.SetActive(true)
-    laser21.SetActive(true)
-    laser22.SetActive(true)
-    laser23.SetActive(true)
-end, false)
+-- ==========================================
+-- MINI-JEU (ultra-voltlab)
+-- ==========================================
+-- Lance le mini-jeu et attend le résultat. Renvoie true si réussi.
+-- (Le rappel n'appelle pas Wait : on attend ici, dans notre propre thread.)
+function RunVoltlab(seconds)
+    if GetResourceState('ultra-voltlab') ~= 'started' then
+        ShowNotification("Mini-jeu indisponible (<span style='color:#E74C3C; font-weight:bold;'>ultra-voltlab</span> non démarré).", 5000)
+        return false
+    end
+    local p = promise.new()
+    TriggerEvent('ultra-voltlab', seconds or 40, function(outcome)
+        p:resolve(outcome)
+    end)
+    local outcome = Citizen.Await(p)
+    return outcome == 1
+end
 
-RegisterCommand('laseroff', function()
-    laser1.SetActive(false)
-    laser2.SetActive(false)
-    laser3.SetActive(false)
-    laser4.SetActive(false)
-    laser5.SetActive(false)
-    laser6.SetActive(false)
-    laser7.SetActive(false)
-    laser8.SetActive(false)
-    laser9.SetActive(false)
-    laser10.SetActive(false)
-    laser11.SetActive(false)
-    laser12.SetActive(false)
-    laser13.SetActive(false)
-    laser14.SetActive(false)
-    laser15.SetActive(false)
-    laser16.SetActive(false)
-    laser17.SetActive(false)
-    laser18.SetActive(false)
-    laser19.SetActive(false)
-    laser20.SetActive(false)
-    laser21.SetActive(false)
-    laser22.SetActive(false)
-    laser23.SetActive(false)
-end, false)
-
-
-
-local API_ProgressBar = exports["clm_ProgressBar"]:GetAPI()
+-- ==========================================
+-- MINUTEUR (après la coupure de courant)
+-- ==========================================
+local API_ProgressBar = nil
 local missionTimerBar = nil
+local timerToken = 0
+
+local function RemoveTimerBar()
+    if missionTimerBar and API_ProgressBar then
+        pcall(function() API_ProgressBar.remove(missionTimerBar._id) end)
+    end
+    missionTimerBar = nil
+end
 
 function StartMissionTimer()
-    -- Temps total en secondes (4 minutes = 240s)
-    local timeLeft = 30
+    if missionTimerBar then return end
+    local timeLeft = Config.Timer or 240
+    timerToken = timerToken + 1
+    local myToken = timerToken
 
-    -- Initialisation de la barre de texte
-    missionTimerBar = API_ProgressBar.add("TextTimerBar", "TEMPS RESTANT", "04:00")
-    
-    -- Personnalisation des couleurs (Blanc et Rouge)
-    missionTimerBar.Func.setTitleColor({255, 255, 255, 255})
-    missionTimerBar.Func.lib.TextTimerBar.setTextColor({255, 50, 50, 255})
+    if GetResourceState('clm_ProgressBar') == 'started' then
+        API_ProgressBar = API_ProgressBar or exports["clm_ProgressBar"]:GetAPI()
+        missionTimerBar = API_ProgressBar.add("TextTimerBar", "TEMPS RESTANT", string.format("%02d:%02d", math.floor(timeLeft / 60), timeLeft % 60))
+        missionTimerBar.Func.setTitleColor({255, 255, 255, 255})
+        missionTimerBar.Func.lib.TextTimerBar.setTextColor({255, 50, 50, 255})
+    end
 
     Citizen.CreateThread(function()
         while timeLeft > 0 do
-            Citizen.Wait(1000) -- Attendre 1 seconde
+            Citizen.Wait(1000)
+            if myToken ~= timerToken then return end
             timeLeft = timeLeft - 1
 
-            -- Calcul des minutes et secondes
-            local minutes = math.floor(timeLeft / 60)
-            local seconds = timeLeft % 60
-
-            -- Formatage du texte (ex: 03:59)
-            local timeText = string.format("%02d:%02d", minutes, seconds)
-            
-            -- Mise à jour de l'affichage
-            missionTimerBar.Func.lib.TextTimerBar.setText(timeText)
-
-            -- Alerte visuelle quand il reste moins de 30 secondes
-            if timeLeft <= 30 then
-                missionTimerBar.Func.setHighlightColor({255, 0, 0, 255})
+            if missionTimerBar then
+                missionTimerBar.Func.lib.TextTimerBar.setText(string.format("%02d:%02d", math.floor(timeLeft / 60), timeLeft % 60))
+                if timeLeft <= 30 then
+                    missionTimerBar.Func.setHighlightColor({255, 0, 0, 255})
+                end
             end
         end
 
-        -- Une fois le temps écoulé
+        -- Une fois le temps écoulé : retour du courant et des lasers
         ShowSubtitle("~r~Temps écoulé ! La police arrive !")
-        ExecuteCommand('removeblc')
+        Blackout(false)
         Wait(500)
-        ExecuteCommand('laseron')
-        API_ProgressBar.remove(missionTimerBar._id)
+        SetLasers(true)
+        RemoveTimerBar()
     end)
 end
 
+-- Minuteur relayé aux coéquipiers (évènement local 'StartMissionTimer')
+AddEventHandler('StartMissionTimer', function() StartMissionTimer() end)
+
 RegisterNetEvent("grandtheftauto:alarme")
 AddEventHandler("grandtheftauto:alarme", function()
-    TriggerEvent('__chHyperSound:play', 0, "intrusion", false, 'alarm', 30)
-
-
-    ExecuteCommand('laseroff')
-
-    -- ALERTE POLICE SUR LES LIEUX
-    local showroomCoords = vector3(-69.0, 64.0, 71.9)
-    TriggerServerEvent('mission:server:alertPoliceLocation', showroomCoords)
+    if not (_G.MissionSync and _G.MissionSync.active) then return end
+    TriggerEvent('__chHyperSound:play', 0, "intrusion", false, Config.ShowroomPos, 30.0)
+    SetLasers(false)
+    -- ALERTE POLICE SUR LES LIEUX (cooldown côté serveur)
+    TriggerServerEvent('mission:server:alertPoliceLocation')
 end)
 
+-- Lasers allumés au lancement du casse (avant la coupure de courant)
+AddEventHandler('startheist', function()
+    SetLasers(true)
+end)
 
+-- Fin de mission / arrêt de la ressource : tout remettre comme avant
+AddEventHandler('mission:local:reset', function()
+    timerToken = timerToken + 1
+    RemoveTimerBar()
+    if blackoutOn then Blackout(false) end
+    SetLasers(false)
+end)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    RemoveTimerBar()
+    if blackoutOn then Blackout(false) end
+    DeleteLasers()
+    for id in pairs(activePrompts) do HidePrompt(id) end
+end)

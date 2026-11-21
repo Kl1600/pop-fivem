@@ -1,12 +1,3 @@
-local ped
-Citizen.CreateThread(function()
-    while 1 do
-        ped = PlayerPedId()
-        Wait(5000)
-    end
-end)
-
-spawned = nil
 
 -- ============================================================
 -- SYNCHRO (COOP)
@@ -73,32 +64,30 @@ AddEventHandler('startheist', function(res)
     end
 end)
 
-Citizen.CreateThread(function()
-    while 1 do
-        -- Coop: un seul contrôleur doit faire tourner les véhicules
-        if IsCoopActive() and not IsOwner() then
-            Wait(250)
-        else
-            for i = 1, #Cars do
-                if Cars[i].spawned ~= nil and Cars[i].spin then
-                    SetEntityHeading(Cars[i].spawned, GetEntityHeading(Cars[i].spawned) - 0.3)
+-- Rotation des voitures d'exposition (seulement si une voiture a spin = true)
+local anySpin = false
+for i = 1, #Cars do if Cars[i].spin then anySpin = true end end
+if anySpin then
+    Citizen.CreateThread(function()
+        while true do
+            if not IsCoopActive() or not IsOwner() then
+                Wait(1000)
+            else
+                for i = 1, #Cars do
+                    if Cars[i].spawned ~= nil and Cars[i].spin and DoesEntityExist(Cars[i].spawned) then
+                        SetEntityHeading(Cars[i].spawned, GetEntityHeading(Cars[i].spawned) - 0.3)
+                    end
                 end
+                Wait(5)
             end
-            Wait(5)
         end
-    end
-end)
+    end)
+end
 
 function SpawnLocalCar(i)
     Citizen.CreateThread(function()
-        local hash = GetHashKey(Cars[i].model)
-        RequestModel(hash)
-        local attempt = 0
-        while not HasModelLoaded(hash) do
-            attempt = attempt + 1
-            if attempt > 2000 then return end
-            Wait(0)
-        end
+        local hash = LoadFirstModel({ Cars[i].model, Cars[i].fallback })
+        if not hash then return end
 
         -- Spawn vehicle (Mis en réseau avec 'true' pour que la police voit le GPS)
         local veh = CreateVehicle(hash, Cars[i].pos.x, Cars[i].pos.y, Cars[i].pos.z - 1, Cars[i].heading, true, false)
@@ -119,7 +108,6 @@ function SpawnLocalCar(i)
         SetVehicleNumberPlateText(veh, Cars[i].plate)
 
         Cars[i].spawned = veh
-        vehcoords = GetEntityCoords(veh, true)
 
         -- Coop: envoi NetID à tous
         if IsCoopActive() then
@@ -129,6 +117,7 @@ function SpawnLocalCar(i)
 end
 
 AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
     -- Coop: seul l'owner nettoie réellement
     if IsCoopActive() and not IsOwner() then
         return
@@ -144,7 +133,7 @@ end)
 RegisterNetEvent('mission:setupBlips')
 AddEventHandler('mission:setupBlips', function()
     for i = 1, #Cars do
-        if Cars[i].spawned ~= nil then
+        if Cars[i].spawned ~= nil and DoesEntityExist(Cars[i].spawned) and not (Cars[i].blipId and DoesBlipExist(Cars[i].blipId)) then
             local blipId = AddBlipForEntity(Cars[i].spawned)
             SetBlipSprite(blipId, 875)
             SetBlipScale(blipId, 0.5)
@@ -163,7 +152,7 @@ Citizen.CreateThread(function()
         local wait = 1000
         local playerPed = PlayerPedId()
 
-        if IsPedInAnyVehicle(playerPed, false) then
+        if IsCoopActive() and IsPedInAnyVehicle(playerPed, false) then
             wait = 500
             local currentVeh = GetVehiclePedIsIn(playerPed, false)
 
@@ -177,5 +166,14 @@ Citizen.CreateThread(function()
             end
         end
         Wait(wait)
+    end
+end)
+
+-- Fin de mission : on oublie les voitures (le serveur supprime celles qui restent)
+AddEventHandler('mission:local:reset', function()
+    for i = 1, #Cars do
+        if Cars[i].blipId and DoesBlipExist(Cars[i].blipId) then RemoveBlip(Cars[i].blipId) end
+        Cars[i].blipId = nil
+        Cars[i].spawned = nil
     end
 end)

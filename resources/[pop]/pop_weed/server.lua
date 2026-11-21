@@ -40,6 +40,11 @@ local function loadPlants()
     for _, plant in pairs(data) do
         if type(plant) ~= 'table' or not plant.id then goto skip end
         if not plant.wateredAt then plant.wateredAt = plant.plantedAt end
+        -- Anciennes plantes (sans compteur de croissance) : on garde leur avancée actuelle
+        if not plant.growth then
+            plant.growth   = math.max(0, math.min(os.time() - plant.plantedAt, Config.TotalDuration))
+            plant.lastTick = os.time()
+        end
         plants[plant.id] = plant
         if plant.id >= nextId then nextId = plant.id + 1 end
         count = count + 1
@@ -52,8 +57,26 @@ end
 -- Stage helper
 -- ─────────────────────────────────────────────
 
-local function computeStage(plantedAt)
-    local elapsed = os.time() - plantedAt
+-- Croissance réelle : le temps ne compte que tant que la plante a de l'eau
+local function updateGrowth(plant, now)
+    local last  = plant.lastTick or plant.plantedAt
+    local dryAt = (plant.wateredAt or plant.plantedAt) + Config.WaterDuration
+    local stop  = math.min(now, dryAt)
+    if stop > last then plant.growth = (plant.growth or 0) + (stop - last) end
+    plant.lastTick = now
+end
+
+-- Copie envoyée aux clients (sans l'identifiant du propriétaire)
+local function clientView(plant)
+    local v = {}
+    for k, val in pairs(plant) do
+        if k ~= 'owner' then v[k] = val end
+    end
+    return v
+end
+
+local function computeStage(plant)
+    local elapsed = plant.growth or 0
     local stage   = 1
     for i, s in ipairs(Config.Stages) do
         if elapsed >= s.minTime then stage = i end
@@ -75,7 +98,13 @@ end)
 -- ─────────────────────────────────────────────
 
 RegisterNetEvent('pop_weed:requestSync', function()
-    TriggerClientEvent('pop_weed:syncAll', source, plants, os.time())
+    local now = os.time()
+    local list = {}
+    for id, plant in pairs(plants) do
+        updateGrowth(plant, now)
+        list[id] = clientView(plant)
+    end
+    TriggerClientEvent('pop_weed:syncAll', source, list, now)
 end)
 
 -- ─────────────────────────────────────────────
@@ -87,10 +116,10 @@ CreateThread(function()
         Wait(5000)
         local now = os.time()
         for _, plant in pairs(plants) do
-            -- Croissance suspendue si eau vide
-            local water = math.max(0.0, 1.0 - (now - (plant.wateredAt or plant.plantedAt)) / Config.WaterDuration)
-            if water > 0 then
-                local newStage = computeStage(plant.plantedAt)
+            -- Croissance suspendue si eau vide (updateGrowth ne compte que le temps arrosé)
+            updateGrowth(plant, now)
+            do
+                local newStage = computeStage(plant)
                 if newStage ~= plant.stage then
                     -- Consommation d'eau : -50% par stade franchi
                     for _ = plant.stage + 1, newStage do
@@ -102,7 +131,7 @@ CreateThread(function()
 
                     plant.stage = newStage
                     dirty = true
-                    TriggerClientEvent('pop_weed:updatePlant', -1, plant, now)
+                    TriggerClientEvent('pop_weed:updatePlant', -1, clientView(plant), now)
                 end
             end
         end
@@ -127,7 +156,9 @@ RegisterNetEvent('pop_weed:water', function(plantId)
     end
 
     exports.pop_inventory:removeItem(src, 'bouteille', 1)
-    plant.wateredAt = os.time()
+    local now = os.time()
+    updateGrowth(plant, now) -- fige la croissance acquise avant de remettre l'eau
+    plant.wateredAt = now
     savePlants()
 
     TriggerClientEvent('pop_weed:waterUpdate', -1, plantId, plant.wateredAt, plant.wateredAt)
@@ -142,6 +173,20 @@ RegisterNetEvent('pop_weed:plant', function(x, y, z, heading)
     local src = source
     x, y, z, heading = tonumber(x), tonumber(y), tonumber(z), tonumber(heading) or 0.0
     if not x or not y or not z or not isNear(src, x, y, z, 15.0) then return end
+
+    -- Limite de plantes par joueur
+    local owner = GetPlayerIdentifierByType(src, 'license') or ('src:' .. src)
+    local maxPlants = Config.MaxPlantsPerPlayer or 0
+    if maxPlants > 0 then
+        local owned = 0
+        for _, p in pairs(plants) do
+            if p.owner == owner then owned = owned + 1 end
+        end
+        if owned >= maxPlants then
+            TriggerClientEvent('pop_weed:notify', src, { icon = 'fas fa-info', message = ('Vous avez déjà %d plantes.'):format(owned), duration = 3000 })
+            return
+        end
+    end
 
     local potCount  = exports.pop_inventory:getItemCount(src, 'pot')
     local seedCount = exports.pop_inventory:getItemCount(src, 'grainecana')
@@ -170,11 +215,14 @@ RegisterNetEvent('pop_weed:plant', function(x, y, z, heading)
         plantedAt = now,
         wateredAt = now,
         stage     = 1,
+        growth    = 0,
+        lastTick  = now,
+        owner     = owner,
     }
     plants[id] = plant
     savePlants()
 
-    TriggerClientEvent('pop_weed:spawnPlant', -1, plant, os.time())
+    TriggerClientEvent('pop_weed:spawnPlant', -1, clientView(plant), now)
     TriggerClientEvent('pop_weed:notify', src, { icon = 'fas fa-info', message = 'Plante mise en terre !', duration = 3000 })
 end)
 
@@ -189,12 +237,13 @@ RegisterNetEvent('pop_weed:harvest', function(plantId)
     if not plant then return end
     if not isNear(src, plant.x, plant.y, plant.z, 5.0) then return end
 
-    if computeStage(plant.plantedAt) < #Config.Stages then
+    updateGrowth(plant, os.time())
+    if computeStage(plant) < #Config.Stages then
         TriggerClientEvent('pop_weed:notify', src, { icon = 'fas fa-info', message = 'La plante n\'est pas encore prête.', duration = 3000 })
         return
     end
 
-    local amount = math.random(2, 3)
+    local amount = math.max(1, math.floor(tonumber(Config.HarvestAmount) or 1))
     exports.pop_inventory:addItem(src, 'weed', amount)
     plants[plantId] = nil
     savePlants()

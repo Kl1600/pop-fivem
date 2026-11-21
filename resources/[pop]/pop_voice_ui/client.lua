@@ -16,7 +16,7 @@ CreateThread(function()
     local wasTalking = false
     while true do
         if uiVisible then
-            local isTalking = MumbleIsPlayerTalking(playerId) == 1
+            local isTalking = MumbleIsPlayerTalking(playerId) == true -- booléen, pas 1
 
             if isTalking then
                 -- Simulate volume for the "débit vocal" look

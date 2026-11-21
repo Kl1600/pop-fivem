@@ -6,7 +6,10 @@ author 'KL'
 description 'Guerre de territoires : parts de zone par crew + multiplicateurs sur la vente de drogue'
 version '1.0.0'
 
-shared_script 'config.lua'
+shared_scripts {
+    'config.lua',
+    'zones.lua',
+}
 
 client_scripts {
     'client.lua',

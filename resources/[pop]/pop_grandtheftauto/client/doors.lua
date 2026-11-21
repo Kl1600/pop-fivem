@@ -144,38 +144,9 @@ end)
 -- ============================================================
 -- COMMANDES ET DÉMARRAGE MISSION
 -- ============================================================
+-- Raccourci admin : même départ que Svetlana (vérifié côté serveur)
 RegisterCommand('startheist', function()
-    -- Notification pour informer le joueur que la mission est en attente
-    if ESX then 
-        --ESX.ShowNotification("Vous avez ~HUD_COLOUR_MENU_GREY_LIGHT~lancé la mission.") 
-        print('mission:on')
-    end
-
-    -- Création d'une boucle qui vérifie la distance
-    CreateThread(function()
-        local showroomPos = vector3(-69.0, 64.0, 71.9) -- Coordonnées centrales du Benefactor
-        local heistStarted = false
-
-        while not heistStarted do
-            local playerPed = PlayerPedId()
-            local plyCoords = GetEntityCoords(playerPed)
-            local distance = #(plyCoords - showroomPos)
-
-            -- Si le joueur est à moins de 50 mètres
-            if distance <= 100.0 then
-                -- On exécute la logique de démarrage originale
-                TriggerServerEvent('mission:server:startHeist')
-                TriggerEvent('mission:client:lockShowroomDoors')
-                Relay("event", { name = 'mission:client:lockShowroomDoors', args = {} }, false)
-                
-                -- On sort de la boucle pour arrêter la vérification
-                heistStarted = true
-            end
-
-            -- On attend 1 seconde entre chaque vérification pour ne pas surcharger le processeur
-            Wait(1000)
-        end
-    end)
+    TriggerServerEvent('mission:server:adminStart')
 end, true)
 
 
@@ -186,10 +157,10 @@ AddEventHandler('spawncamion', function()
 
     -- Création d'une boucle qui vérifie la distance
     CreateThread(function()
-        local showroomPos = vector3(-462.1116, -2805.2249, 5.9963) -- Coordonnées centrales du Benefactor
+        local showroomPos = Config.DeliveryPos -- zone de livraison
         local heistStarted = false
 
-        while not heistStarted do
+        while not heistStarted and _G.MissionSync and _G.MissionSync.active do
             local playerPed = PlayerPedId()
             local plyCoords = GetEntityCoords(playerPed)
             local distance = #(plyCoords - showroomPos)
@@ -210,22 +181,16 @@ AddEventHandler('spawncamion', function()
     end)
 end)
 
-RegisterCommand('open1', function()
-    TriggerEvent('mission:client:openShowroomDoors')
-    Relay("event", { name = 'mission:client:openShowroomDoors', args = {} }, false)
-end, false)
-
-RegisterNetEvent('startheist')
 AddEventHandler('startheist', function()
     TriggerEvent('mission:client:lockShowroomDoors')
 
     if IsCoopActive() and not IsOwner() then return end
 
-    local model = GetHashKey('feltzer2')
-    RequestModel(model)
-    while not HasModelLoaded(model) do Wait(10) end
+    local model = LoadModel('feltzer2')
+    if not model then return end
 
     local veh = CreateVehicle(model, -54.7075, 75.3594, 71.2523, 66.4815, true, false)
+    SetModelAsNoLongerNeeded(model)
     Wait(100)
     SetVehicleEngineOn(veh, false, true, true)
     heistDemoVeh = veh
@@ -249,13 +214,13 @@ AddEventHandler('mission:entity:heist_demo_feltzer2', function(payload)
     end
 end)
 
-RegisterCommand('opencapot', function()
+AddEventHandler('mission:local:opencapot', function()
     if heistDemoVeh and DoesEntityExist(heistDemoVeh) then
         NetworkRequestControlOfEntity(heistDemoVeh)
         SetVehicleDoorOpen(heistDemoVeh, 4, false, false)
         SetVehicleDoorsLocked(heistDemoVeh, 2)
     end
-end, false)
+end)
 
 RegisterNetEvent('openwhitegaragedoor')
 AddEventHandler('openwhitegaragedoor', function()
@@ -269,9 +234,10 @@ end)
 -- LOGIQUE DE LIVRAISON (DÉTAILS CONSERVÉS)
 -- ============================================================
 
-RegisterNetEvent('ondeliveryblip')
+local deliveryBlip = nil
 AddEventHandler('ondeliveryblip', function()
-    local destination = vector3(-462.1116, -2805.2249, 5.9963)
+    local destination = Config.DeliveryPos
+    if deliveryBlip and DoesBlipExist(deliveryBlip) then return end
 
     ClearGpsMultiRoute()
     SetWaypointOff()
@@ -287,6 +253,7 @@ AddEventHandler('ondeliveryblip', function()
 
     SetBlipRoute(blip, true)
     SetBlipRouteColour(blip, 5)
+    deliveryBlip = blip
 
     -- Thread de maintien du tracé GPS
     CreateThread(function()
@@ -311,4 +278,21 @@ AddEventHandler('ondeliveryblip', function()
             end
         end
     end)
+end)
+-- ============================================================
+-- FIN DE MISSION : remise à zéro
+-- ============================================================
+AddEventHandler('mission:local:reset', function()
+    heistDemoVeh = nil
+    if deliveryBlip and DoesBlipExist(deliveryBlip) then RemoveBlip(deliveryBlip) end
+    deliveryBlip = nil
+    -- Portes du showroom rendues au décor
+    for _, d in ipairs({
+        { -73.2972, 80.0848, 71.6245, -801051034 }, { -63.6140, 76.9211, 71.6374, -1655830399 },
+        { -79.6979, 78.2398, 71.6227, 1630015542 }, { -69.0148, 64.5255, 71.9331, -1869234749 },
+        { -68.4740, 64.3139, 71.9311, 925993716 }, { -61.5104, 74.5247, 71.6404, -1025911912 },
+    }) do
+        local door = GetClosestObjectOfType(d[1], d[2], d[3], 3.0, d[4])
+        if DoesEntityExist(door) then FreezeEntityPosition(door, false) end
+    end
 end)

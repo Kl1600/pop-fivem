@@ -8,6 +8,7 @@ description 'Drug dealing system (Schedule 1 inspired)'
 version '1.0.0'
 
 dependencies {
+    'es_extended',
     'ox_lib',
     'pop_inventory',
     'pop_notify',

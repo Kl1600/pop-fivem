@@ -52,28 +52,8 @@ elseif Config.Framework == 'qbcore' then
     end)
 end
 
-RegisterNetEvent('grandtheftauto:removeItem')
-AddEventHandler('grandtheftauto:removeItem', function(item, count)
-    local src = source
-    local qty = count or 1
-    
-    if Config.Inventory == 'pop_inventory' and exports['pop_inventory'] then
-        exports['pop_inventory']:removeItem(src, item, qty)
-    elseif Config.Inventory == 'qbcore' and Config.Framework == 'qbcore' then
-        local Player = QBCore.Functions.GetPlayer(src)
-        if Player then
-            Player.Functions.RemoveItem(item, qty)
-        end
-    elseif Config.Inventory == 'esx' and Config.Framework == 'esx' then
-        local xPlayer = ESX.GetPlayerFromId(src)
-        if xPlayer then
-            xPlayer.removeInventoryItem(item, qty)
-        end
-    else
-        -- Fallback event
-        TriggerEvent('pop_inventory:server:removeItem', src, item, qty)
-    end
-end)
+-- (L'ancien évènement 'grandtheftauto:removeItem' est retiré : le module pirate
+-- est maintenant consommé par le serveur à la réussite du piratage, voir alert.lua.)
 
 if Config.Framework == 'esx' then
     ESX.RegisterUsableItem('pcb', function(source)

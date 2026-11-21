@@ -31,7 +31,7 @@ AddEventHandler('InteractSound_CL:PlayOnOne', function(soundFile, soundVolume)
         SendNUIMessage({
             transactionType = 'playSound',
             transactionFile  = soundFile,
-            transactionVolume = soundVolume
+            transactionVolume = soundVolume or standardVolumeOutput
         })
     end
 end)
@@ -76,7 +76,7 @@ end)
 ------
 RegisterNetEvent('InteractSound_CL:PlayWithinDistance')
 AddEventHandler('InteractSound_CL:PlayWithinDistance', function(otherPlayerCoords, maxDistance, soundFile, soundVolume)
-	if hasPlayerLoaded then
+	if hasPlayerLoaded and type(otherPlayerCoords) == 'vector3' and tonumber(maxDistance) then
 		local myCoords = GetEntityCoords(PlayerPedId())
 		local distance = #(myCoords - otherPlayerCoords)
 

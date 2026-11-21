@@ -1,37 +1,7 @@
 -- client.lua
 
--- COMMANDES DE TEST / VISIONS (CONSERVÉES)
-local isNightVisionOn = false
-RegisterCommand('nightv', function()
-    isNightVisionOn = not isNightVisionOn
-    SetNightvision(isNightVisionOn)
-    if not isNightVisionOn then
-        TriggerEvent('mission:setupBlips')
-    end
-end, false)
-
-RegisterKeyMapping('nightv', 'Activer/Désactiver Vision Nocturne', 'keyboard', 'N')
-
-RegisterCommand('offnightv', function()
-    isNightVisionOn = false
-    SetNightvision(false)
-    TriggerEvent('mission:setupBlips')
-end, false)
-
-RegisterCommand('jouer', function()
-    local success = exports['CircuitBreakerMinigame_lua']:startCircuit(7, 0)
-    if success then
-        print("Succès ! Accès accordé.")
-    else
-        print("Échec ! Accès refusé.")
-    end
-end, true)
-
-
-RegisterCommand('andale', function()
-    TriggerEvent('InteractSound_CL:PlayOnOne', 'demo', 1.0)
-
-end, true)
+-- (Anciennes commandes de test retirées : /nightv et la touche N sautaient l'étape
+--  Thornton et gênaient le push-to-talk ; /jouer et /andale étaient des tests.)
 
 -- ============================================================
 -- SYNCHRO BRAQUAGE (COOP)
@@ -55,17 +25,63 @@ local function ShowSubtitleFallback(text, duration)
     EndTextCommandPrint(duration or 5000, 1)
 end
 
+-- Étape 1 : Svetlana a donné la mission -> direction le showroom
+local pendingId = nil
+RegisterNetEvent('mission:client:pending')
+AddEventHandler('mission:client:pending', function(heistId, isOwner)
+    if pendingId == heistId then return end
+    pendingId = heistId
+
+    SetNewWaypoint(Config.ShowroomPos.x, Config.ShowroomPos.y)
+    ShowNotification("Rendez-vous au <span style='color:#ECA95D; font-weight:bold;'>showroom Benefactor</span> indiqué sur votre GPS.", 8000)
+
+    if not isOwner then return end
+    CreateThread(function()
+        while pendingId == heistId and not EnsureMissionSync().active do
+            if #(GetEntityCoords(PlayerPedId()) - Config.ShowroomPos) <= 100.0 then
+                TriggerServerEvent('mission:server:startHeist')
+                return
+            end
+            Wait(1000)
+        end
+    end)
+end)
+
 RegisterNetEvent('mission:client:heistStart')
 AddEventHandler('mission:client:heistStart', function(ownerServerId, heistId)
     local MS = EnsureMissionSync()
+    if MS.active and MS.id == heistId then return end
     MS.active = true
     MS.id = heistId
     MS.owner = ownerServerId
     MS.isOwner = (GetPlayerServerId(PlayerId()) == ownerServerId)
-    MS.entities = MS.entities or {}
-    MS.flags = MS.flags or {}
+    MS.entities = {}
+    MS.flags = {}
 
     TriggerEvent('startheist', ownerServerId, heistId)
+end)
+
+-- Fin de mission (serveur) : chaque fichier remet son état à zéro sur 'mission:local:reset'
+RegisterNetEvent('mission:client:reset')
+AddEventHandler('mission:client:reset', function(reason)
+    local MS = EnsureMissionSync()
+    MS.active = false
+    MS.id = nil
+    MS.owner = nil
+    MS.isOwner = false
+    MS.entities = {}
+    MS.flags = {}
+    pendingId = nil
+
+    TriggerEvent('mission:local:reset', reason)
+
+    if reason == 'done' then
+        ShowNotification("Le casse est <span style='color:#2ecc71; font-weight:bold;'>terminé</span>. Beau travail.", 8000)
+    elseif reason == 'timeout' then
+        ShowNotification("Le casse a été <span style='color:#E74C3C; font-weight:bold;'>abandonné</span> (trop long).", 8000)
+    elseif reason == 'owner_left' then
+        ShowNotification("Le chef d'équipe est parti : <span style='color:#E74C3C; font-weight:bold;'>casse annulé</span>.", 8000)
+    end
 end)
 
 RegisterNetEvent('mission:client:entity')
@@ -74,13 +90,44 @@ AddEventHandler('mission:client:entity', function(key, payload, heistId)
     if MS.active and MS.id and heistId and MS.id ~= heistId then return end
 
     MS.entities[key] = payload
-    TriggerEvent('mission:entity:' .. tostring(key), payload)
+    -- L'entité peut ne pas encore exister chez nous : on attend qu'elle arrive (15 s max)
+    local netId = type(payload) == 'table' and payload.netId or payload
+    CreateThread(function()
+        local limit = GetGameTimer() + 15000
+        while type(netId) == 'number' and not NetworkDoesNetworkIdExist(netId) and GetGameTimer() < limit do Wait(250) end
+        if MS.entities[key] == payload then
+            TriggerEvent('mission:entity:' .. tostring(key), payload)
+        end
+    end)
 end)
+
+-- Commandes relayées -> évènements locaux (plus de commandes tapables par tout le monde)
+local RelayCommandEvents = {
+    opencapot   = { 'mission:local:opencapot' },
+    removeblip1 = { 'mission:local:removeblip1' },
+    open1       = { 'mission:client:openShowroomDoors' },
+    blc         = { 'mission:local:blackout', true },
+    laseroff    = { 'mission:local:lasers', false },
+}
+
+local RelayEvents = {
+    ['mission:forceThorntonExit'] = true,
+    ['mission:keysBlipOn'] = true,
+    ['mission:setKeysTaken'] = true,
+    ['mission:setDoorOpened'] = true,
+    ['mission:client:lockShowroomDoors'] = true,
+    ['mission:client:openShowroomDoors'] = true,
+    ['mission:setupBlips'] = true,
+    ['StartMissionTimer'] = true,
+    ['mission:client:syncTruckDoor'] = true,
+}
 
 RegisterNetEvent('mission:client:relay')
 AddEventHandler('mission:client:relay', function(action, data, senderServerId, includeSender, heistId)
     local MS = EnsureMissionSync()
-    if MS.active and MS.id and heistId and MS.id ~= heistId then return end
+    if not MS.active then return end
+    if MS.id and heistId and MS.id ~= heistId then return end
+    if type(data) ~= 'table' then return end
 
     if includeSender == false and senderServerId and GetPlayerServerId(PlayerId()) == senderServerId then
         return
@@ -96,40 +143,35 @@ AddEventHandler('mission:client:relay', function(action, data, senderServerId, i
         return
     end
 
-    -- AJOUT : Gestion de HyperSound (Pour que les autres joueurs entendent)
+    -- HyperSound (pour que les autres joueurs entendent)
     if action == "hypersound" then
         if data.sound then
             if data.netId then
-                TriggerEvent('__chHyperSound:playOnEntity', data.netId, nil, data.sound, data.looped or false, data.distance or 15.0)
+                TriggerEvent('__chHyperSound:playOnEntity', data.netId, nil, data.sound, false, data.distance or 15.0)
             elseif data.coords then
-                TriggerEvent('__chHyperSound:play', 0, data.sound, data.looped or false, data.coords, data.distance or 15.0)
-            elseif data.location then
-                 TriggerEvent('__chHyperSound:play', 0, data.sound, data.looped or false, data.location, data.distance or 15.0)
+                TriggerEvent('__chHyperSound:play', 0, data.sound, false, data.coords, data.distance or 15.0)
             end
         end
         return
     end
 
-    -- Gestion des sons InteractSound
+    -- Sons InteractSound
     if action == "interactsound_one" then
-        if data and data.sound then
+        if data.sound then
             TriggerEvent('InteractSound_CL:PlayOnOne', data.sound, data.volume or 0.6)
         end
         return
     end
 
-    -- Gestion des commandes et événements
     if action == "command" then
-        -- Seules les commandes de la mission peuvent être relayées entre coéquipiers.
-        local allowed = { opencapot = true, removeblip1 = true, open1 = true, blc = true, laseroff = true }
-        if data and allowed[data.cmd] then ExecuteCommand(data.cmd) end
+        local ev = RelayCommandEvents[data.cmd]
+        if ev then TriggerEvent(ev[1], ev[2]) end
         return
     end
 
     if action == "event" then
-        if data and data.name then
-            local args = data.args or {}
-            TriggerEvent(data.name, table.unpack(args))
+        if data.name and RelayEvents[data.name] then
+            TriggerEvent(data.name, table.unpack(data.args or {}))
         end
         return
     end
@@ -150,21 +192,23 @@ local isTrackingActive = false
 -- Signal d'arrêt (Serveur -> Client)
 RegisterNetEvent('mission:client:stopPoliceTracking')
 AddEventHandler('mission:client:stopPoliceTracking', function()
+    local hadBlips = next(policeBlips) ~= nil
     isTrackingActive = false
     for netId, blip in pairs(policeBlips) do
         if DoesBlipExist(blip) then RemoveBlip(blip) end
     end
     policeBlips = {}
-    --ESX.ShowNotification("Le signal GPS ~b~des véhicules volés~w~ a été perdu.")
 
-    ShowNotification("Le signal des sportives volées <br> <span style='color:#E74C3C; font-weight:bold;'>a été perdu.</span>", 7000)
+    if hadBlips then
+        ShowNotification("Le signal des sportives volées <br> <span style='color:#E74C3C; font-weight:bold;'>a été perdu.</span>", 7000)
+    end
 end)
 
 -- Réception des positions (Serveur -> Client)
 RegisterNetEvent('mission:client:startPoliceTracking')
 AddEventHandler('mission:client:startPoliceTracking', function(trackingData)
     isTrackingActive = true
-    
+
     for _, data in ipairs(trackingData) do
         local netId = data.netId
         local coords = data.coords
@@ -204,6 +248,7 @@ end)
 
 RegisterNetEvent('mission:client:policeShowroomBlip')
 AddEventHandler('mission:client:policeShowroomBlip', function(coords)
+    TriggerEvent('mission:client:removeShowroomBlip')
     showroomAlertBlip = AddBlipForCoord(coords.x, coords.y, coords.z)
     SetBlipSprite(showroomAlertBlip, 161)
     SetBlipScale(showroomAlertBlip, 1.2)
@@ -217,4 +262,12 @@ AddEventHandler('mission:client:policeShowroomBlip', function(coords)
     showroomAlertRadius = AddBlipForRadius(coords.x, coords.y, coords.z, 50.0)
     SetBlipColour(showroomAlertRadius, 1)
     SetBlipAlpha(showroomAlertRadius, 128)
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for _, blip in pairs(policeBlips) do
+        if DoesBlipExist(blip) then RemoveBlip(blip) end
+    end
+    TriggerEvent('mission:client:removeShowroomBlip')
 end)

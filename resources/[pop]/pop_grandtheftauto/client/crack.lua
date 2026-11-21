@@ -128,12 +128,13 @@ local VehicleCamConfig = {
     sm722 = { camOffset = vector3(0.0, 0.0, 1.5), pointOffset = vector3(0.0, 0.0, 0.0), invertX = false }
 }
 
-local Cars = {
-    { plate = "763 BEN", model = 'krieger' },
-    { plate = "968 BEN", model = 'sm722' },
-    { plate = "119 BEN", model = 'schlagen' },
-    { plate = "317 BEN", model = 'schweizer2' }
-}
+-- Les voitures viennent de shared/config.lua (Cars), avec leur modèle de repli
+deliveryStarted = false
+local PendingFinalize = {}
+RegisterNetEvent('mission:client:finalizeResult')
+AddEventHandler('mission:client:finalizeResult', function(plate, ok, reason)
+    PendingFinalize[plate] = { ok = ok == true, reason = reason }
+end)
 
 -- =========================
 -- UTILS
@@ -201,6 +202,7 @@ local function DrawHackControls()
 end
 
 local function GetVehicleByPlatePattern(pattern)
+    if #(GetEntityCoords(PlayerPedId()) - Config.ShowroomPos) > 80.0 then return nil end
     local vehicles = GetGamePool("CVehicle")
     local pCoords = GetEntityCoords(PlayerPedId())
     local closest, dist = nil, 20.0 
@@ -216,7 +218,9 @@ end
 
 local function GetVehicleModelName(veh)
     local model = GetEntityModel(veh)
-    for _, v in ipairs(Cars) do if joaat(v.model) == model then return v.model end end
+    for _, v in ipairs(Cars) do
+        if joaat(v.model) == model or (v.fallback and joaat(v.fallback) == model) then return v.model end
+    end
     return nil
 end
 
@@ -262,30 +266,37 @@ end
 
 local function FinalizeHack(veh)
     local plate = trim(GetVehicleNumberPlateText(veh))
-    local showroomCoords = vector3(-69.0, 64.0, 71.9)
-    
+
+    -- Le serveur valide et consomme le module pirate (pcb) seulement maintenant
+    PendingFinalize[plate] = nil
+    TriggerServerEvent('mission:server:finalizeHack', plate, NetworkGetNetworkIdFromEntity(veh))
+    local limit = GetGameTimer() + 5000
+    while not PendingFinalize[plate] and GetGameTimer() < limit do Wait(50) end
+    local res = PendingFinalize[plate]
+    PendingFinalize[plate] = nil
+    if not res or not res.ok then
+        local reason = res and res.reason
+        if reason == 'nopcb' then
+            ShowNotification("Vous avez besoin d'un <span style='color:#E74C3C; font-weight:bold;'>Module Pirate (PCB)</span>.", 5000)
+        elseif reason == 'completed' then
+            ShowNotification("Le véhicule que vous essayez de pirater <span style='color:#E74C3C; font-weight:bold;'>a déjà été piraté.</span>", 7000)
+        else
+            ShowNotification("Le <span style='color:#E74C3C; font-weight:bold;'>piratage a échoué</span>.", 5000)
+        end
+        return
+    end
+
     NetworkRequestControlOfEntity(veh)
     SetVehicleDoorOpen(veh, 4, false, true)
     
-    HackedVehicles[plate] = nil 
-    CompletedMissions[plate] = true 
-    TriggerServerEvent('mission:server:setHackCompleted', plate, true) 
+    HackedVehicles[plate] = nil
+    CompletedMissions[plate] = true
+    deliveryStarted = true
     AggressiveEngineStart(veh)
     
-    TriggerServerEvent('mission:server:alertPoliceLocation', showroomCoords)
-
-    -- RÉCUPÉRATION SYNCHRONISÉE DES NETIDS
-    local vehicleNetIds = {}
-    if _G.Cars then 
-        for i = 1, #_G.Cars do
-            if _G.Cars[i] and _G.Cars[i].spawned then
-                table.insert(vehicleNetIds, NetworkGetNetworkIdFromEntity(_G.Cars[i].spawned))
-            end
-        end
-    end
-    
-    -- APPEL SERVEUR POUR TRACKER 10 SECONDES
-    TriggerServerEvent('mission:server:alertPolice', vehicleNetIds)
+    -- Alertes police (positions et véhicules suivis déterminés par le serveur)
+    TriggerServerEvent('mission:server:alertPoliceLocation')
+    TriggerServerEvent('mission:server:alertPolice')
     
     SetVehicleDoorsLocked(veh, 1)
     SetVehicleDoorsLockedForAllPlayers(veh, false)
@@ -324,9 +335,13 @@ local function StartCableHack(veh)
     local bone = GetEntityBoneIndexByName(veh, "engine")
     if bone == -1 then bone = GetEntityBoneIndexByName(veh, "bonnet") end
 
-    local model = joaat(PROP_MODEL)
-    RequestModel(model)
-    while not HasModelLoaded(model) do Wait(0) end
+    local model = LoadModel(PROP_MODEL)
+    if not model then
+        FreezeEntityPosition(inst.ped, false)
+        ActiveHacks[inst.ped] = nil
+        ReleaseHackLock(inst.lockPlate)
+        return
+    end
 
     local attachZ = (modelName == "schweizer2") and 0.22 or 0.1
 
@@ -367,22 +382,27 @@ local function StartCableHackCoop(veh)
             --ESX.ShowNotification('Ce véhicule ~r~a déjà été piraté.~s~')
             ShowNotification("Le véhicule que vous essayez de pirater <span style='color:#E74C3C; font-weight:bold;'>a déjà été piraté.</span>", 7000)
         elseif reason == 'locked' then
-            --ESX.ShowNotification("Quelqu'un est ~y~déjà en train de pirater ce véhicule.")
             ShowNotification("Le véhicule que vous essayez de pirater <span style='color:#E74C3C; font-weight:bold;'>est déjà en train d'être piraté.</span>", 7000)
+        elseif reason == 'nomission' then
+            ShowNotification("Aucun <span style='color:#E74C3C; font-weight:bold;'>casse en cours</span> : parlez d'abord à Svetlana.", 7000)
         else
-            print('error: contact Tabernac Softwares')
+            ShowNotification("Le <span style='color:#E74C3C; font-weight:bold;'>piratage a échoué</span>, réessayez.", 5000)
         end
         return
     end
     StartCableHack(veh)
 end
 
+local startBusy = false
 CreateThread(function()
     while true do
         local wait = 500
         local ped = PlayerPedId()
 
-        if next(ActiveHacks) ~= nil then
+        if not IsCoopActive() and next(ActiveHacks) == nil then
+            wait = 1500
+            HidePrompt("start_module")
+        elseif next(ActiveHacks) ~= nil then
             for _, inst in pairs(ActiveHacks) do
                 wait = 0
                 DisableAllControlActions(0)
@@ -429,13 +449,14 @@ CreateThread(function()
                         local v = inst.veh
                         StopHack(inst)
                         HidePrompt("fix_module_"..tostring(inst.ped))
-                        Wait(100)
-                        local success = exports['CircuitBreakerMinigame_lua']:startCircuit(7, 0)
-                        if success then
-                            FinalizeHack(v)
-                        else
-                            ShowNotification("Le <span style='color:#E74C3C; font-weight:bold;'>piratage a échoué</span>.", 5000)
-                        end
+                        CreateThread(function()
+                            Wait(100)
+                            if RunVoltlab(30) then
+                                FinalizeHack(v)
+                            else
+                                ShowNotification("Le <span style='color:#E74C3C; font-weight:bold;'>piratage a échoué</span>. Revenez au véhicule pour le démarrer.", 5000)
+                            end
+                        end)
                         break
                     end
                 end
@@ -450,14 +471,17 @@ CreateThread(function()
                     if dist < 4.0 then
                         wait = 0
                         ShowPrompt("start_module", vCoords + vector3(0,0,1.0), "DÉMARRER", "fas fa-power-off")
-                        if IsControlJustReleased(0, 38) then 
+                        if IsControlJustReleased(0, 38) and not startBusy then
                             HidePrompt("start_module")
-                            local success = exports['CircuitBreakerMinigame_lua']:startCircuit(7, 0)
-                            if success then
-                                FinalizeHack(veh) 
-                            else
-                                ShowNotification("Le <span style='color:#E74C3C; font-weight:bold;'>piratage a échoué</span>.", 5000)
-                            end
+                            startBusy = true
+                            CreateThread(function()
+                                if RunVoltlab(30) then
+                                    FinalizeHack(veh)
+                                else
+                                    ShowNotification("Le <span style='color:#E74C3C; font-weight:bold;'>piratage a échoué</span>.", 5000)
+                                end
+                                startBusy = false
+                            end)
                         end
                     else
                         HidePrompt("start_module")
@@ -480,10 +504,10 @@ RegisterCommand("voler_auto", function()
     local veh = GetVehicleByPlatePattern(PLATE_PATTERN)
     if not veh then return end
     
-    CheckItem('pcb', function(hasItem)
+    CheckItem('pcb', function(hasItem) CreateThread(function()
         if hasItem then
             local plate = trim(GetVehicleNumberPlateText(veh))
-            
+
             if CompletedMissions[plate] then
                 ShowNotification("Le véhicule que vous essayez de pirater <span style='color:#E74C3C; font-weight:bold;'>a déjà été piraté.</span>", 7000)
                 return
@@ -495,16 +519,15 @@ RegisterCommand("voler_auto", function()
             end
 
             if #(GetEntityCoords(ped) - GetEntityCoords(veh)) < 5.0 then
-                -- Remove item here, assuming success path (or make it so it's removed only if hack succeeds? No, user said "supprimé une fois utilisé", usually implies on attempt/start)
-                TriggerServerEvent('grandtheftauto:removeItem', 'pcb', 1)
-                StartCableHackCoop(veh) 
+                -- Le module pirate n'est consommé qu'à la réussite (côté serveur)
+                StartCableHackCoop(veh)
             else
-                ShowNotification("Vous n'êtes <span style='color:#E74C3C; font-weight:bold;'>pas assez proche</span> du véhicue que vous essayez de pirater.", 7000)
+                ShowNotification("Vous n'êtes <span style='color:#E74C3C; font-weight:bold;'>pas assez proche</span> du véhicule que vous essayez de pirater.", 7000)
             end
         else
             ShowNotification("Vous avez besoin d'un <span style='color:#E74C3C; font-weight:bold;'>Module Pirate (PCB)</span>.", 5000)
         end
-    end, 'pcb')
+    end) end, 'pcb')
 end, false)
 
 RegisterNetEvent('grandtheftauto:usePCB')
@@ -512,30 +535,7 @@ AddEventHandler('grandtheftauto:usePCB', function()
     ExecuteCommand('voler_auto')
 end)
 
--- =========================
--- COMMANDES DEV
--- =========================
-RegisterCommand("voler_auto_dev", function()
-    local ped = PlayerPedId()
-    if ActiveHacks[ped] then return end
-    
-    local veh = GetVehicleByPlatePattern(PLATE_PATTERN)
-    if not veh then 
-        print("Aucun véhicule correspondant au pattern '" .. PLATE_PATTERN .. "' trouvé à proximité.")
-        return 
-    end
-    
-    ShowNotification("<span style='color:#3498DB; font-weight:bold;'>MODE DEV</span> : Initialisation du hack sans condition.", 3000)
-    
-    -- On téléporte le joueur près du capot pour être sûr
-    local bonnetPos = GetWorldPositionOfEntityBone(veh, GetEntityBoneIndexByName(veh, "engine"))
-    if bonnetPos ~= vector3(0,0,0) then
-        SetEntityCoords(ped, bonnetPos.x, bonnetPos.y, bonnetPos.z - 1.0, false, false, false, true)
-    end
-    
-    Wait(500)
-    StartCableHack(veh)
-end, true)
+-- (Commande de dev /voler_auto_dev retirée.)
 
 -- =========================
 -- DRAG & DROP INVENTORY INTEGRATION
@@ -545,11 +545,10 @@ local registeredDragVehs = {}
 CreateThread(function()
     while true do
         Wait(2000)
-        local ped = PlayerPedId()
-        local vehicles = GetGamePool("CVehicle")
-        
+        local vehicles = (IsCoopActive() and #(GetEntityCoords(PlayerPedId()) - Config.ShowroomPos) < 150.0) and GetGamePool("CVehicle") or {}
+
         for _, veh in ipairs(vehicles) do
-            if not registeredDragVehs[veh] then
+            if not registeredDragVehs[veh] and GetResourceState('pop_inventory') == 'started' then
                 local plate = GetVehicleNumberPlateText(veh)
                 if plate and trim(plate):find(PLATE_PATTERN) then
                     exports.pop_inventory:registerDragTarget(veh, 'pcb', function()
@@ -558,7 +557,7 @@ CreateThread(function()
                         local playerPed = PlayerPedId()
                         if ActiveHacks[playerPed] then return end
                         
-                        CheckItem('pcb', function(hasItem)
+                        CheckItem('pcb', function(hasItem) CreateThread(function()
                             if hasItem then
                                 local plateEntity = trim(GetVehicleNumberPlateText(veh))
                                 
@@ -573,15 +572,14 @@ CreateThread(function()
                                 end
 
                                 if #(GetEntityCoords(playerPed) - GetEntityCoords(veh)) < 5.0 then
-                                    TriggerServerEvent('grandtheftauto:removeItem', 'pcb', 1)
-                                    StartCableHackCoop(veh) 
+                                    StartCableHackCoop(veh)
                                 else
-                                    ShowNotification("Vous n'êtes <span style='color:#E74C3C; font-weight:bold;'>pas assez proche</span> du véhicue que vous essayez de pirater.", 7000)
+                                    ShowNotification("Vous n'êtes <span style='color:#E74C3C; font-weight:bold;'>pas assez proche</span> du véhicule que vous essayez de pirater.", 7000)
                                 end
                             else
                                 ShowNotification("Vous avez besoin d'un <span style='color:#E74C3C; font-weight:bold;'>Module Pirate (PCB)</span>.", 5000)
                             end
-                        end, 'pcb')
+                        end) end, 'pcb')
                     end)
                     registeredDragVehs[veh] = true
                 end
@@ -589,10 +587,50 @@ CreateThread(function()
         end
         
         for v, _ in pairs(registeredDragVehs) do
-            if not DoesEntityExist(v) then
-                exports.pop_inventory:unregisterDragTarget(v)
+            if not DoesEntityExist(v) or not IsCoopActive() then
+                pcall(function() exports.pop_inventory:unregisterDragTarget(v) end)
                 registeredDragVehs[v] = nil
             end
         end
+    end
+end)
+-- =========================
+-- FIN DE MISSION : remise à zéro
+-- =========================
+AddEventHandler('mission:local:reset', function()
+    for _, inst in pairs(ActiveHacks) do StopHack(inst) end
+    deliveryStarted = false
+    HackedVehicles = {}
+    CompletedMissions = {}
+    RemoteHackLockedBy = {}
+    PendingHackLocks = {}
+    HidePrompt("start_module")
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for _, inst in pairs(ActiveHacks) do StopHack(inst) end
+end)
+
+-- =========================
+-- COOP : le coéquipier qui prend le volant d'une voiture piratée reçoit le GPS et son camion
+-- =========================
+CreateThread(function()
+    while true do
+        local wait = 2000
+        if IsCoopActive() and not deliveryStarted then
+            local ped = PlayerPedId()
+            local veh = GetVehiclePedIsIn(ped, false)
+            if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+                local plate = trim(GetVehicleNumberPlateText(veh))
+                if CompletedMissions[plate] then
+                    deliveryStarted = true
+                    TriggerEvent('ondeliveryblip')
+                    TriggerEvent('spawncamion')
+                end
+            end
+            wait = 1000
+        end
+        Wait(wait)
     end
 end)

@@ -7,8 +7,11 @@ local pendingGhost  = nil -- placeholder visible en attendant la réponse serveu
 -- localReceivedAt  = GetGameTimer() au moment de la réception (ms)
 -- ─────────────────────────────────────────────
 
+-- La croissance n'avance que tant qu'il reste de l'eau (même règle que le serveur)
 local function getElapsed(entry)
-    return entry.elapsedAtReceive + (GetGameTimer() - entry.localReceivedAt) / 1000.0
+    local delta = (GetGameTimer() - entry.localReceivedAt) / 1000.0
+    local waterLeft = math.max(0.0, Config.WaterDuration - (entry.waterElapsedAtReceive or 0))
+    return entry.elapsedAtReceive + math.min(delta, waterLeft)
 end
 
 local function computeStage(entry)
@@ -119,20 +122,14 @@ end
 -- Spawn / suppression de prop
 -- ─────────────────────────────────────────────
 
-local function spawnPlant(plant, serverNow)
-    local entry = {
-        data                  = plant,
-        elapsedAtReceive      = serverNow - plant.plantedAt,
-        waterElapsedAtReceive = serverNow - (plant.wateredAt or plant.plantedAt),
-        localReceivedAt       = GetGameTimer(),
-        stage                 = 1,
-    }
-    entry.stage = computeStage(entry)
-
+-- Création du prop (uniquement quand le joueur est proche, voir thread de proximité)
+local function createProp(entry)
+    local plant    = entry.data
+    entry.stage    = computeStage(entry)
     local stageCfg = Config.Stages[entry.stage]
-    local model    = stageCfg.model
-    local hash     = GetHashKey(model)
-    lib.requestModel(hash)
+    local hash     = GetHashKey(stageCfg.model)
+    if not IsModelInCdimage(hash) then return end
+    if not pcall(lib.requestModel, hash, 5000) then return end
 
     local zPos   = plant.z + (Config.ZOffset or 0.0) + (stageCfg.zOffset or 0.0)
     local entity = CreateObject(hash, plant.x, plant.y, zPos, false, false, false)
@@ -148,22 +145,43 @@ local function spawnPlant(plant, serverNow)
     exports.pop_inventory:registerDragTarget(entity, 'bouteille', function()
         TriggerServerEvent('pop_weed:water', plant.id)
     end)
+end
+
+local function deleteProp(entry)
+    if entry.uiId then
+        exports.pop_v3dui:Remove(entry.uiId)
+        entry.uiId = nil
+    end
+
+    if entry.entity and DoesEntityExist(entry.entity) then
+        exports.pop_inventory:unregisterDragTarget(entry.entity)
+        exports.ox_target:removeLocalEntity(entry.entity)
+        DeleteEntity(entry.entity)
+    end
+    entry.entity = nil
+end
+
+local function spawnPlant(plant, serverNow)
+    local entry = {
+        data                  = plant,
+        elapsedAtReceive      = plant.growth or (serverNow - plant.plantedAt),
+        waterElapsedAtReceive = serverNow - (plant.wateredAt or plant.plantedAt),
+        localReceivedAt       = GetGameTimer(),
+        stage                 = 1,
+    }
+    entry.stage = computeStage(entry)
     spawnedPlants[plant.id] = entry
+
+    -- Prop créé tout de suite si le joueur est déjà à portée
+    if #(GetEntityCoords(cache.ped) - vec3(plant.x, plant.y, plant.z)) <= (Config.SpawnDistance or 80.0) then
+        createProp(entry)
+    end
 end
 
 local function removePlant(plantId)
     local entry = spawnedPlants[plantId]
     if not entry then return end
-
-    if entry.uiId then
-        exports.pop_v3dui:Remove(entry.uiId)
-    end
-
-    if DoesEntityExist(entry.entity) then
-        exports.pop_inventory:unregisterDragTarget(entry.entity)
-        exports.ox_target:removeLocalEntity(entry.entity)
-        DeleteEntity(entry.entity)
-    end
+    deleteProp(entry)
     spawnedPlants[plantId] = nil
 end
 
@@ -194,7 +212,11 @@ RegisterNetEvent('pop_weed:updatePlant', function(plant, serverNow)
     local entry = spawnedPlants[plant.id]
     if not entry then return end
 
-    local newStage = computeStage({ elapsedAtReceive = serverNow - plant.plantedAt, localReceivedAt = GetGameTimer() })
+    local newStage = computeStage({
+        elapsedAtReceive      = plant.growth or (serverNow - plant.plantedAt),
+        waterElapsedAtReceive = serverNow - (plant.wateredAt or plant.plantedAt),
+        localReceivedAt       = GetGameTimer(),
+    })
     if newStage == entry.stage then return end
 
     removePlant(plant.id)
@@ -336,6 +358,7 @@ end)
 RegisterNetEvent('pop_weed:waterUpdate', function(plantId, wateredAt, serverNow)
     local entry = spawnedPlants[plantId]
     if not entry then return end
+    entry.elapsedAtReceive      = getElapsed(entry) -- garde la croissance acquise
     entry.waterElapsedAtReceive = serverNow - wateredAt
     entry.localReceivedAt       = GetGameTimer()
 end)
@@ -383,24 +406,36 @@ end
 
 local nearbyPlants = {}
 
--- Thread de détection de proximité (optimisé: check toutes les 500ms)
+-- Thread de proximité : crée / supprime les props selon la distance (boucle adaptative)
 CreateThread(function()
+    local spawnDist = Config.SpawnDistance or 80.0
     while true do
         local pedCoords = GetEntityCoords(cache.ped)
         local newNearby = {}
+        local anyClose  = false
 
         for id, entry in pairs(spawnedPlants) do
-            if DoesEntityExist(entry.entity) then
+            local p    = entry.data
+            local dist = #(pedCoords - vec3(p.x, p.y, p.z))
+
+            if dist <= spawnDist then
+                anyClose = true
+                if not entry.entity then createProp(entry) end
+            elseif entry.entity and dist > spawnDist + 10.0 then
+                deleteProp(entry)
+            end
+
+            if entry.entity and DoesEntityExist(entry.entity) and dist <= (Config.DrawDistance or 10.0) + 3.0 then
                 local eCoords = GetEntityCoords(entry.entity)
-                local dist = #(pedCoords - eCoords)
-                if dist <= (Config.DrawDistance or 10.0) then
-                    newNearby[id] = { id = id, coords = eCoords, dist = dist }
+                local eDist   = #(pedCoords - eCoords)
+                if eDist <= (Config.DrawDistance or 10.0) then
+                    newNearby[id] = { id = id, coords = eCoords, dist = eDist }
                 end
             end
         end
 
         nearbyPlants = newNearby
-        Wait(500)
+        Wait(anyClose and 500 or 2000)
     end
 end)
 

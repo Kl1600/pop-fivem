@@ -3,7 +3,9 @@
 -- Spawn de clients NPC par zone, gestion des deals
 -- ─────────────────────────────────────────────
 
-local customers      = {}   -- [id] = { zoneIdx, drugDefId, qty, unitPrice, totalPrice, model, coords, heading, isCop, claimedBy, expiresAt }
+local ESX = exports['es_extended']:getSharedObject()
+
+local customers      = {}   -- [id] = { zoneIdx, drugDefId, qty, unitPrice, totalPrice, model, coords, heading, isCop, claimedBy, expiresAt, sentTo }
 local nextId         = 1
 local lastSpawnAtZone = {}  -- [zoneIdx] = os.time()
 
@@ -48,6 +50,61 @@ local function rollMaxPrice(basePrice)
     return math.floor(basePrice * mult + 0.5)
 end
 
+-- Données envoyées au client : sans le prix max ni le flag flic (secrets serveur)
+local function publicData(c)
+    return {
+        id        = c.id,
+        zoneIdx   = c.zoneIdx,
+        static    = c.static,
+        drugDefId = c.drugDefId,
+        drugLabel = c.drugLabel,
+        drugIcon  = c.drugIcon,
+        qty       = c.qty,
+        model     = c.model,
+        x         = c.x,
+        y         = c.y,
+        z         = c.z,
+        heading   = c.heading,
+    }
+end
+
+-- Crée le PNJ chez un seul joueur (et retient qu'il l'a)
+local function sendCustomer(src, c)
+    c.sentTo = c.sentTo or {}
+    if c.sentTo[src] then return end
+    c.sentTo[src] = true
+    TriggerClientEvent('pop_dealing:spawnCustomer', src, publicData(c))
+end
+
+local function playerCoords(src)
+    local ped = GetPlayerPed(src)
+    if ped == 0 then return nil end
+    return GetEntityCoords(ped)
+end
+
+-- Clients de zone : envoyés uniquement aux joueurs proches, retirés quand ils s'éloignent
+local function streamZoneCustomers()
+    local range = Config.CustomerStreamRange or 150.0
+    for _, sid in ipairs(GetPlayers()) do
+        local src = tonumber(sid)
+        local pc  = playerCoords(src)
+        if pc then
+            for id, c in pairs(customers) do
+                if not c.ownerSrc then
+                    c.sentTo = c.sentTo or {}
+                    local dist = #(pc - vec3(c.x, c.y, c.z))
+                    if not c.sentTo[src] and dist <= range then
+                        sendCustomer(src, c)
+                    elseif c.sentTo[src] and dist > range + 50.0 and c.claimedBy ~= src then
+                        c.sentTo[src] = nil
+                        TriggerClientEvent('pop_dealing:removeCustomer', src, id)
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function generateCustomer(zoneIdx)
     local zone = Config.Zones[zoneIdx]
     if not zone then return end
@@ -81,9 +138,11 @@ local function generateCustomer(zoneIdx)
         isCop        = math.random() < (Config.BustChance or 0.0),
         claimedBy    = nil,
         expiresAt    = os.time() + 600,
+        sentTo       = {},
     }
 
-    TriggerClientEvent('pop_dealing:spawnCustomer', -1, customers[id])
+    -- Envoyé seulement aux joueurs proches (voir streamZoneCustomers)
+    streamZoneCustomers()
     return customers[id]
 end
 
@@ -97,9 +156,34 @@ local function isNearCustomer(src, c)
 end
 
 local function removeCustomer(id)
-    if not customers[id] then return end
+    local c = customers[id]
+    if not c then return end
     customers[id] = nil
-    TriggerClientEvent('pop_dealing:removeCustomer', -1, id)
+    -- Uniquement aux joueurs qui ont ce PNJ
+    for src in pairs(c.sentTo or {}) do
+        TriggerClientEvent('pop_dealing:removeCustomer', src, id)
+    end
+end
+
+-- Joueurs dont le job ESX fait partie de Config.PoliceJobs
+local function getPoliceSources()
+    local jobs = {}
+    for _, j in ipairs(Config.PoliceJobs or { 'police' }) do jobs[j] = true end
+    local list = {}
+    for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
+        if xPlayer.job and jobs[xPlayer.job.name] then
+            list[#list + 1] = xPlayer.source
+        end
+    end
+    return list
+end
+
+-- Nom du lieu pour l'alerte : zone de deal, sinon territoire (pop_territories)
+local function placeLabel(c)
+    local zone = Config.Zones[c.zoneIdx]
+    if zone then return zone.name end
+    local ok, _, label = pcall(function() return exports.pop_territories:getZoneAt(c.x, c.y) end)
+    return (ok and label) or '?'
 end
 
 -- ─────────────────────────────────────────────
@@ -181,9 +265,11 @@ local function generateCustomerNear(src)
         isCop        = math.random() < (Config.BustChance or 0.0),
         claimedBy    = nil,
         expiresAt    = os.time() + 600,
+        sentTo       = {},
     }
 
-    TriggerClientEvent('pop_dealing:spawnCustomer', -1, customers[id])
+    -- Client personnel : créé uniquement chez le vendeur
+    sendCustomer(src, customers[id])
 end
 
 -- Bascule le mode vente (appelé par pochonweed.onUse côté pop_inventory)
@@ -237,6 +323,9 @@ CreateThread(function()
             if now >= c.expiresAt then removeCustomer(id) end
         end
 
+        -- Clients de zone : création / retrait selon la distance des joueurs
+        streamZoneCustomers()
+
         -- En mode dev: pas de spawn automatique, on passe par /dealing_spawn
         if Config.DevIgnoreZone then
             goto continue
@@ -261,7 +350,20 @@ end)
 -- ─────────────────────────────────────────────
 
 RegisterNetEvent('pop_dealing:requestSync', function()
-    TriggerClientEvent('pop_dealing:syncAll', source, customers)
+    local src = source
+    local pc  = playerCoords(src)
+    local range = Config.CustomerStreamRange or 150.0
+    local list = {}
+    for _, c in pairs(customers) do
+        c.sentTo = c.sentTo or {}
+        local mine = c.ownerSrc == src
+        local near = not c.ownerSrc and pc and #(pc - vec3(c.x, c.y, c.z)) <= range
+        if mine or near then
+            c.sentTo[src] = true
+            list[#list + 1] = publicData(c)
+        end
+    end
+    TriggerClientEvent('pop_dealing:syncAll', src, list)
 end)
 
 -- ─────────────────────────────────────────────
@@ -331,12 +433,16 @@ RegisterNetEvent('pop_dealing:propose', function(customerId, proposedUnit)
     -- Si flic infiltré → bust uniquement si le deal est accepté (sinon il joue le jeu)
     if proposedUnit <= c.maxUnit then
         if c.isCop then
-            TriggerClientEvent('pop_dealing:bust', src, c)
-            TriggerClientEvent('pop_dealing:dispatchAlert', -1, {
+            TriggerClientEvent('pop_dealing:bust', src, publicData(c))
+            -- Alerte envoyée uniquement à la police
+            local alert = {
                 coords = vec3(c.x, c.y, c.z),
                 radius = Config.BustAlertRadius,
-                label  = ('Deal de drogue suspect (%s)'):format(Config.Zones[c.zoneIdx] and Config.Zones[c.zoneIdx].name or '?'),
-            })
+                label  = ('Deal de drogue suspect (%s)'):format(placeLabel(c)),
+            }
+            for _, copSrc in ipairs(getPoliceSources()) do
+                TriggerClientEvent('pop_dealing:dispatchAlert', copSrc, alert)
+            end
             removeCustomer(customerId)
             return
         end
@@ -358,7 +464,18 @@ RegisterNetEvent('pop_dealing:propose', function(customerId, proposedUnit)
             totalPrice = finalPrice
         end
 
-        exports.pop_inventory:addItem(src, Config.MoneyItem, totalPrice)
+        -- Paiement en objet cash (pop_inventory), pas le compte ESX money
+        local paid = exports.pop_inventory:addItem(src, Config.MoneyItem or 'cash', totalPrice)
+        if not paid then
+            -- Inventaire plein : on rend la marchandise
+            exports.pop_inventory:addItem(src, c.drugDefId, c.qty)
+            c.claimedBy = nil
+            TriggerClientEvent('pop_dealing:notify', src, {
+                icon = 'fas fa-circle-exclamation', message = 'Inventaire plein, deal annulé.', duration = 3000,
+            })
+            TriggerClientEvent('pop_dealing:proposeResult', src, { id = c.id, status = 'cancel' })
+            return
+        end
 
         TriggerClientEvent('pop_dealing:proposeResult', src, {
             id          = c.id,
@@ -426,6 +543,7 @@ AddEventHandler('playerDropped', function()
     stopSelling(src)
     for _, c in pairs(customers) do
         if c.claimedBy == src then c.claimedBy = nil end
+        if c.sentTo then c.sentTo[src] = nil end
     end
 end)
 
@@ -479,6 +597,7 @@ RegisterCommand('dealing_spawn', function(src)
         isCop        = false,
         claimedBy    = nil,
         expiresAt    = os.time() + 600,
+        sentTo       = {},
     }
 
     if Config.Debug then
@@ -486,7 +605,7 @@ RegisterCommand('dealing_spawn', function(src)
             id, model, drug.defId, qty, hintUnit, maxUnit, fx, fy, pc.z))
     end
 
-    TriggerClientEvent('pop_dealing:spawnCustomer', -1, customers[id])
+    sendCustomer(src, customers[id])
     TriggerClientEvent('pop_dealing:notify', src, {
         icon = 'fas fa-info',
         message = ('Client spawn #%d : %s x%d (hint $%d/u, max $%d/u)'):format(id, drug.label, qty, hintUnit, maxUnit),

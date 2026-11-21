@@ -5,3 +5,4 @@ author 'KL'
 description 'Ressource de preview pour livraison'
 
 client_script 'client.lua'
+server_script 'server.lua'

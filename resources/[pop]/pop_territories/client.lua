@@ -8,67 +8,65 @@ local ESX = exports['es_extended']:getSharedObject()
 local control     = {}    -- [zoneId] = payload de contrôle (diffusé par le serveur)
 local myProgress  = {}    -- [zoneId] = { share, threshold, color, controlled }
 local playerZone  = nil   -- zone de vente où le joueur se trouve physiquement
-local hoverZone   = nil   -- zone de vente survolée par le curseur (carte en pause)
 
 -- ─────────────────────────────────────────────
 -- Synchro serveur
 -- ─────────────────────────────────────────────
 
-local function deepCopyZone(zData)
-    local copy = {}
-    for k, v in pairs(zData) do
-        if type(v) == 'table' then
-            local t = {}
-            for i, val in pairs(v) do t[i] = val end
-            copy[k] = t
-        else
-            copy[k] = v
-        end
+-- Cercles des territoires sur la carte (remplacent les zones MapZones)
+local zoneBlips = {}   -- [zoneId] = blip
+
+-- Couleurs de blip GTA les plus courantes, pour approcher la couleur RGB d'un crew
+local BLIP_PALETTE = {
+    { 1,  224, 50, 50 },   { 2,  114, 204, 114 }, { 3,  93, 182, 229 },
+    { 4,  240, 240, 240 }, { 5,  238, 198, 78 },  { 17, 234, 142, 80 },
+    { 27, 171, 60, 230 },  { 38, 44, 109, 184 },  { 40, 75, 75, 75 },
+    { 46, 236, 240, 41 },  { 52, 101, 185, 54 },  { 59, 157, 38, 38 },
+}
+
+local function nearestBlipColour(rgb)
+    local best, bestD = 1, math.huge
+    for _, c in ipairs(BLIP_PALETTE) do
+        local dr = (tonumber(rgb[1]) or 0) - c[2]
+        local dg = (tonumber(rgb[2]) or 0) - c[3]
+        local db = (tonumber(rgb[3]) or 0) - c[4]
+        local d = dr * dr + dg * dg + db * db
+        if d < bestD then best, bestD = c[1], d end
     end
-    -- deep copy points
-    if zData.points then
-        copy.points = {}
-        for i, p in ipairs(zData.points) do
-            copy.points[i] = { x = p.x, y = p.y }
-        end
-    end
-    return copy
+    return best
 end
 
 local function updateMapZoneColor(zoneId, payload)
-    local ok, mzZones = pcall(function() return exports.MapZones:getZones() end)
-    if not ok or type(mzZones) ~= 'table' or not mzZones[zoneId] then return end
-
-    local zData = mzZones[zoneId]
-
-    -- Sauvegarde la couleur d'origine une seule fois
-    if not zData.originalColor then
-        local c = zData.color or {255, 0, 0}
-        zData.originalColor = { c[1], c[2], c[3] }
+    local blip = zoneBlips[zoneId]
+    if not blip then return end
+    local zone = Config.Zones[zoneId]
+    local colour = (zone and zone.blipColor) or 1
+    if payload and payload.controlled and type(payload.color) == 'table' then
+        colour = nearestBlipColour(payload.color)
     end
-
-    -- Détermine la nouvelle couleur (crew si contrôlé, originale sinon)
-    local newColor
-    if payload and payload.controlled and payload.color then
-        newColor = { payload.color[1], payload.color[2], payload.color[3] }
-    else
-        newColor = { zData.originalColor[1], zData.originalColor[2], zData.originalColor[3] }
-    end
-
-    -- Ne rien faire si la couleur n'a pas changé
-    local cur = zData.color
-    if cur and cur[1] == newColor[1] and cur[2] == newColor[2] and cur[3] == newColor[3] then
-        return
-    end
-
-    -- Copie profonde pour éviter la corruption lors du removeZone interne à addZone
-    local dataCopy = deepCopyZone(zData)
-    dataCopy.color = newColor
-    -- Propage aussi sur l'original pour les prochains appels
-    zData.color = newColor
-
-    exports.MapZones:addZone(dataCopy, zoneId)
+    SetBlipColour(blip, colour)
 end
+
+CreateThread(function()
+    if not Config.ShowZoneBlips then return end
+    for id, z in pairs(Config.Zones) do
+        if Territories.isDealZone(z) then
+            local blip = AddBlipForRadius(z.center.x, z.center.y, z.center.z, z.radius)
+            SetBlipColour(blip, z.blipColor or 1)
+            SetBlipAlpha(blip, Config.BlipAlpha or 90)
+            SetBlipAsShortRange(blip, true)
+            zoneBlips[id] = blip
+            updateMapZoneColor(id, control[id])
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for _, blip in pairs(zoneBlips) do
+        if DoesBlipExist(blip) then RemoveBlip(blip) end
+    end
+end)
 
 RegisterNetEvent('pop_territories:control', function(zoneId, payload)
     control[zoneId] = payload
@@ -92,28 +90,27 @@ CreateThread(function()
 end)
 
 -- ─────────────────────────────────────────────
--- Détection de zone (via MapZones)
+-- Détection de zone (zones internes, contrôle toutes les secondes)
 -- ─────────────────────────────────────────────
 
-AddEventHandler('mapzones:onPlayerEnter', function(zone, id)
-    if zone and zone.dealZone then
-        playerZone = id
-        ESX.TriggerServerCallback('pop_territories:getMyShare', function(res)
-            myProgress[id] = res
-        end, id)
+CreateThread(function()
+    while true do
+        local coords = GetEntityCoords(PlayerPedId())
+        local id, zone = Territories.getZoneAt(coords.x, coords.y)
+        if not Territories.isDealZone(zone) then id = nil end
+
+        if id ~= playerZone then
+            playerZone = id
+            -- checklist.lua écoute cet évènement local (entrée / sortie de zone)
+            TriggerEvent('pop_territories:zoneChanged', id)
+            if id then
+                ESX.TriggerServerCallback('pop_territories:getMyShare', function(res)
+                    myProgress[id] = res
+                end, id)
+            end
+        end
+        Wait(1000)
     end
-end)
-
-AddEventHandler('mapzones:onPlayerExit', function(_, id)
-    if playerZone == id then playerZone = nil end
-end)
-
-AddEventHandler('mapzones:onMapEnter', function(zone, id)
-    hoverZone = (zone and zone.dealZone) and id or nil
-end)
-
-AddEventHandler('mapzones:onMapExit', function(_, id)
-    if hoverZone == id then hoverZone = nil end
 end)
 
 -- ─────────────────────────────────────────────
@@ -135,13 +132,13 @@ end
 
 
 -- ─────────────────────────────────────────────
--- Indicateur de contrôle au survol de la carte (pause)
+-- Indicateur de contrôle sur la carte (pause) : territoire où se trouve le joueur
 -- ─────────────────────────────────────────────
 
 CreateThread(function()
     while true do
-        if IsPauseMenuActive() and hoverZone then
-            local p = control[hoverZone]
+        if playerZone and IsPauseMenuActive() then
+            local p = control[playerZone]
             local txt, r, g, b
             if p and p.label then
                 local pct = math.floor((p.share or 0.0) + 0.5)
@@ -152,7 +149,7 @@ CreateThread(function()
                 end
                 if p.color then r, g, b = p.color[1], p.color[2], p.color[3] end
             else
-                txt = 'Territoire non contrôlé'
+                txt = ('%s — territoire non contrôlé'):format(Territories.label(playerZone))
             end
             if p and p.atWar then txt = txt .. '  [GUERRE]' end
             drawHudText(txt, 0.5, 0.062, 0.40, r, g, b)

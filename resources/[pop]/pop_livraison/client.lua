@@ -1,5 +1,28 @@
 local spawnedEntities = {}
 
+-- Chargements avec délai max (~5 s) : pas de boucle infinie si un modèle / une anim manque
+local function loadModel(hash)
+    if not IsModelInCdimage(hash) then return false end
+    RequestModel(hash)
+    local timeout = GetGameTimer() + 5000
+    while not HasModelLoaded(hash) do
+        if GetGameTimer() > timeout then return false end
+        Wait(10)
+    end
+    return true
+end
+
+local function loadAnimDict(dict)
+    if not DoesAnimDictExist(dict) then return false end
+    RequestAnimDict(dict)
+    local timeout = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) do
+        if GetGameTimer() > timeout then return false end
+        Wait(10)
+    end
+    return true
+end
+
 local function SpawnPreview()
     -- Table of peds/props to spawn
     local pedsToSpawn = {
@@ -55,36 +78,34 @@ local function SpawnPreview()
         {
             model = "s_m_m_postal_01",
             coords = vector4(359.9845, -605.8492, 28.6747 - 1.0, 266.2759),
-            weapon = "WEAPON_BRIEFCASE_03"
+            weapon = "WEAPON_BRIEFCASE_02" -- _03 n'existe pas en vanilla
         }
     }
 
     -- 1. Boxville4
     local model1 = GetHashKey("boxville4")
-    RequestModel(model1)
-    while not HasModelLoaded(model1) do Wait(10) end
-    local veh1 = CreateVehicle(model1, 1178.5614, -3307.3799, 5.9486, 89.2651, false, false)
-    SetEntityAsMissionEntity(veh1, true, true)
-    FreezeEntityPosition(veh1, true)
-    table.insert(spawnedEntities, veh1)
+    if loadModel(model1) then
+        local veh1 = CreateVehicle(model1, 1178.5614, -3307.3799, 5.9486, 89.2651, false, false)
+        SetEntityAsMissionEntity(veh1, true, true)
+        FreezeEntityPosition(veh1, true)
+        SetModelAsNoLongerNeeded(model1)
+        table.insert(spawnedEntities, veh1)
+    end
 
     -- 2. Rumpo (open back left door)
     local model2 = GetHashKey("rumpo")
-    RequestModel(model2)
-    while not HasModelLoaded(model2) do Wait(10) end
-    local veh2 = CreateVehicle(model2, 1177.3879, -3314.0940, 6.0510, 203.1342, false, false)
-    SetEntityAsMissionEntity(veh2, true, true)
-    FreezeEntityPosition(veh2, true)
-    SetVehicleDoorOpen(veh2, 2, false, false) -- open back left door
-    table.insert(spawnedEntities, veh2)
+    if loadModel(model2) then
+        local veh2 = CreateVehicle(model2, 1177.3879, -3314.0940, 6.0510, 203.1342, false, false)
+        SetEntityAsMissionEntity(veh2, true, true)
+        FreezeEntityPosition(veh2, true)
+        SetVehicleDoorOpen(veh2, 2, false, false) -- open back left door
+        SetModelAsNoLongerNeeded(model2)
+        table.insert(spawnedEntities, veh2)
+    end
 
     -- SCENE 2: Quickie Pharm Vehicles
     local model3 = GetHashKey("sentinel5")
-    RequestModel(model3)
-    local maxWait = GetGameTimer() + 5000
-    while not HasModelLoaded(model3) and GetGameTimer() < maxWait do Wait(10) end
-
-    if HasModelLoaded(model3) then
+    if loadModel(model3) then
         -- Vehicle 1: Sentinel5 (trunk open)
         local veh3 = CreateVehicle(model3, 360.4900, -610.6686, 28.2080, 213.5158, false, false)
         SetEntityAsMissionEntity(veh3, true, true)
@@ -112,14 +133,14 @@ local function SpawnPreview()
         SetVehicleLivery(veh4, 10)
         SetVehicleDoorOpen(veh4, 3, false, false) -- Right back door open
         table.insert(spawnedEntities, veh4)
+        SetModelAsNoLongerNeeded(model3)
     end
 
     -- Removed standalone briefcase object
     -- 3. Spawn Peds
     for _, data in ipairs(pedsToSpawn) do
         local pedModel = GetHashKey(data.model)
-        RequestModel(pedModel)
-        while not HasModelLoaded(pedModel) do Wait(10) end
+        if not loadModel(pedModel) then goto continue end
 
         local ped = CreatePed(4, pedModel, data.coords.x, data.coords.y, data.coords.z, data.coords.w, false, true)
         SetEntityAsMissionEntity(ped, true, true)
@@ -133,30 +154,28 @@ local function SpawnPreview()
         end
 
         if data.animDict and data.animName then
-            RequestAnimDict(data.animDict)
-            while not HasAnimDictLoaded(data.animDict) do Wait(10) end
-            TaskPlayAnim(ped, data.animDict, data.animName, 8.0, 8.0, -1, 49, 0, false, false, false)
+            if loadAnimDict(data.animDict) then
+                TaskPlayAnim(ped, data.animDict, data.animName, 8.0, 8.0, -1, 49, 0, false, false, false)
+                RemoveAnimDict(data.animDict)
+            end
         end
 
-        if data.prop then
+        if data.prop and loadModel(GetHashKey(data.prop)) then
             local propModel = GetHashKey(data.prop)
-            RequestModel(propModel)
-            while not HasModelLoaded(propModel) do Wait(10) end
             local propObj = CreateObject(propModel, 0, 0, 0, false, false, false)
             AttachEntityToEntity(propObj, ped, GetPedBoneIndex(ped, data.boneIndex), data.propPlacement[1], data.propPlacement[2], data.propPlacement[3], data.propPlacement[4], data.propPlacement[5], data.propPlacement[6], true, true, false, true, 1, true)
             table.insert(spawnedEntities, propObj)
         end
 
-        if data.extraProp then
+        if data.extraProp and loadModel(GetHashKey(data.extraProp)) then
             local extraModel = GetHashKey(data.extraProp)
-            RequestModel(extraModel)
-            while not HasModelLoaded(extraModel) do Wait(10) end
             local extraObj = CreateObject(extraModel, 0, 0, 0, false, false, false)
             AttachEntityToEntity(extraObj, ped, GetPedBoneIndex(ped, data.extraBoneIndex), data.extraPropPlacement[1], data.extraPropPlacement[2], data.extraPropPlacement[3], data.extraPropPlacement[4], data.extraPropPlacement[5], data.extraPropPlacement[6], true, true, false, true, 1, true)
             table.insert(spawnedEntities, extraObj)
         end
 
         table.insert(spawnedEntities, ped)
+        ::continue::
     end
 end
 
@@ -169,14 +188,14 @@ local function DeletePreview()
     spawnedEntities = {}
 end
 
--- Command to toggle the preview
-RegisterCommand("previewlivraison", function()
+-- Commande de dev /previewlivraison : réservée aux admins (vérifiée côté serveur, voir server.lua)
+RegisterNetEvent('pop_livraison:togglePreview', function()
     if #spawnedEntities > 0 then
         DeletePreview()
     else
         SpawnPreview()
     end
-end, false)
+end)
 
 -- Clean up on resource restart/stop
 AddEventHandler("onResourceStop", function(resourceName)

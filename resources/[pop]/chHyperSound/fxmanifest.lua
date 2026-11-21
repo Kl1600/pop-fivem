@@ -56,5 +56,5 @@ files {
     'sounds/unlock.ogg',
     'sounds/wegottamovequick.ogg',
     'sounds/vamosloud.ogg',
-    'fire.ogg',
+    -- fire.ogg est dans sounds/ (couvert par sounds/*.ogg)
 }

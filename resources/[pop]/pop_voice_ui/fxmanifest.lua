@@ -13,6 +13,5 @@ files {
 }
 
 client_scripts {
-    'client.lua',
-    'thornton.lua'
+    'client.lua'
 }

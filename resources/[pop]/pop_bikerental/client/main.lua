@@ -2,6 +2,30 @@ local ESX = exports['es_extended']:getSharedObject()
 
 local staticVehicles = {}
 
+-- Chargement de modèle avec délai max (évite une boucle infinie si le modèle n'existe pas)
+local function loadModel(hash)
+    if not IsModelInCdimage(hash) then return false end
+    RequestModel(hash)
+    local timeout = GetGameTimer() + 5000
+    while not HasModelLoaded(hash) do
+        if GetGameTimer() > timeout then return false end
+        Wait(10)
+    end
+    return true
+end
+
+-- Point de spawn libre ? (les véhicules d'exposition ne comptent pas)
+local function isSpawnClear(coords, radius)
+    local ignore = {}
+    for _, v in ipairs(staticVehicles) do ignore[v] = true end
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        if not ignore[veh] and #(GetEntityCoords(veh) - coords) <= radius then
+            return false
+        end
+    end
+    return true
+end
+
 CreateThread(function()
     while not ESX.IsPlayerLoaded() do
         Wait(500)
@@ -11,9 +35,9 @@ CreateThread(function()
         local locSpawn = location.spawnCoords
         for _, data in ipairs(location.displayVehicles) do
             local hash = GetHashKey(data.model)
-            RequestModel(hash)
-            while not HasModelLoaded(hash) do
-                Wait(10)
+            if not loadModel(hash) then
+                print(('^3[pop_bikerental] Modèle introuvable : %s (véhicule d\'exposition ignoré)^7'):format(data.model))
+                goto continue
             end
 
             local veh = CreateVehicle(hash, data.coords.x, data.coords.y, data.coords.z - 0.2, data.coords.w, false, false)
@@ -34,7 +58,7 @@ CreateThread(function()
                     icon = 'fas fa-key',
                     label = data.label,
                     onSelect = function()
-                        local isClear = ESX.Game.IsSpawnPointClear(vector3(locSpawn.x, locSpawn.y, locSpawn.z), 3.0)
+                        local isClear = isSpawnClear(vector3(locSpawn.x, locSpawn.y, locSpawn.z), 3.0)
                         if not isClear then
                             exports['pop_notify']:ShowNotify({
                                 title = 'Zone bloquée',
@@ -48,25 +72,23 @@ CreateThread(function()
                     end
                 }
             })
+            ::continue::
         end
     end
 end)
 
 RegisterNetEvent('pop_bikerental:client:spawnVehicle', function(model, sx, sy, sz, sw)
     local hash = GetHashKey(model)
-    if not IsModelInCdimage(hash) then return end
-    RequestModel(hash)
-    while not HasModelLoaded(hash) do
-        Wait(10)
-    end
+    if not loadModel(hash) then return end
 
     ESX.Game.SpawnVehicle(model, vector3(sx, sy, sz), sw, function(vehicle)
         TaskWarpPedIntoVehicle(cache.ped, vehicle, -1)
         local plate = GetVehicleNumberPlateText(vehicle)
         SetModelAsNoLongerNeeded(hash)
 
-        if model == 'ventoso' then
-            TriggerServerEvent('vehicle_keys:server:giveKey', plate, 'Ventoso Location')
+        -- vehicle_keys est optionnel : seulement s'il tourne sur le serveur
+        if model == 'ventoso' and GetResourceState('vehicle_keys') == 'started' then
+            pcall(TriggerServerEvent, 'vehicle_keys:server:giveKey', plate, 'Ventoso Location')
             exports['pop_notify']:ShowNotify({
                 title = 'Clés',
                 message = 'Vous avez reçu les clés du Ventoso.',

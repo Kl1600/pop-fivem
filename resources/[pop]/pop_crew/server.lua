@@ -40,6 +40,29 @@ local function decodeColor(raw)
     return Config.DefaultColor
 end
 
+-- Coupe une chaîne UTF-8 à maxChars caractères (sans casser un caractère accentué)
+local function utf8Cut(str, maxChars)
+    if not utf8.len(str) then
+        str = str:gsub('[\128-\255]', '') -- UTF-8 invalide : on garde l'ASCII
+    end
+    local cut = utf8.offset(str, maxChars + 1)
+    if cut then str = str:sub(1, cut - 1) end
+    return str
+end
+
+-- Tag : lettres et chiffres uniquement, majuscules
+local function cleanTag(tag)
+    if type(tag) ~= 'string' then return '' end
+    return tag:upper():gsub('[^%w]', ''):sub(1, Config.MaxTagLen)
+end
+
+-- Label : sans balises, sans caractères de contrôle, espaces normalisés
+local function cleanLabel(label)
+    if type(label) ~= 'string' then return '' end
+    label = label:gsub('[%c<>"`\\]', ''):gsub('%s+', ' '):gsub('^%s+', ''):gsub('%s+$', '')
+    return utf8Cut(label, Config.MaxLabelLen)
+end
+
 -- ─────────────────────────────────────────────
 -- Chargement DB
 -- ─────────────────────────────────────────────
@@ -69,6 +92,9 @@ CreateThread(function()
 
     for _, c in ipairs(MySQL.query.await('SELECT * FROM crews') or {}) do
         c.color = decodeColor(c.color)
+        -- Crews créés avant le filtrage : on nettoie l'affichage
+        local lbl = cleanLabel(c.label)
+        c.label = (lbl ~= '' and lbl) or c.name
         crewsById[c.id] = c
     end
     for _, m in ipairs(MySQL.query.await('SELECT identifier, crew_id FROM crew_members') or {}) do
@@ -159,9 +185,9 @@ local function createCrew(src, tag, label)
     end
 
     if type(tag) ~= 'string' then return end
-    if type(label) ~= 'string' then label = nil end
-    tag = tag:upper():gsub('%s', ''):sub(1, Config.MaxTagLen)
-    label = (label or tag):sub(1, Config.MaxLabelLen)
+    tag = cleanTag(tag)
+    label = cleanLabel(label)
+    if label == '' then label = tag end
     if #tag < 2 then
         return notify(src, 'Crew', 'Tag invalide (2-' .. Config.MaxTagLen .. ' caractères).', 'error')
     end

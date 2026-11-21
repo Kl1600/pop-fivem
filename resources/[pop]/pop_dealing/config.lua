@@ -23,6 +23,8 @@ Config.MoneyItem             = 'cash'     -- item d'argent (pop_inventory)
 
 Config.BustChance            = 0.02       -- 2% que le client soit un flic (dev: laisser bas)
 Config.BustAlertRadius       = 250.0      -- portée d'alerte police en cas de bust
+Config.PoliceJobs            = { 'police' } -- jobs ESX qui reçoivent l'alerte de bust
+Config.CustomerStreamRange   = 150.0      -- les clients de zone ne sont créés que chez les joueurs à cette distance
 
 -- ─────────────────────────────────────────────
 -- Mode "vente de drogue" déclenché par l'item (pochonweed)

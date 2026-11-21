@@ -4,6 +4,7 @@ local npcBlip = nil
 local missionTerminee = false
 local challengeStarted = false
 local challengeDone = false
+local challengeFails = 0
 
 local pedModel = GetHashKey('ig_thornton')
 local startPos = vector4(-72.6626, 84.9975, 71.4851, 57.4806)
@@ -56,6 +57,7 @@ local function MS_PlayInteractSound(soundName, volume)
 end
 
 local function EnsureThorntonBlip()
+    if missionTerminee then return end
     if not npcHandle or not DoesEntityExist(npcHandle) then return end
     if npcBlip and DoesBlipExist(npcBlip) then return end
 
@@ -82,9 +84,18 @@ end
 local function playArrestAnim(ped)
     local animDict = "missheistfbisetup1"
     local animName = "hassle_intro_loop_f"
-    RequestAnimDict(animDict)
-    while not HasAnimDictLoaded(animDict) do Wait(10) end
+    if not LoadAnimDict(animDict) then return end
     TaskPlayAnim(ped, animDict, animName, 8.0, -8.0, -1, 2, 0, false, false, false)
+end
+
+-- Attend que le PNJ soit arrivé, avec un délai max (sinon on le place directement)
+local function WaitArrival(ped, pos, radius, timeoutMs)
+    local limit = GetGameTimer() + timeoutMs
+    while DoesEntityExist(ped) and #(GetEntityCoords(ped) - pos) >= radius do
+        if GetGameTimer() > limit then return false end
+        Wait(500)
+    end
+    return true
 end
 
 function ShowSubtitle(text, duration)
@@ -123,8 +134,9 @@ end)
 -- ÉVÉNEMENT DE SPAWN (DÉCLENCHÉ PAR STARTHEIST)
 -- ============================================================
 
-RegisterNetEvent('startheist')
 AddEventHandler('startheist', function(ownerServerId, heistId)
+    challengeStarted, challengeDone, missionTerminee = false, false, false
+    challengeFails = 0
     if IsCoopActive() and not IsOwner() then
         return
     end
@@ -135,10 +147,11 @@ AddEventHandler('startheist', function(ownerServerId, heistId)
         return
     end
 
-    RequestModel(pedModel)
-    while not HasModelLoaded(pedModel) do Wait(10) end
+    local model = LoadFirstModel({ pedModel, 'csb_thornton', 'a_m_m_business_01' })
+    if not model then return end
 
-    npcHandle = CreatePed(4, pedModel, startPos.x, startPos.y, startPos.z - 1.0, startPos.w, true, true)
+    npcHandle = CreatePed(4, model, startPos.x, startPos.y, startPos.z - 1.0, startPos.w, true, true)
+    SetModelAsNoLongerNeeded(model)
 
     SetPedPropIndex(npcHandle, 0, 0, 0, true)
     local npcNetId = NetworkGetNetworkIdFromEntity(npcHandle)
@@ -150,8 +163,9 @@ AddEventHandler('startheist', function(ownerServerId, heistId)
 
     local moveClipset = "move_f@depressed@a"
     RequestAnimSet(moveClipset)
-    while not HasAnimSetLoaded(moveClipset) do Wait(1) end
-    SetPedMovementClipset(npcHandle, moveClipset, 1.0)
+    local limit = GetGameTimer() + 3000
+    while not HasAnimSetLoaded(moveClipset) and GetGameTimer() < limit do Wait(10) end
+    if HasAnimSetLoaded(moveClipset) then SetPedMovementClipset(npcHandle, moveClipset, 1.0) end
 
     SetEntityInvincible(npcHandle, true)
     SetBlockingOfNonTemporaryEvents(npcHandle, true)
@@ -207,18 +221,30 @@ Citizen.CreateThread(function()
                 SetCamActive(cam, true)
                 RenderScriptCams(true, true, 1000, true, true)
 
-                -- --- VOICE CHALLENGE --- --
-                exports['pma_voice_challenge']:StartChallenge()
-
+                -- --- VOICE CHALLENGE (parlez au micro pour convaincre Thornton) --- --
                 local finishedChallenge = false
                 local successChallenge = false
-                local challengeListener = AddEventHandler('pma_voice_challenge:finished', function(res)
-                    successChallenge = res
-                    finishedChallenge = true
-                end)
 
-                while not finishedChallenge do Wait(100) end
-                RemoveEventHandler(challengeListener)
+                if GetResourceState('pma_voice_challenge') == 'started' then
+                    local challengeListener = AddEventHandler('pma_voice_challenge:finished', function(res)
+                        successChallenge = res == true
+                        finishedChallenge = true
+                    end)
+                    exports['pma_voice_challenge']:StartChallenge()
+                    ShowSubtitle("~y~Parlez~w~ (push-to-talk) pour convaincre M. Duggan.", 6000)
+
+                    local limit = GetGameTimer() + 20000
+                    while not finishedChallenge and GetGameTimer() < limit do Wait(100) end
+                    RemoveEventHandler(challengeListener)
+
+                    -- Sans micro, on ne bloque pas le joueur : au 3e essai, Thornton se laisse convaincre
+                    if not successChallenge then
+                        challengeFails = challengeFails + 1
+                        if challengeFails >= 3 then successChallenge = true end
+                    end
+                else
+                    successChallenge = true -- ressource absente : on ne bloque pas la mission
+                end
 
                 if successChallenge then
                     challengeDone = true
@@ -240,12 +266,8 @@ Citizen.CreateThread(function()
                     MS_ShowSubtitle("mais on merde pas avec une voiture à ce prix là.", 2500)
                     ThorntonParle(2500)
 
-                    -- Attendre qu'il arrive à la voiture
-                    local arrivedAtTarget = false
-                    while not arrivedAtTarget do
-                        Wait(500)
-                        if #(GetEntityCoords(npcHandle) - targetPos) < 1.2 then arrivedAtTarget = true end
-                    end
+                    -- Attendre qu'il arrive à la voiture (20 s max)
+                    WaitArrival(npcHandle, targetPos, 1.2, 20000)
                     
                     ClearPedTasks(npcHandle)
                     SetEntityCoords(npcHandle, targetPos.x, targetPos.y, targetPos.z - 1.0, false, false, false, true)
@@ -255,7 +277,7 @@ Citizen.CreateThread(function()
                     Wait(500)
 
                     Wait(1000)
-                    ExecuteCommand('opencapot')
+                    TriggerEvent('mission:local:opencapot')
                     Relay("command", { cmd = "opencapot" }, false)
 
                     MS_PlayHyper(currentNetId, '4t', 15.0)
@@ -279,26 +301,17 @@ Citizen.CreateThread(function()
                     MS_ShowSubtitle("Attendez que ~HUD_COLOUR_MENU_GREY_LIGHT~M. Duggan~w~ s'en aille.", 6000)
                     Wait(6000)
 
-                    local isReturning = true
-                    while isReturning do
-                        Wait(500)
-                        if DoesEntityExist(npcHandle) then
-                            local currentCoords = GetEntityCoords(npcHandle)
-                            local distToHome = #(currentCoords - vector3(startPos.x, startPos.y, startPos.z))
-
-                            if distToHome < 1.5 then
-                                EntrerVoiture(npcHandle)
-                                if DoesBlipExist(npcBlip) then RemoveBlip(npcBlip) end
-                                missionTerminee = true
-                                isReturning = false
-
-                                Citizen.SetTimeout(20000, function()
-                                    if DoesEntityExist(npcHandle) then DeleteEntity(npcHandle) end
-                                end)
-                            end
-                        else
-                            isReturning = false
-                        end
+                    -- Il rentre à sa voiture (30 s max), puis s'en va
+                    WaitArrival(npcHandle, vector3(startPos.x, startPos.y, startPos.z), 1.5, 30000)
+                    missionTerminee = true
+                    if DoesEntityExist(npcHandle) then
+                        EntrerVoiture(npcHandle)
+                        if npcBlip and DoesBlipExist(npcBlip) then RemoveBlip(npcBlip) end
+                        npcBlip = nil
+                        local leaving = npcHandle
+                        Citizen.SetTimeout(20000, function()
+                            if DoesEntityExist(leaving) and not IsPedInAnyVehicle(leaving, false) then DeleteEntity(leaving) end
+                        end)
                     end
 
 
@@ -319,4 +332,22 @@ Citizen.CreateThread(function()
         ::continue::
         Wait(sleep)
     end
+end)
+
+-- ============================================================
+-- FIN DE MISSION : remise à zéro (le serveur supprime les entités)
+-- ============================================================
+AddEventHandler('mission:local:reset', function()
+    challengeStarted, challengeDone, missionTerminee = false, false, false
+    challengeFails = 0
+    if npcBlip and DoesBlipExist(npcBlip) then RemoveBlip(npcBlip) end
+    npcBlip = nil
+    npcHandle = nil
+    _G.npcHandle = nil
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if npcBlip and DoesBlipExist(npcBlip) then RemoveBlip(npcBlip) end
+    if npcHandle and DoesEntityExist(npcHandle) and NetworkHasControlOfEntity(npcHandle) then DeleteEntity(npcHandle) end
 end)

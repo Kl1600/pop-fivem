@@ -1,13 +1,14 @@
 -- ─────────────────────────────────────────────
 -- pop_territories - guerre de territoires
 -- Parts de zone par crew + multiplicateurs sur la vente de drogue (pop_dealing)
--- Détection de zone côté serveur via l'export MapZones:getZoneAt
+-- Détection de zone côté serveur (zones internes, voir config.lua / zones.lua)
 -- ─────────────────────────────────────────────
 
 local ESX = exports['es_extended']:getSharedObject()
 
 local shares   = {}   -- [zoneId] = { [crewId] = sharePct }
 local warState = {}   -- [zoneId] = { attacker = crewId, defender = crewId, startedAt = os.time() }
+local lastGain = {}   -- [src] = os.time() du dernier gain de part (cooldown)
 
 -- ─────────────────────────────────────────────
 -- Helpers
@@ -66,8 +67,22 @@ local function notifyCrew(crewId, title, message, ntype)
 end
 
 local function zoneLabel(zoneId, zoneData)
-    return (zoneData and zoneData.name) or zoneId
+    return (zoneData and zoneData.label) or zoneId
 end
+
+-- Zone d'un joueur à partir de la position de son ped (côté serveur)
+local function zoneOfPlayer(src)
+    local ped = GetPlayerPed(src)
+    if ped == 0 then return nil end
+    local coords = GetEntityCoords(ped)
+    return Territories.getZoneAt(coords.x, coords.y)
+end
+
+-- Export pour les autres scripts (ex. pop_dealing) : zone d'une position
+exports('getZoneAt', function(x, y)
+    local zoneId, zoneData = Territories.getZoneAt(tonumber(x) or 0.0, tonumber(y) or 0.0)
+    return zoneId, zoneData and zoneData.label or nil
+end)
 
 -- ─────────────────────────────────────────────
 -- Synchro vers les clients (survol carte + loadbar)
@@ -164,32 +179,25 @@ end)
 exports('recordDrugSale', function(src, baseAmount)
     baseAmount = tonumber(baseAmount) or 0
 
-    -- Position serveur du vendeur → territoire
-    local ped = GetPlayerPed(src)
-    if ped == 0 then return baseAmount, { zone = nil } end
-    local coords = GetEntityCoords(ped)
+    src = tonumber(src)
+    if not src or GetPlayerPed(src) == 0 then return baseAmount, { zone = nil } end
 
-    local zoneId, zoneData
-    local ok = pcall(function() zoneId, zoneData = exports.MapZones:getZoneAt(coords.x, coords.y) end)
-    if not ok or not zoneId then
+    -- Position serveur du vendeur → territoire
+    local zoneId, zoneData = zoneOfPlayer(src)
+    if not zoneId then
         -- Hors territoire
-        if Config.Debug then TriggerClientEvent('notification:client:ShowNotify', src, { title = '[DEBUG] Territoire', message = 'Hors territoire — vente sans zone', icon = 'fas, fa-bug', duration = 5000 }) end
+        if Config.Debug then TriggerClientEvent('notification:client:ShowNotify', src, { title = '[DEBUG] Territoire', message = 'Hors territoire — vente sans zone', icon = 'fas fa-bug', duration = 5000 }) end
         return math.floor(baseAmount * Config.OutsideMultiplier + 0.5), { zone = nil }
     end
 
-    -- Zone de vente ? Le flag vient de l'éditeur MapZones (zoneData.dealZone),
-    -- avec fallback sur une éventuelle entrée Config.Zones (compat).
-    local zoneCfg  = Config.Zones[zoneId]
-    local isDeal   = (zoneData and zoneData.dealZone == true) or (zoneCfg ~= nil)
-    if not isDeal then
+    -- Zone de vente ? (dealZone = false dans config.lua pour l'exclure)
+    if not Territories.isDealZone(zoneData) then
         -- Territoire normal : aucune vente comptabilisée, pas de multiplicateur
         if Config.Debug then TriggerClientEvent('notification:client:ShowNotify', src, { title = '[DEBUG] Territoire', message = ('Zone %s détectée MAIS dealZone=false'):format(zoneId), icon = 'fas fa-bug', duration = 5000 }) end
         return math.floor(baseAmount * Config.OutsideMultiplier + 0.5), { zone = zoneId, dealZone = false }
     end
 
-    local baseMult = (zoneData and tonumber(zoneData.multiplier))
-                  or (zoneCfg and tonumber(zoneCfg.multiplier))
-                  or Config.DefaultMultiplier
+    local baseMult = tonumber(zoneData.multiplier) or Config.DefaultMultiplier
 
     local crew = exports.pop_crew:getCrew(src)
     if not crew then
@@ -201,12 +209,20 @@ exports('recordDrugSale', function(src, baseAmount)
     -- Contrôleur AVANT la vente (pour détecter le déclenchement de guerre)
     local ctrlBefore = controllerOf(zoneId)
 
+    -- Cooldown par joueur entre deux gains de part
+    local now    = os.time()
+    local gained = now - (lastGain[src] or 0) >= (Config.ShareCooldown or 60)
+
     -- Gain de part pour le crew du vendeur
-    local newShare = clampShare(getShare(zoneId, crew.id) + Config.SharePerSale)
-    setShare(zoneId, crew.id, newShare)
+    local newShare = getShare(zoneId, crew.id)
+    if gained then
+        lastGain[src] = now
+        newShare = clampShare(newShare + Config.SharePerSale)
+        setShare(zoneId, crew.id, newShare)
+    end
 
     -- Érosion optionnelle des parts des autres crews
-    if Config.ErosionFactor and Config.ErosionFactor > 0 then
+    if gained and Config.ErosionFactor and Config.ErosionFactor > 0 then
         local z = shares[zoneId]
         for cid, s in pairs(z) do
             if cid ~= crew.id then
@@ -226,7 +242,7 @@ exports('recordDrugSale', function(src, baseAmount)
     -- Debug notification : part enregistrée
     if Config.Debug then
         TriggerClientEvent('notification:client:ShowNotify', src, {
-            title = '[DEBUG] Part enregistrée',
+            title = gained and '[DEBUG] Part enregistrée' or '[DEBUG] Cooldown (pas de part)',
             message = ('Zone %s | Crew %s | Part: %.0f%% | Contrôle: %s'):format(
                 zoneId, crew.name, newShare, ctrlAfter == crew.id and 'OUI ✓' or 'non'
             ),
@@ -248,9 +264,11 @@ exports('recordDrugSale', function(src, baseAmount)
     end
 
     -- Synchro clients : contrôle de la zone (survol carte) + progression du crew (loadbar)
-    syncZoneControl(zoneId)
     TriggerClientEvent('pop_territories:client:drugSold', src)
-    pushCrewProgress(crew.id, zoneId, newShare)
+    if gained then
+        syncZoneControl(zoneId)
+        pushCrewProgress(crew.id, zoneId, newShare)
+    end
 
     local finalAmount = math.floor(baseAmount * mult + 0.5)
     return finalAmount, { zone = zoneId, mult = mult, share = newShare, crew = crew.id }
@@ -318,7 +336,14 @@ ESX.RegisterServerCallback('pop_territories:hasWeed', function(source, cb)
     cb(ok and type(count) == 'number' and count > 0)
 end)
 
+AddEventHandler('playerDropped', function()
+    lastGain[source] = nil
+end)
+
 ESX.RegisterServerCallback('pop_territories:getMyShare', function(source, cb, zoneId)
+    if type(zoneId) ~= 'string' or not Config.Zones[zoneId] then
+        return cb({ share = 0.0, threshold = Config.ControlThreshold, inCrew = false })
+    end
     local crew = exports.pop_crew:getCrew(source)
     if not crew then
         return cb({ share = 0.0, threshold = Config.ControlThreshold, inCrew = false })
@@ -338,26 +363,18 @@ end)
 
 RegisterCommand('territory', function(src)
     if src == 0 then return end
-    local ped = GetPlayerPed(src)
-    if ped == 0 then return end
-    local coords = GetEntityCoords(ped)
-
-    local zoneId, zoneData
-    pcall(function() zoneId, zoneData = exports.MapZones:getZoneAt(coords.x, coords.y) end)
+    local zoneId, zoneData = zoneOfPlayer(src)
 
     if not zoneId then
         return TriggerClientEvent('notification:client:ShowNotify', src,
             { title = 'Territoire', message = 'Tu n\'es dans aucun territoire.', icon = 'fas fa-circle-info', duration = 5000 })
     end
 
-    local zoneCfg = Config.Zones[zoneId]
-    local isDeal  = (zoneData and zoneData.dealZone == true) or (zoneCfg ~= nil)
-
     local msg
-    if not isDeal then
+    if not Territories.isDealZone(zoneData) then
         msg = ('%s — zone normale (pas de vente)'):format(zoneLabel(zoneId, zoneData))
     else
-        local mult = (zoneData and zoneData.multiplier) or (zoneCfg and zoneCfg.multiplier) or Config.DefaultMultiplier
+        local mult = tonumber(zoneData.multiplier) or Config.DefaultMultiplier
         local ctrl = controllerOf(zoneId)
         local ctrlCrew = ctrl and exports.pop_crew:getCrewById(ctrl)
         local status = warState[zoneId] and ' [EN GUERRE]' or ''

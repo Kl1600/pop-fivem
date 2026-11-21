@@ -37,6 +37,8 @@ window.addEventListener('message', function (event) {
 function resetChallenge() {
     persuasion = 0;
     timeLeft = 10.0;
+    persuasionBar.style.boxShadow = '';
+    timerDigits.style.color = '';
     updatePersuasionUI();
     updateTimerUI();
 }

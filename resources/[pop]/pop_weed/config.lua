@@ -4,6 +4,8 @@ Config.TotalDuration = 1800         -- 30 minutes pour la récolte
 Config.HarvestAmount = 5           -- weed donnés à la récolte
 Config.WaterDuration = 1 * 3600    -- eau vide en 1h
 Config.DrawDistance  = 4.0         -- distance max du HUD 3D
+Config.SpawnDistance = 80.0        -- les props ne sont créés que près du joueur
+Config.MaxPlantsPerPlayer = 6      -- plantes max par joueur (0 = illimité), vérifié côté serveur
 
 -- Stages de croissance : minTime = secondes depuis la plantation
 Config.Stages = {

@@ -95,18 +95,12 @@ end)
 -- Détection de zone
 -- ─────────────────────────────────────────────
 
-AddEventHandler('mapzones:onPlayerEnter', function(zone, id)
-    if zone and zone.dealZone then
-        inZone = true
-        updateVisibility()
-    end
-end)
-
-AddEventHandler('mapzones:onPlayerExit', function(zone, id)
-    if inZone then
-        inZone = false
-        updateVisibility()
-    end
+-- Évènement local envoyé par client.lua (contrôle de zone toutes les secondes)
+AddEventHandler('pop_territories:zoneChanged', function(zoneId)
+    local now = zoneId ~= nil
+    if now == inZone then return end
+    inZone = now
+    updateVisibility()
 end)
 
 -- ─────────────────────────────────────────────

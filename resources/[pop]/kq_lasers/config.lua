@@ -320,12 +320,4 @@ Config.dispatch = {
 }
 
 
-RegisterCommand('alarme', function()
-    PlaySound(-1, "ALARMS_KLAXON_03", "ALARMS", 0, 0, 1)
-    print("Alarme déclenchée")
-end, false)
-
-RegisterCommand('stopalarm', function()
-    StopSound(-1)
-    print("Alarme arrêtée")
-end, false)
+-- (Commandes de test /alarme et /stopalarm retirées.)

@@ -340,9 +340,20 @@ function setupScaleform(scaleform)
 end
 
 
-AddEventHandler("ultra-voltlab", function(time, returnFn)
+local gameToken = 0
 
-	--Reset previous data
+AddEventHandler("ultra-voltlab", function(time, returnFn)
+	if isHackActive then
+		if returnFn then returnFn(-1, 'Hack already running') end
+		return
+	end
+
+	--Reset previous data (une partie précédente ne doit pas influencer la suivante)
+	gameToken = gameToken + 1
+	local myToken = gameToken
+	isSuccess = nil
+	resultVoltage = 0
+	updateResultVoltage(0)
 	isCallbackSent = false
 	occupiedCircleNodes = {}
 	confirmedNodes = {} 
@@ -353,8 +364,8 @@ AddEventHandler("ultra-voltlab", function(time, returnFn)
 	callbackFn = returnFn
 	local time = tonumber(time)
 	timer = time
-	
-	if time < 10 or time > 60 then
+
+	if not time or time < 10 or time > 60 then
 		callbackFn(-1,'Entered time is out of range')
 		isCallbackSent = true
 		return
@@ -388,8 +399,8 @@ AddEventHandler("ultra-voltlab", function(time, returnFn)
 
 	formatTargetVoltage()
 
-	
-	
+	isHackActive = true -- tout de suite : empêche un double lancement pendant le démarrage
+
 	CreateThread(function()
 		Wait(100)
 		SendNUIMessage({
@@ -746,40 +757,23 @@ AddEventHandler("ultra-voltlab", function(time, returnFn)
 		local timerWait = timer / 6
 		while timer > 0 do
 			Wait(timerWait*1000)
+			if myToken ~= gameToken then return end
 			timer = timer - timerWait
 			countDownTime = countDownTime - 1
 		end 
 		Wait(2000)
-		if isSuccess == nil then
+		if myToken ~= gameToken then return end
+		if isSuccess == nil and not isCallbackSent then
+			isCallbackSent = true
 			isHackActive = false
 			playSound('Minigame_Failure','DLC_H4_Voltage_Minigame_Sounds')
 			SendNUIMessage({
 				type = 'fail'
 			})
-			if not isCallbackSent then 
-				callbackFn(2,'Hack timeout out')
-			end
+			callbackFn(2,'Hack timeout out')
 		end
 	end)
 end)
 
 
-RegisterCommand('voltlab', function()
-		TriggerEvent('ultra-voltlab', 60, function(result,reason)
-	-- time: Time in seconds which player has. Min is 10, Max is 60
-	-- result: Reason is the reason of result. Result is an integer code which represents result.
-	-- 	   0: Hack failed by player
-	-- 	   1: Hack successful
-	-- 	   2: Time ran out and hack failed
-	-- 	  -1: Error occured i.e. passed input or contents in config is wrong
-		if outcome == 0 then
-			print('Hack failed', reason)
-		elseif outcome == 1 then
-			print('Hack successful')
-		elseif outcome == 2 then
-			print('Timed out')
-		elseif outcome == -1 then
-			print('Error occured',reason)
-		end
-	end)
-end)
+-- (Commande de test /voltlab retirée.)

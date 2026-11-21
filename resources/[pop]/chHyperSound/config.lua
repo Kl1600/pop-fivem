@@ -3,7 +3,9 @@ Config = {}
 -- Enable to allow clients to trigger play events. This can be
 -- dangerous as a malicious client with a mod menu could
 -- trigger sounds on every player.
-Config.AllowFromClient = true
+-- POP : désactivé, aucun script ne relaie de son depuis le client (les scripts POP
+-- jouent le son en local via TriggerEvent('__chHyperSound:play', ...)).
+Config.AllowFromClient = false
 
 -- Default maximum distance for sound to travel if not specified
 -- manually in the play event.
