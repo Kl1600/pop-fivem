@@ -16,3 +16,38 @@
 - pop_boards : les anciens tableaux n'ont pas de propriétaire (seuls les admins peuvent les déplacer). Peindre reste ouvert à tous (d'origine).
 - pop_medexam : si le job médical s'appelle vraiment `youtool`, le remettre dans config.lua.
 - Benny's : la peinture reste gratuite (d'origine). Un menu de triche peut toujours modifier un véhicule hors Benny's.
+
+## pop_emotes — poids (décision du client en attente pour le reste)
+Total 121 Mo (stream : props 63 Mo, emotes custom 58 Mo).
+
+Par pack :
+| Pack | Poids |
+|---|---|
+| Custom Emotes / Vision (danses de boîte de nuit, breakdance) | 39,7 Mo |
+| Props / Crowded1337 (sac à main) | 23,2 Mo |
+| Props / PataMods (nourriture de Noël, gâteaux) | 13,4 Mo |
+| Custom Emotes / BoringNeptune (danses) | 10,8 Mo |
+| Props / KayKayMods (peluches) | 7,3 Mo |
+| Props / Brummiee | 6,1 Mo |
+| Custom Emotes / Alpha | 5,2 Mo |
+| Props / TayMcKenzieNZ | 4,0 Mo |
+| Tous les autres packs | < 2,5 Mo chacun |
+
+Fichiers les plus lourds :
+| Fichier | Poids | Utilisé par |
+|---|---|---|
+| Vision/…crowddance_facedj@.ycd | 12,9 Mo | 6 emotes |
+| BoringNeptune/dancing_wave_part_one@anim.ycd | 8,4 Mo | 15 emotes |
+| Crowded1337/lambert1_normal.dds | 8,0 Mo | aucune (fichier .dds : non chargé par FiveM, poids mort) |
+| Crowded1337/lambert1_albedo.dds | 8,0 Mo | aucune (idem) |
+| Crowded1337/prop_amb_handbag_01.ydr | 7,2 Mo | 3 emotes |
+| Vision/…crowddance_single_props@.ycd | 6,3 Mo | 5 emotes |
+| Vision/…crowddance_groups@groupd@.ycd | 4,0 Mo | 1 emote |
+| PataMods/pata_christmasfood6.ydr | 3,1 Mo | 1 emote |
+| KayKayMods/gremlin_plush.ydr | 3,1 Mo | 1 emote |
+| Vision/divined@breakdances@new.ycd | 2,9 Mo | 15 emotes |
+| Vision/divined@brdancesv2@new.ycd | 2,3 Mo | 12 emotes |
+| Vision/divined@dances@new.ycd | 2,0 Mo | 13 emotes |
+| PataMods/pata_cake.ydr | 2,0 Mo | 2 emotes |
+
+**Fait (accord du client) : les deux .dds (16 Mo) sont supprimés.** Reste à décider : Gros gain : groupd (4 Mo, 1 emote), christmasfood6 et gremlin_plush (3 Mo chacun, 1 emote).
