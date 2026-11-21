@@ -1,7 +1,28 @@
 Config = {}
 
--- Inventaire utilisé pour payer les modifications en items.
-Config.Inventory = 'pop_inventory'
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_bennys
+------------------------------------------------------------------------
+-- Ressource d'inventaire qui fournit les icônes/labels (export GetItemDef) et le
+-- nombre d'objets possédés affichés dans le menu. Le paiement passe par le bridge.
+Config.ItemsResource = 'pop_inventory'
 
 -- Base des assets NUI de l'inventaire (les icônes y sont rangées dans img/).
 -- L'icône/label réels sont résolus dynamiquement via l'export GetItemDef de
@@ -54,6 +75,9 @@ Config.Command = 'bennys'
 Config.BennysCoords  = vector3(-211.9412, -1324.5264, 30.4547)
 Config.BennysHeading = 177.6473
 Config.BennysRadius  = 3.0
+
+-- Distance max (côté serveur) entre le joueur et le Benny's pour payer (admins exemptés).
+Config.PayDistance   = 30.0
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Caméra par option (catégorie). Décalages exprimés dans le repère LOCAL du
