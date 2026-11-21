@@ -5,6 +5,17 @@
 (function () {
   const RES = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'pop_inventory';
   const PER_PAGE = 8;
+  const FIST_SVG = `<svg class="fist" viewBox="0 0 64 64" width="52" height="52" aria-hidden="true">
+    <g fill="currentColor" stroke="var(--fist-line)" stroke-width="1.6" stroke-linejoin="round">
+      <path d="M13 33 C13 29 15 27 18 27 L48 27 C51 27 53 29 53 33 L52 44 C51 51 46 56 39 57 L26 57 C19 56 14 51 13 44 Z"/>
+      <rect x="14" y="14" width="10" height="17" rx="5"/>
+      <rect x="23.5" y="11" width="10" height="20" rx="5"/>
+      <rect x="33" y="12" width="10" height="19" rx="5"/>
+      <rect x="42.5" y="16" width="9" height="15" rx="4.5"/>
+      <path d="M11 37 C11 33 14 31 18 31 L33 31 C37 31 39 33 39 36 C39 39 37 41 33 41 L19 41 C14 41 11 40 11 37 Z"/>
+    </g>
+  </svg>`;
+
   const R_OUT = 250, R_IN = 105, GAP = 1.6; // rayons (px) et écart entre parts (degrés)
 
   const css = `
@@ -24,6 +35,8 @@
     #pop-wheel .icon.sel { transform: scale(1.12); }
     #pop-wheel .icon.sel .ph { color: #111; }
     #pop-wheel .icon .ph { font-size: 30px; opacity: 0.8; }
+    #pop-wheel .icon .fist { color: #fff; --fist-line: rgba(0,0,0,0.45); filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+    #pop-wheel .icon.sel .fist { color: #151515; --fist-line: rgba(255,255,255,0.55); filter: none; }
     #pop-wheel .qty { position: absolute; right: 2px; bottom: -4px; font-size: 12px; font-weight: 700; text-shadow: 0 1px 3px #000; }
     #pop-wheel .icon.sel .qty { color: #111; text-shadow: none; }
     #pop-wheel .center { position: absolute; left: 50%; top: 50%; width: 190px; margin-left: -95px; transform: translateY(-50%);
@@ -78,7 +91,7 @@
       if (!e) continue;
       const ang = ((360 / n) * i - 90) * Math.PI / 180;
       const visual = e.icon ? `<img src="${esc(e.icon)}" onerror="this.style.display='none'">`
-        : `<div class="ph">${e.kind === 'unarmed' ? '✊' : '•'}</div>`;
+        : (e.kind === 'unarmed' ? FIST_SVG : `<div class="ph">•</div>`);
       const qty = e.qty && e.qty > 1 ? `<div class="qty">x${e.qty}</div>` : '';
       icons += `<div class="icon${e.empty ? ' empty' : ''}${i === selected ? ' sel' : ''}" style="left:${cx + Math.cos(ang) * rm}px;top:${cy + Math.sin(ang) * rm}px">${visual}${qty}</div>`;
     }
