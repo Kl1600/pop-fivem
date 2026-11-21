@@ -1,9 +1,33 @@
 Config = {}
+
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_clothes
+------------------------------------------------------------------------
 Config.GouvUSAccount = 'society_gouv'
 Config.GouvMXAccount = 'society_gouv2'
-Config.Framework = 'esx' -- 'esx', 'qbcore' or 'none'
 Config.Currency = '$'
 Config.Mode80s = true
+
+-- Notifications de la boutique (pop_notify).
+Config.NotifyImage = 'nui://pop_management/html/Trevor.png'
+Config.NotifyDuration = 5000
 
 
 -- Shop Locations and Types
@@ -59,8 +83,8 @@ Config.Shops = {
 -- Categories Definitions
 Config.Categories = {
     ['clothing'] = {
-        'Hats', 'Masks', 'Ears', 'Glasses', 'Torsos', 'Legs', 'Bags', 
-        'Shoes', 'Accessories', 'Watches', 'Bracelets', 'Undershirts', 
+        'Hats', 'Masks', 'Ears', 'Glasses', 'Torsos', 'Legs', 'Bags',
+        'Shoes', 'Accessories', 'Watches', 'Bracelets', 'Undershirts',
         'Body Armors', 'Tops', 'Decals'
     },
     ['barber'] = {

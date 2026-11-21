@@ -1,39 +1,48 @@
-# 👕 Clothes
+# pop_clothes
 
-**Clothes** est un magasin de vêtements (Clothing Store) complètement revu pour fournir une interface élégante qui intègre le système d'items de **pop_inventory**. Contrairement aux magasins classiques qui se contentent de modifier le personnage, ce script vous permet d'acheter de la garde-robe physique (sous forme d'items ajoutés à vos sacs) que vous pourrez enfiler, modifier ou retirer via le pop_inventory !
+Magasins de vêtements, barbiers et tatoueurs. Les vêtements achetés deviennent des objets pop_inventory, portés aussitôt.
 
-## ⚙️ Compatibilité des Frameworks
-Gérez la ligne suivante présente au tout début du fichier `config.lua` :
-```lua
-Config.Framework = 'esx' -- Options possibles: 'esx', 'qbcore', 'none'
-```
-Le serveur vérifiera le prix de vos articles, et prendra l'argent *physique* (l'item argenté) nécessaire de l'inventaire via les exports de `pop_inventory`. Si la transaction réussit, ou échoue, il notifiera le côté client avec la mécanique appropriée (`esx:showNotification` ou `QBCore:Notify` ou chat de base par défaut).
+## Fonctionnement
+- Magasins dans `Config.Shops` (types `clothing`, `barber`, `tattoo`). Prompt pop_v3dui « [E] OUVRIR <NOM> » à moins de 2,5 m. Les blips sont gérés par pop_management (`Config.Blips`).
+- Cabine d'essayage : caméra devant le joueur, cadrage par catégorie, rotation à la souris, zoom, flou d'arrière-plan. Caméra fixe possible par magasin (`pedCoords`, `pedHeading`, `cam`).
+- Aperçu : la tenue d'origine est rendue à la fermeture si rien n'est acheté.
+- Achat (serveur) : panier vérifié (valeurs entières bornées, tatouages limités à `tattoos.json`), joueur près d'un magasin du bon type, prix de `Config.Prices` + TVA (`GlobalState.tva`, 20 % par défaut) versée au compte `Config.GouvUSAccount` (esx_addonaccount, sinon écriture SQL).
+- Paiement : d'abord l'argent liquide (objet `cash` de pop_inventory) s'il suffit, sinon le compte bancaire.
+- Vêtements : `exports.pop_inventory:GiveAndEquip`. Barbier : choix reportés dans skinchanger puis `esx_skin:save`, tenue de l'inventaire remise (`RefreshEquipment`). Tatouages : variable ESX `tattoos` + colonne `users.tattoos` (créée au démarrage si absente).
+- Créateur de personnage (pop_charcreator) : ouverture vêtements / tatouages, tatouages gratuits seulement dans l'instance du créateur (bucket `src + 1000`), retour au créateur à la fermeture.
 
-## 🚀 Fonctionnalités principales
-- **UI en NUI Interactive** : Catégories intuitives, sélection de textures.
-- **Caméra de cabine d'essayage intelligente** : Se positionne en face du joueur, calcule les zooms dynamiques, pivote.
-- **Transformation en "Items physiques"** : L'achat d'un élément (masque, chaîne, torse, chaussure, ...) va appeler `exports.pop_inventory:GiveAndEquip` pour convertir cet accessoire en un item glissant de `pop_inventory` assigné au joueur.
-- **Mémorisation et Aperçu** : Si vous testez un vêtement et sortez du magasin sans l'acheter, l'application réinitialise votre personnage aux vêtements d'origine (sauvegardés lors de l'ouverture de l'UI).
-- **Support des Props & Components** : Gère la distinction technique du jeu (lunettes, chapeaux sont des "props" ; t-shirts, pantalons sont des "components").
+## Dépendances
+es_extended, oxmysql, pop_inventory, skinchanger / esx_skin, pop_v3dui (prompt), pop_notify (notifications). `pop_inventory` doit être lancé avant `[pop]` (objet `cash` détecté par le bridge).
 
-## ⌨️ Commandes
-| Commande | Description |
-| :--- | :--- |
-| `/vetement` | Force l'ouverture du magasin de vêtements (généralement utilisé pour débogage ; *l'ouverture normale se fait via des zones Blip*). |
-| `/bras` | Ouvre une pop-up minifiée spécifique pour régler ses bras (pour éviter les manches manquantes avec de nouveaux hauts sans avoir à payer un Ponsonbys complet). |
-| `/fixui` | Commande de secours si jamais la NUI ou la Caméra venait à se figer inopinément sans échappatoire. |
+## Fichiers
+| Fichier | Rôle |
+|---|---|
+| `config.lua` | réglages communs POP, magasins, catégories, prix, composants, notifications |
+| `locales/fr.lua` | tous les textes Lua |
+| `client/common.lua` | état partagé (`Clothes.*`), tenue portée |
+| `client/tattoos.lua` | liste des tatouages, tatouages portés |
+| `client/camera.lua` | caméra et cadrage par catégorie |
+| `client/barber.lua` | choix du barbier reportés dans skinchanger |
+| `client/shop.lua` | ouverture du magasin, prompt, ouverture depuis le créateur |
+| `client/nui.lua` | callbacks NUI (aperçu, achat, fermeture, caméra) |
+| `server/common.lua` | fonctions partagées : notification, TVA, distance, paiement |
+| `server/tattoos.lua` | liste `tattoos.json`, tatouages du joueur, colonne SQL |
+| `server/shop.lua` | achat du panier, mode créateur |
+| `html/index.html` | interface NUI |
+| `tattoos.json` | catalogue des tatouages |
+| `bridge/`, `shared/` | fichiers communs POP (ne pas modifier ici : `templates/pop_base`) |
 
-## 📍 Magasins et Positions
-L'ajout de nouveaux magasins est géré dans `config.lua` -> `Config.Shops`.
-Une fonction gère l'apparition d'une invitation *"E : OUVRIR MAGASIN"* si vous êtes à portée (et intègre le prompt personnalisé `pop_v3dui` si actif, remplaçant les textes bruts classiques).
+## Évènements
+| Nom | Sens | Rôle |
+|---|---|---|
+| `clothes:buy_all` | client → serveur | achat du panier |
+| `clothes:purchaseSuccess` | serveur → client | achat validé |
+| `clothes:requestTattooList` / `clothes:setTattooList` | client ↔ serveur | catalogue des tatouages |
+| `clothes:requestTattoos` / `clothes:applyTattoos` | client ↔ serveur | tatouages du joueur |
+| `clothes:clearTattoos` | client → serveur | retire tous les tatouages |
+| `pop_clothes:server:setCreatorMode` | client → serveur | mode créateur (tatouages gratuits) |
+| `clothes:openFromCreator` / `tattoos:openFromCreator` | pop_charcreator → client | ouverture depuis le créateur |
+| `pop_charcreator:reopen` | client → pop_charcreator | retour au créateur |
 
-## 💰 Modèle de Paiement
-Dans le script `server.lua`, on intercepte les requêtes provenant du panier (tous les items souhaités).
-L'action est vérifiée côté serveur :
-```lua
-local cashCount = exports.pop_inventory:getItemCount(src, 'cash')
-if cashCount >= totalCost then
-    exports.pop_inventory:removeItem(src, 'cash', totalCost)
-    -- Donner via un export !
-```
-Si vous désirez utiliser de l'argent digital banquier via ESX/QBCore plutôt que de l'item liquide (`cash`), c'est dans `server.lua @clothes:buy` que la condition doit être réécrite pour valider un paiement virtuel.
+## Relancer
+`restart pop_clothes`
