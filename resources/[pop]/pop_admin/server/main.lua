@@ -457,6 +457,9 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         if not xTarget then return end
         local group = tostring(data.group or 'user')
         xTarget.setGroup(group)
+        -- Enregistré tout de suite en base : ESX ne sauvegarde qu'à la déconnexion
+        -- ou toutes les 10 min, donc un restart juste après faisait perdre le groupe.
+        MySQL.update('UPDATE `users` SET `group` = ? WHERE `identifier` = ?', { group, xTarget.identifier })
         TriggerClientEvent('pop_admin:setAccess', xTarget.source, IsAdmin(xTarget.source), false)
         notify(src, ('%s → groupe %s'):format(xTarget.getName(), group), 'success')
 
@@ -811,5 +814,31 @@ AddEventHandler('playerDropped', function(reason)
         end
         print('^1[pop_admin] DIAG sauvegarde ESX bloquée :^7\n' .. table.concat(lines, '\n'))
         diagWrite(lines)
+    end)
+end)
+
+-- Test de la sauvegarde ESX : 60 s après le chargement d'un joueur, on rejoue la
+-- requête de sauvegarde d'ESX (mêmes valeurs) et on note le résultat ou l'erreur
+-- SQL dans diag_save.log. Permet de voir si les sauvegardes ESX fonctionnent.
+local SAVE_QUERY = 'UPDATE `users` SET `accounts` = ?, `job` = ?, `job_grade` = ?, `group` = ?, `position` = ?, `inventory` = ?, `loadout` = ?, `metadata` = ? WHERE `identifier` = ?'
+AddEventHandler('esx:playerLoaded', function(playerId)
+    SetTimeout(60000, function()
+        local xPlayer = ESX.GetPlayerFromId(playerId)
+        if not xPlayer then return end
+        local okParams, params = pcall(function()
+            return {
+                json.encode(xPlayer.getAccounts(true)), xPlayer.job.name, xPlayer.job.grade, xPlayer.group,
+                json.encode(xPlayer.getCoords(false, true)), json.encode(xPlayer.getInventory(true)),
+                json.encode(xPlayer.getLoadout(true)), json.encode(xPlayer.getMeta()), xPlayer.identifier,
+            }
+        end)
+        local line
+        if not okParams then
+            line = ('ERREUR en préparant la sauvegarde : %s'):format(tostring(params))
+        else
+            local ok, res = pcall(MySQL.update.await, SAVE_QUERY, params)
+            line = ok and ('requête OK (lignes modifiées : %s)'):format(tostring(res)) or ('ERREUR SQL : %s'):format(tostring(res))
+        end
+        diagWrite({ ('[%s] Test sauvegarde ESX pour %s (groupe %s) : %s'):format(os.date('%Y-%m-%d %H:%M:%S'), xPlayer.getName(), tostring(xPlayer.group), line) })
     end)
 end)
