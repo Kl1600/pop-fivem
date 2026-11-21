@@ -1,12 +1,24 @@
+-- Location de vélos : véhicules d'exposition (ox_target) et spawn du véhicule loué.
+
+-- ESX direct : ESX.Game.SpawnVehicle (spawn réseau du véhicule loué), non couvert par le bridge.
 local ESX = exports['es_extended']:getSharedObject()
 
 local staticVehicles = {}
+
+local function notify(title, message, icon)
+    Bridge.Notify({
+        title = title,
+        message = message,
+        icon = icon,
+        duration = Config.NotifyDuration
+    })
+end
 
 -- Chargement de modèle avec délai max (évite une boucle infinie si le modèle n'existe pas)
 local function loadModel(hash)
     if not IsModelInCdimage(hash) then return false end
     RequestModel(hash)
-    local timeout = GetGameTimer() + 5000
+    local timeout = GetGameTimer() + Config.ModelTimeout
     while not HasModelLoaded(hash) do
         if GetGameTimer() > timeout then return false end
         Wait(10)
@@ -27,7 +39,7 @@ local function isSpawnClear(coords, radius)
 end
 
 CreateThread(function()
-    while not ESX.IsPlayerLoaded() do
+    while not Bridge.IsLoaded() do
         Wait(500)
     end
 
@@ -36,11 +48,13 @@ CreateThread(function()
         for _, data in ipairs(location.displayVehicles) do
             local hash = GetHashKey(data.model)
             if not loadModel(hash) then
-                print(('^3[pop_bikerental] Modèle introuvable : %s (véhicule d\'exposition ignoré)^7'):format(data.model))
+                if Config.Debug then
+                    print(('^3[pop_bikerental] Modèle introuvable : %s (véhicule d\'exposition ignoré)^7'):format(data.model))
+                end
                 goto continue
             end
 
-            local veh = CreateVehicle(hash, data.coords.x, data.coords.y, data.coords.z - 0.2, data.coords.w, false, false)
+            local veh = CreateVehicle(hash, data.coords.x, data.coords.y, data.coords.z - Config.DisplayZOffset, data.coords.w, false, false)
             SetEntityAsMissionEntity(veh, true, true)
             SetEntityInvincible(veh, true)
             FreezeEntityPosition(veh, true)
@@ -52,20 +66,17 @@ CreateThread(function()
 
             table.insert(staticVehicles, veh)
 
+            -- ox_target direct : le nom 'rent_*' est exigé par le filtre onlyRentTarget de ox_target
+            -- (Bridge.Target donne ses propres noms, l'option serait cachée).
             exports.ox_target:addLocalEntity(veh, {
                 {
                     name = 'rent_' .. data.model,
                     icon = 'fas fa-key',
-                    label = data.label,
+                    label = L(data.label, Config.Price),
                     onSelect = function()
-                        local isClear = isSpawnClear(vector3(locSpawn.x, locSpawn.y, locSpawn.z), 3.0)
+                        local isClear = isSpawnClear(vector3(locSpawn.x, locSpawn.y, locSpawn.z), Config.SpawnClearRadius)
                         if not isClear then
-                            exports['pop_notify']:ShowNotify({
-                                title = 'Zone bloquée',
-                                message = 'Il y a déjà un véhicule sur la zone !',
-                                icon = 'fas fa-triangle-exclamation',
-                                duration = 5000
-                            })
+                            notify(L('zone_blocked_title'), L('zone_blocked'), 'fas fa-triangle-exclamation')
                             return
                         end
                         TriggerServerEvent('pop_bikerental:server:buyVehicle', data.model, locSpawn.x, locSpawn.y, locSpawn.z, locSpawn.w)
@@ -87,14 +98,9 @@ RegisterNetEvent('pop_bikerental:client:spawnVehicle', function(model, sx, sy, s
         SetModelAsNoLongerNeeded(hash)
 
         -- vehicle_keys est optionnel : seulement s'il tourne sur le serveur
-        if model == 'ventoso' and GetResourceState('vehicle_keys') == 'started' then
-            pcall(TriggerServerEvent, 'vehicle_keys:server:giveKey', plate, 'Ventoso Location')
-            exports['pop_notify']:ShowNotify({
-                title = 'Clés',
-                message = 'Vous avez reçu les clés du Ventoso.',
-                icon = 'fas fa-key',
-                duration = 5000
-            })
+        if model == Config.KeysModel and GetResourceState('vehicle_keys') == 'started' then
+            pcall(TriggerServerEvent, 'vehicle_keys:server:giveKey', plate, L('keys_label'))
+            notify(L('keys_title'), L('keys_received'), 'fas fa-key')
         end
     end)
 end)

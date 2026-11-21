@@ -1,19 +1,32 @@
 fx_version 'cerulean'
-author 'KL'
 game 'gta5'
+lua54 'yes'
 
 name 'pop_bikerental'
+author 'KL'
+version '1.1.0'
+description 'Location de vélos et de Ventoso payée en espèces'
 
 shared_scripts {
-    '@es_extended/imports.lua',
-    '@ox_lib/init.lua',
     'config.lua',
+    'shared/*.lua',
+    'locales/*.lua',
 }
 
 client_scripts {
-    'client/main.lua'
+    '@ox_lib/init.lua',
+    'bridge/client.lua',
+    'client/main.lua',
 }
 
 server_scripts {
-    'server/main.lua'
+    'bridge/server.lua',
+    'server/common.lua',
+    'server/main.lua',
+}
+
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
 }
