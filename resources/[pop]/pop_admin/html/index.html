@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="hidden">
+    <!-- ============== FENÊTRE ============== -->
+    <div id="window" class="quick">
+        <header id="titlebar">
+            <div class="tb-left">
+                <span class="logo"></span>
+                <h1>ADMIN</h1>
+                <span id="mode-badge">RAPIDE</span>
+            </div>
+            <div class="tb-actions">
+                <button id="btn-tab" title="Basculer (TAB)">TAB</button>
+                <button id="btn-min" title="Minimiser">—</button>
+                <button id="btn-close" title="Fermer (ESC)">✕</button>
+            </div>
+        </header>
+
+        <!-- ---------- VUE RAPIDE ---------- -->
+        <section id="quick-view">
+            <div class="quick-grid">
+                <button class="q-btn" data-q="noclip"><b>Noclip</b><em>déplacement libre</em></button>
+                <button class="q-btn" data-q="godmode"><b>Godmode</b><em>invincible</em></button>
+                <button class="q-btn" data-q="invisible"><b>Invisible</b><em>se cacher</em></button>
+                <button class="q-btn" data-q="heal"><b>Se soigner</b><em>vie + armure</em></button>
+                <button class="q-btn" data-q="revive"><b>Réanimer</b><em>se relever</em></button>
+                <button class="q-btn" data-q="fix"><b>Réparer</b><em>véhicule</em></button>
+                <button class="q-btn" data-q="tpm"><b>TP GPS</b><em>au point</em></button>
+                <button class="q-btn" data-q="cleararea"><b>Nettoyer</b><em>véhicules autour</em></button>
+                <button class="q-btn" data-q="copycoords"><b>Copier coords</b><em>presse-papier</em></button>
+                <button class="q-btn" data-q="shownames"><b>Afficher noms</b><em>tags au-dessus des têtes</em></button>
+                <button class="q-btn accent" data-q="spec"><b>Mode Spec</b><em>viser un joueur</em></button>
+            </div>
+            <div class="quick-veh">
+                <label>Spawn véhicule</label>
+                <div class="veh-row">
+                    <input id="q-veh" type="text" placeholder="adder" spellcheck="false">
+                    <button id="q-veh-go">Spawn</button>
+                </div>
+                <div id="q-veh-chips" class="chips"></div>
+            </div>
+            <div class="quick-foot"><b>TAB</b> → menu complet</div>
+        </section>
+
+        <!-- ---------- VUE COMPLÈTE ---------- -->
+        <section id="full-view" class="hidden">
+            <aside id="nav">
+                <button class="nav-item active" data-tab="players"><span>Joueurs</span></button>
+                <button class="nav-item" data-tab="zones"><span>Zones map</span></button>
+                <button class="nav-item" data-tab="doors"><span>Portes</span></button>
+                <button class="nav-item" data-tab="items"><span>Items</span></button>
+                <button class="nav-item" data-tab="personas"><span>Personnages</span></button>
+                <button class="nav-item" data-tab="vehicles"><span>Véhicules</span></button>
+                <button class="nav-item" data-tab="time"><span>Temps & Météo</span></button>
+                <button class="nav-item" data-tab="jobs"><span>Jobs</span></button>
+                <button class="nav-item" data-tab="logs"><span>Logs</span></button>
+            </aside>
+            <main id="content">
+
+                <!-- JOUEURS -->
+                <div class="panel" data-panel="players">
+                    <div class="panel-head">
+                        <h2>Joueurs <span id="pl-count" class="muted"></span></h2>
+                        <div class="ph-actions">
+                            <input id="pl-search" type="text" placeholder="Rechercher…" spellcheck="false">
+                            <button id="pl-refresh">Sync</button>
+                        </div>
+                    </div>
+                    <div class="split">
+                        <ul id="pl-list" class="list"></ul>
+                        <div id="pl-detail" class="detail">
+                            <div class="detail-empty">Sélectionne un joueur à gauche.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ZONES -->
+                <div class="panel hidden" data-panel="zones">
+                    <div class="panel-head"><h2>Zones de la carte</h2></div>
+                    <p class="hint">Ouvre l'éditeur <b>MapZones</b> (dessin de zones colorées sur la carte).</p>
+                    <button id="open-mapzones" class="primary big">Ouvrir l'éditeur MapZones</button>
+                </div>
+
+                <!-- PORTES (Doorbuilder) -->
+                <div class="panel hidden" data-panel="doors">
+                    <div class="panel-head"><h2>Portes verrouillables</h2></div>
+                    <p class="hint">Ouvre le <b>Doorbuilder</b> : sélection des portes par visée et attribution d'une clé (item). Permet aussi de lister et supprimer les groupes.</p>
+                    <button id="open-doorbuilder" class="primary big">Ouvrir le Doorbuilder</button>
+                </div>
+
+                <!-- ITEMS -->
+                <div class="panel hidden" data-panel="items">
+                    <div class="panel-head">
+                        <h2>Donner un item</h2>
+                        <div class="ph-actions">
+                            <input id="it-search" type="text" placeholder="Rechercher un item…" spellcheck="false">
+                        </div>
+                    </div>
+                    <div class="give-bar">
+                        <div class="field inline">
+                            <label>Sélection</label>
+                            <input id="it-selected" type="text" disabled placeholder="(aucun)">
+                        </div>
+                        <div class="field inline small">
+                            <label>Quantité</label>
+                            <input id="it-qty" type="number" value="1" min="1" max="1000">
+                        </div>
+                        <div class="field inline">
+                            <label>Destinataire</label>
+                            <select id="it-target"><option value="">Moi-même</option></select>
+                        </div>
+                        <button id="it-give" class="primary">Donner</button>
+                    </div>
+                    <div id="it-grid" class="grid"></div>
+                </div>
+
+                <!-- PERSOS ADMIN -->
+                <div class="panel hidden" data-panel="personas">
+                    <div class="panel-head">
+                        <h2>Personnages</h2>
+                        <div class="ph-actions"><button id="sc-refresh">Sync</button></div>
+                    </div>
+
+                    <div class="form-block">
+                        <h3>Double personnage (staff)</h3>
+                        <p class="hint">Sauvegarde ton apparence actuelle pour la <b>réincarner</b> plus tard. Stockée côté serveur, liée à ta licence.</p>
+                        <div class="give-bar">
+                            <div class="field inline">
+                                <label>Nom du personnage</label>
+                                <input id="sc-name" type="text" placeholder="Ex : Mon perso RP">
+                            </div>
+                            <button id="sc-save" class="primary">Sauvegarder mon perso actuel</button>
+                        </div>
+                        <ul id="sc-list" class="list wide capped"></ul>
+                    </div>
+
+                    <div class="form-block">
+                        <h3>Positions enregistrées</h3>
+                        <p class="hint">Positions et modèles de ped pour te téléporter / t'incarner (stockés localement).</p>
+                        <div class="give-bar">
+                            <div class="field inline">
+                                <label>Nom</label>
+                                <input id="pe-name" type="text" placeholder="Ex : Planque centre-ville">
+                            </div>
+                            <div class="field inline">
+                                <label>Modèle (optionnel)</label>
+                                <select id="pe-model"></select>
+                            </div>
+                            <button id="pe-save" class="primary">Enregistrer ici</button>
+                        </div>
+                        <ul id="pe-list" class="list wide capped"></ul>
+                    </div>
+                </div>
+
+                <!-- VÉHICULES -->
+                <div class="panel hidden" data-panel="vehicles">
+                    <div class="panel-head">
+                        <h2>Véhicules persistants <span id="ve-count" class="muted"></span></h2>
+                        <div class="ph-actions">
+                            <input id="ve-search" type="text" placeholder="Plaque / modèle…" spellcheck="false">
+                            <button id="ve-refresh">Sync</button>
+                        </div>
+                    </div>
+                    <ul id="ve-list" class="list wide"></ul>
+                </div>
+
+                <!-- TEMPS & MÉTÉO -->
+                <div class="panel hidden" data-panel="time">
+                    <div class="panel-head"><h2>Temps & Météo</h2></div>
+                    <div class="tw-clock" id="tw-clock">12:00</div>
+                    <div class="field">
+                        <label>Heure <span id="tw-h-val">12</span>h</label>
+                        <input id="tw-hour" type="range" min="0" max="23" value="12">
+                    </div>
+                    <div class="field">
+                        <label>Minutes <span id="tw-m-val">00</span></label>
+                        <input id="tw-min" type="range" min="0" max="59" value="0">
+                    </div>
+                    <div class="row gap">
+                        <button id="tw-apply" class="primary">Régler l'heure</button>
+                        <label class="switch">
+                            <input type="checkbox" id="tw-freeze">
+                            <span class="switch-text"><b>Figer le temps</b></span>
+                        </label>
+                        <label class="switch">
+                            <input type="checkbox" id="tw-blackout">
+                            <span class="switch-text"><b>Blackout</b></span>
+                        </label>
+                    </div>
+                    <div class="field">
+                        <label>Météo</label>
+                        <div id="tw-weathers" class="chips"></div>
+                    </div>
+                </div>
+
+                <!-- JOBS -->
+                <div class="panel hidden" data-panel="jobs">
+                    <div class="panel-head">
+                        <h2>Jobs <span id="jb-count" class="muted"></span></h2>
+                        <div class="ph-actions"><button id="jb-refresh">Sync</button></div>
+                    </div>
+                    <div class="split">
+                        <ul id="jb-list" class="list"></ul>
+                        <div class="detail">
+                            <div class="form-block">
+                                <h3>Se donner ce job</h3>
+                                <div class="row gap">
+                                    <input id="jb-self-grade" type="number" value="0" min="0" placeholder="grade">
+                                    <button id="jb-self" class="primary">Appliquer (moi)</button>
+                                </div>
+                                <div class="muted small" id="jb-selected-label">Aucun job sélectionné</div>
+                            </div>
+                            <div class="form-block">
+                                <h3>Créer un job</h3>
+                                <div class="row gap">
+                                    <input id="jb-new-name" type="text" placeholder="nom (sans espace)">
+                                    <input id="jb-new-label" type="text" placeholder="Libellé">
+                                    <button id="jb-create">Créer</button>
+                                </div>
+                            </div>
+                            <div class="form-block">
+                                <h3>Ajouter un grade</h3>
+                                <div class="row gap wrap">
+                                    <input id="jb-g-level" type="number" placeholder="niveau" min="0">
+                                    <input id="jb-g-name" type="text" placeholder="nom">
+                                    <input id="jb-g-label" type="text" placeholder="Libellé">
+                                    <input id="jb-g-salary" type="number" placeholder="salaire" min="0">
+                                    <button id="jb-addgrade">Ajouter</button>
+                                </div>
+                            </div>
+                            <div class="form-block">
+                                <h3>Compte société</h3>
+                                <div class="row gap">
+                                    <input id="jb-soc-amount" type="number" placeholder="montant">
+                                    <button id="jb-society">Créditer</button>
+                                </div>
+                            </div>
+                            <div class="form-block">
+                                <button id="jb-delete" class="danger">Supprimer le job sélectionné</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGS DÉCONNEXION -->
+                <div class="panel hidden" data-panel="logs">
+                    <div class="panel-head">
+                        <h2>Déconnexions <span id="lg-count" class="muted"></span></h2>
+                        <div class="ph-actions">
+                            <input id="lg-search" type="text" placeholder="Joueur / raison / id…" spellcheck="false">
+                            <button id="lg-refresh">Sync</button>
+                            <button id="lg-clear" class="danger">Vider</button>
+                        </div>
+                    </div>
+                    <p class="hint">Pourquoi chaque joueur a quitté : <b>Alt+F4</b> / fermeture, timeout, crash, kick ou ban.</p>
+                    <div id="lg-filters" class="chips"></div>
+                    <ul id="lg-list" class="list wide"></ul>
+                </div>
+
+            </main>
+        </section>
+    </div>
+
+    <!-- ============== PILL MINIMISÉE ============== -->
+    <div id="pill" class="hidden">
+        <span class="logo"></span><b>ADMIN</b><em>appuyez sur <kbd id="pill-key">G</kbd> pour révéler</em>
+    </div>
+
+    <!-- ============== OVERLAY MODE SPEC ============== -->
+    <div id="spec" class="hidden">
+        <div id="spec-dot"></div>
+        <div id="spec-hint">MODE SPEC — visez un joueur · <b id="spec-key-hint">F</b> options · <b>F6</b> quitter</div>
+        <div id="spec-target" class="hidden">
+            <span class="st-name"></span><span class="st-dist"></span>
+        </div>
+        <div id="spec-panel" class="hidden">
+            <div class="sp-head"><span id="sp-name"></span><button id="sp-back">Retour</button></div>
+            <div id="sp-actions" class="sp-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        /* responsive scale: --rsp = 1.0 @ 1920x1080, >1 sur plus haute resolution */
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vanguard - Character Creator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app" style="display: none;">
+        <!-- Background Gradient -->
+        <div class="bg-gradient"></div>
+
+        <!-- Dividers -->
+        <div class="divider-v"></div>
+        <div class="divider-h"></div>
+
+        <!-- Titles -->
+        <div class="app-title">CRÉATION DE PERSONNAGE</div>
+        <h1 id="category-title" class="category-title">GENRE</h1>
+
+        <!-- Left Navigation Sidebar (Icons Only) -->
+        <nav class="sidebar-icons" id="category-list">
+            <!-- Categories will be injected here with SVG icons -->
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Content Area: Can be Form, Sliders or Grid -->
+            <section class="viewport-content">
+                <!-- Gender & Identity Form -->
+                <div class="section-content" id="section-gender">
+                    <div class="form-group">
+                        <label>PRÉNOM</label>
+                        <input type="text" id="firstname" placeholder="Ex: John" class="custom-input" autocomplete="off" maxlength="20">
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>NOM</label>
+                        <input type="text" id="lastname" placeholder="Ex: Doe" class="custom-input" autocomplete="off" maxlength="20">
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>DATE DE NAISSANCE</label>
+                        <input type="text" id="dateofbirth" placeholder="JJ/MM/AAAA" class="custom-input" autocomplete="off" maxlength="10">
+                        <div id="dateofbirth-error" class="field-error"></div>
+                    </div>
+                    <div class="form-group" style="margin-top: 25px;">
+                        <label>GENRE</label>
+                        <div class="gender-selector">
+                            <div class="gender-btn active" data-gender="male">
+                                <span class="material-symbols-outlined">male</span>
+                            </div>
+                            <div class="gender-btn" data-gender="female">
+                                <span class="material-symbols-outlined">female</span>
+                            </div>
+                            <div class="gender-btn" data-gender="other">
+                                <span class="material-symbols-outlined">transgender</span>
+                            </div>
+                        </div>
+                        <div id="gender-info" class="info-message" style="display: none;">
+                            <i class="fas fa-circle-info"></i> Le hasard choisira votre sexe biologique (Homme/Femme)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RÉGION : choix du lieu d'apparition (grosses cartes par ville).
+                     Coords définies dans config.lua (Config.SpawnPoints). -->
+                <div class="section-content" id="section-region" style="display: none;">
+                    <div class="region-grid">
+
+                        <!-- Los Santos — Ville du sud -->
+                        <div class="region-card region-card--ls active" data-spawn="losantos">
+                            <i class="region-watermark fa-solid fa-city"></i>
+                            <div class="region-flag">
+                                <svg viewBox="0 0 60 40" aria-hidden="true">
+                                    <defs><clipPath id="clipLS"><rect width="60" height="40" rx="2"/></clipPath></defs>
+                                    <g clip-path="url(#clipLS)">
+                                        <rect width="60" height="40" fill="#fff"/>
+                                        <g fill="#B22234">
+                                            <rect y="0" width="60" height="3.1"/><rect y="6.2" width="60" height="3.1"/>
+                                            <rect y="12.3" width="60" height="3.1"/><rect y="18.5" width="60" height="3.1"/>
+                                            <rect y="24.6" width="60" height="3.1"/><rect y="30.8" width="60" height="3.1"/>
+                                            <rect y="36.9" width="60" height="3.1"/>
+                                        </g>
+                                        <rect width="26" height="21.5" fill="#3C3B6E"/>
+                                        <g fill="#fff">
+                                            <circle cx="5" cy="4" r="1.3"/><circle cx="12" cy="4" r="1.3"/><circle cx="19" cy="4" r="1.3"/>
+                                            <circle cx="8.5" cy="8" r="1.3"/><circle cx="15.5" cy="8" r="1.3"/>
+                                            <circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>
+                                            <circle cx="8.5" cy="16" r="1.3"/><circle cx="15.5" cy="16" r="1.3"/>
+                                        </g>
+                                    </g>
+                                </svg>
+                            </div>
+                            <div class="region-info">
+                                <div class="region-name">Los Santos</div>
+                                <div class="region-sub"><i class="fas fa-location-dot"></i> Ville du sud</div>
+                            </div>
+                            <div class="region-check"><i class="fas fa-check"></i></div>
+                        </div>
+
+                        <!-- Nuevo Paso — Ville du nord -->
+                        <div class="region-card region-card--np" data-spawn="nuevopaso">
+                            <i class="region-watermark fa-solid fa-church"></i>
+                            <div class="region-flag">
+                                <svg viewBox="0 0 60 40" aria-hidden="true">
+                                    <defs><clipPath id="clipNP"><rect width="60" height="40" rx="2"/></clipPath></defs>
+                                    <g clip-path="url(#clipNP)">
+                                        <rect width="20" height="40" fill="#006847"/>
+                                        <rect x="20" width="20" height="40" fill="#fff"/>
+                                        <rect x="40" width="20" height="40" fill="#CE1126"/>
+                                        <circle cx="30" cy="20" r="5.5" fill="#7a4a22"/>
+                                        <circle cx="30" cy="20" r="5.5" fill="none" stroke="#5a3416" stroke-width="0.8"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <div class="region-info">
+                                <div class="region-name">Nuevo Paso</div>
+                                <div class="region-sub"><i class="fas fa-location-dot"></i> Ville du nord</div>
+                            </div>
+                            <div class="region-check"><i class="fas fa-check"></i></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- PEDS -->
+                <div class="section-content" id="section-peds" style="display: none;">
+                    <div class="peds-list" id="peds-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Grid Selection (For Hair, Clothes, etc) -->
+                <div id="grid-container" class="grid-layout" style="display: none;">
+                    <!-- Dynamically populated grid items -->
+                </div>
+
+                <!-- Slider Group (For Facial Features) -->
+                <div id="slider-container" class="slider-layout" style="display: none;">
+                    <!-- Dynamically populated sliders -->
+                </div>
+
+                <!-- Face Features Grids -->
+                <div id="face-features-container" class="face-features-layout" style="display: none;">
+                    <!-- Dynamically populated grids -->
+                </div>
+
+                <!-- Vertical Ruler (For Size) -->
+                <div id="size-container" class="size-layout" style="display: none;">
+                    <!-- Ruler will be injected here -->
+                </div>
+            </section>
+
+        
+        </main>
+
+        <!-- Controls Helper -->
+        <div class="controls-helper">
+            <div class="key"><i class="fas fa-mouse"></i> GAUCHE</div> <span class="action">TOURNER</span>
+            <div class="key"><i class="fas fa-mouse"></i> DROITE</div> <span class="action">MONTER / DESCENDRE</span>
+            <div class="key"><i class="fas fa-mouse"></i> MOLETTE</div> <span class="action">ZOOM</span>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirm-modal" class="confirm-overlay" style="display: none;">
+            <div class="confirm-card">
+                <p class="confirm-desc">Confirmer et rejoindre le serveur ?</p>
+                <div class="confirm-actions">
+                    <button class="confirm-btn" id="confirm-yes">CONFIRMER</button>
+                    <button class="confirm-btn" id="confirm-no">ANNULER</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* responsive scale: --rsp = 1.0 @ 1920x1080, >1 sur plus haute resolution */
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="script.js"></script>
+</body>
+
+</html>

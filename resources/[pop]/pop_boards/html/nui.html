@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atelier de Peinture - Artist's Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #ff2e88;
+            --bg-dark: #1a1a1a;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --border-light: #e0e0e0;
+            --text-dark: #333;
+            --accent-gold: #ff2e88;
+        }
+
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: rgba(0,0,0,0.85) !important; 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: 'Outfit', sans-serif; 
+            overflow: hidden; 
+            user-select: none; /* Désactive la sélection bleue */
+            -webkit-user-select: none;
+        }
+        
+        #editorWrapper {
+            display: flex;
+            width: 98vw;
+            height: 95vh;
+            gap: 15px;
+            align-items: center;
+        }
+
+        #canvasContainer { 
+            position: relative; 
+            background: transparent; 
+            flex-grow: 1;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #boardContainer { 
+            position: relative; 
+            background: #fff; /* La toile elle-même reste blanche */
+            cursor: crosshair; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.5); 
+        }
+
+        #bgImg, #paintCanvas { 
+            position: absolute; 
+            top:0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            pointer-events: none; 
+        }
+
+        #interactionLayer { 
+            position: absolute; 
+            top:0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            z-index: 50; 
+        }
+
+        /* Sidebar Panel */
+        #toolsPanel {
+            width: 250px; /* Réduit pour focaliser sur l'espace de dessin */
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .panel-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-light);
+            text-align: center;
+            background: #f8f8fb;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-dark);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .panel-content {
+            flex-grow: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Brush Preview Box */
+        .brush-preview {
+            width: 100%;
+            height: 70px;
+            background: #fafafa;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #efefef;
+        }
+
+        /* Sliders Style */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 5px;
+            background: #eee;
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary-blue);
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* Color Grid */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .color-circle {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px; /* Plus moderne que le cercle */
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+
+        .color-circle:hover {
+            transform: scale(1.05);
+        }
+
+        .color-circle.active {
+            box-shadow: 0 0 0 2px var(--primary-blue);
+            transform: scale(1.1);
+            z-index: 5;
+        }
+
+        #customColor {
+            width: 100%;
+            height: 30px;
+            border: 1px solid #ddd;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            margin-top: 8px;
+            border-radius: 4px;
+        }
+
+        /* Buttons Bottom */
+        .panel-footer {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .btn-save {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-close {
+            background: #f5f5f5;
+            color: #888;
+        }
+
+        .btn-clear {
+            background: transparent;
+            color: #ff4d4d;
+            font-size: 11px;
+            padding: 5px;
+        }
+
+        /* Confirmation Modal */
+        #confirmModal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 300px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-box p { margin-bottom: 25px; color: #333; font-weight: 500; }
+        .modal-btn-group { display: flex; gap: 10px; justify-content: center; }
+        .btn-confirm-yes { background: #ff4d4d; color: white; }
+        .btn-confirm-no { background: #eee; color: #666; }
+
+    </style>
+</head>
+<body>
+    <div id="editorWrapper">
+        <div id="canvasContainer">
+            <div id="boardContainer">
+                <img id="bgImg" src="" crossorigin="anonymous" />
+                <canvas id="paintCanvas"></canvas>
+                <div id="interactionLayer"></div>
+            </div>
+        </div>
+
+        <div id="toolsPanel">
+            <div class="panel-header">
+                <h2>Peinture</h2>
+            </div>
+
+            <div class="panel-content">
+                <div class="section">
+                    <div class="brush-preview">
+                        <div id="brushStrokeDisplay"></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Paramètres</div>
+                    
+                    <div class="control-group">
+                        <div class="slider-header">
+                            <span>Épaisseur</span>
+                            <span id="thicknessVal">20px</span>
+                        </div>
+                        <input type="range" id="sliderThickness" min="2" max="150" value="20">
+                    </div>
+
+                    <div class="control-group" style="margin-top: 15px;">
+                        <div class="slider-header">
+                            <span>Opacité</span>
+                            <span id="opacityVal">75%</span>
+                        </div>
+                        <input type="range" id="sliderOpacity" min="1" max="100" value="75">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Palette</div>
+                    <div class="color-grid" id="colorGrid"></div>
+                    <input type="color" id="customColor" value="#0078d4">
+                </div>
+            </div>
+
+            <div class="panel-footer">
+                <button class="btn btn-save" id="btnSave">Sauvegarder</button>
+                <button class="btn btn-close" id="btnClose">Annuler</button>
+                <button class="btn btn-clear" id="btnClear">Effacer la toile</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            const string = msg.toLowerCase();
+            const message = [
+                'Message: ' + msg,
+                'URL: ' + url,
+                'Line: ' + lineNo,
+                'Column: ' + columnNo,
+                'Error object: ' + JSON.stringify(error)
+            ].join(' - ');
+            console.error("[Atelier-Fatal] " + message);
+            return false;
+        };
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const canvas = document.getElementById('paintCanvas');
+            const bgImg = document.getElementById('bgImg');
+            const container = document.getElementById('boardContainer');
+            const interactionLayer = document.getElementById('interactionLayer');
+            const brushDisplay = document.getElementById('brushStrokeDisplay');
+            
+            if (!canvas || !bgImg || !container || !brushDisplay) {
+                console.error("[Atelier] Critical elements missing in DOM!");
+                return;
+            }
+
+            const ctx = canvas.getContext('2d', { alpha: true });
+            
+            // State
+            let isDrawing = false;
+            let lastX = 0, lastY = 0;
+            let lastTime = 0;
+            let brushColor = '#0078d4';
+            let brushThickness = 20;
+            let brushOpacity = 0.75;
+            let canvasResW = 1024, canvasResH = 1024;
+
+            // Colors Palette
+            const presetColors = [
+                '#ffffff', '#cccccc', '#666666', '#333333', '#000000',
+                '#ff4d4d', '#ff8c00', '#ffeb3b', '#4caf50', '#0078d4',
+                '#9c27b0', '#e91e63', '#795548', '#607d8b', '#00bcd4'
+            ];
+
+            function initColors() {
+                const grid = document.getElementById('colorGrid');
+                if (!grid) return;
+                grid.innerHTML = '';
+                presetColors.forEach(color => {
+                    const div = document.createElement('div');
+                    div.className = 'color-circle' + (color === brushColor ? ' active' : '');
+                    div.style.background = color;
+                    div.addEventListener('click', () => {
+                        setColor(color);
+                        document.querySelectorAll('.color-circle').forEach(c => c.classList.remove('active'));
+                        div.classList.add('active');
+                    });
+                    grid.appendChild(div);
+                });
+            }
+
+            function setColor(color) {
+                brushColor = color;
+                document.getElementById('customColor').value = color;
+                updatePreview();
+            }
+
+            function updatePreview() {
+                if (!brushDisplay) return;
+                brushDisplay.style.background = brushColor;
+                brushDisplay.style.width = Math.min(60, brushThickness / 2) + 'px';
+                brushDisplay.style.height = Math.min(60, brushThickness / 2) + 'px';
+                brushDisplay.style.opacity = brushOpacity;
+            }
+
+            function resizeEditor(w, h) {
+                canvasResW = w || 1024;
+                canvasResH = h || 1024;
+                
+                const maxW = window.innerWidth * 0.70; 
+                const maxH = window.innerHeight * 0.85;
+                const ratio = Math.min(maxW / canvasResW, maxH / canvasResH);
+                
+                const finalW = canvasResW * ratio;
+                const finalH = canvasResH * ratio;
+                container.style.width = finalW + "px";
+                container.style.height = finalH + "px";
+
+                canvas.width = canvasResW;
+                canvas.height = canvasResH;
+                
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+            }
+
+            // --- DRAWING LOGIC ---
+            function startDrawing(e) {
+                isDrawing = true;
+                const rect = container.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                lastX = (e.clientX - rect.left) * scaleX;
+                lastY = (e.clientY - rect.top) * scaleY;
+                lastTime = Date.now();
+                draw(e, true);
+            }
+
+            function draw(e, isFirstPoint = false) {
+                if (!isDrawing && !isFirstPoint) return;
+                const rect = container.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const cx = (e.clientX - rect.left) * scaleX;
+                const cy = (e.clientY - rect.top) * scaleY;
+                const currentTime = Date.now();
+                
+                const dist = Math.sqrt(Math.pow(cx - lastX, 2) + Math.pow(cy - lastY, 2));
+                const timeDiff = Math.max(1, currentTime - lastTime);
+                const velocity = dist / timeDiff;
+
+                ctx.globalAlpha = brushOpacity * 0.2; 
+                ctx.strokeStyle = brushColor;
+                ctx.fillStyle = brushColor;
+                
+                const velocityFactor = Math.max(0.7, 1.3 - (velocity * 0.2));
+                const size = brushThickness * (canvas.width / container.offsetWidth) * velocityFactor;
+                ctx.lineWidth = size;
+                
+                ctx.shadowBlur = size / 2.5;
+                ctx.shadowColor = brushColor;
+
+                if (isFirstPoint) {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(cx, cy);
+                    ctx.stroke();
+                    if (Math.random() > 0.6) {
+                        ctx.beginPath();
+                        const rx = (Math.random() - 0.5) * size * 0.4;
+                        const ry = (Math.random() - 0.5) * size * 0.4;
+                        ctx.arc(cx + rx, cy + ry, size * 0.35, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                lastX = cx;
+                lastY = cy;
+                lastTime = currentTime;
+            }
+
+            function stopDrawing() { isDrawing = false; }
+
+            // --- EVENT LISTENERS ---
+            interactionLayer.addEventListener('mousedown', startDrawing);
+            interactionLayer.addEventListener('mousemove', draw);
+            window.addEventListener('mouseup', stopDrawing);
+
+            document.getElementById('sliderThickness').addEventListener('input', (e) => {
+                brushThickness = parseInt(e.target.value);
+                document.getElementById('thicknessVal').innerText = brushThickness + 'px';
+                updatePreview();
+            });
+
+            document.getElementById('sliderOpacity').addEventListener('input', (e) => {
+                brushOpacity = parseInt(e.target.value) / 100;
+                document.getElementById('opacityVal').innerText = e.target.value + '%';
+                updatePreview();
+            });
+
+            document.getElementById('customColor').addEventListener('input', (e) => {
+                setColor(e.target.value);
+                document.querySelectorAll('.color-circle').forEach(c => c.classList.remove('active'));
+            });
+
+            document.getElementById('btnClear').addEventListener('click', () => {
+                document.getElementById('confirmModal').style.display = 'flex';
+            });
+
+            document.getElementById('btnNo').addEventListener('click', () => {
+                document.getElementById('confirmModal').style.display = 'none';
+            });
+
+            document.getElementById('btnYes').addEventListener('click', () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                document.getElementById('confirmModal').style.display = 'none';
+            });
+
+            document.getElementById('btnClose').addEventListener('click', () => {
+                document.body.style.display = "none";
+                fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST' });
+            });
+
+            document.getElementById('btnSave').addEventListener('click', () => {
+                document.body.style.display = "none";
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = canvas.width;
+                exportCanvas.height = canvas.height;
+                const exportCtx = exportCanvas.getContext('2d');
+                
+                let b64 = null;
+                try {
+                    if (bgImg.src && bgImg.src !== "" && !bgImg.src.includes('undefined')) {
+                        exportCtx.drawImage(bgImg, 0, 0, exportCanvas.width, exportCanvas.height);
+                    }
+                    exportCtx.drawImage(canvas, 0, 0);
+                    b64 = exportCanvas.toDataURL("image/png");
+                } catch(e) { 
+                    console.log("Export error:", e);
+                    b64 = canvas.toDataURL("image/png");
+                }
+                
+                if (b64) {
+                    fetch(`https://${GetParentResourceName()}/saveBoard`, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ image: b64 }) 
+                    });
+                } else {
+                    fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST' });
+                }
+            });
+
+            window.addEventListener("message", (event) => {
+                const data = event.data;
+                const action = data.action || data.type;
+                if (action === "openMenu") {
+                    
+                    document.body.style.display = "flex";
+                    
+                    const w = parseInt(data.resW) || 1024;
+                    const h = parseInt(data.resH) || 1024;
+
+                    // Reset total des états pour éviter les résidus du dessin précédent
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    bgImg.src = ""; 
+                    bgImg.crossOrigin = "anonymous";
+                    bgImg.style.display = "none";
+                    
+                    if (data.url && data.url !== "" && !data.url.includes('undefined')) {
+                        bgImg.onload = () => {
+                            bgImg.style.display = "block";
+                            resizeEditor(w, h);
+                        };
+                        bgImg.onerror = (err) => {
+                            console.error("[Atelier] Image load fail", err);
+                            resizeEditor(w, h);
+                        };
+                        bgImg.src = data.url;
+                    } else {
+                        resizeEditor(w, h);
+                    }
+
+                    updatePreview();
+                }
+            });
+
+            // Initialize
+            try {
+                initColors();
+                updatePreview();
+            } catch(e) {
+                console.error("[Atelier] Init Error", e);
+            }
+        });
+    </script>
+    <div id="confirmModal">
+        <div class="modal-box">
+            <p>Effacer tout votre travail ?</p>
+            <div class="modal-btn-group">
+                <button class="btn btn-confirm-yes" id="btnYes">Effacer</button>
+                <button class="btn btn-confirm-no" id="btnNo">Annuler</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

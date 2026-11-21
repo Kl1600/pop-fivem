@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bureau de Change</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="app" style="display: none;">
+        <div class="menu-container">
+            <div class="header">
+                <div class="title" id="menu-title">BUREAU DE CHANGE</div>
+                <div class="close-btn" id="btn-close-header" onclick="closeMenu()">
+                    <i class="fa-solid fa-xmark"></i>
+                </div>
+            </div>
+
+            <!-- Catégories / Sens de l'échange -->
+            <div class="categories">
+                <div class="cat-item active" id="tab-usd-to-pesos" data-mode="usd" title="Dollars en Pesos">
+                    <i class="fa-solid fa-dollar-sign"></i> <i class="fa-solid fa-arrow-right"></i> <i class="fa-solid fa-coins"></i>
+                </div>
+                <div class="cat-item" id="tab-pesos-to-usd" data-mode="pesos" title="Pesos en Dollars">
+                    <i class="fa-solid fa-coins"></i> <i class="fa-solid fa-arrow-right"></i> <i class="fa-solid fa-dollar-sign"></i>
+                </div>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Portefeuille du joueur -->
+                <div class="wallet-section">
+                    <div class="wallet-card">
+                        <div class="wallet-label">VOTRE ARGENT</div>
+                        <div class="wallet-val" id="val-cash">0 $</div>
+                    </div>
+                    <div class="wallet-card">
+                        <div class="wallet-label">VOS PESOS</div>
+                        <div class="wallet-val" id="val-pesos">0 ₱</div>
+                    </div>
+                </div>
+
+                <!-- Entrée de montant -->
+                <div class="exchange-input-container">
+                    <div class="input-header">Montant à échanger :</div>
+                    <div class="input-wrapper">
+                        <input type="number" id="exchange-amount" min="1" placeholder="Entrez le montant...">
+                        <span class="currency-indicator" id="input-currency-lbl">$</span>
+                    </div>
+                </div>
+
+                <!-- Détails et Taux -->
+                <div class="details-container">
+                    <div class="detail-row">
+                        <span>Taux de change</span>
+                        <strong id="rate-lbl">1 $ = 20.0 ₱</strong>
+                    </div>
+                    <div class="detail-row highlight">
+                        <span>Vous recevrez environ</span>
+                        <strong id="payout-lbl">0 ₱</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pied de page avec bouton de validation -->
+            <div class="footer">
+                <div class="confirm-btn" onclick="submitExchange()">
+                    <i class="fa-solid fa-rotate"></i> EFFECTUER L'ÉCHANGE
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* responsive scale: --rsp = 1.0 @ 1920x1080 */
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

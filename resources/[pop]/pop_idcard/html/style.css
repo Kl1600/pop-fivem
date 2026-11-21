@@ -1,0 +1,271 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+}
+
+#idcard-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+}
+
+/* ============================================================
+   CARTE — conteneur commun
+   ============================================================ */
+.card {
+    position: relative;
+    width: 600px;
+    height: 380px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.65);
+    transform: scale(var(--rsp, 1));
+    transform-origin: center center;
+}
+
+/* Chacun occupe 100% du .card */
+.card-us,
+.card-mx {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Par défaut : US visible, MX caché */
+.card-us { display: block; }
+.card-mx { display: none;  }
+
+/* Activé par JS quand cardType === 'mx' */
+.card.show-mx .card-us { display: none;  }
+.card.show-mx .card-mx { display: flex; flex-direction: column; }
+
+/* ============================================================
+   CARTE US — image de fond + overlay NUI
+   ============================================================ */
+.card-us {
+    position: relative;
+}
+
+.bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    z-index: 1;
+}
+
+/* Champs US : superposés sur le bg.png aux coordonnées exactes */
+.card-us .photo-container {
+    position: absolute;
+    width: 128px;
+    height: 195px;
+    left: 38px;
+    top: 50%;
+    transform: translateY(-50%);
+    overflow: hidden;
+    z-index: 2;
+    background: #a0a0a0;
+}
+
+/* Chaque valeur US positionnée absolument sous son label bg.png.
+   Calibrées avec object-fit:fill sur un canvas 600x380. */
+.card-us .info {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+}
+
+#us-lastname    { position: absolute; top: 105px; left: 196px; }
+#us-firstname   { position: absolute; top: 135px; left: 196px; }
+#us-sex         { position: absolute; top: 168px; left: 196px; }
+#us-nationality { position: absolute; top: 202px; left: 196px; }
+
+.card-us .val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1;
+}
+
+/* ============================================================
+   CARTE MX — entièrement HTML/CSS
+   ============================================================ */
+.card-mx {
+    background: linear-gradient(135deg, #f5ede0 0%, #e8dcc8 100%);
+    flex-direction: column;
+}
+
+/* --- En-tête --- */
+.mx-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px 8px;
+    background: linear-gradient(90deg, #f0e6d0, #e8dcc8);
+    border-bottom: 3px solid #006847;
+    flex-shrink: 0;
+}
+
+.mx-badge {
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle, #d4a84b, #8b6914);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    border: 2px solid #5a4010;
+    flex-shrink: 0;
+}
+
+/* Drapeau mexicain CSS */
+.mx-flag {
+    display: flex;
+    width: 52px;
+    height: 34px;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.2);
+    flex-shrink: 0;
+    position: relative;
+}
+.mx-flag-green  { width: 33.33%; background: #006847; }
+.mx-flag-white  { width: 33.33%; background: #fff; display:flex; align-items:center; justify-content:center; }
+.mx-flag-red    { width: 33.33%; background: #CE1126; }
+.mx-flag-eagle  { font-size: 12px; line-height: 1; }
+
+.mx-header-text {
+    flex: 1;
+}
+.mx-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+.mx-subtitle {
+    font-size: 10px;
+    font-weight: 500;
+    color: #006847;
+    letter-spacing: 0.5px;
+}
+
+.mx-badge-right {
+    font-size: 24px;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+/* --- Corps --- */
+.mx-body {
+    display: flex;
+    flex: 1;
+    padding: 10px 14px 8px;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Watermark cactus */
+.mx-watermark {
+    position: absolute;
+    right: 30px;
+    bottom: -10px;
+    font-size: 120px;
+    opacity: 0.06;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Photo MX */
+.card-mx .photo-container {
+    width: 130px;
+    height: 170px;
+    flex-shrink: 0;
+    border: 2px solid #006847;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #d8d0c0;
+    align-self: center;
+    z-index: 1;
+}
+
+/* Champs MX */
+.mx-fields {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    flex: 1;
+    z-index: 1;
+}
+
+.mx-field {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.mx-label {
+    font-size: 8px;
+    font-weight: 600;
+    color: #7a6040;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.mx-fields .val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.1;
+    min-height: 17px;
+}
+
+.mx-nationality {
+    color: #006847 !important;
+    font-size: 13px !important;
+}
+
+/* ============================================================
+   Photo commune
+   ============================================================ */
+.player-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    filter: brightness(2.5) contrast(0.88) saturate(1.15);
+}
+
+/* ============================================================
+   Instructions
+   ============================================================ */
+.instructions {
+    margin-top: 14px;
+    color: rgba(255,255,255,0.5);
+    font-size: 13px;
+    transform: scale(var(--rsp, 1));
+    transform-origin: center center;
+    white-space: nowrap;
+}

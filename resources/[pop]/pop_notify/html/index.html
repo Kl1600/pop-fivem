@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div id="notify-container"></div>
+    <script>
+        /* responsive scale: --rsp = 1.0 @ 1920x1080, >1 sur plus haute resolution */
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

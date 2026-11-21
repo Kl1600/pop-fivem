@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Input Bridge & 3D UI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/tt-firs-neue-trl" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; overflow: hidden; background: transparent; }
+        #yt-3d-labels { position: absolute; inset: 0; pointer-events: none; z-index: 100000; overflow: hidden; }
+        .yt-label {
+            position: absolute; transform: translate(-50%, -50%);
+            padding: 9px 11px 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            opacity: 0; animation: ytFadeIn .2s ease forwards;
+        }
+        .yt-label .name {
+            display: flex; align-items: center; gap: 7px;
+            font-family: 'TT Firs Neue Trl', 'Inter', sans-serif;
+            font-size: 9.5px; font-weight: 500;
+            letter-spacing: 1.4px; text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.45);
+        }
+        .yt-label i { font-size: 10px; }
+        @keyframes ytFadeIn { to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="yt-3d-labels"></div>
+    <script>
+        const activeLabels = {};
+        window.addEventListener('message', (event) => {
+            if (event.data.action === 'ytDraw3DLabels') {
+                const container = document.getElementById('yt-3d-labels');
+                if (!container) return;
+
+                const currentIds = new Set();
+
+                if (event.data.labels) {
+                    event.data.labels.forEach(l => {
+                        if (l.onScreen) {
+                            currentIds.add(String(l.id));
+                            let el = activeLabels[l.id];
+                            if (!el) {
+                                el = document.createElement('div');
+                                el.className = 'yt-label';
+                                el.innerHTML = '<div class="name"><i class="fas fa-box"></i> ' + (l.text || 'VOTRE COMMANDE') + '</div>';
+                                container.appendChild(el);
+                                activeLabels[l.id] = el;
+                            }
+                            el.style.left = (l.x * 100) + 'vw';
+                            el.style.top = (l.y * 100) + 'vh';
+                        }
+                    });
+                }
+
+                Object.keys(activeLabels).forEach(id => {
+                    if (!currentIds.has(String(id))) {
+                        const el = activeLabels[id];
+                        if (el && el.parentNode) el.parentNode.removeChild(el);
+                        delete activeLabels[id];
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

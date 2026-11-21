@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body class="hidden">
+    <div id="wrapper">
+        <div id="window">
+            <header id="titlebar">
+                <div class="tb-left">
+                    <span class="logo"></span>
+                    <h1>DOORBUILDER</h1>
+                    <span id="mode-badge">HUB</span>
+                </div>
+                <div class="tb-actions">
+                    <button id="closeHub" title="Fermer (ESC)">✕</button>
+                </div>
+            </header>
+
+            <!-- ========== HUB DE GESTION ========== -->
+            <section id="hub-view">
+                <div class="panel-head">
+                    <h2>Portes verrouillables</h2>
+                </div>
+                <p class="hint">
+                    Vise des portes puis attribue-leur une <b>clé</b> unique. Les groupes issus de
+                    <b>config.lua</b> peuvent aussi être désactivés depuis ce menu (sans toucher au fichier).
+                </p>
+
+                <button id="create" class="primary big">＋ Créer un groupe de portes</button>
+
+                <div class="panel-head" id="list-head">
+                    <h3>Groupes existants</h3>
+                    <span id="groupTotal" class="li-tag adm">0</span>
+                </div>
+
+                <ul id="groupList" class="list wide"></ul>
+            </section>
+
+            <!-- ========== FORMULAIRE D'ATTRIBUTION ========== -->
+            <section id="form-view" class="hidden">
+                <div class="panel-head">
+                    <h2>Attribuer une clé</h2>
+                </div>
+
+                <div class="row gap" id="door-count-row">
+                    <span class="muted">Portes sélectionnées</span>
+                    <span id="doorCount" class="li-tag adm">0</span>
+                </div>
+
+                <div class="field">
+                    <label>Nom du mapping / clé</label>
+                    <input type="text" id="label" placeholder="ex : Motel Sandy - chambres" autocomplete="off" />
+                </div>
+                <p class="hint">Une clé unique sera générée pour ce groupe. Récupère-la ensuite via le bouton 🔑 dans la liste.</p>
+
+                <div class="row gap wrap">
+                    <div class="field inline small">
+                        <label>Distance (m)</label>
+                        <input type="number" id="distance" value="2.5" min="0.5" step="0.5" />
+                    </div>
+                    <label class="switch" id="locked-switch">
+                        <input type="checkbox" id="locked" checked />
+                        <span class="switch-text"><b>Verrouillée par défaut</b></span>
+                    </label>
+                </div>
+
+                <div id="error" class="hint error hidden">Indique un nom pour ce groupe.</div>
+
+                <div class="row gap" id="form-buttons">
+                    <button id="cancelForm">Annuler</button>
+                    <button id="saveForm" class="primary">Enregistrer</button>
+                </div>
+            </section>
+
+            <!-- ========== DÉTAIL / CONFIGURATION D'UN GROUPE ========== -->
+            <section id="detail-view" class="hidden">
+                <div class="panel-head">
+                    <h2 id="detailTitle">Configurer le groupe</h2>
+                </div>
+
+                <div class="field">
+                    <label>Nom du groupe</label>
+                    <input type="text" id="detailLabel" autocomplete="off" />
+                </div>
+
+                <div class="row gap wrap">
+                    <div class="field inline small">
+                        <label>Distance (m)</label>
+                        <input type="number" id="detailDistance" min="0.5" step="0.5" />
+                    </div>
+                    <label class="switch" id="detail-locked-switch">
+                        <input type="checkbox" id="detailLocked" />
+                        <span class="switch-text"><b>Verrouillée par défaut</b></span>
+                    </label>
+                </div>
+
+                <div class="row gap" id="detail-save-row">
+                    <button id="saveDetail" class="primary">Enregistrer les modifications</button>
+                </div>
+
+                <div class="panel-head" id="key-head">
+                    <h3>Clé d'accès</h3>
+                    <span id="keyStatus" class="li-tag"></span>
+                </div>
+                <div class="row gap" id="key-actions"></div>
+
+                <div class="panel-head" id="doors-head">
+                    <h3>Portes du groupe</h3>
+                    <span id="detailDoorTotal" class="li-tag adm">0</span>
+                </div>
+                <ul id="doorList" class="list wide"></ul>
+
+                <div class="row gap" id="detail-buttons">
+                    <button id="backToHub">← Retour</button>
+                    <button id="deleteFromDetail" class="danger">Supprimer le groupe</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

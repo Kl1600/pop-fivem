@@ -1,0 +1,16 @@
+lib.versionCheck('Demigod916/object_gizmo')
+
+-- Register ACE permissions for Gizmo commands so everyone can use it without Access Denied!
+CreateThread(function()
+    ExecuteCommand('add_ace builtin.everyone command.+gizmoSelect allow')
+    ExecuteCommand('add_ace builtin.everyone command.-gizmoSelect allow')
+    ExecuteCommand('add_ace builtin.everyone command.+gizmoTranslation allow')
+    ExecuteCommand('add_ace builtin.everyone command.-gizmoTranslation allow')
+    ExecuteCommand('add_ace builtin.everyone command.+gizmoRotation allow')
+    ExecuteCommand('add_ace builtin.everyone command.-gizmoRotation allow')
+    ExecuteCommand('add_ace builtin.everyone command.+gizmoLocal allow')
+    ExecuteCommand('add_ace builtin.everyone command.-gizmoLocal allow')
+    ExecuteCommand('add_ace builtin.everyone command.+gizmoScale allow')
+    ExecuteCommand('add_ace builtin.everyone command.-gizmoScale allow')
+    print("^2[object_gizmo]^7 ACE permissions registered successfully for all players.")
+end)

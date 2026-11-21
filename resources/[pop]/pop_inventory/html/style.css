@@ -1,0 +1,948 @@
+.box {
+  position: relative;
+  width: 1318px;
+  height: 742px;
+}
+
+.box .group {
+  position: fixed;
+  top: 163px;
+  left: 301px;
+  width: 1338px;
+  height: 742px;
+}
+
+.box .img {
+  position: absolute;
+  top: 55px;
+  left: 0;
+  width: 1318px;
+  height: 687px;
+}
+
+.box .text-wrapper {
+  position: absolute;
+  top: 1px;
+  left: 1043px;
+  width: 123px;
+  font-family: "Segoe UI-Black", Helvetica;
+  font-weight: 900;
+  color: #ffffff;
+  font-size: 21px;
+  letter-spacing: -0.21px;
+  line-height: normal;
+}
+
+.box .div {
+  position: absolute;
+  top: 78px;
+  left: 1050px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-2 {
+  position: absolute;
+  top: 393px;
+  left: 1050px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-3 {
+  position: absolute;
+  top: 494px;
+  left: 1051px;
+  width: 171px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-4 {
+  top: 288px;
+  left: 1051px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  position: absolute;
+  color: #ffffff;
+  line-height: normal;
+}
+
+.box .text-wrapper-5 {
+  position: absolute;
+  top: 183px;
+  left: 1050px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-6 {
+  top: 684px;
+  left: 285px;
+  width: 72px;
+  font-family: "Segoe UI-Black", Helvetica;
+  font-weight: 900;
+  font-size: 21px;
+  letter-spacing: -0.21px;
+  position: absolute;
+  color: #ffffff;
+  line-height: normal;
+}
+
+.box .text-wrapper-7 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 123px;
+  font-family: "Segoe UI-Black", Helvetica;
+  font-weight: 900;
+  color: #ffffff;
+  font-size: 21px;
+  letter-spacing: -0.21px;
+  line-height: normal;
+}
+
+.box .element {
+  position: absolute;
+  top: 63px;
+  left: 374px;
+  width: 67px;
+  font-family: "Albert Sans-Regular", Helvetica;
+  font-weight: 400;
+  color: transparent;
+  font-size: 15px;
+  letter-spacing: -0.15px;
+  line-height: normal;
+}
+
+.box .span {
+  color: #ffffff;
+  letter-spacing: -0.02px;
+}
+
+.box .text-wrapper-8 {
+  color: #f5f5f526;
+  letter-spacing: -0.02px;
+}
+
+.box .element-kg {
+  position: absolute;
+  top: 25px;
+  left: 872px;
+  width: 74px;
+  font-family: "Albert Sans-Regular", Helvetica;
+  font-weight: 400;
+  color: transparent;
+  font-size: 15px;
+  letter-spacing: -0.15px;
+  line-height: normal;
+}
+
+.box .frame {
+  position: absolute;
+  top: 20px;
+  left: 376px;
+  width: 163px;
+  height: 20px;
+}
+
+.box .group-2 {
+  position: absolute;
+  width: 2.39%;
+  height: 2.41%;
+  top: 17.40%;
+  left: 89.16%;
+  background-image: url(./img/vector-21.svg);
+  background-size: 100% 100%;
+}
+
+.box .group-3 {
+  position: absolute;
+  width: 0;
+  height: 0;
+  top: 46.11%;
+  left: 84.53%;
+  background-image: url(./img/vector-15.svg);
+  background-size: 100% 100%;
+}
+
+.box .group-4 {
+  position: absolute;
+  width: 0;
+  height: 3.71%;
+  top: 30.83%;
+  left: 89.91%;
+}
+
+.box .vector {
+  position: absolute;
+  width: 51.06%;
+  height: 19.24%;
+  top: 0;
+  left: 5.34%;
+}
+
+.box .vector-2 {
+  position: absolute;
+  width: 61.30%;
+  height: 72.83%;
+  top: 27.17%;
+  left: 0;
+}
+
+.box .vector-3 {
+  position: absolute;
+  width: 34.01%;
+  height: 34.91%;
+  top: 40.29%;
+  left: 65.99%;
+}
+
+.box .broad-brimmed-hat {
+  position: absolute;
+  top: 119px;
+  left: 1061px;
+  width: 34px;
+  height: 36px;
+}
+
+.box .group-5 {
+  position: relative;
+  width: 99.83%;
+  height: 58.50%;
+  top: 20.59%;
+}
+
+.box .vector-4 {
+  position: absolute;
+  width: 47.93%;
+  height: 58.54%;
+  top: 0;
+  left: 26.03%;
+}
+
+.box .vector-5 {
+  position: absolute;
+  width: 100%;
+  height: 70.29%;
+  top: 29.71%;
+  left: 0;
+}
+
+.box .classic-cufflinks {
+  position: absolute;
+  top: 121px;
+  left: 1251px;
+  width: 36px;
+  height: 37px;
+}
+
+.box .carnival-mask {
+  position: absolute;
+  top: 119px;
+  left: 1127px;
+  width: 32px;
+  height: 35px;
+  display: flex;
+}
+
+.box .vector-6 {
+  margin-top: 10px;
+  margin-left: 1px;
+  margin-right: 1px;
+  flex: 1;
+  margin-bottom: 4.6px;
+  width: 30px;
+  object-fit: cover;
+}
+
+.box .smartphone-call {
+  position: absolute;
+  top: 540px;
+  left: 1066px;
+  width: 26px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+}
+
+.box .vector-7 {
+  margin-top: 2px;
+  margin-left: -1px;
+  width: 13px;
+  margin-bottom: 1.3px;
+}
+
+.box .walkie-talkie {
+  position: absolute;
+  top: 531px;
+  left: 1120px;
+  width: 43px;
+  height: 46px;
+}
+
+.box .group-6 {
+  position: absolute;
+  width: 23.36%;
+  height: 36.08%;
+  top: 45.36%;
+  left: 39.02%;
+  background-image: url(./img/vector-11.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-8 {
+  position: absolute;
+  width: calc(100% - 39px);
+  height: calc(100% - 26px);
+  top: 2px;
+  left: 23px;
+  object-fit: cover;
+}
+
+.box .briefcase {
+  position: absolute;
+  top: 439px;
+  left: 1263px;
+  width: 22px;
+  height: 23px;
+}
+
+.box .vector-9 {
+  position: absolute;
+  width: 100.22%;
+  height: 40.00%;
+  top: 51.88%;
+  left: 0;
+}
+
+.box .vector-10 {
+  position: absolute;
+  width: 100.19%;
+  height: 41.97%;
+  top: 8.13%;
+  left: 0;
+}
+
+.box .backpack {
+  position: absolute;
+  top: 437px;
+  left: 1067px;
+  width: 24px;
+  height: 26px;
+}
+
+.box .vector-11 {
+  position: absolute;
+  width: 70.38%;
+  height: 47.79%;
+  top: 52.34%;
+  left: 14.82%;
+}
+
+.box .vector-12 {
+  position: absolute;
+  width: 70.47%;
+  height: 50.20%;
+  top: 0;
+  left: 14.77%;
+}
+
+.box .vector-13 {
+  position: absolute;
+  width: 10.45%;
+  height: 29.88%;
+  top: 59.96%;
+  left: 0;
+}
+
+.box .vector-14 {
+  position: absolute;
+  width: 10.45%;
+  height: 29.88%;
+  top: 59.96%;
+  left: 89.65%;
+}
+
+.box .kevlar {
+  position: absolute;
+  top: 439px;
+  left: 1199px;
+  width: 20px;
+  height: 21px;
+}
+
+.box .vector-15 {
+  position: absolute;
+  width: 93.49%;
+  height: 100.20%;
+  top: 0;
+  left: 3.21%;
+}
+
+.box .vector-16 {
+  position: absolute;
+  width: 12.77%;
+  height: 35.77%;
+  top: 64.84%;
+  left: 83.98%;
+}
+
+.box .vector-17 {
+  position: absolute;
+  width: 12.72%;
+  height: 35.16%;
+  top: 64.84%;
+  left: 3.30%;
+}
+
+.box .group-7 {
+  position: absolute;
+  width: 0;
+  height: 2.91%;
+  top: 31.12%;
+  left: 79.60%;
+  background-image: url(./img/vector-5.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-wrapper {
+  position: absolute;
+  width: 0;
+  height: 2.97%;
+  top: 31.12%;
+  left: 84.60%;
+  background-image: url(./img/vector-14.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-18 {
+  position: absolute;
+  width: 18.59%;
+  height: 7.63%;
+  top: 0;
+  left: 40.75%;
+}
+
+.box .img-wrapper {
+  position: absolute;
+  width: 0;
+  height: 2.41%;
+  top: 59.55%;
+  left: 84.75%;
+  background-image: url(./img/vector.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-19 {
+  position: absolute;
+  width: 28.53%;
+  height: 24.00%;
+  top: 48.02%;
+  left: 71.42%;
+}
+
+.box .group-8 {
+  position: absolute;
+  width: 15px;
+  height: 21px;
+  top: 338px;
+  left: 1072px;
+}
+/* Original CSS code should be injected here from globals.css */
+
+.box {
+  position: relative;
+  width: 1318px;
+  height: 742px;
+}
+
+.box .group {
+  position: fixed;
+  top: 163px;
+  left: 301px;
+  width: 1338px;
+  height: 742px;
+}
+
+.box .img {
+  position: absolute;
+  top: 55px;
+  left: 0;
+  width: 1318px;
+  height: 687px;
+}
+
+.box .text-wrapper {
+  position: absolute;
+  top: 1px;
+  left: 1043px;
+  width: 123px;
+  font-family: "Segoe UI-Black", Helvetica;
+  font-weight: 900;
+  color: #ffffff;
+  font-size: 21px;
+  letter-spacing: -0.21px;
+  line-height: normal;
+}
+
+.box .div {
+  position: absolute;
+  top: 78px;
+  left: 1050px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-2 {
+  position: absolute;
+  top: 393px;
+  left: 1050px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-3 {
+  position: absolute;
+  top: 494px;
+  left: 1051px;
+  width: 171px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-4 {
+  top: 288px;
+  left: 1051px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  position: absolute;
+  color: #ffffff;
+  line-height: normal;
+}
+
+.box .text-wrapper-5 {
+  position: absolute;
+  top: 183px;
+  left: 1050px;
+  width: 123px;
+  font-family: "Segoe UI-Regular", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: -0.16px;
+  line-height: normal;
+}
+
+.box .text-wrapper-6 {
+  top: 684px;
+  left: 285px;
+  width: 72px;
+  font-family: "Segoe UI-Black", Helvetica;
+  font-weight: 900;
+  font-size: 21px;
+  letter-spacing: -0.21px;
+  position: absolute;
+  color: #ffffff;
+  line-height: normal;
+}
+
+.box .text-wrapper-7 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 123px;
+  font-family: "Segoe UI-Black", Helvetica;
+  font-weight: 900;
+  color: #ffffff;
+  font-size: 21px;
+  letter-spacing: -0.21px;
+  line-height: normal;
+}
+
+.box .element {
+  position: absolute;
+  top: 63px;
+  left: 374px;
+  width: 67px;
+  font-family: "Albert Sans-Regular", Helvetica;
+  font-weight: 400;
+  color: transparent;
+  font-size: 15px;
+  letter-spacing: -0.15px;
+  line-height: normal;
+}
+
+.box .span {
+  color: #ffffff;
+  letter-spacing: -0.02px;
+}
+
+.box .text-wrapper-8 {
+  color: #f5f5f526;
+  letter-spacing: -0.02px;
+}
+
+.box .element-kg {
+  position: absolute;
+  top: 25px;
+  left: 872px;
+  width: 74px;
+  font-family: "Albert Sans-Regular", Helvetica;
+  font-weight: 400;
+  color: transparent;
+  font-size: 15px;
+  letter-spacing: -0.15px;
+  line-height: normal;
+}
+
+.box .frame {
+  position: absolute;
+  top: 20px;
+  left: 376px;
+  width: 163px;
+  height: 20px;
+}
+
+.box .group-2 {
+  position: absolute;
+  width: 2.39%;
+  height: 2.41%;
+  top: 17.40%;
+  left: 89.16%;
+  background-image: url(./img/vector-21.svg);
+  background-size: 100% 100%;
+}
+
+.box .group-3 {
+  position: absolute;
+  width: 0;
+  height: 0;
+  top: 46.11%;
+  left: 84.53%;
+  background-image: url(./img/vector-15.svg);
+  background-size: 100% 100%;
+}
+
+.box .group-4 {
+  position: absolute;
+  width: 0;
+  height: 3.71%;
+  top: 30.83%;
+  left: 89.91%;
+}
+
+.box .vector {
+  position: absolute;
+  width: 51.06%;
+  height: 19.24%;
+  top: 0;
+  left: 5.34%;
+}
+
+.box .vector-2 {
+  position: absolute;
+  width: 61.30%;
+  height: 72.83%;
+  top: 27.17%;
+  left: 0;
+}
+
+.box .vector-3 {
+  position: absolute;
+  width: 34.01%;
+  height: 34.91%;
+  top: 40.29%;
+  left: 65.99%;
+}
+
+.box .broad-brimmed-hat {
+  position: absolute;
+  top: 119px;
+  left: 1061px;
+  width: 34px;
+  height: 36px;
+}
+
+.box .group-5 {
+  position: relative;
+  width: 99.83%;
+  height: 58.50%;
+  top: 20.59%;
+}
+
+.box .vector-4 {
+  position: absolute;
+  width: 47.93%;
+  height: 58.54%;
+  top: 0;
+  left: 26.03%;
+}
+
+.box .vector-5 {
+  position: absolute;
+  width: 100%;
+  height: 70.29%;
+  top: 29.71%;
+  left: 0;
+}
+
+.box .classic-cufflinks {
+  position: absolute;
+  top: 121px;
+  left: 1251px;
+  width: 36px;
+  height: 37px;
+}
+
+.box .carnival-mask {
+  position: absolute;
+  top: 119px;
+  left: 1127px;
+  width: 32px;
+  height: 35px;
+  display: flex;
+}
+
+.box .vector-6 {
+  margin-top: 10px;
+  margin-left: 1px;
+  margin-right: 1px;
+  flex: 1;
+  margin-bottom: 4.6px;
+  width: 30px;
+  object-fit: cover;
+}
+
+.box .smartphone-call {
+  position: absolute;
+  top: 540px;
+  left: 1066px;
+  width: 26px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+}
+
+.box .vector-7 {
+  margin-top: 2px;
+  margin-left: -1px;
+  width: 13px;
+  margin-bottom: 1.3px;
+}
+
+.box .walkie-talkie {
+  position: absolute;
+  top: 531px;
+  left: 1120px;
+  width: 43px;
+  height: 46px;
+}
+
+.box .group-6 {
+  position: absolute;
+  width: 23.36%;
+  height: 36.08%;
+  top: 45.36%;
+  left: 39.02%;
+  background-image: url(./img/vector-11.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-8 {
+  position: absolute;
+  width: calc(100% - 39px);
+  height: calc(100% - 26px);
+  top: 2px;
+  left: 23px;
+  object-fit: cover;
+}
+
+.box .briefcase {
+  position: absolute;
+  top: 439px;
+  left: 1263px;
+  width: 22px;
+  height: 23px;
+}
+
+.box .vector-9 {
+  position: absolute;
+  width: 100.22%;
+  height: 40.00%;
+  top: 51.88%;
+  left: 0;
+}
+
+.box .vector-10 {
+  position: absolute;
+  width: 100.19%;
+  height: 41.97%;
+  top: 8.13%;
+  left: 0;
+}
+
+.box .backpack {
+  position: absolute;
+  top: 437px;
+  left: 1067px;
+  width: 24px;
+  height: 26px;
+}
+
+.box .vector-11 {
+  position: absolute;
+  width: 70.38%;
+  height: 47.79%;
+  top: 52.34%;
+  left: 14.82%;
+}
+
+.box .vector-12 {
+  position: absolute;
+  width: 70.47%;
+  height: 50.20%;
+  top: 0;
+  left: 14.77%;
+}
+
+.box .vector-13 {
+  position: absolute;
+  width: 10.45%;
+  height: 29.88%;
+  top: 59.96%;
+  left: 0;
+}
+
+.box .vector-14 {
+  position: absolute;
+  width: 10.45%;
+  height: 29.88%;
+  top: 59.96%;
+  left: 89.65%;
+}
+
+.box .kevlar {
+  position: absolute;
+  top: 439px;
+  left: 1199px;
+  width: 20px;
+  height: 21px;
+}
+
+.box .vector-15 {
+  position: absolute;
+  width: 93.49%;
+  height: 100.20%;
+  top: 0;
+  left: 3.21%;
+}
+
+.box .vector-16 {
+  position: absolute;
+  width: 12.77%;
+  height: 35.77%;
+  top: 64.84%;
+  left: 83.98%;
+}
+
+.box .vector-17 {
+  position: absolute;
+  width: 12.72%;
+  height: 35.16%;
+  top: 64.84%;
+  left: 3.30%;
+}
+
+.box .group-7 {
+  position: absolute;
+  width: 0;
+  height: 2.91%;
+  top: 31.12%;
+  left: 79.60%;
+  background-image: url(./img/vector-5.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-wrapper {
+  position: absolute;
+  width: 0;
+  height: 2.97%;
+  top: 31.12%;
+  left: 84.60%;
+  background-image: url(./img/vector-14.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-18 {
+  position: absolute;
+  width: 18.59%;
+  height: 7.63%;
+  top: 0;
+  left: 40.75%;
+}
+
+.box .img-wrapper {
+  position: absolute;
+  width: 0;
+  height: 2.41%;
+  top: 59.55%;
+  left: 84.75%;
+  background-image: url(./img/vector.svg);
+  background-size: 100% 100%;
+}
+
+.box .vector-19 {
+  position: absolute;
+  width: 28.53%;
+  height: 24.00%;
+  top: 48.02%;
+  left: 71.42%;
+}
+
+.box .group-8 {
+  position: absolute;
+  width: 15px;
+  height: 21px;
+  top: 338px;
+  left: 1072px;
+}

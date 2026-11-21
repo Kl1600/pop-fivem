@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>Loading Screen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600&family=Sofia+Sans+Extra+Condensed:wght@600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Responsive Scaler to keep 1920x1080 layout intact */
+        #scaler {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform-origin: center center;
+        }
+
+        .bg {
+            width: 1920px;
+            height: 1080px;
+            left: 0px;
+            top: 0px;
+            position: absolute;
+            background: black;
+            z-index: 1;
+        }
+
+        /* --- Tabs --- */
+        .tabs {
+            position: absolute;
+            left: 91px;
+            top: 54px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .tab {
+            padding: 4px 15px;
+            font-size: 20px;
+            font-weight: 300;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .tab.active {
+            background: white;
+            color: black;
+            font-weight: 500;
+        }
+
+        /* --- Content Areas --- */
+        .content-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            z-index: 5;
+            display: none;
+        }
+
+        .content-area.active {
+            display: block;
+        }
+
+        /* --- Option 1: JOUER Styles --- */
+        .jouer-img-1 { width: 564px; height: 404px; left: 1263px; top: 125px; position: absolute; object-fit: cover; }
+        .jouer-img-2 { width: 564px; height: 404px; left: 1263px; top: 551px; position: absolute; object-fit: cover; }
+        .jouer-main-img { width: 1736px; height: 830px; left: 91px; top: 125px; position: absolute; box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); object-fit: cover; }
+        .jouer-img-3 { width: 608px; height: 830px; left: 1082px; top: 125px; position: absolute; object-fit: cover; }
+        .jouer-img-4 { width: 956px; height: 809px; left: 481px; top: 147px; position: absolute; object-fit: cover; }
+        
+        .jouer-gradient { width: 1736px; height: 830px; left: 91px; top: 126px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+
+        /* Titre + description regroupés et ancrés en bas : le bloc grandit vers le haut,
+           donc un texte de chargement long ne peut plus recouvrir la description. */
+        .jouer-text-block {
+            position: absolute;
+            left: 136px;
+            bottom: 140px;
+            width: 554px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            z-index: 6;
+        }
+
+        .jouer-text-desc {
+            width: 552px;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            line-height: 1.4;
+            text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.25);
+        }
+
+        .jouer-text-title {
+            width: 100%;
+            color: white;
+            font-size: 64px;
+            font-family: 'Sofia Sans Extra Condensed', sans-serif;
+            font-weight: 600;
+            line-height: 1.0;
+            text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25);
+        }
+
+        /* État de chargement : le titre sert de statut, taille réduite pour rester lisible */
+        .jouer-text-title.loading-state {
+            font-size: 40px;
+            opacity: 0.9;
+        }
+
+        /* --- Option 2: LORE Styles --- */
+        /* Left Block */
+        .lore-img-left-1 { width: 416px; height: 830px; left: 91px; top: 124px; position: absolute; box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); object-fit: cover; }
+        .lore-grad-left { width: 416px; height: 830px; left: 91px; top: 124px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .lore-title-left { width: 290px; left: 119px; top: 872px; position: absolute; color: white; font-size: 48px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        /* Center Block */
+        .lore-img-center-1 { width: 416px; height: 830px; left: 531px; top: 124px; position: absolute; box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); object-fit: cover; }
+        .lore-grad-center { width: 416px; height: 830px; left: 531px; top: 124px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .lore-title-center { width: 290px; left: 559px; top: 872px; position: absolute; color: white; font-size: 48px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        /* Right Block */
+        .lore-img-right { width: 856px; height: 830px; left: 971px; top: 124px; position: absolute; box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); object-fit: cover; }
+        .lore-grad-right { width: 856px; height: 830px; left: 971px; top: 124px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .lore-title-right { width: 605px; left: 1003px; top: 771px; position: absolute; color: white; font-size: 64px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); line-height: 1.1; }
+
+        /* --- Option 3: PATCHNOTES Styles --- */
+        /* Left Block */
+        .pn-img-main { width: 565px; height: 830px; left: 91px; top: 125px; position: absolute; box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); object-fit: cover; }
+        .pn-grad-main { width: 565px; height: 830px; left: 91px; top: 125px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .pn-title-main { width: 404px; left: 116px; top: 753px; position: absolute; color: white; font-size: 64px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+        .pn-desc-main { width: 414px; left: 116px; top: 831px; position: absolute; color: white; font-size: 20px; font-weight: 600; line-height: 1.4; text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.25); }
+        
+        /* Middle Blocks */
+        .pn-img-mid-1 { width: 559px; height: 404px; left: 680px; top: 125px; position: absolute; object-fit: cover; }
+        .pn-grad-mid-1 { width: 559px; height: 404px; left: 680px; top: 125px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .pn-title-mid-1 { width: 290px; left: 698px; top: 430px; position: absolute; color: white; font-size: 48px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        .pn-img-mid-2 { width: 559px; height: 404px; left: 680px; top: 551px; position: absolute; box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25); object-fit: cover; }
+        .pn-grad-mid-2 { width: 559px; height: 404px; left: 680px; top: 551px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .pn-title-mid-2 { width: 336px; left: 698px; top: 852px; position: absolute; color: white; font-size: 48px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        /* Right Blocks */
+        .pn-img-right-1 { width: 564px; height: 191px; left: 1263px; top: 125px; position: absolute; object-fit: cover; }
+        .pn-grad-right-1 { width: 564px; height: 191px; left: 1263px; top: 125px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .pn-title-right-1 { width: 452px; left: 1284px; top: 266px; position: absolute; color: white; font-size: 40px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        .pn-img-right-2 { width: 564px; height: 191px; left: 1263px; top: 338px; position: absolute; object-fit: cover; }
+        .pn-grad-right-2 { width: 564px; height: 191px; left: 1263px; top: 338px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .pn-title-right-2 { width: 452px; left: 1284px; top: 473px; position: absolute; color: white; font-size: 40px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        .pn-img-right-3 { width: 564px; height: 191px; left: 1263px; top: 551px; position: absolute; object-fit: cover; }
+        .pn-grad-right-3 { width: 564px; height: 191px; left: 1263px; top: 551px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .pn-title-right-3 { width: 452px; left: 1284px; top: 691px; position: absolute; color: white; font-size: 40px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        .pn-img-right-4 { width: 564px; height: 191px; left: 1263px; top: 764px; position: absolute; object-fit: cover; }
+        .pn-grad-right-4 { width: 564px; height: 191px; left: 1263px; top: 764px; position: absolute; background: linear-gradient(180deg, rgba(217, 217, 217, 0) 0%, rgba(0, 0, 0, 0.56) 100%); }
+        .pn-title-right-4 { width: 379px; left: 1284px; top: 898px; position: absolute; color: white; font-size: 40px; font-family: 'Sofia Sans Extra Condensed', sans-serif; font-weight: 600; text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.25); }
+
+        /* --- Loading Bar --- */
+        .loading-container {
+            position: absolute;
+            left: 0px;
+            top: 1064px;
+            width: 1920px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 20;
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: white;
+            transition: width 0.2s ease;
+        }
+        /* --- Case Selection Tool (Hover Effect) --- */
+        .hover-box {
+            position: absolute;
+            z-index: 15;
+            cursor: pointer;
+            transition: outline 0.1s ease;
+        }
+        .hover-box:hover {
+            outline: 6px white solid;
+        }
+
+        @keyframes pulse-text {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        .pulse-text {
+            animation: pulse-text 2s infinite ease-in-out;
+            color: white !important;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8) !important;
+        }
+
+        /* --- Mini-chargement circulaire --- */
+        #spinner-overlay {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #spinner-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Controls Cues (Bottom Right) --- */
+        .controls-cues {
+            position: absolute;
+            right: 91px;
+            bottom: 45px;
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            z-index: 10;
+        }
+
+        .cue-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cue-label {
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+        }
+
+        .keycap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 28px;
+            height: 28px;
+            padding: 0 6px;
+            background: #ffffff;
+            color: #000000;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 4px;
+            box-shadow: 0px 2px 0px #b5b5b5, 0px 3px 0px rgba(0, 0, 0, 0.15), 0px 4px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid #d8d8d8;
+            text-transform: uppercase;
+        }
+
+        #music-cue {
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+        #music-cue:hover {
+            opacity: 0.8;
+        }
+        #music-cue:hover .keycap {
+            background: #e0e0e0;
+            box-shadow: 0px 1px 0px #b5b5b5, 0px 2px 0px rgba(0, 0, 0, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript">
+        // Si la page est chargée en tant que ui_page (NUI normal)
+        if (window.location.search.includes('nuipage=true')) {
+            document.body.style.display = 'none';
+            document.documentElement.style.background = 'transparent';
+        }
+    </script>
+
+    <div id="scaler">
+        <!-- Background de base -->
+        <div class="bg"></div>
+
+        <!-- Onglets -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('jouer')">JOUER</div>
+            <div class="tab" onclick="switchTab('lore')">LORE</div>
+            <div class="tab" onclick="switchTab('patchnotes')">PATCHNOTES</div>
+        </div>
+
+        <!-- CONTENU: JOUER -->
+        <div id="tab-jouer" class="content-area active">
+            <!-- Images placeholders -->
+            <img class="jouer-main-img" src="img/pn_main.jpg" />
+            <!--<img class="jouer-img-1" src="img/jouer_1.jpg" />
+            <img class="jouer-img-2" src="img/jouer_2.jpg" />
+            <img class="jouer-img-3" src="img/jouer_3.jpg" />
+            <img class="jouer-img-4" src="img/jouer_4.jpg" />
+            -->
+            <!-- Overlays et Textes -->
+            <div class="jouer-gradient"></div>
+            <div class="jouer-text-block">
+                <div class="jouer-text-title" id="btn-rejoindre">ACCÉDER AU PLATEAU DE JEU</div>
+                <div class="jouer-text-desc">Plongez dans une narration dense et mystérieuse où l'influence d'Epsilon dicte les interactions et les enjeux. Que vous soyez un fervent fidèle ou un observateur méfiant, vos actions s'inscrivent dans une trame scénaristique profonde et complexe.</div>
+            </div>
+            <!-- Interactive Hover Layer -->
+            <div class="hover-box" id="hover-jouer" style="width: 1736px; height: 830px; left: 91px; top: 125px;"></div>
+        </div>
+
+        <!-- CONTENU: LORE -->
+        <div id="tab-lore" class="content-area">
+            <!-- Left Block -->
+            <img class="lore-img-left-1" src="img/jouer_1.jpg" />
+            <div class="lore-grad-left"></div>
+            <div class="lore-title-left">NOUVEAU T-SHIRTS</div>
+            <div class="hover-box" style="width: 416px; height: 830px; left: 91px; top: 124px;"></div>
+ 
+            <!-- Center Block -->
+            <img class="lore-img-center-1" src="img/jouer_4.jpg" />
+            <div class="lore-grad-center"></div>
+            <div class="lore-title-center">NOUVEAU T-SHIRTS</div>
+            <div class="hover-box" style="width: 416px; height: 830px; left: 531px; top: 124px;"></div>
+ 
+            <!-- Right Block -->
+            <img class="lore-img-right" src="img/pn_3.jpg" />
+            <div class="lore-grad-right"></div>
+            <div class="lore-title-right">C’EST BIEN PIRE QUE CE QUE VOUS CROYIEZ</div>
+            <div class="hover-box" style="width: 856px; height: 830px; left: 971px; top: 124px;"></div>
+        </div>
+
+        <!-- CONTENU: PATCHNOTES -->
+        <div id="tab-patchnotes" class="content-area">
+            <!-- Left Block -->
+            <img class="pn-img-main" src="img/lore_2.jpg" />
+            <div class="pn-grad-main"></div>
+            <div class="pn-title-main">NOUVEAUX BUSINESS</div>
+            <div class="pn-desc-main">Plongez dans une narration dense et mystérieuse où l'influence d'Epsilon dicte les interactions et les enjeux. </div>
+            <div class="hover-box" style="width: 565px; height: 830px; left: 91px; top: 125px;"></div>
+ 
+            <!-- Middle Block 1 -->
+            <img class="pn-img-mid-1" src="img/jouer_2.jpg" />
+            <div class="pn-grad-mid-1"></div>
+            <div class="pn-title-mid-1">NOUVEAU T-SHIRTS</div>
+            <div class="hover-box" style="width: 559px; height: 404px; left: 680px; top: 125px;"></div>
+ 
+            <!-- Middle Block 2 -->
+            <img class="pn-img-mid-2" src="img/jouer_3.jpg" />
+            <div class="pn-grad-mid-2"></div>
+            <div class="pn-title-mid-2">VOTRE TAXI, VOS TARIFS</div>
+            <div class="hover-box" style="width: 559px; height: 404px; left: 680px; top: 551px;"></div>
+ 
+            <!-- Right Block 1 -->
+            <img class="pn-img-right-1" src="img/pn_2.webp" />
+            <div class="pn-grad-right-1"></div>
+            <div class="pn-title-right-1">BRAQUAGES</div>
+            <div class="hover-box" style="width: 564px; height: 191px; left: 1263px; top: 125px;"></div>
+ 
+            <!-- Right Block 2 -->
+            <img class="pn-img-right-2" src="img/pn_1.webp" />
+            <div class="pn-grad-right-2"></div>
+            <div class="pn-title-right-2">MAJ GANGS & ORGANISATIONS</div>
+            <div class="hover-box" style="width: 564px; height: 191px; left: 1263px; top: 338px;"></div>
+ 
+            <!-- Right Block 3 -->
+            <img class="pn-img-right-3" src="img/lore_1.jpg" />
+            <div class="pn-grad-right-3"></div>
+            <div class="pn-title-right-3">COMPORTEMENT DES VOITURES</div>
+            <div class="hover-box" style="width: 564px; height: 191px; left: 1263px; top: 551px;"></div>
+ 
+            <!-- Right Block 4 -->
+            <img class="pn-img-right-4" src="img/pn_4.jpg" />
+            <div class="pn-grad-right-4"></div>
+            <div class="pn-title-right-4">NOUVEAUX VEHICULES FIB</div>
+            <div class="hover-box" style="width: 564px; height: 191px; left: 1263px; top: 764px;"></div>
+        </div>
+
+        <!-- Barre de chargement -->
+        <div class="loading-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+
+        <!-- Musique de fond -->
+        <audio id="loading-music" src="music.mp3" autoplay loop></audio>
+
+        <!-- Commandes de contrôle (Bas droite) -->
+        <div class="controls-cues">
+            <div class="cue-group" id="music-cue" onclick="toggleMusic()">
+                <span class="keycap" id="music-key">M</span>
+                <span class="cue-label" id="music-label">COUPER LA MUSIQUE</span>
+            </div>
+            <div class="cue-group">
+                <span class="keycap">Esc</span>
+                <span class="cue-label">QUITTER</span>
+            </div>
+            <div class="cue-group">
+                <span class="keycap">P</span>
+                <span class="cue-label">PARAMÈTRES</span>
+            </div>
+            <div class="cue-group">
+                <span class="keycap">Q</span>
+                <span class="keycap">E</span>
+                <span class="cue-label">NAVIGUER</span>
+            </div>
+            <div class="cue-group">
+                <span class="keycap">↵</span>
+                <span class="cue-label">SÉLECTIONNER</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+        // --- Redimensionnement responsif ---
+        function onResize() {
+            const scaler = document.getElementById('scaler');
+            const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            scaler.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+        window.addEventListener('resize', onResize);
+        onResize(); // Initial call
+
+        // --- Système d'onglets ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('active'));
+            
+            const tabs = Array.from(document.querySelectorAll('.tab'));
+            const clickedTab = tabs.find(el => el.textContent.trim().toLowerCase() === tabId.toLowerCase());
+            if (clickedTab) clickedTab.classList.add('active');
+            
+            const targetArea = document.getElementById(`tab-${tabId}`);
+            if (targetArea) targetArea.classList.add('active');
+        }
+
+        // --- Système de progression FiveM ---
+        const isNuiPage = window.location.search.includes('nuipage=true');
+        let isReadyToJoin = false;
+        let isClientReady = false;
+        let lastProgressPercent = 0;
+
+        // Auto-prêt si on teste dans un navigateur standard hors de FiveM
+        if (!window.invokeNative && !window.GetParentResourceName) {
+            isClientReady = true;
+        }
+
+        function fadeVolumeAndStop() {
+            const bgMusic = document.getElementById('loading-music');
+            if (!bgMusic) return;
+            
+            let currentVolume = bgMusic.volume;
+            const fadeInterval = 50; // ms
+            const fadeTime = 2000; // 2 seconds total fade-out
+            const step = currentVolume / (fadeTime / fadeInterval);
+            
+            const timer = setInterval(() => {
+                currentVolume -= step;
+                if (currentVolume <= 0) {
+                    bgMusic.volume = 0;
+                    bgMusic.pause();
+                    clearInterval(timer);
+                } else {
+                    bgMusic.volume = currentVolume;
+                }
+            }, fadeInterval);
+        }
+
+        function toggleMusic() {
+            const bgMusic = document.getElementById('loading-music');
+            const musicLabel = document.getElementById('music-label');
+            const musicKey = document.getElementById('music-key');
+            if (!bgMusic) return;
+
+            if (bgMusic.paused) {
+                bgMusic.play().then(() => {
+                    if (musicLabel) musicLabel.textContent = "COUPER LA MUSIQUE";
+                    if (musicKey) musicKey.textContent = "M";
+                }).catch(err => {
+                    console.log("Erreur lors de la lecture de la musique:", err);
+                });
+            } else {
+                bgMusic.pause();
+                if (musicLabel) musicLabel.textContent = "ACTIVER LA MUSIQUE";
+                if (musicKey) musicKey.textContent = "M";
+            }
+        }
+
+        function checkAndEnableJoin() {
+            if (isNuiPage && isClientReady && lastProgressPercent >= 100) {
+                enableJoinButton();
+            }
+        }
+
+        function enableJoinButton() {
+            if (!isNuiPage) return; // Sécurité absolue : interdire le bouton sur le loadscreen natif !
+            if (isReadyToJoin) return;
+            isReadyToJoin = true;
+
+            const btn = document.getElementById('btn-rejoindre');
+            if (btn) {
+                btn.textContent = "ACCÉDER AU PLATEAU DE JEU";
+                btn.classList.remove('loading-state');
+                btn.classList.add('pulse-text');
+            }
+
+            const hoverBox = document.getElementById('hover-jouer');
+            if (hoverBox) {
+                hoverBox.onclick = function() {
+                    if (!isReadyToJoin) return;
+                    
+                    document.getElementById('spinner-overlay').classList.add('active');
+                    
+                    // Réduire progressivement le son et couper la musique de fond
+                    fadeVolumeAndStop();
+                    
+                    // Envoyer le callback à FiveM pour fermer le loading screen
+                    let resourceName = 'pop_loading';
+                    if (window.GetParentResourceName) {
+                        resourceName = window.GetParentResourceName();
+                    } else if (window.location.host && window.location.host !== '') {
+                        resourceName = window.location.host;
+                    }
+
+                    fetch(`https://${resourceName}/closeUI`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json; charset=UTF-8',
+                        },
+                        body: JSON.stringify({})
+                    }).catch(e => {
+                        // Silent catch: loading screens callbacks often reject during fast connection transitions
+                    });
+                };
+            }
+        }
+
+        // Mettre à jour le pourcentage de la barre de chargement
+        function setProgressBar(progressPercent) {
+            lastProgressPercent = progressPercent;
+            const bar = document.getElementById('loading-bar');
+            if (bar) {
+                bar.style.width = Math.min(progressPercent, 100) + '%';
+            }
+            checkAndEnableJoin();
+        }
+
+        // Initialisation de l'affichage en fonction du mode de chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('btn-rejoindre');
+            const hoverBox = document.getElementById('hover-jouer');
+            if (btn) {
+                if (isNuiPage) {
+                    btn.textContent = "CHARGEMENT DE LA SESSION...";
+                } else {
+                    btn.textContent = "CONNEXION AU SERVEUR EN COURS...";
+                }
+                btn.classList.remove('pulse-text');
+                btn.classList.add('loading-state');
+            }
+            if (hoverBox && !isNuiPage) {
+                hoverBox.style.cursor = 'default';
+                hoverBox.classList.remove('hover-box');
+            }
+        });
+
+        window.addEventListener("message", function (e) {
+            const data = e.data;
+            
+            // Événement périodique signalant que le script client est prêt
+            if (data.action === 'clientReady') {
+                isClientReady = true;
+                checkAndEnableJoin();
+            }
+            
+            // 1. Événement de progression natif FiveM (extrêmement précis)
+            if (data.eventName === 'loadProgress') {
+                // data.loadFraction est entre 0.0 et 1.0
+                const percent = Math.round(data.loadFraction * 100);
+                setProgressBar(percent);
+            }
+            
+            // 2. Événement de fin d'initialisation de session FiveM
+            if (data.eventName === 'INIT_SESSION') {
+                setProgressBar(100);
+            }
+            
+            // 3. Événement personnalisé ESX / UI Page lors de la connexion réussie
+            if (data.action === 'showJoinScreen') {
+                isClientReady = true;
+                document.body.style.display = 'block';
+                document.documentElement.style.background = '#000';
+                setProgressBar(100);
+                enableJoinButton();
+            } else if (data.action === 'hide') {
+                const spinner = document.getElementById('spinner-overlay');
+                if (spinner) spinner.classList.remove('active');
+                document.body.style.display = 'none';
+                document.documentElement.style.background = 'transparent';
+            }
+        });
+
+        // --- Musique de fond ---
+        const bgMusic = document.getElementById('loading-music');
+        if (bgMusic) {
+            bgMusic.volume = 0.25; // Volume de la musique à 25% pour ne pas agresser les joueurs
+            
+            const startMusic = () => {
+                bgMusic.play().then(() => {
+                    console.log("Musique de fond démarrée avec succès.");
+                }).catch(err => {
+                    console.log("Attente d'interaction utilisateur pour lancer la musique.");
+                });
+            };
+
+            // Lancer la musique immédiatement
+            startMusic();
+
+            // Attacher aussi des événements de sécurité si besoin pour s'assurer que ça se lance dès les premières touches/clics
+            const triggerOnInteraction = () => {
+                startMusic();
+                window.removeEventListener('click', triggerOnInteraction);
+                window.removeEventListener('keydown', triggerOnInteraction);
+            };
+            window.addEventListener('click', triggerOnInteraction);
+            window.addEventListener('keydown', triggerOnInteraction);
+            
+            // Forcer également sur l'événement "load" global de la fenêtre
+            window.addEventListener('load', () => {
+                startMusic();
+            });
+        }
+
+        // Helper pour récupérer l'onglet actif
+        function getActiveTabId() {
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) {
+                return activeTab.textContent.trim().toLowerCase();
+            }
+            return 'jouer';
+        }
+
+        // Écouteurs de clavier pour la navigation et la sélection
+        window.addEventListener('keydown', function(event) {
+            const key = event.key.toLowerCase();
+            
+            // Touche M (Toggle musique)
+            if (key === 'm') {
+                toggleMusic();
+            }
+
+            // Touche Q (Naviguer à gauche)
+            if (key === 'q') {
+                const tabs = ['jouer', 'lore', 'patchnotes'];
+                const currentTab = getActiveTabId();
+                let idx = tabs.indexOf(currentTab);
+                if (idx !== -1) {
+                    idx = (idx - 1 + tabs.length) % tabs.length;
+                    switchTab(tabs[idx]);
+                }
+            }
+            
+            // Touche E (Naviguer à droite)
+            if (key === 'e') {
+                const tabs = ['jouer', 'lore', 'patchnotes'];
+                const currentTab = getActiveTabId();
+                let idx = tabs.indexOf(currentTab);
+                if (idx !== -1) {
+                    idx = (idx + 1) % tabs.length;
+                    switchTab(tabs[idx]);
+                }
+            }
+            
+            // Touche Entrée (Sélectionner / Rejoindre)
+            if (event.key === 'Enter') {
+                if (isReadyToJoin && isNuiPage) {
+                    const hoverBox = document.getElementById('hover-jouer');
+                    if (hoverBox && hoverBox.onclick) {
+                        hoverBox.onclick();
+                    }
+                }
+            }
+
+            // Touche Esc (Quitter)
+            if (event.key === 'Escape') {
+                console.log("Touche Esc enfoncée. Retour au jeu/Fermeture.");
+            }
+
+            // Touche P (Paramètres)
+            if (key === 'p') {
+                console.log("Ouverture des paramètres.");
+            }
+        });
+
+        // Simuler un chargement visuel en mode navigateur pour tester
+        if (!window.invokeNative) {
+            let p = 0;
+            let mock = setInterval(() => {
+                p += 1;
+                if (p > 100) p = 100;
+                setProgressBar(p);
+                if (p >= 100) {
+                    clearInterval(mock);
+                }
+            }, 30);
+        }
+    </script>
+    <!-- Overlay de mini-chargement circulaire -->
+    <div id="spinner-overlay">
+        <div class="spinner"></div>
+    </div>
+</body>
+
+</html>

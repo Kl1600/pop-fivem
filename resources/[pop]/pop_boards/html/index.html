@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        img {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover !important; /* Remplissage total sans bandes noires */
+            background-color: transparent !important;
+            margin: 0;
+            padding: 0;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <img id="displayImg" src="" style="display: none;" />
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sourceUrl = urlParams.get('url');
+        const fitParam = urlParams.get('fit');
+
+        const resW = parseInt(urlParams.get('resW')) || 1024;
+        const resH = parseInt(urlParams.get('resH')) || 1024;
+
+        if (sourceUrl) {
+            const img = document.getElementById('displayImg');
+            img.src = sourceUrl;
+            img.style.display = 'block';
+            img.style.pointerEvents = 'none';
+            img.style.userSelect = 'none';
+            if (fitParam) {
+                img.style.objectFit = fitParam;
+            }
+        }
+
+        // --- UPDATE FROM LUA MESSAGE ---
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data.type === "updateTexture") {
+                const img = document.getElementById('displayImg');
+                img.src = ""; // Force flush
+                img.style.display = 'none';
+                
+                // On met un micro-délai pour être sûr que le navigateur réagisse au changement de source
+                requestAnimationFrame(() => {
+                    img.src = data.url;
+                    img.style.display = 'block';
+                });
+            }
+        });
+
+        // Handshake de démarrage pour prévenir le script Lua qu'on est prêt à recevoir l'image
+        const dbId = urlParams.get('dbId');
+        if (dbId) {
+            fetch(`https://pop_boards/duiReady`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dbId: dbId })
+            }).catch(e => console.log("Handshake Error:", e));
+        }
+    </script>
+</body>
+</html>

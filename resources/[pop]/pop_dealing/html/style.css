@@ -1,0 +1,361 @@
+@import url(https://fonts.cdnfonts.com/css/tt-firs-neue-trl);
+
+* { box-sizing: border-box; }
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: 'TT Firs Neue Trl', 'Segoe UI', sans-serif;
+    color: #fff;
+    background: transparent;
+    -webkit-font-smoothing: antialiased;
+}
+
+#root {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 60px;
+    pointer-events: none;
+}
+#root.hidden { display: none; }
+
+/* ─── Card ───────────────────────────────────────── */
+
+.deal-card {
+    width: 340px;
+    background: rgba(0, 0, 0, 0.30);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    pointer-events: auto;
+    animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    position: relative;
+    transform: scale(var(--rsp, 1));
+    transform-origin: center right;
+}
+
+.deal-card.closing { animation: slideOut 0.25s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0) scale(var(--rsp, 1)); }
+    20%, 60% { transform: translateX(-6px) scale(var(--rsp, 1)); }
+    40%, 80% { transform: translateX(6px) scale(var(--rsp, 1)); }
+}
+.deal-card.shake { animation: shake 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+/* ─── Header ─────────────────────────────────────── */
+
+.deal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.deal-header-left { display: flex; align-items: center; gap: 12px; }
+
+.deal-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(255, 46, 136, 0.35), rgba(216, 27, 110, 0.15));
+    border: 1px solid rgba(255, 46, 136, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff2e88;
+    font-size: 15px;
+}
+
+.deal-header-text { display: flex; flex-direction: column; gap: 2px; }
+
+.deal-eyebrow {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+}
+
+.deal-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.1;
+}
+
+.deal-badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(255, 46, 136, 0.18);
+    color: #ff2e88;
+    border: 1px solid rgba(255, 46, 136, 0.35);
+}
+
+/* ─── Stats ──────────────────────────────────────── */
+
+.deal-stats {
+    display: flex;
+    align-items: stretch;
+    padding: 14px 16px 12px;
+    gap: 0;
+}
+
+.deal-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+}
+
+.deal-stat-label {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+.deal-stat-value {
+    font-size: 17px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    font-variant-numeric: tabular-nums;
+}
+
+.deal-stat.accent .deal-stat-value { color: #ff2e88; }
+
+.deal-stat-sep {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 4px 0;
+}
+
+/* ─── Jauge de prix ──────────────────────────────── */
+
+.deal-gauge {
+    margin: 4px 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.deal-gauge-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.deal-gauge-label {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+.deal-gauge-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: #ff2e88;
+    font-variant-numeric: tabular-nums;
+}
+
+.deal-gauge-per {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.4px;
+}
+
+.deal-gauge-track {
+    position: relative;
+    height: 22px;
+    display: flex;
+    align-items: center;
+}
+
+/* Fond de la jauge */
+.deal-gauge-track::before {
+    content: "";
+    position: absolute;
+    inset: 9px 0;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+}
+
+/* Remplissage coloré */
+.deal-gauge-fill {
+    position: absolute;
+    left: 0;
+    top: 9px;
+    bottom: 9px;
+    width: 0%;
+    background: linear-gradient(90deg, #d81b6e, #ff2e88);
+    border-radius: 2px;
+    pointer-events: none;
+    transition: width 0.05s linear;
+}
+
+/* Marqueur "prix marché" */
+.deal-gauge-mark {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.7);
+    transform: translateX(-1px);
+    pointer-events: none;
+    border-radius: 1px;
+}
+.deal-gauge-mark::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: -2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+/* Input range invisible mais cliquable au-dessus */
+.deal-gauge-track input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    margin: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.deal-gauge-track input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #ff2e88;
+    box-shadow: 0 0 0 4px rgba(255, 46, 136, 0.18);
+    cursor: grab;
+    transition: transform 0.1s;
+}
+.deal-gauge-track input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.1); cursor: grabbing; }
+
+.deal-gauge-track input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #ff2e88;
+    box-shadow: 0 0 0 4px rgba(255, 46, 136, 0.18);
+    cursor: grab;
+}
+.deal-gauge-track input[type="range"]:focus { outline: none; }
+
+.deal-gauge-bounds {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.35);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ─── Meta (feedback + tentatives) ───────────────── */
+
+.deal-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    min-height: 16px;
+    font-size: 11px;
+}
+
+.deal-feedback { color: rgba(255, 255, 255, 0.55); }
+.deal-feedback.refuse { color: #ffb3b3; }
+.deal-feedback.accept { color: #b9eea0; }
+
+.deal-attempts {
+    color: rgba(255, 255, 255, 0.45);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.4px;
+}
+.deal-attempts span:first-child { color: rgba(255, 255, 255, 0.85); font-weight: 600; }
+
+/* ─── Actions ────────────────────────────────────── */
+
+.deal-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px 14px;
+}
+
+.deal-btn {
+    flex: 1;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s, border-color 0.15s, transform 0.05s;
+}
+
+.deal-btn i { font-size: 11px; }
+
+.deal-btn:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.15); }
+.deal-btn:active { transform: scale(0.985); }
+
+.deal-btn.accept {
+    background: rgba(88, 160, 60, 0.2);
+    border-color: rgba(88, 160, 60, 0.45);
+    color: #d8f5c5;
+}
+.deal-btn.accept:hover { background: rgba(88, 160, 60, 0.32); border-color: rgba(88, 160, 60, 0.65); }
+
+.deal-btn.refuse {
+    background: rgba(220, 80, 80, 0.08);
+    border-color: rgba(220, 80, 80, 0.28);
+    color: rgba(255, 200, 200, 0.85);
+}
+.deal-btn.refuse:hover { background: rgba(220, 80, 80, 0.18); border-color: rgba(220, 80, 80, 0.5); }
+
+.deal-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Animations ─────────────────────────────────── */
+
+@keyframes slideIn {
+    from { transform: translateX(120%) scale(var(--rsp, 1)); opacity: 0; }
+    to   { transform: translateX(0)    scale(var(--rsp, 1)); opacity: 1; }
+}
+@keyframes slideOut {
+    from { transform: translateX(0)    scale(var(--rsp, 1)); opacity: 1; }
+    to   { transform: translateX(120%) scale(var(--rsp, 1)); opacity: 0; }
+}

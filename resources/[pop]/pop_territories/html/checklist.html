@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  @import url('https://fonts.cdnfonts.com/css/tt-firs-neue-trl');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: transparent;
+    font-family: 'TT Firs Neue Trl', 'Roboto', 'Segoe UI', sans-serif;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #checklist {
+    position: absolute;
+    bottom: 220px;
+    left: 1.44%;
+    width: 272px;
+    background: rgba(10, 10, 10, 0.514);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+    color: #fff;
+    padding: 12px;
+    display: none;
+    transition: opacity 0.3s ease;
+  }
+
+  #checklist.visible { display: block; }
+
+  .checklist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+  }
+
+  .checklist-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .checklist-close {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .checklist-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .checklist-item.done {
+    text-decoration: line-through;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .checklist-item .checkbox {
+    margin-right: 8px;
+    font-weight: bold;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .checklist-item.done .checkbox {
+    color: #2aad0a;
+  }
+
+  /* Barre de progression */
+  .checklist-progress-container {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: block; /* Toujours visible */
+  }
+
+  .prog-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+  }
+
+  .prog-track {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      position: relative;
+  }
+
+  .prog-fill {
+      height: 100%;
+      background: #ffffff;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s ease, background 0.3s ease;
+  }
+
+  .prog-fill.ok {
+      background: #2aad0a;
+  }
+
+  .prog-marker {
+      position: absolute;
+      left: 80%;
+      top: -2px;
+      bottom: -2px;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.3);
+  }
+
+</style>
+</head>
+<body>
+
+<div id="checklist">
+  <div class="checklist-header">
+    <span class="checklist-title">CONTRÔLE DE TERRITOIRE</span>
+    <span class="checklist-close"></span>
+  </div>
+  <ul class="checklist-items">
+    <li class="checklist-item" id="step-1">
+      <span class="checkbox">-</span> Avoir un pochon de weed
+    </li>
+    <li class="checklist-item" id="step-2">
+      <span class="checkbox">-</span> Clic droit → Vendre
+    </li>
+    <li class="checklist-item" id="step-3">
+      <span class="checkbox">-</span> Vendre dans une zone
+    </li>
+    <li class="checklist-item" id="step-4">
+      <span class="checkbox">-</span> Atteindre 80% — contrôler la zone
+    </li>
+  </ul>
+
+  <div class="checklist-progress-container" id="prog-container">
+      <div class="prog-label-row">
+          <span>Contrôle de zone</span>
+          <span id="prog-text">0%</span>
+      </div>
+      <div class="prog-track">
+          <div class="prog-fill" id="prog-fill"></div>
+          <div class="prog-marker"></div>
+      </div>
+  </div>
+</div>
+
+<script>
+  function updateStep(stepNum, done) {
+    const el = document.getElementById('step-' + stepNum);
+    if (!el) return;
+    const box = el.querySelector('.checkbox');
+    if (done) {
+      el.classList.add('done');
+      box.textContent = '✔';
+    } else {
+      el.classList.remove('done');
+      box.textContent = '-';
+    }
+  }
+
+  function resetSteps() {
+    for (let i = 1; i <= 4; i++) {
+      updateStep(i, false);
+    }
+    const fill = document.getElementById('prog-fill');
+    fill.style.width = '0%';
+    fill.classList.remove('ok');
+    document.getElementById('prog-text').textContent = '0%';
+  }
+
+  function updateProgress(share, controlled) {
+    const pct = Math.floor(share);
+    const fill = document.getElementById('prog-fill');
+    const text = document.getElementById('prog-text');
+
+    fill.style.width = pct + '%';
+    text.textContent = pct + '%';
+
+    if (controlled) {
+      fill.classList.add('ok');
+      text.style.color = '#2aad0a';
+    } else {
+      fill.classList.remove('ok');
+      text.style.color = 'inherit';
+    }
+  }
+
+  window.addEventListener('message', function(event) {
+    const data = event.data;
+    if (data.type === 'cl_show') {
+      const cl = document.getElementById('checklist');
+      if (data.visible) {
+        cl.classList.add('visible');
+      } else {
+        cl.classList.remove('visible');
+      }
+    } else if (data.type === 'cl_step') {
+      updateStep(data.step, data.done);
+    } else if (data.type === 'cl_progress') {
+      updateProgress(data.share, data.controlled);
+    } else if (data.type === 'cl_reset') {
+      resetSteps();
+    }
+  });
+</script>
+
+</body>
+</html>

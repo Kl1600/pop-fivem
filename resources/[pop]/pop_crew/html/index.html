@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crew</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="app" style="display: none;">
+        <div class="menu-container">
+            <div class="header">
+                <div class="title">CREW</div>
+                <div id="subtitle" class="subtitle">—</div>
+            </div>
+
+            <div class="content-wrapper">
+                <div id="body"><!-- rendu dynamique --></div>
+            </div>
+
+            <div class="footer">
+                <div class="cancel-btn" id="close-btn">
+                    <i class="fa-solid fa-xmark"></i> FERMER
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        /* responsive scale: --rsp = 1.0 @ 1920x1080, >1 sur plus haute resolution */
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="app.js"></script>
+</body>
+
+</html>

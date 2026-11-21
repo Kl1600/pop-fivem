@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="passport-container" style="display: none;">
+
+        <!-- ===== PAGE US ===== -->
+        <div class="page page-us">
+            <div class="bg"><img src="usapassport.png" alt=""></div>
+            <div class="data">
+                <div class="data-top">
+                    <div class="photo">
+                        <img class="player-photo" id="player-photo-us" src="">
+                    </div>
+                    <div class="fields">
+                        <div class="field"><span class="f-label">Nom</span><span class="f-value" id="us-lastname"></span></div>
+                        <div class="field"><span class="f-label">Prénom</span><span class="f-value" id="us-firstname"></span></div>
+                        <div class="field"><span class="f-label">Sexe</span><span class="f-value" id="us-sex"></span></div>
+                        <div class="field"><span class="f-label">Date de naissance</span><span class="f-value" id="us-dob"></span></div>
+                        <div class="field"><span class="f-label">Expiration</span><span class="f-value" id="us-expiry"></span></div>
+                    </div>
+                </div>
+                <div class="data-sign">
+                    <span class="f-label">Signature</span>
+                    <span class="signature" id="us-sign"></span>
+                </div>
+                <div class="data-id">
+                    <span class="f-label">N° d'identification</span>
+                    <span class="id-value" id="us-number"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE MX ===== -->
+        <div class="page page-mx">
+            <div class="bg"><img src="mexicopassport.png" alt=""></div>
+            <div class="data">
+                <div class="data-top">
+                    <div class="photo">
+                        <img class="player-photo" id="player-photo-mx" src="">
+                    </div>
+                    <div class="fields">
+                        <div class="field"><span class="f-label">Nom</span><span class="f-value" id="mx-lastname"></span></div>
+                        <div class="field"><span class="f-label">Prénom</span><span class="f-value" id="mx-firstname"></span></div>
+                        <div class="field"><span class="f-label">Sexe</span><span class="f-value" id="mx-sex"></span></div>
+                        <div class="field"><span class="f-label">Date de naissance</span><span class="f-value" id="mx-dob"></span></div>
+                        <div class="field"><span class="f-label">Expiration</span><span class="f-value" id="mx-expiry"></span></div>
+                    </div>
+                </div>
+                <div class="data-sign">
+                    <span class="f-label">Signature</span>
+                    <span class="signature" id="mx-sign"></span>
+                </div>
+                <div class="data-id">
+                    <span class="f-label">N° d'identification</span>
+                    <span class="id-value" id="mx-number"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">Appuyez sur [ESC] ou [ENTRÉE] pour fermer</div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

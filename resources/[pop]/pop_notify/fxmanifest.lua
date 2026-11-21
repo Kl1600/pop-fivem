@@ -1,0 +1,20 @@
+fx_version 'cerulean'
+game 'gta5'
+
+ui_page 'html/index.html'
+author 'Tabernac'
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/script.js'
+}
+
+client_scripts {
+    'client.lua'
+}
+
+exports {
+    'ShowNotify'
+}
+

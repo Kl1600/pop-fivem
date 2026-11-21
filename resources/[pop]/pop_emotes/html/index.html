@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Emotes</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="app" style="display: none;">
+        <div class="menu-container">
+            <div class="header">
+                <div class="title">ANIMATIONS</div>
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search" placeholder="Rechercher...">
+                </div>
+            </div>
+
+            <div class="categories">
+                <div class="cat-item active" data-cat="emotes" title="Animations"><i
+                        class="fa-solid fa-person-running"></i></div>
+                <div class="cat-item" data-cat="dances" title="Danses"><i class="fa-solid fa-music"></i></div>
+                <div class="cat-item" data-cat="props" title="Objets"><i class="fa-solid fa-box"></i></div>
+                <div class="cat-item" data-cat="shared" title="Partagées"><i class="fa-solid fa-people-arrows"></i>
+                </div>
+                <div class="cat-item" data-cat="walks" title="Démarches"><i class="fa-solid fa-person-walking"></i>
+                </div>
+                <div class="cat-item" data-cat="expressions" title="Humeurs"><i class="fa-solid fa-face-smile"></i>
+                </div>
+            </div>
+
+            <div class="content-wrapper">
+                <div id="emote-list" class="emote-grid">
+                    <!-- Dynamic items here -->
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="cancel-btn" onclick="playEmote('c')">
+                    <i class="fa-solid fa-xmark"></i> ARRÊTER L'ANIMATION
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        /* responsive scale: --rsp = 1.0 @ 1920x1080, >1 sur plus haute resolution */
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,112 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    width:100vw;
+    height:100vh;
+}
+
+#container{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    background:rgba(0,0,0,0.5);
+}
+
+.cheque{
+    width:900px;
+    background:#f8f8f8;
+    border:3px solid #222;
+    border-radius:10px;
+    padding:25px;
+    box-shadow:0 0 25px rgba(0,0,0,.4);
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:30px;
+}
+
+.header h1{
+    font-size:32px;
+}
+
+.date-box{
+    width:220px;
+}
+
+.field{
+    margin-bottom:20px;
+}
+
+.field label,
+.signature label{
+    display:block;
+    font-weight:bold;
+    margin-bottom:8px;
+}
+
+.field input,
+.signature input{
+    width:100%;
+    border:none;
+    border-bottom:2px solid black;
+    background:transparent;
+    padding:8px;
+    font-size:16px;
+    outline:none;
+}
+
+.company-banner{
+    background:#ffe3ef;
+    border:2px solid #ff2e88;
+    border-radius:6px;
+    padding:10px 14px;
+    font-size:15px;
+}
+
+.amount{
+    width:250px;
+    margin-left:auto;
+}
+
+.signature{
+    margin-top:40px;
+    width:300px;
+    margin-left:auto;
+}
+
+.buttons{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:30px;
+}
+
+button{
+    border:none;
+    cursor:pointer;
+    padding:12px 20px;
+    border-radius:5px;
+    font-size:15px;
+}
+
+.validate{
+    background:#27ae60;
+    color:white;
+}
+
+.cancel{
+    background:#c0392b;
+    color:white;
+}

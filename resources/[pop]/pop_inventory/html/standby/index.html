@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+</head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fond Noir</title>
+
+<style>
+  * { user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+  body {
+    background-color: transparent;
+    font-family: Arial, sans-serif;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .container {
+    padding-left: 112px;
+    padding-top: 0px;
+    width: 509px;
+  }
+
+  .separator {
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.4);
+    margin-bottom: 8px;
+  }
+
+  .weight-info {
+    color: white;
+    font-size: 14px;
+    font-family: Segoe UI;
+    font-weight: 600;
+    margin-bottom: 15px;
+    /* ↓ réduit l’espace entre le texte et les cases */
+  }
+
+  .weight-info .current {
+    color: white;
+  }
+
+  .weight-info .max {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(6, 74px);
+    gap: 13px;
+  }
+
+  .slot {
+    width: 74px;
+    height: 74px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    transition: background 100ms;
+    cursor: pointer;
+  }
+
+  .slot:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .slot.disabled {
+    background: rgba(80, 80, 80, 0.1);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .section {
+    display: none;
+  }
+
+  .section.active {
+    display: block;
+  }
+
+  /* --- Menu contextuel (aligné sur l'inventaire principal) --- */
+  .inv-context {
+    position: fixed;
+    min-width: 160px;
+    background: rgba(0, 0, 0, 0.65);
+    border-radius: 7px;
+    color: #ffffff;
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    font-size: 9pt;
+    padding: 4px 0;
+    z-index: 9999;
+    display: none;
+    overflow: hidden;
+  }
+
+  .inv-context-title {
+    padding: 6px 12px 6px 12px;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.45);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 2px;
+  }
+
+  .inv-context button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 28px;
+    background: transparent;
+    border: 0;
+    color: #cfd2da;
+    text-align: left;
+    padding: 0 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 500;
+    transition: background 200ms, color 200ms;
+    box-sizing: border-box;
+  }
+
+  .inv-context button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  /* --- Modal d'input personnalisé --- */
+  .input-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .input-modal.active {
+    display: flex;
+  }
+
+  .input-modal-content {
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 20px;
+    min-width: 300px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .input-modal-title {
+    color: white;
+    font-size: 16px;
+    font-family: Segoe UI;
+    font-weight: 600;
+    margin-bottom: 15px;
+  }
+
+  .input-modal-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    font-size: 14px;
+    font-family: Segoe UI;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+  }
+
+  .input-modal-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .input-modal-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .input-modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .input-modal-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 2px;
+    font-size: 14px;
+    font-family: Segoe UI;
+    cursor: pointer;
+    transition: background 150ms;
+  }
+
+  .input-modal-btn-confirm {
+    background: rgba(100, 200, 100, 0.3);
+    color: rgba(100, 255, 100, 0.8);
+    border: 1px solid rgba(100, 255, 100, 0.3);
+  }
+
+  .input-modal-btn-confirm:hover {
+    background: rgba(100, 200, 100, 0.5);
+    border-color: rgba(100, 255, 100, 0.5);
+  }
+
+  .input-modal-btn-cancel {
+    background: rgba(100, 100, 100, 0.2);
+    color: rgba(200, 200, 200, 0.8);
+    border: 1px solid rgba(200, 200, 200, 0.2);
+  }
+
+  .input-modal-btn-cancel:hover {
+    background: rgba(100, 100, 100, 0.4);
+    border-color: rgba(200, 200, 200, 0.4);
+  }
+</style>
+
+<style>
+  /* --- Fix hover pour les cases + icônes --- */
+
+  /* Assure que les cases ont leur propre contexte d'empilement, réagissent au hover et ont des transitions fluides */
+  .standby-slot {
+    position: absolute;
+    z-index: 1;
+    cursor: pointer;
+    pointer-events: auto !important;
+    transition: background-color 0ms ease !important;
+  }
+
+  /* Hover : change la couleur de fond sans toucher au dégradé */
+  .standby-slot:hover {
+    background-color: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  /* Arme longue (case double) : la surcouche couvre 2 cases et brille en UN bloc
+     au survol (de n'importe où sur sa longueur) -> ressemble à une seule case. */
+  .dbl-bg { border-radius: 2px; transition: box-shadow 0.12s; }
+  .standby-slot:hover > .dbl-bg {
+    box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.22);
+  }
+  /* Bloc multi-cases : NE PAS surligner la case porteuse 79px (sinon bande claire en
+     haut). Seul le .dbl-bg (tout le bloc) brille au survol. */
+  .standby-slot.span-carrier:hover {
+    background-color: transparent !important;
+  }
+
+  /* Place la barre d'icône et les icônes au-dessus */
+  .icon-bar {
+    position: relative;
+    /* crée un nouveau contexte si besoin */
+    z-index: 50;
+    /* plus haut que les cases */
+  }
+
+  /* icônes au-dessus de tout et réactives */
+  .icon {
+    position: relative;
+    z-index: 51;
+    pointer-events: auto;
+    /* s'assure que les icônes reçoivent les events */
+
+  }
+
+
+
+
+
+  /* Cible uniquement les éléments inline qui ont à la fois un background inline ET border-radius: 2px.
+     Exclut explicitement les séparateurs fins (height: 1px). */
+
+  #standby-items-grid::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  #standby-items-grid {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+</style>
+
+<div style="width: 1217px; height: 738px; position: relative">
+  <!-- Grille défilante pour le Conteneur Distant (Standby) -->
+  <div id="standby-items-grid"
+    style="position: absolute; left: 0px; top: 128px; width: 550px; height: 441px; overflow-y: scroll; display: grid; grid-template-columns: repeat(6, 79px); gap: 12px 15px; box-sizing: border-box; padding-right: 4px;">
+    <!-- 60 slots de 79x79px -->
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+  </div>
+
+
+
+  <div
+    style="width: 79px; height: 79px; left: 853px; top: 236px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 665px; top: 236px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 759px; top: 236px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 947px; top: 236px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1041px; top: 236px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1135px; top: 236px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 853px; top: 509px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 665px; top: 509px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 759px; top: 509px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 947px; top: 509px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1041px; top: 509px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1135px; top: 509px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div data-equip-slot="weapon_pistol"
+    style="width: 79px; height: 79px; left: 855px; top: 658px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display:flex; align-items:center; justify-content:center;">
+  </div>
+  <div data-equip-slot="weapon_long"
+    style="width: 176px; height: 79px; left: 665px; top: 658px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display:flex; align-items:center; justify-content:center;">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1045px; top: 658px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div data-equip-slot="weapon_tazer"
+    style="width: 79px; height: 79px; left: 950px; top: 658px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display:flex; align-items:center; justify-content:center;">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1138px; top: 658px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 853px; top: 418px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 665px; top: 418px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 759px; top: 418px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 947px; top: 418px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1041px; top: 418px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1135px; top: 418px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 853px; top: 327px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 665px; top: 327px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 759px; top: 327px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 947px; top: 327px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1041px; top: 327px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1135px; top: 327px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 853px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 665px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 759px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 947px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1041px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 1135px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <!-- Separateur conteneur distant (gauche) -->
+  <div
+    style="width: 569px; height: 1px; left: 0px; top: 89px; position: absolute; background: rgba(245, 245, 245, 0.15)">
+  </div>
+  <!-- Separateur inventaire (droite) -->
+  <div
+    style="width: 551px; height: 1px; left: 664px; top: 87px; position: absolute; background: rgba(245, 245, 245, 0.15)">
+  </div>
+  <!-- Scrollbar Conteneur distant : rail + curseur rose -->
+  <div id="standby-scroll-rail"
+    style="width: 9px; height: 441px; left: 560px; top: 128px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 5px">
+  </div>
+  <div id="standby-scroll-thumb"
+    style="width: 9px; height: 214px; left: 560px; top: 128px; position: absolute; background: rgba(241.51, 179.97, 216.84, 0.35); border-radius: 5px">
+  </div>
+  <!-- Titres -->
+  <div id="standby-title" style="width: 300px; height: 33px; left: 0px; top: 0px; position: absolute; color: white; font-size: 21px; font-family: Segoe UI; font-weight: 900; word-wrap: break-word">Conteneur distant</div>
+  <div style="width: 300px; height: 33px; left: 664px; top: 0px; position: absolute; color: white; font-size: 21px; font-family: Segoe UI; font-weight: 900; word-wrap: break-word">Votre inventaire</div>
+  <div
+    style="width: 72px; height: 33px; left: 665px; top: 615px; position: absolute; color: white; font-size: 21px; font-family: Segoe UI; font-weight: 900; word-wrap: break-word">
+    Armes</div>
+
+  <!-- ÉQUIPEMENT (Partie 2) : reconstitue la partie droite de l'inventaire (vetements/mallettes en items).
+       Cellules transparentes superposees a la grille de fond ; visibles en "vue equipement",
+       masquees quand on ouvre un conteneur (vue contenu). Position a ajuster en jeu si besoin. -->
+  <style>
+    .equip-label { position: absolute; color: white; font-size: 12px; line-height: 1;
+      font-family: 'Segoe UI', sans-serif; font-weight: 400; white-space: nowrap; z-index: 21; pointer-events: none; }
+    .equip-cell { position: absolute; width: 57px; height: 57px; z-index: 20; border-radius: 2px;
+      background: rgba(245, 245, 245, 0.15);
+      display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
+  </style>
+  <!-- Labels : haut du texte aligné avec le haut de la 1ère rangée de cases du conteneur de gauche (top:84) -->
+  <div class="equip-label" style="left: 666px; top: 119px;">Tête</div>
+  <div class="equip-label" style="left: 955px; top: 120px;">Communications</div>
+  <div class="equip-label" style="left: 666px; top: 219px;">Corps</div>
+  <div class="equip-label" style="left: 666px; top: 319px;">Bas</div>
+  <div class="equip-label" style="left: 666px; top: 420px;">Utilitaire</div>
+  <!-- TÊTE (4 cases) — cellules 57x57, step 65 -->
+  <div class="equip-cell" data-equip-slot="hat"       style="left: 665px; top: 145px;"></div>
+  <div class="equip-cell" data-equip-slot="mask"      style="left: 730px; top: 145px;"></div>
+  <div class="equip-cell" data-equip-slot="glasses"   style="left: 795px; top: 145px;"></div>
+  <div class="equip-cell" data-equip-slot="accessory" style="left: 860px; top: 145px;"></div>
+  <!-- COMMUNICATIONS (3 cases : phone/radio, pager hidden par défaut) -->
+  <div class="equip-cell" data-equip-slot="phone"     style="left: 954px; top: 145px;"></div>
+  <div class="equip-cell" data-equip-slot="radio"     style="left: 1019px; top: 145px;"></div>
+  <div class="equip-cell" data-equip-slot="pager"     id="standby-pager-slot" style="left: 1084px; top: 145px; display: none;"></div>
+  <!-- CORPS (3 cases) -->
+  <div class="equip-cell" data-equip-slot="hoddie"    style="left: 665px; top: 245px;"></div>
+  <div class="equip-cell" data-equip-slot="tshirt"    style="left: 730px; top: 245px;"></div>
+  <div class="equip-cell" data-equip-slot="tie"       style="left: 795px; top: 245px;"></div>
+  <!-- BAS (2 cases) -->
+  <div class="equip-cell" data-equip-slot="panta"     style="left: 665px; top: 345px;"></div>
+  <div class="equip-cell" data-equip-slot="shoes"     style="left: 730px; top: 345px;"></div>
+  <!-- UTILITAIRE (4 cases) -->
+  <div class="equip-cell" data-equip-slot="backpack"  style="left: 665px; top: 443px;"></div>
+  <div class="equip-cell" data-equip-slot="wallet"    style="left: 730px; top: 443px;"></div>
+  <div class="equip-cell" data-equip-slot="kevlar"    style="left: 795px; top: 443px;"></div>
+  <div class="equip-cell" data-equip-slot="briefcase" style="left: 860px; top: 443px;"></div>
+
+  <div id="standby-left-icon-bar" style="position: absolute; left: 2px; top: 52px; display: flex; gap: 26px; z-index: 10;"></div>
+  <!-- Soulignement rose pour la catégorie conteneur distant (gauche) -->
+  <div id="standby-left-icon-underline" style="position: absolute; top: 88px; left: 2px; width: 0px; height: 2px; background: #ff2e88; border-radius: 1px; z-index: 12; transition: left .18s ease, width .18s ease, opacity .18s ease, box-shadow 0.25s ease;"></div>
+  <style>
+     #standby-items-grid > div {
+       position: relative;
+     }
+
+     /* Petit hover sur l'item contenu dans une case ouverte (Partie 3) */
+    div[style*="background: rgba(245, 245, 245, 0.15)"][style*="width: 82px"][style*="height: 80px"]:hover img {
+      transform: scale(1.08);
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.55));
+      transition: transform 120ms ease, filter 120ms ease;
+    }
+
+    /* Hover pour la catégorie conteneur distant (gauche) */
+    #standby-left-icon-bar .icon:hover ~ #standby-left-icon-underline {
+      box-shadow: 0 0 6px #ff2e88;
+    }
+
+    /* Icônes (classe .icon déjà dans ton HTML) */
+  </style>
+
+  <div class="icon-bar">
+    <!-- Generated dynamically -->
+  </div>
+  <!-- Soulignement (onglet) de la categorie active, pose sur la barre droite -->
+  <div id="standby-icon-underline" style="position: absolute; top: 86px; left: 664px; width: 0; height: 2px; background: #ff2e88; border-radius: 1px; opacity: 0; pointer-events: none; z-index: 12; transition: left .18s ease, width .18s ease, opacity .18s ease;"></div>
+
+  <style>
+    .icon-bar {
+      position: relative;
+      z-index: 10;
+      padding-left: 666px;
+      /* Aligned with right section */
+      padding-top: 50px;
+      display: flex;
+      gap: 26px;
+      /* <-- espace entre les icônes */
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      position: relative;
+      z-index: 11;
+      filter: brightness(0) saturate(100%) invert(95%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) opacity(0.4);
+      transition: filter 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    /* Hover : éclaircit légèrement la couleur pour rappeler le survol des cases */
+    .icon:hover {
+      filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(200%) opacity(0.6);
+      transform: scale(1.00);
+    }
+
+    /* Active : met un léger halo blanc */
+    .icon.active {
+      filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(200%) opacity(1);
+    }
+
+
+    /* Les div de fond ne bloquent plus le hover */
+    div[style*="background: rgba(245, 245, 245, 0.15)"] {
+      pointer-events: none;
+    }
+
+    div[style*="background: rgba(245, 245, 245, 0.15)"][style*="width: 79px"][style*="height: 79px"] {
+      pointer-events: auto;
+    }
+  </style>
+
+
+
+  <div id="standby-weight-container" style="width: 67px; height: 20px; left: 0px; top: 98px; position: absolute"><span
+      style="color: white; font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">0.0</span><span
+      style="color: rgba(245, 245, 245, 0.35); font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">/50kg</span>
+  </div>
+  <div style="width: 74px; height: 20px; left: 664px; top: 98px; position: absolute"><span
+      style="color: white; font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">0.0</span><span
+      id="inventory-capacity-max"
+      style="color: rgba(245, 245, 245, 0.35); font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">/10kg</span>
+  </div>
+  <div style="width: 74px; height: 20px; left: 1147px; top: 18px; position: absolute"><span
+      style="color: white; font-size: 14px; font-family: Segoe UI; font-weight: 400; white-space: nowrap">0.0</span><span
+      style="color: rgba(245, 245, 245, 0.35); font-size: 14px; font-family: Segoe UI; font-weight: 400; white-space: nowrap">/50kg</span>
+  </div>
+  <div
+    style="width: 160px; height: 19px; left: 661px; top: 19px; position: absolute; justify-content: flex-start; align-items: flex-start; gap: 26px; display: inline-flex">
+
+
+
+
+    <div style="width: 14.09px; height: 1.16px; background: white"></div>
+    <div style="width: 1.91px; height: 1.37px; background: white"></div>
+    <div style="width: 14.74px; height: 17.86px; background: white"></div>
+    <div style="width: 1.92px; height: 1.37px; background: white"></div>
+    <div style="width: 24px; height: 19px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 25px; height: 19.79px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 4.65px; height: 1.51px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 21.37px; height: 19px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 6.10px; height: 4.56px; background: rgba(255, 255, 255, 0.30)"></div>
+  </div>
+
+
+
+
+
+<!-- Modal d'input personnalisé -->
+<div id="inputModal" class="input-modal">
+  <div class="input-modal-content">
+    <div class="input-modal-title" id="inputModalTitle">Entrez une valeur</div>
+    <input type="number" id="inputModalInput" class="input-modal-input" placeholder="0" />
+    <div class="input-modal-buttons">
+      <button class="input-modal-btn input-modal-btn-cancel" id="inputModalCancel">Annuler</button>
+      <button class="input-modal-btn input-modal-btn-confirm" id="inputModalConfirm">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<body>
+</body>
+
+</html>
+
+<script>  /* Global variables */
+  // Nom de la ressource. Dans l'iframe (servie par pop_inventory), GetParentResourceName
+  // peut etre absent -> fallback explicite sur 'pop_inventory'.
+  const RES = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'pop_inventory';
+  let currentConfig = {};
+  let currentState = {};
+  let currentContainerOrder = []; // From config (fallback)
+  let currentSection = null;
+  let lastStateString = null;
+  let pendingAction = false; // true = bypass dedup pour la prochaine state (réponse serveur après action user)
+  let pendingRender = false; // true = un state est arrivé pendant un drag, à réappliquer après le drop
+
+  window.addEventListener('message', function (event) {
+    const data = event.data;
+      if (data.action === 'open') {
+        document.body.style.display = 'flex';
+        // Reset state
+        currentState = { containers: {}, items: {}, players: {} };
+        dragState = null;
+        const standbyTitle = document.getElementById('standby-title');
+        if (standbyTitle) {
+          if (data.containerType === 'vehicleEngine') {
+            standbyTitle.textContent = (data.data && data.data.plate) ? ('Moteur: ' + data.data.plate) : 'Capot';
+          } else if (data.containerType === 'vehicle') {
+            standbyTitle.textContent = (data.data && data.data.plate) ? ('Coffre: ' + data.data.plate) : 'Coffre véhicule';
+          } else if (data.containerType === 'myLocker') {
+            standbyTitle.textContent = 'Mon casier';
+          } else if (data.containerType === 'lockerRoom') {
+            standbyTitle.textContent = (data.data && data.data.label) ? data.data.label : 'Casiers';
+          } else {
+            standbyTitle.textContent = 'Conteneur distant';
+          }
+        }
+        updateInventoryView();
+        return;
+      } else if (data.action === "close") {
+      document.body.style.display = "none";
+      fetch(`https://${RES}/saveState`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: currentState })
+      });
+      lastStateString = null;
+    } else if (data.action === "config") {
+      currentConfig = data.items || {};
+      if (data.containerOrder) currentContainerOrder = data.containerOrder;
+      if (currentState && currentState.equipment) {
+        refreshIconBar();
+      }
+    } else if (data.action === "state") {
+      const state = data.state || {};
+      // Dedup basé uniquement sur les champs qui influencent le rendu.
+      // _seq / groundCoords sont volatils. Si une action utilisateur vient juste
+      // d'être envoyée (pendingAction = true), on bypasse le dedup pour garantir
+      // que la réponse serveur est appliquée même si elle "ressemble" à un état précédent.
+      const dedupKey = JSON.stringify({
+        eq: state.equipment || {},
+        co: state.containerOrder || [],
+        cs: state.containers || {},
+        sc: state.standbyContainer || null,
+        sId: state.standbyContainerId || null,
+        aId: state.activeContainerId || null,
+        aG: state.activeContainerIsGround || false,
+        gr: state.ground || null,
+      });
+      if (!pendingAction && dedupKey === lastStateString) {
+        return;
+      }
+      pendingAction = false;
+      lastStateString = dedupKey;
+
+      currentState = state;
+      if (currentState.standbyContainerId) {
+        standbyContainerId = currentState.standbyContainerId;
+      }
+      // Si un drag est en cours, on NE reconstruit PAS le DOM des cases : sinon
+      // les éléments capturés au mousedown sont détruits/recréés en plein drag,
+      // ce qui invalide la référence (-> "Conteneur invalide"). On garde l'état
+      // en mémoire et le rendu sera appliqué au prochain state après le drop.
+      if (dragState) {
+        pendingRender = true;
+        return;
+      }
+      refreshIconBar();
+      updateInventoryView();
+      renderLeftSlots();
+      renderWeaponSlots();
+      renderLeftIconBar();
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === "Escape") {
+      fetch(`https://${RES}/standbyClose`, { method: 'POST' });
+      fetch(`https://${RES}/saveState`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: currentState })
+      });
+    }
+  });
+
+  const postAction = (data) => {
+    pendingAction = true;
+    fetch(`https://${RES}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  };
+
+  const showInputModal = (title, defaultValue, onConfirm, inputType = 'number') => {
+    const modal = document.getElementById('inputModal');
+    const titleEl = document.getElementById('inputModalTitle');
+    const inputEl = document.getElementById('inputModalInput');
+    const confirmBtn = document.getElementById('inputModalConfirm');
+    const cancelBtn = document.getElementById('inputModalCancel');
+
+    inputEl.type = inputType;
+    titleEl.textContent = title;
+    inputEl.value = defaultValue;
+    modal.classList.add('active');
+    inputEl.focus();
+    inputEl.select();
+
+    const handleConfirm = () => {
+      if (inputType === 'number') {
+        const value = Number.parseInt(inputEl.value, 10);
+        if (Number.isFinite(value) && value > 0) {
+          onConfirm(value);
+        }
+      } else {
+        const value = inputEl.value.trim();
+        if (value.length > 0) {
+          onConfirm(value.substring(0, 32)); // Limite à 32 caractères
+        }
+      }
+      cleanup();
+    };
+
+    const handleCancel = () => {
+      cleanup();
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter') {
+        handleConfirm();
+      } else if (e.key === 'Escape') {
+        handleCancel();
+      }
+    };
+
+    const cleanup = () => {
+      modal.classList.remove('active');
+      confirmBtn.removeEventListener('click', handleConfirm);
+      cancelBtn.removeEventListener('click', handleCancel);
+      inputEl.removeEventListener('keydown', handleKeyDown);
+    };
+
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+    inputEl.addEventListener('keydown', handleKeyDown);
+  };
+
+  const buildContextMenu = () => {
+    const menu = document.createElement('div');
+    menu.className = 'inv-context';
+    document.body.appendChild(menu);
+
+    const hideMenu = () => {
+      menu.style.display = 'none';
+      menu.innerHTML = '';
+    };
+
+    const addEntry = (label, handler, isTitle = false) => {
+      if (isTitle) {
+        const div = document.createElement('div');
+        div.textContent = label;
+        div.className = 'inv-context-title';
+        menu.appendChild(div);
+        return;
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        hideMenu();
+        handler();
+      });
+      menu.appendChild(btn);
+    };
+
+    const openMenu = (x, y, actions, title = null) => {
+      menu.innerHTML = '';
+      if (title) {
+        addEntry(title, null, true);
+      }
+      actions.forEach((action) => addEntry(action.label, action.handler));
+      menu.style.left = `${x}px`;
+      menu.style.top = `${y}px`;
+      menu.style.display = 'block';
+    };
+
+    document.addEventListener('click', hideMenu);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        hideMenu();
+      }
+    });
+
+    return { openMenu, hideMenu };
+  };
+
+  const contextMenu = buildContextMenu();
+
+  const handleSlotContext = (event, side) => {
+    event.preventDefault();
+    const slotEl = event.currentTarget;
+    
+    const info = findSlotItem(slotEl, side);
+    if (!info) return;
+    
+    const item = info.item;
+    const containerId = info.containerId;
+    const slotIdx = info.slotIdx; // 1-indexed
+    
+    const actions = [];
+    const def = currentConfig[item.defId];
+
+    if (def) {
+      if (def.equipSlot && (!currentState.equipment || !currentState.equipment[def.equipSlot])) {
+        actions.push({
+          label: 'Equiper',
+          handler: () => postAction({ type: 'equip', containerId: containerId, slot: slotIdx }),
+        });
+      }
+    }
+    
+    actions.push({
+      label: 'Deposer',
+      handler: () => {
+        let qty = item.qty;
+        if (def && def.maxStack > 1 && item.qty > 1) {
+          showInputModal('Quantité à déposer', item.qty, (inputQty) => {
+            postAction({ type: 'drop', containerId: containerId, slot: slotIdx, qty: inputQty });
+          });
+          return;
+        }
+        postAction({ type: 'drop', containerId: containerId, slot: slotIdx, qty });
+      },
+    });
+    
+    if (def && def.usable) {
+      actions.push({
+        label: 'Utiliser',
+        handler: () => postAction({ type: 'use', containerId: containerId, slot: slotIdx, fromType: 'container' }),
+      });
+    }
+
+    if (item.isContainer) {
+      const isOpen = (currentState.containerOrder || []).some(e => e.containerId === item.containerId);
+      actions.push({
+        label: isOpen ? 'Fermer' : 'Ouvrir',
+        handler: () => postAction({ type: isOpen ? 'close' : 'open', containerId: item.containerId }),
+      });
+    }
+
+    if (def && def.maxStack > 1 && item.qty > 1) {
+      actions.push({
+        label: 'Diviser',
+        handler: () => {
+          showInputModal('Quantité à séparer', 1, (qty) => {
+            postAction({ type: 'split', containerId: containerId, slot: slotIdx, qty });
+          });
+        },
+      });
+    }
+    
+    actions.push({
+      label: 'Renommer',
+      handler: () => {
+        showInputModal('Renommer l\'item', item.label || (def && def.label) || '', (newLabel) => {
+          postAction({ type: 'rename', containerId: containerId, slot: slotIdx, label: newLabel });
+        }, 'text');
+      },
+    });
+    
+    let menuTitle = item.label || (def && def.label) || item.defId;
+    contextMenu.openMenu(event.clientX, event.clientY, actions, menuTitle);
+  };
+
+  const handleEquipContext = (event) => {
+    event.preventDefault();
+    const slotEl = event.currentTarget;
+    const slot = slotEl.dataset.equipSlot;
+    const item = currentState.equipment && currentState.equipment[slot];
+    if (!item) return;
+
+    const def = currentConfig[item.defId];
+    const actions = [
+      {
+        label: 'Retirer',
+        handler: () => postAction({ type: 'unequip', slot }),
+      },
+      {
+        label: 'Deposer',
+        handler: () => postAction({ type: 'drop', fromType: 'equipment', slot }),
+      },
+    ];
+
+    if (def && def.usable) {
+      actions.push({
+        label: 'Utiliser',
+        handler: () => postAction({ type: 'use', fromType: 'equipment', slot }),
+      });
+    }
+
+    if (item.isContainer) {
+      actions.push({
+        label: 'Ouvrir',
+        handler: () => postAction({ type: 'open', containerId: item.containerId }),
+      });
+    }
+
+    actions.push({
+      label: 'Renommer',
+      handler: () => {
+        showInputModal('Renommer l\'item', item.label || (def && def.label) || '', (newLabel) => {
+          postAction({ type: 'rename', fromType: 'equipment', slot, label: newLabel });
+        }, 'text');
+      },
+    });
+
+    let menuTitle = item.label || (def && def.label) || item.defId;
+    contextMenu.openMenu(event.clientX, event.clientY, actions, menuTitle);
+  };
+
+  const capacityMaxEl = document.getElementById('inventory-capacity-max');
+
+  const getItemAtSlot = (items, slotIdx) => {
+    if (!items) return null;
+    if (Array.isArray(items)) {
+      return items[slotIdx - 1] || null;
+    }
+    return items[slotIdx] || items[slotIdx.toString()] || null;
+  };
+
+  const parsePx = (styleText, prop) => {
+    const match = styleText.match(new RegExp(`${prop}:\\s*(\\d+)px`));
+    return match ? Number.parseInt(match[1], 10) : null;
+  };
+
+  const allSlotDivs = Array.from(
+    document.querySelectorAll('div[style*="background: rgba(245, 245, 245, 0.15)"][style*="width: 79px"][style*="height: 79px"]')
+  ).map((el) => {
+    const styleText = el.getAttribute('style') || '';
+    return { el, left: parsePx(styleText, 'left') || 0, top: parsePx(styleText, 'top') || 0 };
+  });
+
+  const storageSlots = allSlotDivs
+    .filter(({ el, left, top }) => left >= 600 && left <= 1217 && top >= 100 && top <= 600 && !el.dataset.equipSlot)
+    .sort((a, b) => (a.top - b.top) || (a.left - b.left))
+    .map(({ el }) => el);
+
+  // Cases d'armes (ligne du bas, top 658) : restent visibles en permanence, y compris en vue vêtements.
+  const weaponRowSlots = allSlotDivs
+    .filter(({ left, top }) => left >= 600 && top >= 600)
+    .map(({ el }) => el);
+
+  const leftSlots = allSlotDivs
+    .filter(({ el }) => el.closest('#standby-items-grid'))
+    .map(({ el }) => el);
+
+  let standbyContainerId = null;
+  let dragState = null;
+
+  // Coffre distant (gauche) : grille à 6 colonnes. Les armes longues occupent 2 cases.
+  const STANDBY_COLS = 6;
+  const isLongWeaponItem = (item) => {
+    if (!item) return false;
+    if (item.equipSlot === 'weapon_long') return true;
+    if (Array.isArray(item.tags) && item.tags.indexOf('weapon_long') >= 0) return true;
+    if (item.defId === 'pistolet_peinture') return true;
+    const def = currentConfig[item.defId];
+    return !!(def && Array.isArray(def.tags) && def.tags.indexOf('weapon_long') >= 0);
+  };
+
+  // Encombrement {w,h} d'un item : gridSpan explicite (ex moteur 3x3), sinon arme
+  // longue = 2x1, sinon 1x1. Largeur/hauteur d'une case = 79px (gap 15px col, 12px ligne).
+  const getItemSpan = (item) => {
+    if (!item) return { w: 1, h: 1 };
+    const def = currentConfig[item.defId];
+    if (def && def.gridSpan && def.gridSpan.w && def.gridSpan.h) {
+      return { w: def.gridSpan.w, h: def.gridSpan.h };
+    }
+    if (isLongWeaponItem(item)) return { w: 2, h: 1 };
+    return { w: 1, h: 1 };
+  };
+  // Pour une case (index 0-based) d'une grille à 6 colonnes : déterminer si elle est
+  // RECOUVERTE par un item multi-cases dont l'ancre est en haut/à gauche, et sinon
+  // renvoyer l'item présent + son span. `items` = container.items.
+  const spanInfoAt = (items, index) => {
+    const slotIdx = index + 1;
+    const col = index % STANDBY_COLS;
+    for (let dr = 0; dr <= 4; dr++) {
+      for (let dc = 0; dc <= 4; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        if (col - dc < 0) continue;
+        const aIdx = slotIdx - dr * STANDBY_COLS - dc;
+        if (aIdx < 1) continue;
+        const aItem = items ? getItemAtSlot(items, aIdx) : null;
+        if (!aItem) continue;
+        const s = getItemSpan(aItem);
+        if (s.w > dc && s.h > dr) return { covered: true };
+      }
+    }
+    const item = items ? getItemAtSlot(items, slotIdx) : null;
+    return { covered: false, item: item, span: getItemSpan(item) };
+  };
+
+  const weaponSlotEl = document.querySelector('div[data-equip-slot="weapon_long"]');
+  const pistolSlotEl = document.querySelector('div[data-equip-slot="weapon_pistol"]');
+  const tazerSlotEl = document.querySelector('div[data-equip-slot="weapon_tazer"]');
+
+  // Add standby-slot class to all interactive slots for unified hover styles
+  allSlotDivs.forEach(({ el }) => el.classList.add('standby-slot'));
+  if (weaponSlotEl) weaponSlotEl.classList.add('standby-slot');
+  if (pistolSlotEl) pistolSlotEl.classList.add('standby-slot');
+  if (tazerSlotEl) tazerSlotEl.classList.add('standby-slot');
+  document.querySelectorAll('.equip-cell').forEach(el => el.classList.add('standby-slot'));
+  const equipmentIconMap = {
+    hat: 'broad-brimmed-hat.svg',
+    mask: 'carnival-mask-silhouette.svg',
+    glasses: 'sunglasses.svg',
+    accessory: 'classic-cufflinks.svg',
+    phone: 'smartphone-call.svg',
+    radio: 'walkie-talkie.svg',
+    pager: 'pager.svg',
+    hoddie: 'hoddie.svg',
+    tshirt: 'casual-t-shirt-.svg',
+    tie: 'tie.svg',
+    panta: 'pants.svg',
+    shoes: 'men-shoe.svg',
+    backpack: 'backpack.svg',
+    wallet: 'wallet.svg',
+    kevlar: 'kevlar.svg',
+    briefcase: 'briefcase.svg'
+  };
+
+  const renderEquipmentSlots = () => {
+    document.querySelectorAll('.equip-cell').forEach((slotEl) => {
+      const equipSlot = slotEl.dataset.equipSlot;
+      const item = currentState.equipment ? currentState.equipment[equipSlot] : null;
+      const def = (item && currentConfig[item.defId]) ? currentConfig[item.defId] : null;
+
+      let expectedSrc, expectedSize, expectedFilter;
+      if (def && def.icon) {
+        expectedSrc = `https://cfx-nui-pop_inventory/html/${def.icon}`;
+        expectedSize = 48;
+        expectedFilter = '';
+      } else {
+        expectedSrc = `../svg/${equipmentIconMap[equipSlot] || 'box.svg'}`;
+        expectedSize = equipSlot === 'radio' ? 30 : (equipSlot === 'hat' || equipSlot === 'mask' || equipSlot === 'glasses' || equipSlot === 'shoes') ? 27 : 23;
+        expectedFilter = 'invert(95%) opacity(0.35)';
+      }
+
+      const grad = (item && def) ? (item.gradientColor || def.gradientColor) : null;
+      const key = `${expectedSrc}|${expectedSize}|${grad || ''}`;
+      if (slotEl.dataset.itemKey === key) return;
+      slotEl.dataset.itemKey = key;
+
+      slotEl.style.background = grad
+        ? `linear-gradient(180deg, rgba(217, 217, 217, 0) 12%, ${grad} 89%), rgba(245, 245, 245, 0.15)`
+        : 'rgba(245, 245, 245, 0.15)';
+
+      let img = slotEl.querySelector('img.equip-item-img');
+      if (!img) {
+        img = document.createElement('img');
+        img.className = 'equip-item-img';
+        img.style.objectFit = 'contain';
+        img.style.pointerEvents = 'none';
+        slotEl.appendChild(img);
+      }
+      if (img.getAttribute('src') !== expectedSrc) img.src = expectedSrc;
+      img.style.filter = expectedFilter;
+      img.style.width = expectedSize + 'px';
+      img.style.height = expectedSize + 'px';
+    });
+  };
+
+  const renderWeaponSlots = () => {
+    const eq = currentState.equipment;
+
+    // weapon_long
+    if (weaponSlotEl) {
+      weaponSlotEl.innerHTML = '';
+      weaponSlotEl.style.background = 'rgba(245, 245, 245, 0.15)';
+      if (eq && eq.weapon_long) {
+        const def = currentConfig[eq.weapon_long.defId];
+        if (def) {
+          const grad = eq.weapon_long.gradientColor || def.gradientColor;
+          if (grad) {
+            weaponSlotEl.style.background = `linear-gradient(180deg, rgba(217, 217, 217, 0) 12%, ${grad} 89%), rgba(245, 245, 245, 0.15)`;
+          }
+          const img = document.createElement('img');
+          img.src = `https://cfx-nui-pop_inventory/html/${def.icon}`;
+          img.style.width = '165px';
+          img.style.height = '70px';
+          img.style.objectFit = 'contain';
+          img.style.pointerEvents = 'none';
+          weaponSlotEl.appendChild(img);
+        }
+      }
+    }
+
+    // weapon_pistol
+    if (pistolSlotEl) {
+      pistolSlotEl.innerHTML = '';
+      pistolSlotEl.style.background = 'rgba(245, 245, 245, 0.15)';
+      if (eq && eq.weapon_pistol) {
+        const def = currentConfig[eq.weapon_pistol.defId];
+        if (def) {
+          const grad = eq.weapon_pistol.gradientColor || def.gradientColor;
+          if (grad) {
+            pistolSlotEl.style.background = `linear-gradient(180deg, rgba(217, 217, 217, 0) 12%, ${grad} 89%), rgba(245, 245, 245, 0.15)`;
+          }
+          const img = document.createElement('img');
+          img.src = `https://cfx-nui-pop_inventory/html/${def.icon}`;
+          img.style.width = '68px';
+          img.style.height = '68px';
+          img.style.objectFit = 'contain';
+          img.style.pointerEvents = 'none';
+          pistolSlotEl.appendChild(img);
+        }
+      }
+    }
+
+    // weapon_tazer
+    if (tazerSlotEl) {
+      tazerSlotEl.innerHTML = '';
+      tazerSlotEl.style.background = 'rgba(245, 245, 245, 0.15)';
+      if (eq && eq.weapon_tazer) {
+        const def = currentConfig[eq.weapon_tazer.defId];
+        if (def) {
+          const grad = eq.weapon_tazer.gradientColor || def.gradientColor;
+          if (grad) {
+            tazerSlotEl.style.background = `linear-gradient(180deg, rgba(217, 217, 217, 0) 12%, ${grad} 89%), rgba(245, 245, 245, 0.15)`;
+          }
+          const img = document.createElement('img');
+          img.src = `https://cfx-nui-pop_inventory/html/${def.icon}`;
+          img.style.width = '68px';
+          img.style.height = '68px';
+          img.style.objectFit = 'contain';
+          img.style.pointerEvents = 'none';
+          tazerSlotEl.appendChild(img);
+        }
+      }
+    }
+  };
+
+  const refreshIconBar = () => {
+    const iconBar = document.querySelector('.icon-bar');
+    if (!iconBar) return;
+
+    let sectionsToRender = [];
+
+    // Strategy 1: Use Server-Provided Order (Best for dynamic IDs)
+    if (currentState.containerOrder && currentState.containerOrder.length > 0) {
+      sectionsToRender = currentState.containerOrder.map(entry => {
+        const def = currentConfig[entry.defId]; // entry.defId is the SLOT name (panta, backpack) or Item Def ID
+        if (!def) return null;
+        return {
+          key: entry.defId,
+          def: def,
+          containerId: entry.containerId,
+          stats: def.container || { slots: 10, maxWeight: 10 }
+        };
+      }).filter(s => s !== null);
+    }
+
+    // Strategy 2: Fallback to Equipment Scan (if Strategy 1 empty or failed)
+    if (sectionsToRender.length === 0 && currentState.equipment) {
+      const order = currentContainerOrder.length ? currentContainerOrder : ['panta', 'hoddie', 'backpack', 'briefcase', 'wallet', 'kevlar', 'cardboard_box'];
+      order.forEach(slot => {
+        const eqItem = currentState.equipment[slot];
+        if (eqItem && eqItem.containerId) {
+          const defId = eqItem.defId;
+          const def = currentConfig[defId];
+          if (def && def.container) {
+            sectionsToRender.push({
+              key: slot,
+              def: def,
+              containerId: eqItem.containerId,
+              stats: def.container
+            });
+          }
+        }
+      });
+    }
+
+    if (sectionsToRender.length === 0) {
+      const defaults = [
+        ['panta', 'panta.svg', 10, 25],
+        ['hoddie', 'hoddie.svg', 10, 25],
+        ['backpack', 'backpack.svg', 22, 50],
+        ['briefcase', 'briefcase.svg', 15, 15],
+        ['cardboard_box', 'box.svg', 15, 15],
+        ['wallet', 'wallet.svg', 2, 2],
+        ['kevlar', 'kevlar.svg', 12, 15],
+        ['phone', 'smartphone-call.svg', 1, 0.1],
+        ['radio', 'walkie-talkie.svg', 1, 0.1]
+      ];
+      sectionsToRender = defaults.map(([key, icon, slots, maxWeight]) => ({
+        key,
+        def: { label: key, icon: `svg/${icon}` },
+        containerId: null,
+        stats: { slots, maxWeight },
+        fallbackIcon: `../svg/${icon}`
+      }));
+    }
+
+    iconBar.innerHTML = '';
+
+    // ── Section "vêtements" : toujours en premier ──
+    const clothesIcon = document.createElement('img');
+    clothesIcon.className = 'icon';
+    clothesIcon.src = '../svg/casual-t-shirt-.svg';
+    clothesIcon.title = 'Vêtements';
+    clothesIcon.dataset.section = 'clothes';
+    clothesIcon.dataset.containerId = '';
+    clothesIcon.dataset.slots = '0';
+    clothesIcon.dataset.capacity = '0';
+    clothesIcon.onclick = () => applySectionFromIcon(clothesIcon);
+    if (!currentSection || currentSection === 'clothes') {
+      clothesIcon.classList.add('active');
+    }
+    iconBar.appendChild(clothesIcon);
+
+    sectionsToRender.forEach(sec => {
+      const localSvgs = ['panta', 'hoddie', 'backpack', 'briefcase', 'wallet', 'kevlar', 'pants', 'trousers', 'cardboard_box', 'box'];
+      const map = {
+        'panta': 'panta', 'pants': 'panta',
+        'hoddie': 'hoddie', 'hoodie': 'hoddie',
+        'backpack': 'backpack', 'briefcase': 'briefcase',
+        'wallet': 'wallet', 'kevlar': 'kevlar',
+        'cardboard_box': 'box',
+        'pot_peinture': 'copy-icon'
+      };
+
+      let iconSrc = sec.fallbackIcon || `https://cfx-nui-pop_inventory/html/${sec.def.icon}`;
+      // Use local SVG if key/defId matches known types
+      if (map[sec.key] || localSvgs.includes(sec.key)) {
+        const svg = map[sec.key] || sec.key;
+        iconSrc = `../svg/${svg}.svg`;
+      }
+
+      const img = document.createElement('img');
+      img.className = 'icon';
+      img.src = iconSrc;
+      img.title = (sec.def && sec.def.label) ? sec.def.label : sec.key; // tooltip au survol (Partie 3)
+      img.dataset.section = sec.key;
+      img.dataset.containerId = sec.containerId;
+      img.dataset.slots = sec.stats.slots;
+      img.dataset.capacity = sec.stats.maxWeight;
+
+      img.onerror = () => {
+        if (iconSrc.includes('svg/')) img.src = `https://cfx-nui-pop_inventory/html/${sec.def.icon}`;
+      };
+
+      img.onclick = () => applySectionFromIcon(img);
+      if (currentSection === sec.key) {
+        img.classList.add('active');
+      }
+      iconBar.appendChild(img);
+    });
+
+    const hasActive = iconBar.querySelector('.icon.active');
+    if (!hasActive && iconBar.firstChild) {
+      applySectionFromIcon(iconBar.firstChild);
+    } else if (hasActive) {
+      applySectionFromIcon(hasActive);
+    }
+  };
+
+  const updateInventoryView = () => {
+    const activeIcon = document.querySelector('.icon-bar .icon.active');
+    if (activeIcon) {
+      applySectionFromIcon(activeIcon);
+    }
+  };
+
+  const applySectionFromIcon = (icon) => {
+    if (!icon) return;
+
+    const allIcons = document.querySelectorAll('.icon-bar .icon');
+    allIcons.forEach(el => el.classList.toggle('active', el === icon));
+
+    // Soulignement rose sous l'icone active (pose sur la barre droite)
+    const ul = document.getElementById('standby-icon-underline');
+    if (ul && icon) {
+      const wrap = ul.offsetParent; // le wrapper, pas le body centre
+      let l = 0, e = icon;
+      while (e && e !== wrap) { l += e.offsetLeft; e = e.offsetParent; }
+      const OVER = 0;
+      ul.style.left = (l - OVER) + 'px';
+      ul.style.width = (icon.offsetWidth + OVER * 2) + 'px';
+      ul.style.opacity = '1';
+    }
+
+    currentSection = icon.dataset.section;
+
+    // ── Section "vêtements" : on affiche l'équipement porté, on masque le stockage ──
+    const isClothesSection = currentSection === 'clothes';
+    document.querySelectorAll('.equip-cell, .equip-label').forEach(el => {
+      el.style.display = isClothesSection ? '' : 'none';
+    });
+    const originalTops = ['145px', '236px', '327px', '418px', '509px'];
+    const alignedTops  = ['128px', '219px', '310px', '400px', '490px'];
+    storageSlots.forEach((slot, index) => {
+      slot.style.display = isClothesSection ? 'none' : '';
+      const rowIndex = Math.floor(index / 6);
+      slot.style.top = isClothesSection ? originalTops[rowIndex] : alignedTops[rowIndex];
+      if (isClothesSection) { slot.innerHTML = ''; delete slot.dataset.itemKey; }
+    });
+    if (isClothesSection) {
+      renderEquipmentSlots();
+      if (capacityMaxEl) {
+        const currentSpan = capacityMaxEl.previousElementSibling;
+        if (currentSpan) currentSpan.textContent = '';
+        capacityMaxEl.textContent = '';
+      }
+      return;
+    }
+
+    const containerId = icon.dataset.containerId;
+    const slotsInfos = parseInt(icon.dataset.slots, 10) || 0;
+    const maxWeight = parseFloat(icon.dataset.capacity) || 0;
+
+    const container = (containerId && currentState.containers) ? currentState.containers[containerId] : null;
+
+    const sitems = (container && container.items) ? container.items : null;
+    storageSlots.forEach((slot, index) => {
+      const isDisabled = index >= slotsInfos;
+      const info = spanInfoAt(sitems, index);
+      const covered = info.covered;
+      const sp = info.span || { w: 1, h: 1 };
+      const big = !covered && (sp.w > 1 || sp.h > 1);
+
+      slot.dataset.disabled = isDisabled ? 'true' : 'false';
+      slot.dataset.covered = covered ? 'true' : 'false';
+      slot.style.display = '';
+      slot.style.opacity = isDisabled ? '0.35' : '';
+      if (covered) {
+        slot.style.width = '79px';
+        slot.style.background = 'transparent';
+        slot.style.pointerEvents = 'none';
+        slot.style.overflow = '';
+        slot.style.zIndex = '';
+        renderItemInSlot(slot, null, null);
+        return;
+      }
+      slot.style.width = sp.w > 1 ? (sp.w * 79 + (sp.w - 1) * 15) + 'px' : '79px';
+      slot.style.overflow = big ? 'visible' : '';
+      slot.style.zIndex = big ? '6' : '';
+      slot.style.pointerEvents = isDisabled ? 'none' : 'auto';
+      renderItemInSlot(slot, isDisabled ? null : info.item, big ? sp : null);
+    });
+
+    if (capacityMaxEl && Number.isFinite(maxWeight)) {
+      let currentW = (container && container.weight) ? container.weight.toFixed(1) : "0.0";
+      const currentSpan = capacityMaxEl.previousElementSibling;
+      if (currentSpan) currentSpan.textContent = currentW;
+
+      capacityMaxEl.textContent = `/${maxWeight}kg`;
+    }
+  };
+
+  // Rendu idempotent : on ne touche au DOM que si l'item a changé (évite le flicker
+  // des items inchangés lors d'une mise à jour de state).
+  // isDouble : arme longue occupant 2 cases (coffre distant) -> image élargie.
+  const renderItemInSlot = (slot, item, span) => {
+    const sw = (span && span.w) || 1;
+    const sh = (span && span.h) || 1;
+    const def = item ? currentConfig[item.defId] : null;
+    const key = (item && def)
+      ? `${item.defId}|${item.qty || 1}|${item.gradientColor || def.gradientColor || ''}|${def.icon}|${sw}x${sh}`
+      : (slot.dataset.covered === 'true' ? 'covered' : '');
+    if (slot.dataset.itemKey === key) return;
+    slot.dataset.itemKey = key;
+
+    if (!item || !def) {
+      // Vider sans recréer si déjà vide
+      const oldImg = slot.querySelector('img.slot-item-img');
+      const oldQty = slot.querySelector('span.slot-item-qty');
+      const oldBg = slot.querySelector('div.dbl-bg');
+      if (oldImg) oldImg.remove();
+      if (oldQty) oldQty.remove();
+      if (oldBg) oldBg.remove();
+      slot.classList.remove('span-carrier');
+      // Case couverte (dataset.covered) : fond transparent (recouverte par l'arme voisine).
+      slot.style.background = (slot.dataset.covered === 'true') ? 'transparent' : 'rgba(245, 245, 245, 0.15)';
+      return;
+    }
+
+    const grad = item.gradientColor || def.gradientColor;
+    const bgVal = grad
+      ? `linear-gradient(180deg, rgba(217, 217, 217, 0) 12%, ${grad} 89%), rgba(245, 245, 245, 0.15)`
+      : 'rgba(245, 245, 245, 0.15)';
+
+    let img = slot.querySelector('img.slot-item-img');
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'slot-item-img';
+      img.style.height = '100%';
+      img.style.objectFit = 'contain';
+      img.style.position = 'absolute';
+      img.style.top = '0';
+      img.style.left = '0';
+      img.style.pointerEvents = 'none';
+      slot.appendChild(img);
+    }
+
+    // Fond : une case simple porte son fond directement. Un item multi-cases (arme
+    // longue 2x1, moteur 3x3) déborde au-delà de sa case 79px -> on pose un fond
+    // dédié .dbl-bg couvrant TOUT le bloc (largeur ET hauteur, gaps inclus), sinon
+    // seules les cases couvertes transparentes laisseraient un "trou" sous l'image.
+    const bigSpan = (sw > 1 || sh > 1);
+    let dblBg = slot.querySelector('div.dbl-bg');
+    if (bigSpan) {
+      if (!dblBg) {
+        dblBg = document.createElement('div');
+        dblBg.className = 'dbl-bg';
+        dblBg.style.position = 'absolute';
+        dblBg.style.top = '0';
+        dblBg.style.left = '0';
+        dblBg.style.zIndex = '0';
+        // pointer-events auto : la boîte de la case porteuse ne fait que 79px de haut ;
+        // sans ça, survol/clic ne marchent que sur la 1re rangée. Ce fond couvre TOUT
+        // le bloc (au-dessus des cases couvertes via z-index 6) -> le bloc se comporte
+        // comme une seule case (hover + drag depuis n'importe où).
+        dblBg.style.pointerEvents = 'auto';
+        slot.insertBefore(dblBg, slot.firstChild);
+      }
+      dblBg.style.width = (sw * 79 + (sw - 1) * 15) + 'px';
+      dblBg.style.height = (sh * 79 + (sh - 1) * 12) + 'px';
+      dblBg.style.background = bgVal;
+      slot.style.background = 'transparent';
+      slot.classList.add('span-carrier'); // désactive le hover 79px (cf. CSS)
+    } else {
+      if (dblBg) dblBg.remove();
+      slot.style.background = bgVal;
+      slot.classList.remove('span-carrier');
+    }
+    // Image : largeur = case porteuse élargie (renderLeftSlots/storageSlots), hauteur
+    // débordant vers le bas pour un span vertical (la case reste 79px de haut pour ne
+    // PAS décaler les rangées de la grille). z-index au-dessus du fond .dbl-bg.
+    img.style.zIndex = '1';
+    img.style.width = '100%';
+    img.style.height = sh > 1 ? (sh * 79 + (sh - 1) * 12) + 'px' : '100%';
+    const expectedSrc = `https://cfx-nui-pop_inventory/html/${def.icon}`;
+    if (img.getAttribute('src') !== expectedSrc) img.src = expectedSrc;
+
+    let qty = slot.querySelector('span.slot-item-qty');
+    if (item.qty > 1) {
+      if (!qty) {
+        qty = document.createElement('span');
+        qty.className = 'slot-item-qty';
+        qty.style.position = 'absolute';
+        qty.style.bottom = '4px';
+        qty.style.right = '6px';
+        qty.style.color = 'white';
+        qty.style.fontSize = '12px';
+        qty.style.fontWeight = 'bold';
+        qty.style.textShadow = '1px 1px 0 #000';
+        qty.style.pointerEvents = 'none';
+        slot.appendChild(qty);
+      }
+      const expectedQty = `x${item.qty}`;
+      if (qty.textContent !== expectedQty) qty.textContent = expectedQty;
+    } else if (qty) {
+      qty.remove();
+    }
+  };
+
+  const renderLeftIconBar = () => {
+    const iconBar = document.getElementById('standby-left-icon-bar');
+    if (!iconBar) return;
+
+    // S'assurer que la barre reçoit bien les clics (au-dessus des cases/overlays).
+    iconBar.style.pointerEvents = 'auto';
+    iconBar.style.zIndex = '9999';
+
+    iconBar.innerHTML = '';
+    const path = currentState.standbyPath || [];
+
+    path.forEach((sec, idx) => {
+      const localSvgs = ['panta', 'hoddie', 'backpack', 'briefcase', 'wallet', 'kevlar', 'pants', 'trousers', 'cardboard_box', 'box', 'pot_peinture'];
+      const map = {
+        'panta': 'panta', 'pants': 'panta',
+        'hoddie': 'hoddie', 'hoodie': 'hoddie',
+        'backpack': 'backpack', 'briefcase': 'briefcase',
+        'wallet': 'wallet', 'kevlar': 'kevlar',
+        'cardboard_box': 'box',
+        'pot_peinture': 'copy-icon',
+        '__vehicle_container__': 'box',
+        '__static_chest__': 'box',
+        '__remote_standby__': 'box',
+      };
+
+      let iconSrc = `../svg/box.svg`;
+      const key = sec.defId;
+      if (map[key] || localSvgs.includes(key)) {
+        const svg = map[key] || key;
+        iconSrc = `../svg/${svg}.svg`;
+      }
+
+      const img = document.createElement('img');
+      img.className = 'icon';
+      img.src = iconSrc;
+      img.title = sec.label || sec.defId;
+      img.dataset.containerId = sec.containerId;
+      img.style.pointerEvents = 'auto';
+      img.style.cursor = 'pointer';
+      img.style.position = 'relative';
+      img.style.zIndex = '9999';
+      // Icône cassée (svg manquant) -> fallback box.svg, sinon non cliquable en CEF.
+      img.onerror = () => { if (!img.src.endsWith('box.svg')) img.src = '../svg/box.svg'; };
+
+      if (sec.containerId === standbyContainerId) {
+        img.classList.add('active');
+      }
+
+      img.onclick = () => {
+        // Purge d'un éventuel drag résiduel : sinon le handler de state défère le
+        // rendu (pendingRender) et la section ne change jamais visuellement.
+        if (dragState) dragState = null;
+        if (ghostEl) { ghostEl.remove(); ghostEl = null; }
+        // Bascule optimiste de l'icône active (réponse immédiate).
+        standbyContainerId = sec.containerId;
+        document.querySelectorAll('#standby-left-icon-bar .icon').forEach(function (el) {
+          el.classList.toggle('active', el.dataset.containerId === sec.containerId);
+        });
+        sendStandbyAction({
+          type: 'selectStandbyContainer',
+          containerId: sec.containerId
+        });
+      };
+
+      iconBar.appendChild(img);
+    });
+
+    // Update underline for the active left icon
+    const activeIcon = iconBar.querySelector('.icon.active');
+    const ul = document.getElementById('standby-left-icon-underline');
+    if (ul) {
+      if (activeIcon) {
+        const wrap = ul.offsetParent;
+        let l = 0, e = activeIcon;
+        while (e && e !== wrap) { l += e.offsetLeft; e = e.offsetParent; }
+        ul.style.left = l + 'px';
+        ul.style.width = activeIcon.offsetWidth + 'px';
+        ul.style.opacity = '1';
+      } else {
+        ul.style.opacity = '0';
+      }
+    }
+  };
+
+  const renderLeftSlots = () => {
+    const container = currentState.standbyContainer;
+    const maxSlots = container ? (container.slots || 100) : 100;
+    const weightEl = document.querySelector('#standby-weight-container span:first-child');
+    const maxWeightEl = document.querySelector('#standby-weight-container span:nth-child(2)');
+    const items = (container && container.items) ? container.items : null;
+    leftSlots.forEach((slot, index) => {
+      const isDisabled = index >= maxSlots;
+      // Couverture multi-cases : arme longue (2x1) OU moteur (3x3), via gridSpan.
+      const info = spanInfoAt(items, index);
+      const covered = info.covered;
+      const sp = info.span || { w: 1, h: 1 };
+      const big = !covered && (sp.w > 1 || sp.h > 1);
+
+      slot.dataset.disabled = isDisabled ? 'true' : 'false';
+      slot.dataset.covered = covered ? 'true' : 'false';
+      // GRILLE CSS : on ne change NI la hauteur NI le display des cases (sinon ça
+      // décale / fait disparaître des cases). La case couverte devient juste
+      // transparente (la surcouche déborde via overflow), l'item porteur déborde
+      // en largeur (piste de colonnes FIXE) ET en hauteur (image sur-dimensionnée).
+      slot.style.display = '';
+      slot.style.opacity = isDisabled ? '0.35' : '';
+      slot.style.gridColumn = '';
+      if (covered) {
+        slot.style.width = '79px';
+        slot.style.background = 'transparent';
+        slot.style.pointerEvents = 'none';
+        slot.style.overflow = '';
+        slot.style.zIndex = '';
+        renderItemInSlot(slot, null, null);
+        return;
+      }
+      // Piste FIXE : élargir la case fait juste déborder (aucun décalage de colonne).
+      slot.style.width = sp.w > 1 ? (sp.w * 79 + (sp.w - 1) * 15) + 'px' : '79px';
+      slot.style.overflow = big ? 'visible' : '';
+      slot.style.zIndex = big ? '6' : '';
+      slot.style.pointerEvents = isDisabled ? 'none' : 'auto';
+      renderItemInSlot(slot, isDisabled ? null : info.item, big ? sp : null);
+    });
+    if (container && weightEl && maxWeightEl) {
+      weightEl.textContent = container.weight ? container.weight.toFixed(1) : '0.0';
+      maxWeightEl.textContent = `/${container.maxWeight || 50}kg`;
+    }
+    if (window.updateStandbyThumbPosition) {
+      window.updateStandbyThumbPosition();
+    }
+  };
+
+  let ghostEl = null;
+
+  const findSlotItem = (slotEl, side) => {
+    if (side === 'right') {
+      const activeIcon = document.querySelector('.icon-bar .icon.active');
+      if (!activeIcon) return null;
+      const containerId = activeIcon.dataset.containerId;
+      const container = (containerId && currentState.containers) ? currentState.containers[containerId] : null;
+      if (!container || !container.items) return null;
+      const slotIdx = storageSlots.indexOf(slotEl) + 1;
+      const item = getItemAtSlot(container.items, slotIdx);
+      return item ? { item, containerId, slotIdx } : null;
+    } else if (side === 'left') {
+      if (!standbyContainerId || !currentState.standbyContainer || !currentState.standbyContainer.items) return null;
+      const slotIdx = leftSlots.indexOf(slotEl) + 1;
+      const item = getItemAtSlot(currentState.standbyContainer.items, slotIdx);
+      return item ? { item, containerId: standbyContainerId, slotIdx } : null;
+    } else if (side === 'equipment') {
+      const equipSlot = slotEl.dataset.equipSlot;
+      const item = currentState.equipment ? currentState.equipment[equipSlot] : null;
+      return item ? { item, equipSlot } : null;
+    }
+  };
+
+  // ── Transfert rapide au clic droit (inventaire <-> coffre distant) ──
+  const getContainerById = (containerId) => {
+    if (containerId && containerId === standbyContainerId) return currentState.standbyContainer;
+    return (currentState.containers && currentState.containers[containerId]) || null;
+  };
+  const firstFreeSlot = (containerId, maxSlots) => {
+    const container = getContainerById(containerId);
+    const items = (container && container.items) ? container.items : {};
+    for (let i = 1; i <= (maxSlots || 0); i++) {
+      if (!getItemAtSlot(items, i)) return i;
+    }
+    return -1;
+  };
+  // Pour une arme longue dans le coffre distant : il faut 2 cases libres consécutives
+  // sur la même rangée (i pas en dernière colonne, i et i+1 vides).
+  const firstFreeDoubleSlot = (containerId, maxSlots) => {
+    const container = getContainerById(containerId);
+    const items = (container && container.items) ? container.items : {};
+    for (let i = 1; i <= (maxSlots || 0); i++) {
+      if (i % STANDBY_COLS === 0) continue;        // dernière colonne : pas de voisin
+      if (i + 1 > maxSlots) break;
+      if (!getItemAtSlot(items, i) && !getItemAtSlot(items, i + 1)) return i;
+    }
+    return -1;
+  };
+  // Retourne un conteneur de stockage valide (icone active si elle en a un,
+  // sinon le 1er conteneur reel) — evite "Container invalide" en section Vetements.
+  const validCid = (id) => id && id !== 'null' && id !== 'undefined';
+  const getStorageContainerId = () => {
+    const active = document.querySelector('.icon-bar .icon.active');
+    if (active && validCid(active.dataset.containerId)) return active.dataset.containerId;
+    for (const ic of document.querySelectorAll('.icon-bar .icon')) {
+      if (validCid(ic.dataset.containerId)) return ic.dataset.containerId;
+    }
+    return null;
+  };
+  const containerMax = (cid) => {
+    const c = currentState.containers && currentState.containers[cid];
+    return (c && c.slots) || 100;
+  };
+  const quickTransfer = (slotEl, side) => {
+    const info = findSlotItem(slotEl, side);
+    if (!info || info.equipSlot) return; // pas pour les slots d'equipement
+    let toContainerId, toMax;
+    if (side === 'left') {
+      // Coffre distant -> conteneur d'inventaire de stockage
+      toContainerId = getStorageContainerId();
+      toMax = containerMax(toContainerId);
+    } else if (side === 'right') {
+      // Inventaire -> coffre distant
+      toContainerId = standbyContainerId;
+      toMax = (currentState.standbyContainer && currentState.standbyContainer.slots) || 100;
+    } else {
+      return;
+    }
+    if (!toContainerId) return;
+    // Vers le coffre distant, une arme longue exige 2 cases consécutives.
+    const needsDouble = (side === 'right') && (toContainerId === standbyContainerId) && isLongWeaponItem(info.item);
+    const toSlot = needsDouble
+      ? firstFreeDoubleSlot(toContainerId, toMax)
+      : firstFreeSlot(toContainerId, toMax);
+    if (toSlot < 0) return; // conteneur cible plein
+    sendStandbyAction({
+      type: 'move',
+      fromContainerId: info.containerId,
+      fromSlot: info.slotIdx,
+      toContainerId: toContainerId,
+      toSlot: toSlot
+    });
+  };
+
+  // Wrapper qui marque pendingAction afin que le prochain "state" bypasse le dedup,
+  // garantissant que la réponse serveur soit appliquée immédiatement.
+  const sendStandbyAction = (body) => {
+    pendingAction = true;
+    fetch(`https://${RES}/standbyAction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  };
+
+  const setupDrag = (slotEl, side) => {
+    slotEl.style.pointerEvents = 'auto';
+    slotEl.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      // En fouille : pas de menu (Deposer/Utiliser/Renommer n'ont aucun sens sur
+      // les affaires d'autrui). Clic droit = transfert rapide.
+      if (currentState && currentState.isSearch) {
+        if (side === 'left' || side === 'right') quickTransfer(slotEl, side);
+        return;
+      }
+      if (side === 'equipment') {
+        handleEquipContext(e);
+      } else if (side === 'left' || side === 'right') {
+        handleSlotContext(e, side);
+      }
+    });
+    slotEl.addEventListener('mousedown', (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        if (side === 'left' || side === 'right') {
+          quickTransfer(slotEl, side);
+        }
+        return;
+      }
+      if (e.button !== 0) return;
+      const info = findSlotItem(slotEl, side);
+      if (!info) return;
+      e.preventDefault();
+      dragState = { 
+        fromSide: side, 
+        fromContainerId: info.containerId, 
+        fromSlot: info.slotIdx, 
+        equipSlot: info.equipSlot,
+        item: info.item 
+      };
+      ghostEl = document.createElement('div');
+      ghostEl.style.position = 'fixed';
+      ghostEl.style.width = '74px';
+      ghostEl.style.height = '74px';
+      ghostEl.style.pointerEvents = 'none';
+      ghostEl.style.zIndex = '9999';
+      ghostEl.style.opacity = '0.8';
+      const def = currentConfig[info.item.defId];
+      if (def) {
+        const img = document.createElement('img');
+        img.src = `https://cfx-nui-pop_inventory/html/${def.icon}`;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        ghostEl.appendChild(img);
+      }
+      ghostEl.style.left = (e.clientX - 37) + 'px';
+      ghostEl.style.top = (e.clientY - 37) + 'px';
+      document.body.appendChild(ghostEl);
+    });
+  };
+
+  document.addEventListener('mousemove', (e) => {
+    if (ghostEl) {
+      ghostEl.style.left = (e.clientX - 37) + 'px';
+      ghostEl.style.top = (e.clientY - 37) + 'px';
+    }
+    // Pendant un drag : survoler une icone de section change la section cible
+    // (permet de deposer l'item dans une autre section).
+    if (dragState) {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const icon = el && el.closest && el.closest('.icon-bar .icon');
+      if (icon && !icon.classList.contains('active')) {
+        applySectionFromIcon(icon);
+      }
+    }
+  });
+
+  document.addEventListener('mouseup', (e) => {
+    if (!dragState) return;
+    if (ghostEl) { ghostEl.remove(); ghostEl = null; }
+
+    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+    let toSide = null;
+    let toSlotIdx = -1;
+    let toEquipSlot = null;
+
+    const leftIdx = leftSlots.indexOf(targetEl);
+    const rightIdx = storageSlots.indexOf(targetEl);
+    const equipTarget = targetEl ? targetEl.closest('[data-equip-slot]') : null;
+
+    if (leftIdx >= 0) { toSide = 'left'; toSlotIdx = leftIdx + 1; }
+    else if (rightIdx >= 0) { toSide = 'right'; toSlotIdx = rightIdx + 1; }
+    else if (equipTarget) { toSide = 'equipment'; toEquipSlot = equipTarget.dataset.equipSlot; }
+
+    if (toSide) {
+      if ((toSide === 'left' || toSide === 'right') && toSlotIdx <= 0) {
+        dragState = null;
+        return;
+      }
+
+      let toContainerId;
+      if (toSide === 'left') {
+        toContainerId = standbyContainerId;
+      } else if (toSide === 'right') {
+        toContainerId = getStorageContainerId();
+      }
+
+      if (dragState.fromSide === 'equipment' && toSide !== 'equipment') {
+        sendStandbyAction({
+          type: 'unequipToSlot',
+          equipSlot: dragState.equipSlot,
+          toContainerId: toContainerId,
+          toSlot: toSlotIdx
+        });
+      } else if (toSide === 'equipment' && dragState.fromSide !== 'equipment') {
+        sendStandbyAction({
+          type: 'equip',
+          fromContainerId: dragState.fromContainerId,
+          fromSlot: dragState.fromSlot
+        });
+      } else if (toSide !== 'equipment' && dragState.fromSide !== 'equipment') {
+        // Arme longue (double case) déposée dans un conteneur distant : si la case
+        // visée est sur le bord (dernière colonne) ou son voisin est pris, on
+        // trouve automatiquement 2 cases libres consécutives (sans toucher au layout).
+        if (isLongWeaponItem(dragState.item)) {
+          let max, cid;
+          if (toSide === 'left') {
+            cid = standbyContainerId;
+            max = (currentState.standbyContainer && currentState.standbyContainer.slots) || 100;
+          } else {
+            cid = toContainerId;
+            max = containerMax(cid);
+          }
+          const lastCol = (toSlotIdx % STANDBY_COLS === 0);
+          const neighbor = getItemAtSlot((getContainerById(cid) || {}).items || {}, toSlotIdx + 1);
+          if (lastCol || neighbor || toSlotIdx + 1 > max) {
+            const snap = firstFreeDoubleSlot(cid, max);
+            if (snap < 0) { dragState = null; return; }
+            toSlotIdx = snap;
+          }
+        }
+        if (toContainerId && (dragState.fromContainerId !== toContainerId || dragState.fromSlot !== toSlotIdx)) {
+          sendStandbyAction({
+            type: 'move',
+            fromContainerId: dragState.fromContainerId,
+            fromSlot: dragState.fromSlot,
+            toContainerId: toContainerId,
+            toSlot: toSlotIdx
+          });
+        }
+      }
+    }
+    dragState = null;
+
+    // Si un state est arrivé pendant le drag, on l'applique maintenant que le drop est terminé.
+    if (pendingRender) {
+      pendingRender = false;
+      refreshIconBar();
+      updateInventoryView();
+      renderLeftSlots();
+      renderWeaponSlots();
+      renderLeftIconBar();
+    }
+  });
+
+  storageSlots.forEach(s => setupDrag(s, 'right'));
+  leftSlots.forEach(s => setupDrag(s, 'left'));
+  document.querySelectorAll('[data-equip-slot]').forEach(el => setupDrag(el, 'equipment'));
+
+  // Synchronisation du scrollbar personnalisé pour standby-items-grid
+  const standbyGrid = document.getElementById('standby-items-grid');
+  const standbyThumb = document.getElementById('standby-scroll-thumb');
+  const standbyRail = document.getElementById('standby-scroll-rail');
+
+  if (standbyGrid && standbyThumb) {
+    const railTop = 128;
+    const railHeight = 441;
+
+    const updateStandbyThumbPosition = () => {
+      const maxScroll = standbyGrid.scrollHeight - standbyGrid.clientHeight;
+      const thumbHeight = standbyThumb.offsetHeight || 214;
+      const maxThumbY = railTop + (railHeight - thumbHeight);
+      if (maxScroll <= 0) {
+        standbyThumb.style.top = `${railTop}px`;
+        return;
+      }
+      const scrollRatio = standbyGrid.scrollTop / maxScroll;
+      const newY = railTop + scrollRatio * (maxThumbY - railTop);
+      standbyThumb.style.top = `${newY}px`;
+    };
+
+    standbyGrid.addEventListener('scroll', updateStandbyThumbPosition);
+    window.addEventListener('resize', updateStandbyThumbPosition);
+
+    // Observer pour mettre à jour la scrollbar quand le contenu change dynamiquement
+    const observer = new MutationObserver(updateStandbyThumbPosition);
+    observer.observe(standbyGrid, { childList: true, subtree: true });
+
+    let isDragging = false;
+    let startY = 0;
+    let startThumbTop = railTop;
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      const thumbHeight = standbyThumb.offsetHeight || 214;
+      const maxThumbY = railTop + (railHeight - thumbHeight);
+      const deltaY = e.clientY - startY;
+      let newTop = startThumbTop + deltaY;
+      if (newTop < railTop) newTop = railTop;
+      if (newTop > maxThumbY) newTop = maxThumbY;
+      
+      standbyThumb.style.top = `${newTop}px`;
+
+      const scrollRatio = (newTop - railTop) / (maxThumbY - railTop);
+      const maxScroll = standbyGrid.scrollHeight - standbyGrid.clientHeight;
+      standbyGrid.scrollTop = scrollRatio * maxScroll;
+    };
+
+    const onPointerUp = () => {
+      isDragging = false;
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.body.style.userSelect = '';
+    };
+
+    standbyThumb.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      startY = e.clientY;
+      startThumbTop = parseFloat(standbyThumb.style.top) || railTop;
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    if (standbyRail) {
+      standbyRail.addEventListener('pointerdown', (e) => {
+        if (e.target === standbyThumb) return;
+        const rect = standbyRail.getBoundingClientRect();
+        const clickY = e.clientY - rect.top;
+        const thumbHeight = standbyThumb.offsetHeight || 214;
+        const maxThumbY = railTop + (railHeight - thumbHeight);
+        
+        let newTop = railTop + clickY - (thumbHeight / 2);
+        if (newTop < railTop) newTop = railTop;
+        if (newTop > maxThumbY) newTop = maxThumbY;
+
+        standbyThumb.style.top = `${newTop}px`;
+        const scrollRatio = (newTop - railTop) / (maxThumbY - railTop);
+        const maxScroll = standbyGrid.scrollHeight - standbyGrid.clientHeight;
+        standbyGrid.scrollTop = scrollRatio * maxScroll;
+
+        isDragging = true;
+        startY = e.clientY;
+        startThumbTop = newTop;
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+    }
+
+    // Exposer updateStandbyThumbPosition sur window pour forcer la mise à jour depuis d'autres fonctions
+    window.updateStandbyThumbPosition = updateStandbyThumbPosition;
+  }
+</script>

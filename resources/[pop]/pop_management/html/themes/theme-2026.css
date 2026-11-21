@@ -1,0 +1,33 @@
+/* ============================================================
+   THEME 2026 — Look moderne (défaut)
+   ------------------------------------------------------------
+   Ces valeurs reproduisent le thème actuel d'index.html.
+   Modifie-les ici pour ajuster le look 2026 sans toucher au DOM.
+   ============================================================ */
+
+html[data-theme="2026"] {
+  /* Couleurs de fond */
+  --bg-dark:    #0D0D0D;
+  --bg-light:   #191919;
+
+  /* Accent principal (rouge SecuroServ par défaut) */
+  --accent:     #ff2e88;
+
+  /* Texte */
+  --text-main:  #E9E9E9;
+  --text-dim:   #686868;
+  --text-label: #CCCCCC;
+
+  /* Typo */
+  --font-ui:    'Inter', sans-serif;
+  --font-mono:  monospace;
+
+  /* Wallpaper bureau */
+  --wall:       url('../wall.png');
+}
+
+/* Accents par application — restent les couleurs « brand » classiques */
+html[data-theme="2026"] #dashboard-pdm     { --accent: #0145D8; } /* Premium Deluxe Motorsport - bleu */
+html[data-theme="2026"] #dashboard-d8      { --accent: #147a3a; } /* Dynasty 8 - vert */
+html[data-theme="2026"] #dashboard-gouv    { --accent: #3498db; } /* Gouvernement - bleu */
+html[data-theme="2026"] #dashboard-youtool { --accent: #ff2e88; } /* YouTool - orange */

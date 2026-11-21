@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Garage Entreprise</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div id="app" style="display:none">
+    <div class="menu-container">
+
+      <div class="header">
+        <div class="title">GARAGE ENTREPRISE</div>
+        <div class="garage-label" id="garage-name">—</div>
+      </div>
+
+      <div class="content-wrapper">
+        <div id="list"></div>
+      </div>
+
+      <div class="footer">
+        <div class="store-btn" id="store-btn" onclick="storeVehicle()">
+          <i class="fa-solid fa-warehouse"></i> RANGER LE VÉHICULE ACTUEL
+        </div>
+        <div class="cancel-btn" onclick="closeMenu()">
+          <i class="fa-solid fa-xmark"></i> FERMER
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function rsp() {
+        document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+      }
+      window.addEventListener('resize', rsp);
+      rsp();
+    })();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

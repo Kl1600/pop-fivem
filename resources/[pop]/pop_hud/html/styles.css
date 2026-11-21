@@ -1,0 +1,190 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	overflow: hidden;
+	pointer-events: none;
+}
+
+#statusHud {
+	position: absolute;
+	bottom: 1.9%;
+	left: 1.44%;
+	width: 335px;
+	height: 82px;
+	transform: scale(var(--rsp, 1));
+	transform-origin: bottom left;
+}
+
+/* ── Health bar ───────────────────────────────────────────────────────────── */
+
+#healthBarBg {
+	position: absolute;
+	left: 0px;
+	top: 74px;
+	width: 272px;
+	height: 7px;
+	background: rgba(0, 0, 0, 0.3);
+	border-bottom-right-radius: 3px;
+	border-bottom-left-radius: 3px;
+}
+
+#healthBar {
+	position: absolute;
+	left: 0px;
+	top: 74px;
+	width: 272px;
+	height: 7px;
+	background: #259e07;
+	border-bottom-right-radius: 3px;
+	border-bottom-left-radius: 3px;
+	transition: width 0.2s ease, background 0.3s ease;
+	box-shadow: 0 0 4px rgba(37, 158, 7, 0.3);
+}
+
+/* ── Vertical bar backgrounds ─────────────────────────────────────────────── */
+
+.vbar-bg {
+	position: absolute;
+	height: 8px;
+	width: 82px;
+	transform: rotate(-90deg);
+	transform-origin: top left;
+	background: rgba(0, 0, 0, 0.3);
+	top: 82px;
+}
+
+.vbar-bg.vbar-left {
+	left: 277px;
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
+}
+
+.vbar-bg.vbar-right {
+	left: 286px;
+	border-bottom-right-radius: 3px;
+	border-bottom-left-radius: 3px;
+}
+
+/* ── Vertical bar fills ───────────────────────────────────────────────────── */
+
+.vbar-fill {
+	position: absolute;
+	height: 8px;
+	width: 0px;
+	transform: rotate(-90deg);
+	transform-origin: top left;
+	top: 82px;
+	transition: width 0.2s ease;
+}
+
+.vbar-fill.vbar-left {
+	left: 277px;
+	background: rgba(75, 147, 240, 0.85);
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
+	box-shadow: 0 0 4px rgba(75, 147, 240, 0.3);
+}
+
+.vbar-fill.vbar-right {
+	left: 286px;
+	background: rgba(248, 162, 81, 0.85);
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 3px;
+	box-shadow: 0 0 4px rgba(248, 162, 81, 0.3);
+}
+
+/* ── Signal ───────────────────────────────────────────────────────────────── */
+
+#signal {
+	position: absolute;
+	left: 300px;
+	top: 38px;
+	width: 20px;
+	height: 20px;
+	fill: white;
+	transform: rotate(90deg);
+	transition: fill 0.2s ease;
+}
+
+#signal path {
+	opacity: 0.2;
+	transition: opacity 0.2s ease;
+}
+
+/* ── Clock ────────────────────────────────────────────────────────────────── */
+
+#clock {
+	position: absolute;
+	left: 299px;
+	top: 68px;
+	width: 36px;
+	height: 14px;
+	color: rgba(255, 255, 255, 0.80);
+	font-size: 12px;
+	font-family: 'Inter', sans-serif;
+	font-style: italic;
+	font-weight: 400;
+	white-space: nowrap;
+	word-wrap: break-word;
+}
+
+/* ── Admin Overlay ────────────────────────────────────────────────────────── */
+
+.AdminOverlay {
+	position: absolute;
+	font-family: "Roboto", sans-serif;
+	top: 2%;
+	right: 1%;
+	border-radius: 15px 0 15px 0;
+	background: rgba(0, 0, 0, 0.6);
+	box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+	padding: 10px;
+	display: none;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-around;
+	transform: scale(var(--rsp, 1));
+	transform-origin: top right;
+}
+
+.AdminOverlay > h2,
+.AdminOverlay > p {
+	flex-basis: 50%;
+	color: #fff;
+}
+
+.AdminOverlay > h2:last-child,
+.AdminOverlay > p:last-child {
+	flex-basis: 100%;
+	text-align: center;
+	padding: 10px 0 0 0;
+}
+
+.AdminOverlay > h2 {
+	font-size: 1.2rem;
+	flex-basis: 100%;
+	text-align: center;
+	text-transform: uppercase;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+	padding-bottom: 5px;
+	margin-top: 0;
+	color: #ff2e88;
+}
+
+.AdminOverlay > p {
+	line-height: normal;
+	margin: 0;
+	margin-top: -10px;
+}
+
+.AdminOverlay > p > span {
+	font-weight: bold;
+}
+

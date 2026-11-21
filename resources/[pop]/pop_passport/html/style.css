@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Cutive+Mono&family=Caveat:wght@500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+    font-family: 'EB Garamond', serif;
+}
+
+#passport-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+}
+
+/* ============================================================
+   PAGE — double-page complète (1536x1024, ratio 3:2)
+   ============================================================ */
+.page {
+    position: relative;
+    height: 88vh;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 35px 80px rgba(0, 0, 0, 0.7);
+
+    /* Encre par défaut (US) — surchargée pour MX */
+    --ink: #2a3a66;
+    --ink-soft: #44558a;
+    --ink-strong: #1a2750;
+}
+
+.page-us { display: block; }
+.page-mx { display: none; }
+.show-mx .page-us { display: none; }
+.show-mx .page-mx { display: block; }
+
+.page-mx {
+    --ink: #3a4a37;
+    --ink-soft: #5d6b4f;
+    --ink-strong: #283a26;
+}
+
+/* Fond : double-page entière */
+.bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+.bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    display: block;
+}
+
+/* ============================================================
+   DONNÉES — imprimées directement sur la page de DROITE
+   ============================================================ */
+.data {
+    position: absolute;
+    z-index: 2;
+    left: 53.5%;            /* page de droite */
+    right: 4.5%;
+    top: 30%;               /* sous l'en-tête imprimé (SAN ANDREAS / CHIHUAHUA) */
+    bottom: 7%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* --- Bloc photo + champs --- */
+.data-top {
+    display: flex;
+    gap: 6%;
+    align-items: flex-start;
+}
+
+.photo {
+    flex: 0 0 38%;
+    aspect-ratio: 5 / 6;
+    overflow: hidden;
+    background: #cdd0d8;                       /* fallback si pas de photo */
+    border: 1px solid rgba(0, 0, 0, 0.22);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+.player-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    filter: brightness(2.3) contrast(0.9) saturate(1.08);
+}
+
+.fields {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-self: stretch;
+    padding-top: 0.4%;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+}
+
+/* Légende gravée (comme imprimée sur le document) */
+.f-label {
+    font-family: 'EB Garamond', serif;
+    font-weight: 600;
+    font-size: 1.45vh;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Valeur « tapée » sur le document */
+.f-value {
+    font-family: 'Cutive Mono', monospace;
+    font-size: 2.7vh;
+    line-height: 1;
+    color: var(--ink-strong);
+    text-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* --- Signature (écriture manuscrite moderne) --- */
+.data-sign {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+    width: 78%;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.22);
+    padding-bottom: 0.4vh;
+}
+.signature {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 5vh;
+    line-height: 0.95;
+    color: var(--ink-strong);
+    min-height: 4.5vh;
+    white-space: nowrap;
+}
+
+/* --- N° d'identification --- */
+.data-id {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+}
+.id-value {
+    font-family: 'Cutive Mono', monospace;
+    font-size: 3vh;
+    letter-spacing: 0.18em;
+    color: var(--ink-strong);
+}
+
+/* ============================================================
+   Instructions
+   ============================================================ */
+.instructions {
+    position: fixed;
+    bottom: 2.5vh;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 1.6vh;
+    letter-spacing: 0.05em;
+}

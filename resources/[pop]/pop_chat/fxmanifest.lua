@@ -1,0 +1,14 @@
+fx_version 'cerulean'
+game 'gta5'
+
+author 'TAB'
+description 'Chat roleplay - commande /me'
+version '1.0.0'
+
+client_scripts {
+    'client.lua'
+}
+
+server_scripts {
+    'server.lua'
+}

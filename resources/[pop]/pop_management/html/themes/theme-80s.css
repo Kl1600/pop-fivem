@@ -1,0 +1,1188 @@
+/* ============================================================
+   THEME 80s — Macintosh System 1.0 (1984-1985)
+   ------------------------------------------------------------
+   Indépendant à 100% du thème 2026 : override tout ce qui peut
+   l'être en NB strict, remplace les éléments incompatibles
+   (taskbar dock, traffic lights macOS, URL bar) par les
+   éléments Mac System 1.0 natifs (close-box hollow, icônes
+   desktop, barre de menu Apple, corbeille).
+
+   Pour 100% trait-pour-trait : dépose ChicagoFLF.ttf dans html/.
+   ============================================================ */
+
+@font-face {
+  font-family: 'Chicago';
+  src: local('Chicago'), local('ChicagoFLF'), url('../ChicagoFLF.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ChicagoFLF';
+  src: local('ChicagoFLF'), url('../ChicagoFLF.ttf') format('truetype');
+  font-display: swap;
+}
+
+html[data-theme="80s"] {
+  --bg-dark:    #FFFFFF;
+  --bg-light:   #FFFFFF;
+  --accent:     #000000;
+  --text-main:  #000000;
+  --text-dim:   #000000;
+  --text-label: #000000;
+
+  /* Stack font Chicago : local Chicago/ChicagoFLF (si bundlé) → DotGothic16 (Google bitmap) → fallback système */
+  --font-ui:    'Chicago', 'ChicagoFLF', 'DotGothic16', 'Geneva', 'Lucida Grande', monospace;
+  --font-mono:  'Chicago', 'ChicagoFLF', 'DotGothic16', 'Monaco', monospace;
+
+  /* Palette Platinum (Mac OS 8, façon Infinite Mac) pour boutons & tableaux :
+     gris bisauté en relief + surlignage bleu doux = la touche de couleur. */
+  --pl-face:    #DCDCDC;
+  --pl-face-hi: #E8E8E8;
+  --pl-light:   #FFFFFF;
+  --pl-mid:     #B8B8B8;
+  --pl-dark:    #808080;
+  --pl-border:  #3A3A3A;
+  --pl-grid:    #C8C8C8;
+  --pl-sel:     #B5CDF0;
+  --pl-green:   #8FD49B;
+  --pl-red:     #E89B95;
+  --pl-amber:   #F0CE8A;
+}
+
+html[data-theme="80s"] #dashboard-pdm,
+html[data-theme="80s"] #dashboard-d8,
+html[data-theme="80s"] #dashboard-gouv,
+html[data-theme="80s"] #dashboard-youtool,
+html[data-theme="80s"] #dashboard-ytjob {
+  --accent: #000000;
+}
+
+/* ============================================================
+   DESKTOP : motif checker 1×1 pixel (50% gray du Mac)
+   ============================================================ */
+html[data-theme="80s"] body {
+  background-color: #FFFFFF !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'><rect width='1' height='1' fill='%23000'/><rect x='1' y='1' width='1' height='1' fill='%23000'/></svg>") !important;
+  background-size: 2px 2px !important;
+  background-repeat: repeat !important;
+  background-position: 0 0 !important;
+  image-rendering: pixelated !important;
+  font-family: var(--font-ui) !important;
+  color: #000 !important;
+  cursor: default;
+  padding-top: 20px !important;
+  box-sizing: border-box;
+}
+
+/* Reset effets modernes */
+html[data-theme="80s"] *,
+html[data-theme="80s"] *::before,
+html[data-theme="80s"] *::after {
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="80s"] *:not(button):not(.btn):not(input):not(select) {
+  border-radius: 0 !important;
+}
+
+html[data-theme="80s"] body::before,
+html[data-theme="80s"] body::after {
+  display: none !important;
+  content: none !important;
+}
+
+html[data-theme="80s"] body *:not(i):not(.fas):not(.far):not(.fab):not(.fa) {
+  font-family: var(--font-ui) !important;
+  letter-spacing: 0 !important;
+  font-weight: normal !important;
+}
+
+/* ============================================================
+   BARRE DE MENU APPLE (#mac-menubar — injectée par <head>)
+   ============================================================ */
+html[data-theme="80s"] #mac-menubar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #000;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 10px;
+  z-index: 10001;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: #000;
+}
+
+html[data-theme="80s"] #mac-menubar .mac-menu-apple,
+html[data-theme="80s"] #mac-menubar .mac-menu-ifruit {
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+  padding: 0 2px;
+  height: 100%;
+}
+
+/* Logo iFruit (ifruit.png) — affiché tel quel, sans filter. */
+html[data-theme="80s"] #mac-menubar .mac-menu-ifruit img {
+  height: 12px;
+  width: auto;
+  display: block;
+  image-rendering: auto;
+}
+
+html[data-theme="80s"] #mac-menubar .mac-menu-ifruit:hover {
+  background: #000;
+}
+
+/* Inversion vidéo au hover : le logo passe en blanc */
+html[data-theme="80s"] #mac-menubar .mac-menu-ifruit:hover img {
+  filter: invert(1) !important;
+}
+
+html[data-theme="80s"] #mac-menubar .mac-menu-item {
+  cursor: default;
+  padding: 0 2px;
+}
+
+html[data-theme="80s"] #mac-menubar .mac-menu-item:hover {
+  background: #000;
+  color: #FFF;
+}
+
+/* La pomme rainbow garde ses couleurs au hover, juste un fond noir autour pour le feedback */
+html[data-theme="80s"] #mac-menubar .mac-menu-apple:hover {
+  background: #000;
+}
+
+/* Important : la pomme garde ses couleurs même sur fond noir (pas d'override) */
+html[data-theme="80s"] #mac-menubar .mac-menu-apple svg {
+  display: block;
+}
+
+html[data-theme="2026"] #mac-menubar,
+html[data-theme="2026"] #mac-desktop-icons,
+html[data-theme="2026"] #mac-trash,
+html[data-theme="2026"] #mac-hello-overlay { display: none !important; }
+
+/* ============================================================
+   HAPPY MAC au démarrage (icône de boot Macintosh, Susan Kare)
+   ------------------------------------------------------------
+   Le petit ordinateur souriant apparaît avec un "pop" (scale +
+   léger rebond), tient ~2s, puis l'overlay fait un fade out.
+   Timeline : pop 0→0.5s, hold jusqu'à 2.5s, fade 2.5→3.3s.
+   ============================================================ */
+html[data-theme="80s"] #mac-hello-overlay {
+  position: fixed;
+  inset: 0;
+  background: #FFFFFF;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: macHelloFadeOut 0.8s ease-in 2.50s forwards;
+}
+
+html[data-theme="80s"] #mac-hello-overlay {
+  position: fixed;
+  inset: 0;
+  background: #FFFFFF;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: macHelloFadeOut 0.8s ease-in 4.80s forwards;
+}
+
+html[data-theme="80s"] #mac-hello-overlay.broken {
+  animation: none !important;
+  pointer-events: auto !important;
+  flex-direction: column !important;
+}
+
+/* Loader circular pixelisé qui se transforme en carré */
+html[data-theme="80s"] #mac-loader-wrapper {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: macLoaderFadeOut 0.5s cubic-bezier(0.4, 0, 0.2, 1) 2.0s both;
+}
+
+html[data-theme="80s"] #mac-loader-svg {
+  transform-origin: center center;
+  animation: macSpin 1.5s steps(8) 1 forwards;
+}
+
+html[data-theme="80s"] #mac-loader-path {
+  stroke-dasharray: 4 4;
+  animation: macDashes 1.5s steps(1) 1 forwards;
+}
+
+@keyframes macSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes macDashes {
+  0%, 99% { stroke-dasharray: 4 4; }
+  100%    { stroke-dasharray: none; }
+}
+
+@keyframes macLoaderFadeOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Happy Mac wrapper (se révèle quand le loader disparaît) */
+html[data-theme="80s"] #mac-happymac {
+  position: relative;
+  width: 75%;
+  max-width: 250px;
+  aspect-ratio: 750 / 960;
+  transform-origin: center center;
+  animation: macHappyReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 2.0s both;
+}
+
+html[data-theme="80s"] #mac-happymac img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+@keyframes macHappyReveal {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* CLIN D'OEIL one-shot : l'oeil droit se ferme brièvement ~1.3s après le pop.
+   On alterne l'opacité de l'image normale et de l'image clin d'oeil.
+   Durée 2.2s, delay 2.5s (après la révélation du Happy Mac) → oeil fermé ~3.3-3.55s absolu. */
+html[data-theme="80s"] #mac-happymac #mac-normal {
+  animation: macWinkOpen 2.2s steps(1) 2.5s 1 both;
+}
+html[data-theme="80s"] #mac-happymac #mac-wink {
+  opacity: 0;
+  animation: macWinkClose 2.2s steps(1) 2.5s 1 both;
+}
+
+@keyframes macWinkOpen  { 0%,35%{opacity:1} 38%,46%{opacity:0} 50%,100%{opacity:1} }
+@keyframes macWinkClose { 0%,35%{opacity:0} 38%,46%{opacity:1} 50%,100%{opacity:0} }
+
+@keyframes macHelloFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ============================================================
+   ICÔNES DESKTOP (remplacent la taskbar en 80s)
+   ============================================================ */
+html[data-theme="80s"] .taskbar,
+html[data-theme="80s"] .taskbar-hover-zone {
+  display: none !important;
+}
+
+html[data-theme="80s"] #mac-desktop-icons {
+  position: fixed;
+  top: 32px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 50;
+}
+
+html[data-theme="80s"] .mac-desktop-icon,
+html[data-theme="80s"] #mac-trash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 72px;
+  cursor: default;
+  user-select: none;
+}
+
+html[data-theme="80s"] #mac-trash {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+}
+
+html[data-theme="80s"] .mac-desktop-icon-img {
+  width: 36px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 0;
+}
+
+html[data-theme="80s"] .mac-desktop-icon-img svg {
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+/* Si l'utilisateur conserve des <img> dans les icônes, on les force NB */
+html[data-theme="80s"] .mac-desktop-icon-img img {
+  width: 32px;
+  height: 32px;
+  filter: grayscale(100%) contrast(3) !important;
+  image-rendering: pixelated;
+}
+
+html[data-theme="80s"] .mac-desktop-icon-label,
+html[data-theme="80s"] #mac-trash .mac-desktop-icon-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: #000;
+  background: #FFFFFF;
+  padding: 0 4px;
+  margin-top: 3px;
+  text-align: center;
+  white-space: nowrap;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-theme="80s"] .mac-desktop-icon.selected .mac-desktop-icon-img {
+  background: #000 !important;
+}
+
+html[data-theme="80s"] .mac-desktop-icon.selected .mac-desktop-icon-img img {
+  filter: grayscale(100%) contrast(3) invert(1) !important;
+}
+
+/* Inversion vidéo des SVG quand sélectionné */
+html[data-theme="80s"] .mac-desktop-icon.selected .mac-desktop-icon-img svg rect,
+html[data-theme="80s"] .mac-desktop-icon.selected .mac-desktop-icon-img svg path {
+  fill: #000 !important;
+  stroke: #FFF !important;
+}
+html[data-theme="80s"] .mac-desktop-icon.selected .mac-desktop-icon-img svg line {
+  stroke: #FFF !important;
+}
+
+html[data-theme="80s"] .mac-desktop-icon.selected .mac-desktop-icon-label {
+  background: #000 !important;
+  color: #FFF !important;
+}
+
+/* ============================================================
+   DASHBOARDS (fenêtres) : enlève scale/blur/shadow/radius
+   ============================================================ */
+html[data-theme="80s"] #dashboard-securoserv,
+html[data-theme="80s"] #dashboard-pdm,
+html[data-theme="80s"] #dashboard-d8,
+html[data-theme="80s"] #dashboard-gouv,
+html[data-theme="80s"] #dashboard-youtool,
+html[data-theme="80s"] #dashboard-ytjob {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45) !important;
+  color: #000 !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="80s"] #dashboard-securoserv.visible,
+html[data-theme="80s"] #dashboard-pdm.visible,
+html[data-theme="80s"] #dashboard-d8.visible,
+html[data-theme="80s"] #dashboard-gouv.visible,
+html[data-theme="80s"] #dashboard-youtool.visible,
+html[data-theme="80s"] #dashboard-ytjob.visible {
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+/* ============================================================
+   WINDOW HEADER : rayures + close-box + titre en puits blanc
+   ============================================================ */
+html[data-theme="80s"] .window-header {
+  position: relative !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  padding: 0 !important;
+  background-color: #FFFFFF !important;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #000 0px, #000 1px,
+    #FFFFFF 1px, #FFFFFF 3px
+  ) !important;
+  border: none !important;
+  border-bottom: 1px solid #000 !important;
+  display: block !important;
+  overflow: visible !important;
+  flex-shrink: 0 !important;
+}
+
+/* Cache l'icône cadenas + l'icône refresh + le texte URL */
+html[data-theme="80s"] .browser-address-bar > * {
+  display: none !important;
+}
+
+/* Le titre devient un pseudo-element centré dans un puits blanc auto-fit */
+html[data-theme="80s"] .browser-address-bar {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background: #FFFFFF !important;
+  padding: 0 8px !important;
+  height: 15px !important;
+  line-height: 15px !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  z-index: 1;
+  flex: none !important;
+}
+
+html[data-theme="80s"] .browser-address-bar::before {
+  font-family: var(--font-ui) !important;
+  font-size: 12px !important;
+  color: #000 !important;
+  font-weight: normal !important;
+  white-space: nowrap;
+  display: block;
+}
+
+html[data-theme="80s"] #dashboard-securoserv .browser-address-bar::before { content: 'SecuroServ'; }
+html[data-theme="80s"] #dashboard-pdm        .browser-address-bar::before { content: 'Premium Deluxe Motorsport'; }
+html[data-theme="80s"] #dashboard-d8         .browser-address-bar::before { content: 'Dynasty 8'; }
+html[data-theme="80s"] #dashboard-gouv       .browser-address-bar::before { content: 'Administration'; }
+html[data-theme="80s"] #dashboard-youtool    .browser-address-bar::before { content: 'GoPostal B2B'; }
+html[data-theme="80s"] #dashboard-ytjob      .browser-address-bar::before { content: 'GoPostal Livraisons'; }
+
+/* Close-box hollow à gauche (depuis le traffic-light rouge), yellow+green cachés */
+html[data-theme="80s"] .window-controls {
+  position: absolute !important;
+  left: 6px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  display: block !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  z-index: 2;
+}
+
+html[data-theme="80s"] .traffic-light.traffic-yellow,
+html[data-theme="80s"] .traffic-light.traffic-green {
+  display: none !important;
+}
+
+html[data-theme="80s"] .traffic-light.traffic-red {
+  width: 13px !important;
+  height: 13px !important;
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: inline-block !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+
+html[data-theme="80s"] .traffic-light.traffic-red::before {
+  content: "×" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -52%) !important;
+  color: #000000 !important;
+  font-family: monospace !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+html[data-theme="80s"] .traffic-light.traffic-red:hover {
+  background: #000000 !important;
+}
+
+html[data-theme="80s"] .traffic-light.traffic-red:hover::before {
+  color: #FFFFFF !important;
+}
+
+/* ============================================================
+   LOGIN SCREEN : style dialogue Mac System
+   ============================================================ */
+html[data-theme="80s"] #login-screen {
+  background: #FFFFFF !important;
+  border: 2px solid #000 !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45) !important;
+  color: #000 !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme="80s"] #login-screen .login-logo {
+  filter: grayscale(100%) contrast(3) !important;
+}
+
+html[data-theme="80s"] #login-screen .title-connexion {
+  color: #000 !important;
+  font-family: var(--font-ui) !important;
+  letter-spacing: 1px !important;
+}
+
+html[data-theme="80s"] #login-screen .input-bg,
+html[data-theme="80s"] #login-screen input {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  color: #000 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="80s"] #login-screen .btn-enter {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-radius: 14px !important;
+  color: #000 !important;
+  font-family: var(--font-ui) !important;
+  font-weight: bold !important;
+  box-shadow: 0 0 0 2px #000, 1px 1px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="80s"] #login-screen .btn-enter:hover {
+  background: var(--pl-sel) !important;
+  color: #000 !important;
+}
+
+/* Pressé : inversion vidéo, comme le bouton « par défaut » d'un dialogue Mac */
+html[data-theme="80s"] #login-screen .btn-enter:active {
+  background: #000 !important;
+  color: #FFF !important;
+}
+
+html[data-theme="80s"] #login-screen .version-text {
+  color: #000 !important;
+}
+
+/* ============================================================
+   BOUTONS — style Platinum (Mac OS 8, façon Infinite Mac)
+   ------------------------------------------------------------
+   Face grise bisautée en relief (highlight haut-gauche, ombre
+   bas-droite), texte gras Chicago, état pressé inversé. Les
+   boutons sémantiques (dépôt/retrait/promotion…) gardent leur
+   couleur mais avec le même relief Platinum.
+   ============================================================ */
+html[data-theme="80s"] button,
+html[data-theme="80s"] .btn {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-radius: 10px !important;
+  color: #000 !important;
+  font-family: var(--font-ui) !important;
+  font-weight: bold !important;
+  padding: 4px 16px !important;
+  box-shadow: 1px 1px 0 #000 !important;
+  text-transform: none !important;
+}
+
+/* Survol : surlignage bleu Mac doux (le même que nav-items & tableaux),
+   PAS de remplissage noir — le noir est réservé à l'état pressé. Le
+   Mac System n'avait d'ailleurs aucun état hover, seulement le press. */
+html[data-theme="80s"] button:hover,
+html[data-theme="80s"] .btn:hover {
+  background: var(--pl-sel) !important;
+  color: #000 !important;
+}
+html[data-theme="80s"] button:hover i,
+html[data-theme="80s"] .btn:hover i {
+  color: #000 !important;
+}
+
+/* Pressé (mousedown) : inversion vidéo = clic authentique du Mac System */
+html[data-theme="80s"] button:active,
+html[data-theme="80s"] .btn:active {
+  background: #000 !important;
+  color: #FFF !important;
+  box-shadow: none !important;
+  transform: translate(1px, 1px);
+}
+html[data-theme="80s"] button:active i,
+html[data-theme="80s"] .btn:active i {
+  color: #FFF !important;
+}
+
+/* Boutons sémantiques : face colorée + même relief Platinum */
+html[data-theme="80s"] .deposit-btn,
+html[data-theme="80s"] .promote-btn {
+  background: var(--pl-green) !important;
+  color: #06320f !important;
+}
+html[data-theme="80s"] .withdraw-btn,
+html[data-theme="80s"] .fire-btn {
+  background: var(--pl-red) !important;
+  color: #3a0a08 !important;
+}
+html[data-theme="80s"] .demote-btn {
+  background: var(--pl-amber) !important;
+  color: #3a2606 !important;
+}
+html[data-theme="80s"] .deposit-btn:hover,
+html[data-theme="80s"] .promote-btn:hover { background: #a6e0b1 !important; color: #06320f !important; }
+html[data-theme="80s"] .withdraw-btn:hover,
+html[data-theme="80s"] .fire-btn:hover { background: #f0b3ae !important; color: #3a0a08 !important; }
+html[data-theme="80s"] .demote-btn:hover { background: #f5dca8 !important; color: #3a2606 !important; }
+
+/* Pressé : les boutons sémantiques s'assombrissent (gardent leur identité
+   colorée) au lieu de virer au noir générique. */
+html[data-theme="80s"] .deposit-btn:active,
+html[data-theme="80s"] .promote-btn:active { background: #6fbf7d !important; color: #06320f !important; }
+html[data-theme="80s"] .withdraw-btn:active,
+html[data-theme="80s"] .fire-btn:active { background: #e08982 !important; color: #3a0a08 !important; }
+html[data-theme="80s"] .demote-btn:active { background: #ecc878 !important; color: #3a2606 !important; }
+
+/* Exceptions : .traffic-light n'hérite pas du style bouton */
+html[data-theme="80s"] .traffic-light,
+html[data-theme="80s"] .window-header .traffic-light {
+  padding: 0 !important;
+  box-shadow: none !important;
+  font-weight: normal !important;
+  border-radius: 0 !important;
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+html[data-theme="80s"] input,
+html[data-theme="80s"] select,
+html[data-theme="80s"] textarea {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  color: #000 !important;
+  font-family: var(--font-ui) !important;
+  padding: 2px 4px !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="80s"] input::placeholder {
+  color: #888 !important;
+}
+
+/* ============================================================
+   SIDEBAR + .content : forcer white bg pour éviter noir-sur-noir
+   ============================================================ */
+html[data-theme="80s"] .window-body {
+  background: #FFFFFF !important;
+}
+
+html[data-theme="80s"] .sidebar,
+html[data-theme="80s"] #category-list,
+html[data-theme="80s"] .nav-panel {
+  background: #FFFFFF !important;
+  border-right: 1px solid #000 !important;
+  color: #000 !important;
+  padding: 12px 8px !important;
+}
+
+html[data-theme="80s"] .content {
+  background: #FFFFFF !important;
+  color: #000 !important;
+  padding: 20px !important;
+}
+
+/* Tous les <h1>/<h2>/<h3>/<small> dans .content : noirs */
+html[data-theme="80s"] .content h1,
+html[data-theme="80s"] .content h2,
+html[data-theme="80s"] .content h3,
+html[data-theme="80s"] .content h4,
+html[data-theme="80s"] .content small,
+html[data-theme="80s"] .content p,
+html[data-theme="80s"] .content span,
+html[data-theme="80s"] .content div {
+  color: #000 !important;
+}
+
+/* Stat-card : panneau blanc, bordure noire, ombre dure (System 7) */
+html[data-theme="80s"] .stat-card {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  box-shadow: 1px 1px 0 #000 !important;
+  color: #000 !important;
+}
+
+html[data-theme="80s"] .stat-value {
+  color: #000 !important;
+  font-weight: bold !important;
+}
+
+/* ============================================================
+   NAV-ITEM (menu latéral) : items + sélection invertie
+   ============================================================ */
+html[data-theme="80s"] .nav-item,
+html[data-theme="80s"] .category-item {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  border-bottom: 1px dotted #000 !important;
+  color: #000 !important;
+  padding: 4px 8px !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="80s"] .nav-item *,
+html[data-theme="80s"] .category-item * {
+  color: #000 !important;
+}
+
+html[data-theme="80s"] .nav-item:hover,
+html[data-theme="80s"] .nav-item.active,
+html[data-theme="80s"] .category-item:hover,
+html[data-theme="80s"] .category-item.active,
+html[data-theme="80s"] .selected {
+  background: var(--pl-sel) !important;
+  color: #000 !important;
+}
+
+html[data-theme="80s"] .nav-item:hover *,
+html[data-theme="80s"] .nav-item.active *,
+html[data-theme="80s"] .category-item:hover *,
+html[data-theme="80s"] .category-item.active *,
+html[data-theme="80s"] .selected * {
+  color: #000 !important;
+}
+
+/* YouTool : la règle inline #dashboard-youtool .sidebar .nav-item.active
+   force background:var(--accent) (= noir en 80s) en ID+!important, ce qui
+   battait la règle .nav-item.active générique → catégorie active tout en
+   noir. On la rebat avec une spécificité ID supérieure pour la passer en
+   bleu Mac (cohérent avec le survol et les autres dashboards). */
+html[data-theme="80s"] #dashboard-youtool .sidebar .nav-item.active {
+  background: var(--pl-sel) !important;
+  color: #000 !important;
+  box-shadow: none !important;
+}
+html[data-theme="80s"] #dashboard-youtool .sidebar .nav-item.active i {
+  color: #000 !important;
+}
+
+/* ============================================================
+   TABLES — style Platinum (Mac OS 8, façon Infinite Mac)
+   ------------------------------------------------------------
+   En-tête gris bisauté en relief, lignes blanches à filets
+   gris doux, sélection/survol surlignés en bleu Mac (texte noir
+   lisible) = la touche de couleur.
+   ============================================================ */
+html[data-theme="80s"] table {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-collapse: collapse !important;
+  color: #000 !important;
+}
+
+html[data-theme="80s"] th,
+html[data-theme="80s"] td {
+  border: 1px solid #000 !important;
+  background: #FFFFFF !important;
+  color: #000 !important;
+  padding: 4px 8px !important;
+}
+
+html[data-theme="80s"] th {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #000 0px, #000 1px,
+    #FFFFFF 1px, #FFFFFF 3px
+  ) !important;
+  font-weight: bold !important;
+}
+
+/* Sélection / survol : surlignage bleu Mac, texte noir lisible */
+html[data-theme="80s"] tbody tr:hover,
+html[data-theme="80s"] tbody tr.selected {
+  background: var(--pl-sel) !important;
+}
+
+html[data-theme="80s"] tbody tr:hover td,
+html[data-theme="80s"] tbody tr.selected td {
+  background: var(--pl-sel) !important;
+  color: #000 !important;
+}
+
+html[data-theme="80s"] tbody tr:hover td *,
+html[data-theme="80s"] tbody tr.selected td * {
+  color: #000 !important;
+}
+
+/* ============================================================
+   COULEURS DE CONTENU
+   ------------------------------------------------------------
+   Les gris ternes et le blanc deviennent noirs (lisibilité sur
+   fond blanc System 7), MAIS on RÉTABLIT les vraies couleurs
+   sémantiques : vert = positif/ouvert, rouge = négatif/
+   déconnexion, orange = avertissement. Priorité forcée sur la
+   règle large « .content div/span → noir ».
+   ============================================================ */
+html[data-theme="80s"] [style*="color: white"],
+html[data-theme="80s"] [style*="color:white"],
+html[data-theme="80s"] [style*="color: #888"],
+html[data-theme="80s"] [style*="color:#888"],
+html[data-theme="80s"] [style*="color: #666"],
+html[data-theme="80s"] [style*="color:#666"],
+html[data-theme="80s"] [style*="color: var(--text-dim)"],
+html[data-theme="80s"] [style*="color:var(--text-dim)"],
+html[data-theme="80s"] [style*="color: var(--text-label)"],
+html[data-theme="80s"] [style*="color:var(--text-label)"] {
+  color: #000 !important;
+}
+
+/* Vert : positif / statut ouvert */
+html[data-theme="80s"] .content [style*="#2ecc71"],
+html[data-theme="80s"] .content .positive,
+html[data-theme="80s"] .stat-value[style*="#2ecc71"] {
+  color: #178a3f !important;
+}
+
+/* Rouge : négatif / déconnexion */
+html[data-theme="80s"] .content [style*="#e74c3c"],
+html[data-theme="80s"] .content [style*="#ff5555"],
+html[data-theme="80s"] .content .negative,
+html[data-theme="80s"] .nav-item[style*="#ff5555"],
+html[data-theme="80s"] .nav-item[style*="#ff5555"] * {
+  color: #c63224 !important;
+}
+
+/* Orange : avertissement */
+html[data-theme="80s"] .content [style*="#f39c12"],
+html[data-theme="80s"] .sidebar [style*="#f39c12"] {
+  color: #b9770c !important;
+}
+
+html[data-theme="80s"] [style*="background: rgba(255,255,255"],
+html[data-theme="80s"] [style*="background:rgba(255,255,255"],
+html[data-theme="80s"] [style*="background: rgba(0,0,0"],
+html[data-theme="80s"] [style*="background:rgba(0,0,0"] {
+  background: #FFFFFF !important;
+  color: #000 !important;
+}
+
+/* ============================================================
+   SCROLLBAR style Mac System (track dithered + thumb blanc)
+   ============================================================ */
+html[data-theme="80s"] ::-webkit-scrollbar {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+html[data-theme="80s"] ::-webkit-scrollbar-track {
+  background-color: #FFF !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='2' height='2' shape-rendering='crispEdges'><rect width='1' height='1' fill='%23000'/><rect x='1' y='1' width='1' height='1' fill='%23000'/></svg>") !important;
+  background-size: 2px 2px !important;
+  background-repeat: repeat !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="80s"] ::-webkit-scrollbar-thumb {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+}
+
+/* ============================================================
+   MODALES (dépôt / retrait / saisie) : dialogue Platinum
+   ------------------------------------------------------------
+   Pas de règle 80s auparavant → restaient sombres. On les
+   aligne sur le reste : cadre gris bisauté, champ creusé, titre
+   noir. Les boutons héritent déjà du style bouton Platinum.
+   ============================================================ */
+html[data-theme="80s"] .input-modal {
+  background: rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme="80s"] .input-modal-content {
+  background: #FFFFFF !important;
+  border: 2px solid #000 !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45) !important;
+  color: #000 !important;
+}
+
+html[data-theme="80s"] .input-modal-title {
+  color: #000 !important;
+}
+
+html[data-theme="80s"] .input-modal-input {
+  background: #FFFFFF !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  color: #000 !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================
+   IMAGES : NB + contraste fort (effet « dithered »)
+   ============================================================ */
+html[data-theme="80s"] img:not([src*=".svg"]):not(#mac-menubar img) {
+  filter: grayscale(100%) contrast(1.4) !important;
+}
+
+/* ============================================================
+   CURSEUR VIRTUEL DUI
+   ============================================================ */
+html[data-theme="80s"] #virtual-cursor {
+  filter: invert(1) grayscale(100%) contrast(2) !important;
+}
+
+/* ============================================================
+   CRT FX — scanlines + vignette (sans bezel arrondi)
+   ------------------------------------------------------------
+   Overlay fixed plein-écran, pointer-events: none → aucun
+   impact sur les clics NUI. Redéclare body::after (désactivé
+   plus haut) : à spécificité + !important égaux, l'ordre source
+   CSS donne raison aux dernières règles.
+
+   ::after = contenu du tube : scanlines horizontales 1px
+   tous les 3px + vignette radiale ellipse (assombrissement
+   des bords pour suggérer le verre du CRT, sans border-radius).
+   ============================================================ */
+html[data-theme="80s"] body::after {
+  content: '' !important;
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  z-index: 999999 !important;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.08) 0px,
+      rgba(0, 0, 0, 0.08) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      ellipse 100% 100% at center,
+      transparent 55%,
+      rgba(0, 0, 0, 0.28) 92%,
+      rgba(0, 0, 0, 0.55) 100%
+    ) !important;
+}
+
+/* ============================================================
+   GOPOSTAL B2B / YOUTOOL CATALOGUE — Macintosh System 1.0 Look
+   ============================================================ */
+html[data-theme="80s"] #dashboard-youtool .content {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+html[data-theme="80s"] #dashboard-youtool #youtool-page-title {
+  color: #000000 !important;
+  font-family: var(--font-ui) !important;
+}
+
+html[data-theme="80s"] #dashboard-youtool #youtool-search {
+  background: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  font-family: var(--font-ui) !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="80s"] #dashboard-youtool #yt-cart-btn {
+  background: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  border-radius: 0 !important;
+  box-shadow: 1px 1px 0 #000000 !important;
+}
+
+html[data-theme="80s"] #dashboard-youtool #yt-cart-btn:hover {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+}
+
+html[data-theme="80s"] #dashboard-youtool #yt-cart-btn #yt-cart-badge {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #FFFFFF !important;
+}
+
+html[data-theme="80s"] .youtool-card {
+  background: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  border-radius: 0 !important;
+  transform: none !important;
+}
+
+html[data-theme="80s"] .youtool-card:hover {
+  transform: none !important;
+  border-color: #000000 !important;
+  background: #FFFFFF !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+}
+
+html[data-theme="80s"] .youtool-card-icon-container {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid #000000 !important;
+}
+
+html[data-theme="80s"] .youtool-card:hover .youtool-card-icon-container {
+  background: #FFFFFF !important;
+}
+
+html[data-theme="80s"] .youtool-card-icon {
+  filter: grayscale(100%) contrast(1.5) !important;
+}
+
+html[data-theme="80s"] .youtool-card:hover .youtool-card-icon {
+  transform: none !important;
+}
+
+html[data-theme="80s"] .youtool-card-price {
+  background: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  font-family: var(--font-ui) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="80s"] .youtool-qty-btn {
+  background: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  border-radius: 0 !important;
+  font-family: var(--font-ui) !important;
+}
+
+html[data-theme="80s"] .youtool-qty-btn:hover {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+  transform: none !important;
+}
+
+html[data-theme="80s"] .youtool-qty-input {
+  background: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  border-radius: 0 !important;
+  font-family: var(--font-ui) !important;
+}
+
+html[data-theme="80s"] .youtool-order-btn {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 1px 1px 0 #000000 !important;
+  font-family: var(--font-ui) !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="80s"] .youtool-order-btn:hover {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+  transform: none !important;
+  box-shadow: 1px 1px 0 #000000 !important;
+}
+
+html[data-theme="80s"] .youtool-order-btn:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: none !important;
+}
+
+/* Panier tiroir 80s */
+html[data-theme="80s"] #yt-cart-panel {
+  background: #FFFFFF !important;
+  border-left: 1px solid #000000 !important;
+  box-shadow: -2px 0 0 rgba(0,0,0,0.15) !important;
+}
+
+html[data-theme="80s"] .yt-cart-header-title,
+html[data-theme="80s"] .yt-cart-header-title i {
+  color: #000000 !important;
+}
+
+html[data-theme="80s"] .yt-cart-header {
+  border-bottom: 1px solid #000000 !important;
+}
+
+html[data-theme="80s"] .yt-cart-close {
+  color: #000000 !important;
+}
+
+html[data-theme="80s"] .yt-cart-empty {
+  color: #888888 !important;
+}
+
+html[data-theme="80s"] .yt-cart-item {
+  background: #FFFFFF !important;
+  border: 1px solid #000000 !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="80s"] .yt-cart-item-name {
+  color: #000000 !important;
+}
+
+html[data-theme="80s"] .yt-cart-qty {
+  color: #000000 !important;
+}
+
+html[data-theme="80s"] .yt-cart-item-total {
+  color: #000000 !important;
+}
+
+html[data-theme="80s"] .yt-cart-total-line {
+  color: #000000 !important;
+  border-top: 1px solid #000000 !important;
+  padding-top: 8px;
+}
+
+html[data-theme="80s"] .yt-cart-total-label,
+html[data-theme="80s"] #yt-cart-total {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="80s"] .yt-checkout-btn {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 1px 1px 0 #000000 !important;
+  font-family: var(--font-ui) !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme="80s"] .yt-checkout-btn:hover {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+}

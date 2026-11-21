@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>pop_dealing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="root" class="hidden">
+        <div class="deal-card">
+            <div class="deal-header">
+                <div class="deal-header-left">
+                    <div class="deal-icon"><i id="deal-icon" class="fas fa-cannabis"></i></div>
+                    <div class="deal-header-text">
+                        <div class="deal-eyebrow">Client intéressé</div>
+                        <div class="deal-title" id="deal-title">Pochon de Weed</div>
+                    </div>
+                </div>
+                <div class="deal-badge" id="deal-badge">DEAL</div>
+            </div>
+
+            <div class="deal-stats">
+                <div class="deal-stat">
+                    <div class="deal-stat-label">Quantité</div>
+                    <div class="deal-stat-value" id="deal-qty">0</div>
+                </div>
+                <div class="deal-stat-sep"></div>
+                <div class="deal-stat">
+                    <div class="deal-stat-label">Marché</div>
+                    <div class="deal-stat-value" id="deal-hint">$0</div>
+                </div>
+                <div class="deal-stat-sep"></div>
+                <div class="deal-stat accent">
+                    <div class="deal-stat-label">Total</div>
+                    <div class="deal-stat-value" id="deal-total">$0</div>
+                </div>
+            </div>
+
+            <div class="deal-gauge">
+                <div class="deal-gauge-top">
+                    <span class="deal-gauge-label">Ta proposition</span>
+                    <span class="deal-gauge-value"><span id="deal-price-display">$0</span><span class="deal-gauge-per"> / unité</span></span>
+                </div>
+                <div class="deal-gauge-track">
+                    <div class="deal-gauge-fill" id="deal-gauge-fill"></div>
+                    <div class="deal-gauge-mark" id="deal-gauge-mark" title="Prix marché"></div>
+                    <input type="range" id="deal-price-input" min="1" max="100" step="1">
+                </div>
+                <div class="deal-gauge-bounds">
+                    <span id="deal-gauge-min">$0</span>
+                    <span id="deal-gauge-max">$0</span>
+                </div>
+            </div>
+
+            <div class="deal-meta">
+                <span id="deal-feedback" class="deal-feedback"></span>
+                <span class="deal-attempts"><span id="deal-attempts">3</span>/<span id="deal-attempts-max">3</span></span>
+            </div>
+
+            <div class="deal-actions">
+                <button class="deal-btn refuse" data-action="refuse">
+                    <i class="fas fa-xmark"></i><span>Partir</span>
+                </button>
+                <button class="deal-btn accept" data-action="propose">
+                    <i class="fas fa-handshake"></i><span>Proposer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* responsive scale: --rsp = 1.0 @ 1920x1080, >1 sur plus haute resolution */
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

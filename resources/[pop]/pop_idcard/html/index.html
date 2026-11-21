@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="idcard-container" style="display: none;">
+        <div class="card">
+
+            <!-- ===== CARTE US (bg.png image) ===== -->
+            <div class="card-us">
+                <img src="bg.png" class="bg-img">
+                <div class="photo-container">
+                    <img id="player-photo-us" class="player-photo" src="">
+                </div>
+                <div class="info">
+                    <span class="val" id="us-lastname"></span>
+                    <span class="val" id="us-firstname"></span>
+                    <span class="val" id="us-sex"></span>
+                    <span class="val" id="us-nationality"></span>
+                </div>
+            </div>
+
+            <!-- ===== CARTE MX (pur HTML/CSS) ===== -->
+            <div class="card-mx">
+                <!-- En-tête -->
+                <div class="mx-header">
+                    <div class="mx-header-left">
+                        <div class="mx-badge">
+                            <div class="mx-eagle">🦅</div>
+                        </div>
+                    </div>
+                    <div class="mx-flag">
+                        <div class="mx-flag-green"></div>
+                        <div class="mx-flag-white"><span class="mx-flag-eagle">🦅</span></div>
+                        <div class="mx-flag-red"></div>
+                    </div>
+                    <div class="mx-header-text">
+                        <div class="mx-title">ESTADOS UNIDOS MEXICANOS</div>
+                        <div class="mx-subtitle">NUEVO PASO</div>
+                    </div>
+                    <div class="mx-badge-right">
+                        <div class="mx-shield">🛡️</div>
+                    </div>
+                </div>
+
+                <!-- Corps -->
+                <div class="mx-body">
+                    <!-- Photo -->
+                    <div class="photo-container">
+                        <img id="player-photo-mx" class="player-photo" src="">
+                    </div>
+
+                    <!-- Champs -->
+                    <div class="mx-fields">
+                        <div class="mx-field">
+                            <div class="mx-label">NOM / SURNAME /</div>
+                            <div class="val" id="mx-lastname"></div>
+                        </div>
+                        <div class="mx-field">
+                            <div class="mx-label">PRÉNOM / NAME /</div>
+                            <div class="val" id="mx-firstname"></div>
+                        </div>
+                        <div class="mx-field-row">
+                            <div class="mx-field">
+                                <div class="mx-label">SEXE / SEX /</div>
+                                <div class="val" id="mx-sex"></div>
+                            </div>
+                        </div>
+                        <div class="mx-field">
+                            <div class="mx-label">NATIONALITÉ / CITIZENSHIP /</div>
+                            <div class="val mx-nationality" id="mx-nationality">Mexicaine</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fond désert watermark -->
+                <div class="mx-watermark">🌵</div>
+            </div>
+
+        </div>
+        <div class="instructions">Appuyez sur [ESC] ou [ENTRÉE] pour fermer</div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script>
+        (function () {
+            function rsp() {
+                document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+            }
+            window.addEventListener('resize', rsp);
+            rsp();
+        })();
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

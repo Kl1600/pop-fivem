@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chèque Bancaire</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="container" style="display:none;">
+
+        <div class="cheque">
+
+            <div class="header">
+                <h1>Banque Official</h1>
+
+                <div class="date-box">
+                    <label>Date</label>
+                    <input type="date" id="date">
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Payer à l'ordre de :</label>
+                <input type="text" id="beneficiaire" placeholder="Nom du bénéficiaire">
+            </div>
+
+            <div class="field company-banner" id="companyBanner" style="display:none;">
+                Chèque tiré du compte de l'entreprise : <strong id="companyLabel"></strong>
+            </div>
+
+            <div class="field amount">
+                <label>Montant ($)</label>
+                <input type="number" id="montant" placeholder="0">
+            </div>
+
+            <div class="field">
+                <label>Montant en lettres :</label>
+                <input type="text" id="montantLettres" placeholder="Exemple : Mille dollars">
+            </div>
+
+            <div class="field">
+                <label>Motif :</label>
+                <input type="text" id="motif" placeholder="Raison du paiement">
+            </div>
+
+            <div class="signature">
+                <label>Signature :</label>
+                <input type="text" id="signature" readonly>
+            </div>
+
+            <div class="buttons">
+                <button class="cancel" id="closeBtn">Annuler</button>
+                <button class="validate" id="validateBtn">Valider</button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

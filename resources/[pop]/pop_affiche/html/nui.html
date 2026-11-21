@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #ff2e88;
+            --primary-hover: #d81b6e;
+            --bg-dark: rgba(20, 20, 20, 0.85);
+            --modal-bg: rgba(30, 30, 30, 0.94);
+            --input-bg: rgba(15, 15, 15, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --text-accent: #ff2e88;
+            --error: #ff4d4d;
+        }
+
+        body {
+            background: var(--bg-dark);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal {
+            background: var(--modal-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 460px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            overflow: hidden;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .modal-header h2 {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .modal-header p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .modal-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(255, 46, 136, 0.25);
+            background: rgba(10, 10, 10, 0.85);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        input.error {
+            border-color: var(--error);
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.2);
+        }
+
+        .hint {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.4;
+        }
+
+        .err-msg {
+            font-size: 12px;
+            color: var(--error);
+            font-weight: 500;
+            display: none;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .err-msg.show { display: block; }
+
+        /* Miniature de prévisualisation Premium */
+        .preview-box {
+            height: 140px;
+            background: var(--input-bg);
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        
+        .preview-box.show {
+            display: flex;
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        .preview-box img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 4px;
+            animation: popIn 0.25s ease-out;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            background: rgba(20, 20, 20, 0.5);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+        }
+
+        .btn-cancel:hover {
+            color: var(--text-main);
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .btn-save {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 46, 136, 0.2);
+        }
+
+        .btn-save:hover:not(:disabled) {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(255, 46, 136, 0.35);
+        }
+        
+        .btn-save:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-save:disabled {
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.02);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Poser une affiche</h2>
+            <p>Collez le lien de votre image (Discord, imgur…)</p>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Lien de l'image <span style="color:var(--error)">*</span></label>
+                <div class="input-wrapper">
+                    <input type="text" id="inputUrl" placeholder="https://cdn.discordapp.com/..." autocomplete="off" />
+                </div>
+                <div class="err-msg" id="errMsg">Ce lien ne semble pas être une image valide.</div>
+                <div class="hint">Exemple : copiez le lien d'une image postée sur Discord ou imgur.</div>
+            </div>
+            <div class="preview-box" id="previewBox">
+                <img id="previewImg" src="" alt="aperçu" />
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" id="btnCancel">Annuler</button>
+            <button class="btn btn-save"   id="btnSave" disabled>Poser l'affiche</button>
+        </div>
+    </div>
+
+    <script>
+        const inputUrl   = document.getElementById('inputUrl');
+        const btnSave    = document.getElementById('btnSave');
+        const btnCancel  = document.getElementById('btnCancel');
+        const errMsg     = document.getElementById('errMsg');
+        const previewBox = document.getElementById('previewBox');
+        const previewImg = document.getElementById('previewImg');
+
+        let previewTimer = null;
+
+        function looksLikeImage(url) {
+            return /^https?:\/\/.+/i.test(url.trim());
+        }
+
+        function tryPreview(url) {
+            previewImg.onload  = () => { previewBox.classList.add('show'); errMsg.classList.remove('show'); };
+            previewImg.onerror = () => { previewBox.classList.remove('show'); };
+            previewImg.src = url;
+        }
+
+        inputUrl.addEventListener('input', () => {
+            const url = inputUrl.value.trim();
+            btnSave.disabled = true;
+            previewBox.classList.remove('show');
+            errMsg.classList.remove('show');
+
+            clearTimeout(previewTimer);
+            if (!url) return;
+
+            if (!looksLikeImage(url)) {
+                errMsg.classList.add('show');
+                return;
+            }
+
+            btnSave.disabled = false;
+
+            // Délai avant de charger la preview pour éviter les requêtes à chaque frappe
+            previewTimer = setTimeout(() => tryPreview(url), 600);
+        });
+
+        btnSave.addEventListener('click', () => {
+            const url = inputUrl.value.trim();
+            if (!url) return;
+            document.body.style.display = 'none';
+            fetch(`https://${GetParentResourceName()}/saveAffiche`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image_url: url })
+            });
+        });
+
+        btnCancel.addEventListener('click', () => {
+            document.body.style.display = 'none';
+            fetch(`https://${GetParentResourceName()}/closeMenu`, { method: 'POST' });
+        });
+
+        window.addEventListener('message', (e) => {
+            if (e.data.action !== 'openMenu') return;
+            inputUrl.value = e.data.image_url || '';
+            btnSave.disabled = true;
+            previewBox.classList.remove('show');
+            errMsg.classList.remove('show');
+            btnSave.textContent = e.data.dbId ? 'Enregistrer' : "Poser l'affiche";
+            document.body.style.display = 'flex';
+            if (e.data.image_url) {
+                btnSave.disabled = false;
+                tryPreview(e.data.image_url);
+            }
+            setTimeout(() => inputUrl.focus(), 50);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') btnCancel.click();
+            if (e.key === 'Enter' && !btnSave.disabled) btnSave.click();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2484 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Albert+Sans:wght@400;500;600&family=Share+Tech+Mono&family=Orbitron:wght@700&display=swap">
+</head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fond Noir</title>
+
+<style>
+  #ground-items-grid::-webkit-scrollbar,
+  #paint-items-grid::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  #ground-items-grid,
+  #paint-items-grid {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  #shop-items-grid::-webkit-scrollbar {
+    width: 4px;
+  }
+  #shop-items-grid::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #shop-items-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+  #shop-items-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+  #ground-items-grid > div {
+    position: relative;
+  }
+
+  /* Voile noir retiré pendant la prévisualisation 3D d'arme (sinon on voit mal). */
+  body.weapon-preview-active {
+    background-color: transparent !important;
+  }
+  body {
+    background-color: rgba(0, 0, 0, 0.65);
+    font-family: Arial, sans-serif;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .container {
+    padding-left: 112px;
+    padding-top: 0px;
+    width: 509px;
+  }
+
+  .separator {
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.4);
+    margin-bottom: 8px;
+  }
+
+  .weight-info {
+    color: white;
+    font-size: 14px;
+    font-family: Segoe UI;
+    font-weight: 600;
+    margin-bottom: 15px;
+    /* ↓ réduit l’espace entre le texte et les cases */
+  }
+
+  .weight-info .current {
+    color: white;
+  }
+
+  .weight-info .max {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(6, 74px);
+    gap: 13px;
+  }
+
+  .slot {
+    width: 74px;
+    height: 74px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    transition: background 100ms;
+    cursor: pointer;
+  }
+
+  .slot:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .slot.disabled {
+    background: rgba(80, 80, 80, 0.1);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .section {
+    display: none;
+  }
+
+  .section.active {
+    display: block;
+  }
+
+  .back-arrow-btn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.15s ease-out;
+    pointer-events: auto;
+  }
+
+  .back-arrow-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+
+  .back-arrow-btn:active {
+    transform: scale(0.9);
+  }
+</style>
+
+<style>
+  /* --- Fix hover pour les cases + icônes --- */
+
+  /* Assure que les cases ont leur propre contexte d'empilement et réagissent au hover */
+  div[style*="background: rgba(245, 245, 245, 0.15)"][style*="border-radius: 2px"]:not([style*="height: 1px"]) {
+    position: absolute;
+    /* elles le sont déjà, mais on le précise pour la cohérence */
+    z-index: 1;
+    /* en dessous des icônes */
+    transition: background-color 0ms ease;
+    cursor: pointer;
+    pointer-events: auto;
+    /* <-- important : permet le :hover sur les cases */
+  }
+
+  div[style*="background: rgba(245, 245, 245, 0.15)"][style*="border-radius: 2px"][data-disabled="true"] {
+    cursor: not-allowed;
+    pointer-events: none;
+    background: rgba(245, 245, 245, 0.03) !important;
+  }
+
+  div[style*="background: rgba(245, 245, 245, 0.15)"][data-zone="ground"][data-disabled="true"] {
+    pointer-events: auto;
+    cursor: pointer;
+    opacity: 1;
+  }
+
+  /* Hover : change juste la couleur */
+  div[style*="background: rgba(245, 245, 245, 0.15)"][style*="border-radius: 2px"]:not([style*="height: 1px"]):not([data-disabled="true"]):hover {
+    background: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  /* Place la barre d'icône et les icônes au-dessus */
+  .icon-bar {
+    position: relative;
+    /* crée un nouveau contexte si besoin */
+    z-index: 50;
+    /* plus haut que les cases */
+  }
+
+  /* icônes au-dessus de tout et réactives */
+  .icon {
+    position: relative;
+    z-index: 51;
+    pointer-events: auto;
+    /* s'assure que les icônes reçoivent les events */
+
+  }
+
+
+
+
+
+  /* Cible uniquement les éléments inline qui ont à la fois un background inline ET border-radius: 2px.
+     Exclut explicitement les séparateurs fins (height: 1px). */
+
+  /* Désactive la sélection de texte partout dans l'UI (sauf les inputs/textarea) */
+  #full-ui-wrapper, #full-ui-wrapper * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  #full-ui-wrapper input,
+  #full-ui-wrapper textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
+  /* Scrollbar invisible mais scroll fonctionnel */
+  #admin-items-grid {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  #admin-items-grid::-webkit-scrollbar {
+    display: none; /* Chrome / Edge / Safari / CEF */
+  }
+
+  /* Bouton "Changer le torse" & "Retour" */
+  #btn-change-torse,
+  #btn-back-torso {
+    cursor: pointer;
+    position: absolute;
+    z-index: 60;
+    background-color: rgba(245, 245, 245, 0.21);
+    border-radius: 2px;
+    transition: background-color 150ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 0;
+  }
+
+  #btn-change-torse:hover,
+  #btn-back-torso:hover {
+    background-color: rgba(255, 255, 255, 0.42);
+  }
+
+  #btn-change-torse .btn-label,
+  #btn-back-torso .btn-label {
+    color: white;
+    font-size: 11px;
+    font-family: Segoe UI;
+    font-weight: 400;
+    pointer-events: none;
+    opacity: 0.95;
+    transition: opacity 150ms ease;
+    user-select: none;
+    transform: translateY(-1px);
+  }
+
+  #btn-change-torse:hover .btn-label,
+  #btn-back-torso:hover .btn-label {
+    opacity: 1;
+  }
+
+  /* Admin Jobs */
+  .admin-job-item {
+    background: rgba(245, 245, 245, 0.1);
+    border-radius: 4px;
+    padding: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    pointer-events: auto;
+  }
+
+  .admin-job-item:hover {
+    background: rgba(245, 245, 245, 0.15) !important;
+  }
+
+  /* ===== EasyTime (onglet Météo) — design moderne ===== */
+  .et-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px 14px;
+  }
+  .et-label {
+    color: rgba(255, 255, 255, 0.45);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  .et-time {
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 18px rgba(255, 46, 136, 0.30);
+  }
+
+  /* Slider moderne : piste fine arrondie remplie en rose jusqu'au pouce. */
+  .et-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(to right,
+      #ff2e88 0%, #ff6aa8 var(--p, 50%),
+      rgba(255, 255, 255, 0.13) var(--p, 50%), rgba(255, 255, 255, 0.13) 100%);
+    outline: none;
+    cursor: pointer;
+  }
+  .et-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 0;
+    box-shadow: 0 0 0 4px rgba(255, 46, 136, 0.28), 0 2px 6px rgba(0, 0, 0, 0.45);
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .et-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 6px rgba(255, 46, 136, 0.34), 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  .et-sub {
+    display: flex;
+    justify-content: space-between;
+    color: rgba(255, 255, 255, 0.40);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  /* Presets en pastilles. */
+  .et-presets {
+    display: flex;
+    gap: 6px;
+  }
+  .et-preset {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.75);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    pointer-events: auto;
+  }
+  .et-preset:hover {
+    background: rgba(255, 255, 255, 0.10);
+    color: #fff;
+  }
+  .et-preset.active {
+    background: rgba(255, 46, 136, 0.18);
+    border-color: rgba(255, 46, 136, 0.55);
+    color: #fff;
+  }
+
+  /* Segmented control Figé / Réel. */
+  .et-seg {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+  }
+  .et-seg-btn {
+    flex: 1;
+    text-align: center;
+    padding: 7px 0;
+    border-radius: 7px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    pointer-events: auto;
+  }
+  .et-seg-btn:hover {
+    color: #fff;
+  }
+  .et-seg-btn.active {
+    background: #ff2e88;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(255, 46, 136, 0.35);
+  }
+  .et-seg-btn.active.run {
+    background: #58a03c;
+    box-shadow: 0 2px 10px rgba(88, 160, 60, 0.35);
+  }
+
+  .admin-grade-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    padding: 3px 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 10px;
+    transition: background 0.2s;
+    pointer-events: auto;
+  }
+
+  .admin-grade-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white;
+  }
+
+  .admin-job-action-btn:hover {
+    background: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  #btn-admin-create-job:hover {
+    background: rgba(0, 210, 140, 0.45) !important;
+    border-color: rgba(0, 210, 140, 0.7) !important;
+  }
+
+  /* Effet de remplacement Icône -> Texte pour le Hub Admin */
+  .hub-category-icon {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .hub-category-slot:hover .hub-category-icon {
+    opacity: 0.05;
+    transform: scale(0.9);
+  }
+
+  .hub-category-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35); /* Fond légèrement sombre pour l'harmonie */
+    color: white;
+    font-size: 11px;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .hub-category-slot:hover .hub-category-label {
+    opacity: 1;
+  }
+
+  /* --- Section Peinture (calquée sur à proximité) --- */
+  .paint-item-slot {
+    width: 79px;
+    height: 79px;
+    background: rgba(245, 245, 245, 0.15);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: background 200ms ease, border 200ms ease;
+    border: 1px solid transparent;
+  }
+
+  .paint-item-slot:hover {
+    background: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  .paint-item-slot.selected {
+    border-color: #f2b4d9;
+    background: rgba(242, 180, 217, 0.15) !important;
+  }
+
+  .paint-item-slot .color-bubble {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 3px 6px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+  }
+
+  .paint-item-slot:hover .color-bubble {
+    transform: scale(1.1);
+  }
+
+  #paint-btn-apply:hover {
+    background: #e2a0ca !important;
+  }
+</style>
+
+<!-- Coffre / Conteneur distant (ex standby_ui) intégré comme module de pop_inventory.
+     Overlay plein écran caché par défaut ; affiché en mode coffre via le relais de app.js. -->
+<iframe id="standby-frame" src="standby/index.html"
+  style="display:none; position:fixed; inset:0; width:100vw; height:100vh; border:0; margin:0; padding:0; background:transparent; z-index:99999;"></iframe>
+
+<div id="full-ui-wrapper" style="width: 1297px; height: 702px; position: relative">
+
+  <!-- Vue Accessoires d'arme (remplace l'inventaire quand active) -->
+  <div id="attachments-view">
+    <div class="attachments-backdrop"></div>
+    <div class="attachments-header-row">
+      <div class="attachments-title" id="attachments-title">Arme</div>
+      <button type="button" class="attachments-close" id="attachments-close-btn" aria-label="Fermer">×</button>
+    </div>
+    <svg class="attachments-lines" id="attachments-lines" viewBox="0 0 1318 707" preserveAspectRatio="none"></svg>
+    <div class="attachments-weapon-center">
+      <img id="attachments-weapon-img" src="img/unknown.png" alt="" />
+    </div>
+    <!-- Zone de capture du glisser-souris pour tourner l'arme 3D (au centre, hors cellules) -->
+    <div id="attachments-3d-drag" title="Glissez pour tourner l'arme"></div>
+    <div id="attachments-cells"></div>
+
+    <!-- Liste des accessoires compatibles présents dans l'inventaire du joueur -->
+    <div class="attachments-inventory" id="attachments-inventory">
+      <div class="attachments-inventory-title">Accessoires compatibles dans votre inventaire</div>
+      <div class="attachments-inventory-list" id="attachments-inventory-list"></div>
+    </div>
+  </div>
+
+  <!-- Grille défilante pour À proximité (Ground) -->
+  <div id="ground-items-grid"
+    style="position: absolute; left: 1px; top: 88px; width: 270px; height: 441px; overflow-y: scroll; display: grid; grid-template-columns: repeat(3, 79px); gap: 12px 10px; box-sizing: border-box; padding-right: 4px;">
+    <!-- 30 slots ground de 79x79px -->
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+    <div style="width: 79px; height: 79px; background: rgba(245, 245, 245, 0.15); border-radius: 2px; position: relative;"></div>
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 568px; top: 179px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 379px; top: 179px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 473px; top: 179px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 663px; top: 179px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 758px; top: 179px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 851px; top: 179px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 568px; top: 450px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 379px; top: 450px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 473px; top: 450px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 663px; top: 450px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 758px; top: 450px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 851px; top: 450px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 561px; top: 622px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 176px; height: 79px; left: 371px; top: 622px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 751px; top: 622px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 656px; top: 622px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 844px; top: 622px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 568px; top: 360px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 379px; top: 360px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 473px; top: 360px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 663px; top: 360px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 758px; top: 360px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 851px; top: 360px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 568px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 379px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 473px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 663px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 758px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 851px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 568px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 379px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 473px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 663px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 758px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <div
+    style="width: 79px; height: 79px; left: 851px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+  </div>
+  <!-- Separateur 'A proximite' (3px, top:49, aligne aux autres) -->
+  <div
+    style="width: 281px; height: 1px; left: 0px; top: 49px; position: absolute; background: rgba(245, 245, 245, 0.15)">
+  </div>
+  <!-- Separateur inventaire (3px, top:49) -->
+  <div
+    style="width: 551px; height: 1px; left: 379px; top: 49px; position: absolute; background: rgba(245, 245, 245, 0.15)">
+  </div>
+  <!-- Soulignement (onglet) de la categorie active : deborde vers le HAUT de la ligne -->
+  <div class="inv-icon-underline" id="inv-icon-underline"
+    style="left: 379px; top: 48px; position: absolute;"></div>
+  <!-- Separateur vetements (3px, top:49) -->
+  <div
+    style="width: 268px; height: 1px; left: 1029px; top: 49px; position: absolute; background: rgba(245, 245, 245, 0.15)">
+  </div>
+  <!-- Scrollbar 'A proximite' : rail + curseur rose -->
+  <div id="ground-scroll-rail"
+    style="width: 9px; height: 441px; left: 272px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 5px">
+  </div>
+  <div id="ground-scroll-thumb"
+    style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(242, 180, 217, 0.35); border-radius: 5px">
+  </div>
+  <div id="clothes-side">
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 214px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 214px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 214px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 412px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 412px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 412px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 413px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 314px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 314px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 511px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 511px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div id="pager-slot-bg"
+      style="display: none; width: 57px; height: 57px; left: 1165px; top: 511px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+
+    <!-- SECTION VÊTEMENTS -->
+    <!-- Titre -->
+    <div
+      style="width: 123px; height: 33px; left: 1029px; top: 1px; position: absolute; color: white; font-size: 17px; font-family: Segoe UI; font-weight: 900; word-wrap: break-word">
+      Vêtements</div>
+
+    <!-- Bouton : Changer le torse -->
+    <div id="btn-change-torse" style="width: 92px; height: 17px; left: 1205px; top: 6px;">
+      <span class="btn-label">Changer le torse</span>
+    </div>
+
+    <!-- Bouton ADMIN : Sélecteur d'items (à gauche de Changer le torse) - hidden par défaut, affiché si admin -->
+    <div id="btn-admin-items" title="Admin: Sélecteur d'items"
+      style="display: none; width: 22px; height: 17px; left: 1188px; top: 13px; cursor: pointer; position: absolute; z-index: 60; background-color: rgba(255, 90, 90, 0.28); border-radius: 2px; align-items: center; justify-content: center; transition: background-color 150ms ease;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events:none; opacity:0.95;">
+        <path d="M14.7 6.3a3 3 0 0 0-3.4 4.2L3 18.8 5.2 21l8.3-8.3a3 3 0 0 0 4.2-3.4l-2 2-1.7-1.7 2-2z" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M16 16l5 5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- SOUS-TITRES -->
+    <div
+      style="width: 123px; height: 33px; left: 1036px; top: 88px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Tête</div>
+    <div
+      style="width: 123px; height: 33px; left: 1035px; top: 183px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Corps</div>
+    <div
+      style="width: 123px; height: 33px; left: 1036px; top: 283px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Bas</div>
+    <div
+      style="width: 123px; height: 33px; left: 1035px; top: 383px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Utilitaire</div>
+    <div
+      style="width: 171px; height: 33px; left: 1036px; top: 480px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Communication</div>
+
+    <!-- TÊTE -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 114px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="hat">
+      <img src="svg/broad-brimmed-hat.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 114px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="mask">
+      <img src="svg/carnival-mask-silhouette.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 114px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="glasses">
+      <img src="svg/sunglasses.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 114px; position: absolute;   border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="accessory">
+      <img src="svg/classic-cufflinks.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
+    </div>
+
+    <!-- CORPS -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 214px; position: absolute;   border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="hoddie">
+      <img src="svg/hoddie.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 214px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="tshirt">
+      <img src="svg/casual-t-shirt-.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 214px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="tie">
+      <img src="svg/tie.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 214px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="decal">
+      <img src="svg/decal.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+
+    <!-- BAS -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 314px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="panta">
+      <img src="svg/pants.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 314px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="shoes">
+      <img src="svg/men-shoe.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
+    </div>
+
+    <!-- UTILITAIRE -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="backpack">
+      <img src="svg/backpack.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="wallet">
+      <img src="svg/wallet.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="kevlar">
+      <img src="svg/kevlar.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="briefcase">
+      <img src="svg/briefcase.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
+    </div>
+
+    <!-- COMMUNICATION -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 511px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="phone">
+      <img src="svg/smartphone-call.svg" style="width:26px; height:26px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 511px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="radio">
+      <img src="svg/walkie-talkie.svg" style="width:34px; height:34px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div id="pager-slot"
+      style="display: none; width: 57px; height: 57px; left: 1165px; top: 511px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="pager">
+      <img src="svg/pager.svg" style="width:22px; height:22px; margin-top: 3px; filter: invert(95%) opacity(0.35);" />
+    </div>
+
+  </div>
+
+  <div id="torso-grid-side" style="display: none;">
+    <div
+      style="width: 150px; height: 33px; left: 1042px; top: 10px; position: absolute; color: white; font-size: 17px; font-family: Segoe UI; font-weight: 900; white-space: nowrap">
+      Torses</div>
+    <div id="btn-back-torso" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- row 1 -->
+    <div
+      style="width: 82px; height: 80px; left: 1043px; top: 84px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="1">
+      <img src="torso/male_1.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1139px; top: 84px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="2">
+      <img src="torso/male_2.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1235px; top: 84px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="3">
+      <img src="torso/male_3.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <!-- row 2 -->
+    <div
+      style="width: 82px; height: 80px; left: 1043px; top: 177px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="4">
+      <img src="torso/male_4.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1139px; top: 177px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="5">
+      <img src="torso/male_5.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1235px; top: 177px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="6">
+      <img src="torso/male_6.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <!-- row 3 -->
+    <div
+      style="width: 82px; height: 80px; left: 1043px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="7">
+      <img src="torso/male_7.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1139px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="8">
+      <img src="torso/male_8.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1235px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="9">
+      <img src="torso/male_9.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <!-- row 4 -->
+    <div
+      style="width: 82px; height: 80px; left: 1043px; top: 363px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="10">
+      <img src="torso/male_10.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1139px; top: 363px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="11">
+      <img src="torso/male_11.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1235px; top: 363px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="12">
+      <img src="torso/male_12.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <!-- row 5 -->
+    <div
+      style="width: 82px; height: 80px; left: 1043px; top: 456px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="13">
+      <img src="torso/male_13.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1139px; top: 456px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="14">
+      <img src="torso/male_14.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+    <div
+      style="width: 82px; height: 80px; left: 1235px; top: 456px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
+      data-zone="torso-grid" data-slot-index="15">
+      <img src="torso/male_15.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+    </div>
+  </div>
+
+  <!-- SECTION PEINTURE (remplace les vêtements, layout calqué sur à proximité) -->
+  <div id="paint-side" style="display: none; position: absolute; left: 1029px; top: 0; width: 281px; height: 702px; pointer-events: auto;">
+    <!-- Titre -->
+    <div style="width: 123px; height: 33px; left: 0px; top: 1px; position: absolute; color: white; font-size: 17px; font-family: Segoe UI; font-weight: 900; word-wrap: break-word">
+      Peinture
+    </div>
+    <!-- Bouton Retour -->
+    <div id="btn-back-paint" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- Séparateur -->
+    <div style="width: 281px; height: 1px; left: 0px; top: 49px; position: absolute; background: rgba(245, 245, 245, 0.15)"></div>
+
+    <!-- Grille de couleurs (calquée sur à proximité) -->
+    <div id="paint-items-grid"
+      style="position: absolute; left: 1px; top: 88px; width: 270px; height: 441px; overflow-y: scroll; display: grid; grid-template-columns: repeat(3, 79px); gap: 12px 10px; box-sizing: border-box; padding-right: 4px; scrollbar-width: none; -ms-overflow-style: none;">
+    </div>
+
+    <!-- Scrollbar pour la grille de peinture : rail + curseur rose -->
+    <div id="paint-scroll-rail"
+      style="width: 9px; height: 441px; left: 272px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 5px">
+    </div>
+    <div id="paint-scroll-thumb"
+      style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(242, 180, 217, 0.35); border-radius: 5px">
+    </div>
+
+    <!-- Panel de détails de peinture en bas -->
+    <div id="paint-details-panel" style="position: absolute; left: 0px; top: 540px; width: 281px; height: 150px; display: flex; flex-direction: column; gap: 8px;">
+      <div id="paint-selected-name" style="color: rgba(255,255,255,0.4); font-size: 14px; font-family: 'Segoe UI', sans-serif; font-weight: 700; text-align: center; margin-bottom: 2px;">
+        Sélectionnez une peinture
+      </div>
+      <!-- Coûts des pigments -->
+      <div style="display: flex; justify-content: space-between; gap: 4px;">
+        <!-- Rouge -->
+        <div style="flex: 1; background: rgba(245,245,245,0.05); padding: 6px; border-radius: 3px; text-align: center;">
+          <div style="font-size: 9px; color: #ff5252; font-weight: 700; margin-bottom: 2px;">ROUGE</div>
+          <div id="paint-cost-red" style="font-size: 12px; color: white; font-weight: 700; font-family: 'Albert Sans', sans-serif;">0 <span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: normal;">/ 0</span></div>
+        </div>
+        <!-- Jaune -->
+        <div style="flex: 1; background: rgba(245,245,245,0.05); padding: 6px; border-radius: 3px; text-align: center;">
+          <div style="font-size: 9px; color: #ffd740; font-weight: 700; margin-bottom: 2px;">JAUNE</div>
+          <div id="paint-cost-yellow" style="font-size: 12px; color: white; font-weight: 700; font-family: 'Albert Sans', sans-serif;">0 <span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: normal;">/ 0</span></div>
+        </div>
+        <!-- Bleu -->
+        <div style="flex: 1; background: rgba(245,245,245,0.05); padding: 6px; border-radius: 3px; text-align: center;">
+          <div style="font-size: 9px; color: #40c4ff; font-weight: 700; margin-bottom: 2px;">BLEU</div>
+          <div id="paint-cost-blue" style="font-size: 12px; color: white; font-weight: 700; font-family: 'Albert Sans', sans-serif;">0 <span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: normal;">/ 0</span></div>
+        </div>
+      </div>
+      <!-- Bouton Appliquer -->
+      <div id="paint-btn-apply" style="width: 100%; height: 38px; background: #777777; opacity: 0.5; border-radius: 3px; cursor: not-allowed; display: flex; align-items: center; justify-content: center; user-select: none; transition: background 0.15s, opacity 0.15s; margin-top: 4px;">
+        <span style="color: white; font-size: 12px; font-family: 'Segoe UI', sans-serif; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">Peindre</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       ADMIN : SÉLECTEUR D'ITEMS
+       ============================================= -->
+  <!-- =============================================
+       ADMIN : HUB PRINCIPAL
+       ============================================= -->
+  <div id="admin-hub-side" style="display: none; position: absolute; left: 1043px; top: 0; width: 275px; height: 707px; pointer-events: auto;">
+    <div style="position: absolute; left: 0; top: 10px; color: white; font-size: 17px; font-family: 'Segoe UI', sans-serif; font-weight: 900; white-space: nowrap;">
+      Administration
+    </div>
+    <div id="btn-back-admin-hub" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div style="position: absolute; left: 0; top: 84px; width: 275px; display: grid; grid-template-columns: repeat(3, 82px); gap: 14px 13px; pointer-events: auto;">
+      <!-- Bouton Vêtements -->
+      <div id="btn-hub-clothes" class="hub-category-slot" title="Vêtements" style="width: 82px; height: 80px; background: rgba(245,245,245,0.15); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; pointer-events: auto; position: relative;">
+        <img src="svg/casual-t-shirt-.svg" class="hub-category-icon" style="width: 24px; height: 24px; filter: invert(1); opacity: 0.8;" />
+        <div class="hub-category-label">Habits</div>
+      </div>
+
+      <!-- Bouton Items -->
+      <div id="btn-hub-items" class="hub-category-slot" title="Items" style="width: 82px; height: 80px; background: rgba(245,245,245,0.15); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; pointer-events: auto; position: relative;">
+        <img src="svg/box.svg" class="hub-category-icon" style="width: 24px; height: 24px; filter: invert(1); opacity: 0.8;" />
+        <div class="hub-category-label">Items</div>
+      </div>
+
+      <!-- Bouton Jobs -->
+      <div id="btn-hub-jobs" class="hub-category-slot" title="Jobs" style="width: 82px; height: 80px; background: rgba(245,245,245,0.15); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; pointer-events: auto; position: relative;">
+        <img src="svg/briefcase.svg" class="hub-category-icon" style="width: 24px; height: 24px; filter: invert(1); opacity: 0.8;" />
+        <div class="hub-category-label">Jobs</div>
+      </div>
+
+      <!-- Bouton Véhicules -->
+      <div id="btn-hub-vehicles" class="hub-category-slot" title="Véhicules" style="width: 82px; height: 80px; background: rgba(245,245,245,0.15); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; pointer-events: auto; position: relative;">
+        <svg class="hub-category-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.8;">
+          <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" fill="white"/>
+        </svg>
+        <div class="hub-category-label">Véhicules</div>
+      </div>
+
+      <!-- Bouton Personnages -->
+      <div id="btn-hub-players" class="hub-category-slot" title="Personnages" style="width: 82px; height: 80px; background: rgba(245,245,245,0.15); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; pointer-events: auto; position: relative;">
+        <svg class="hub-category-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.8;">
+          <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white"/>
+        </svg>
+        <div class="hub-category-label">Joueurs</div>
+      </div>
+
+      <!-- Bouton Météo -->
+      <div id="btn-hub-weather" class="hub-category-slot" title="Météo" style="width: 82px; height: 80px; background: rgba(245,245,245,0.15); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; pointer-events: auto; position: relative;">
+        <svg class="hub-category-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.8;">
+          <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM4 10.5H1v2h3v-2h-3zm9-9.95h-2V3.5h2V.55zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41 1.79-1.79zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79-1.4 1.4zM20 10.5v2h3v-2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-7.07 9.42l-1.79 1.8 1.41 1.41 1.8-1.79-1.42-1.42zM11 20.45h2V23.5h-2v-3.05z" fill="white"/>
+        </svg>
+        <div class="hub-category-label">Météo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================
+       ADMIN : SÉLECTEUR DE JOBS
+       ============================================= -->
+  <div id="admin-jobs-side" style="display: none; position: absolute; left: 1043px; top: 0; width: 275px; height: 620px; pointer-events: auto;">
+    <div style="position: absolute; left: 0; top: 10px; color: white; font-size: 17px; font-family: 'Segoe UI', sans-serif; font-weight: 900; white-space: nowrap; pointer-events: none;">
+      Jobs (Admin)
+    </div>
+    <div id="btn-back-admin-jobs" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- Barre de recherche et Bouton de Création (alignées avec les cases de gauche) -->
+    <div style="position: absolute; left: 0; top: 84px; width: 100%; display: flex; gap: 8px; align-items: center; pointer-events: auto;">
+      <input id="admin-jobs-search" type="text" placeholder="Rechercher un job..."
+        style="flex: 1; height: 28px; box-sizing: border-box; padding: 0 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.15); border-radius: 2px; color: white; font-size: 12px; font-family: 'Segoe UI', sans-serif; outline: none;" />
+      <div id="btn-admin-refresh-jobs" style="height: 28px; width: 28px; background: rgba(0,120,215,0.3); border: 1px solid rgba(0,120,215,0.5); border-radius: 2px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.5s ease-in-out; pointer-events: auto;" title="Rafraîchir les Jobs">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </div>
+      <div id="btn-admin-create-job" style="height: 28px; padding: 0 10px; background: rgba(0,180,120,0.3); border: 1px solid rgba(0,180,120,0.5); border-radius: 2px; color: white; font-size: 11px; font-weight: 600; font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; white-space: nowrap; pointer-events: auto;" title="Créer un Job">
+        + Créer Job
+      </div>
+    </div>
+
+    <!-- Liste jobs (scrollable) -->
+    <div id="admin-jobs-list" style="position: absolute; left: 0; top: 124px; width: 100%; height: 486px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; scrollbar-width: thin;">
+      <!-- Se remplira en JS -->
+    </div>
+  </div>
+
+  <div id="admin-items-side" style="display: none; position: absolute; left: 1043px; top: 0; width: 275px; height: 620px; pointer-events: auto;">
+    <!-- Titre -->
+    <div style="position: absolute; left: 0; top: 10px; color: white; font-size: 17px; font-family: 'Segoe UI', sans-serif; font-weight: 900; white-space: nowrap;">
+      Items (Admin)
+    </div>
+    <!-- Bouton retour -->
+    <div id="btn-back-admin-items" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- Barre de recherche (alignée avec les cases de gauche) -->
+    <div style="position: absolute; left: 0; top: 84px; width: 100%;">
+      <input id="admin-items-search" type="text" placeholder="Rechercher un item..."
+        style="width: 100%; height: 28px; box-sizing: border-box; padding: 0 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.15); border-radius: 2px; color: white; font-size: 12px; font-family: 'Segoe UI', sans-serif; outline: none;" />
+    </div>
+
+    <!-- Compteur résultats -->
+    <div id="admin-items-count" style="position: absolute; left: 0; top: 118px; color: rgba(255,255,255,0.55); font-size: 10px; font-family: 'Segoe UI', sans-serif;"></div>
+
+    <!-- Grille items (commence après la barre de recherche) -->
+    <div id="admin-items-grid" style="position: absolute; left: 0; top: 136px; width: 100%; height: 474px; overflow-y: auto; overflow-x: hidden; display: grid; grid-template-columns: repeat(3, 82px); gap: 14px 13px; padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent;"></div>
+  </div>
+
+  <!-- =============================================
+       ADMIN : GESTION DES VÉHICULES
+       ============================================= -->
+  <div id="admin-vehicles-side" style="display: none; position: absolute; left: 1043px; top: 0; width: 275px; height: 620px; pointer-events: auto;">
+    <div style="position: absolute; left: 0; top: 10px; color: white; font-size: 17px; font-family: 'Segoe UI', sans-serif; font-weight: 900; white-space: nowrap;">
+      Entités (Admin)
+    </div>
+    <div id="btn-back-admin-vehicles" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- Liste d'actions -->
+    <div style="position: absolute; left: 0; top: 84px; width: 100%; display: flex; flex-direction: column; gap: 12px;">
+      
+      <!-- Bouton Give Keys -->
+      <div id="btn-admin-give-keys" style="width: 100%; height: 50px; background: rgba(245,245,245,0.12); border-radius: 4px; cursor: pointer; display: flex; align-items: center; padding: 0 15px; transition: background 0.2s;">
+        <div style="width: 32px; height: 32px; background: rgba(0,180,120,0.25); border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+          <i class="fas fa-key" style="color: #00ffaa; font-size: 14px;"></i>
+        </div>
+        <div>
+          <div style="color: white; font-size: 13px; font-weight: 600;">Prendre les clés</div>
+          <div style="color: rgba(255,255,255,0.4); font-size: 10px;">Véhicule actuel ou proche</div>
+        </div>
+      </div>
+
+      <!-- Bouton Show Vehicles -->
+      <div id="btn-admin-show-vehicles" style="width: 100%; height: 50px; background: rgba(245,245,245,0.12); border-radius: 4px; cursor: pointer; display: flex; align-items: center; padding: 0 15px; transition: background 0.2s;">
+        <div style="width: 32px; height: 32px; background: rgba(0,150,255,0.25); border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+          <i class="fas fa-eye" style="color: #00aaff; font-size: 14px;"></i>
+        </div>
+        <div>
+          <div style="color: white; font-size: 13px; font-weight: 600;">Afficher les véhicules</div>
+          <div style="color: rgba(255,255,255,0.4); font-size: 10px;">Toggles les markers persistence</div>
+        </div>
+      </div>
+
+      <!-- Bouton Show Casings -->
+      <div id="btn-admin-show-casings" style="width: 100%; height: 50px; background: rgba(245,245,245,0.12); border-radius: 4px; cursor: pointer; display: flex; align-items: center; padding: 0 15px; transition: background 0.2s; margin-top: -4px;">
+        <div style="width: 32px; height: 32px; background: rgba(255,200,0,0.25); border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+          <i class="fas fa-magnifying-glass" style="color: #ffaa00; font-size: 14px;"></i>
+        </div>
+        <div>
+          <div style="color: white; font-size: 13px; font-weight: 600;">Afficher les douilles</div>
+          <div style="color: rgba(255,255,255,0.4); font-size: 10px;">Vue globale des douilles serveur</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =============================================
+       ADMIN : SÉLECTEUR DE MÉTÉO
+       ============================================= -->
+  <div id="admin-weather-side" style="display: none; position: absolute; left: 1043px; top: 0; width: 275px; height: 620px; pointer-events: auto;">
+    <div style="position: absolute; left: 0; top: 10px; color: white; font-size: 17px; font-family: 'Segoe UI', sans-serif; font-weight: 900; white-space: nowrap;">
+      Météo &amp; Temps (Admin)
+    </div>
+    <div id="btn-back-admin-weather" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- EASYTIME : contrôle de l'heure (carte moderne) -->
+    <div style="position:absolute; left:0; top:42px; width:100%;">
+      <div class="et-card">
+        <div class="et-label" style="margin-bottom:2px;">Heure</div>
+        <div id="admin-time-display" class="et-time" style="margin:2px 0 10px;">12:00</div>
+        <input id="admin-time-hour" class="et-slider" type="range" min="0" max="23" value="12">
+        <div class="et-sub" style="margin-top:3px;"><span>Heures</span><span id="admin-time-hour-val">12 h</span></div>
+        <input id="admin-time-minute" class="et-slider" type="range" min="0" max="59" value="0" style="margin-top:10px;">
+        <div class="et-sub" style="margin-top:3px;"><span>Minutes</span><span id="admin-time-min-val">00 min</span></div>
+        <div class="et-presets" style="margin-top:11px;">
+          <div class="admin-time-preset et-preset" data-h="6">Aube</div>
+          <div class="admin-time-preset et-preset" data-h="12">Midi</div>
+          <div class="admin-time-preset et-preset" data-h="18">Soir</div>
+          <div class="admin-time-preset et-preset" data-h="0">Nuit</div>
+        </div>
+        <div class="et-seg" id="admin-time-seg" style="margin-top:11px;">
+          <div class="et-seg-btn active" data-frozen="1">❄ Figé</div>
+          <div class="et-seg-btn" data-frozen="0">▶ Réel</div>
+        </div>
+      </div>
+      <div class="et-label" style="margin:14px 0 0;">Météo</div>
+    </div>
+
+    <!-- Liste météo (scrollable) -->
+    <div id="admin-weather-list" style="position: absolute; left: 0; top: 318px; width: 100%; height: 290px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; scrollbar-width: thin;">
+      <!-- Se remplira en JS -->
+    </div>
+  </div>
+
+  <!-- Modal Quantité (admin items) -->
+  <div id="admin-qty-overlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="width: 280px; background: #1c1f24; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 18px 18px 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); font-family: 'Segoe UI', sans-serif;">
+      <div id="admin-qty-title" style="color: white; font-size: 13px; font-weight: 600; margin-bottom: 4px;">Quantité</div>
+      <div id="admin-qty-sub" style="color: rgba(255,255,255,0.55); font-size: 11px; margin-bottom: 12px;"></div>
+      <input id="admin-qty-input" type="number" min="1" max="1000" value="1"
+        style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 13px; outline: none;" />
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top: 14px;">
+        <div id="admin-qty-cancel" style="cursor:pointer; padding: 6px 14px; background: rgba(245,245,245,0.10); border-radius: 2px; color: white; font-size: 11px; user-select: none;">Annuler</div>
+        <div id="admin-qty-ok" style="cursor:pointer; padding: 6px 14px; background: rgba(0,180,120,0.45); border-radius: 2px; color: white; font-size: 11px; font-weight: 600; user-select: none;">Donner</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Créer Job -->
+  <div id="admin-create-job-overlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="width: 300px; background: #1c1f24; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 18px 18px 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); font-family: 'Segoe UI', sans-serif;">
+      <div style="color: white; font-size: 14px; font-weight: 600; margin-bottom: 12px;">Créer un Nouveau Job</div>
+      
+      <div style="margin-bottom: 10px;">
+        <label style="color: rgba(255,255,255,0.6); font-size: 10px; display: block; margin-bottom: 4px;">Nom du Job (ex: police, unic - minuscules, sans espaces)</label>
+        <input id="admin-create-job-name" type="text" placeholder="ex: unic"
+          style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 12px; outline: none; font-family: 'Segoe UI', sans-serif;" />
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="color: rgba(255,255,255,0.6); font-size: 10px; display: block; margin-bottom: 4px;">Label du Job (ex: Unicorn)</label>
+        <input id="admin-create-job-label" type="text" placeholder="ex: Unicorn"
+          style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 12px; outline: none; font-family: 'Segoe UI', sans-serif;" />
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <div id="admin-create-job-cancel" style="cursor:pointer; padding: 6px 14px; background: rgba(245,245,245,0.10); border-radius: 2px; color: white; font-size: 11px; user-select: none;">Annuler</div>
+        <div id="admin-create-job-confirm" style="cursor:pointer; padding: 6px 14px; background: rgba(0,180,120,0.45); border-radius: 2px; color: white; font-size: 11px; font-weight: 600; user-select: none;">Créer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ajouter Grade -->
+  <div id="admin-add-grade-overlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="width: 300px; background: #1c1f24; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 18px 18px 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); font-family: 'Segoe UI', sans-serif;">
+      <div id="admin-add-grade-title" style="color: white; font-size: 14px; font-weight: 600; margin-bottom: 12px;">Ajouter un Grade</div>
+      <input type="hidden" id="admin-add-grade-job" />
+
+      <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <div style="flex: 1;">
+          <label style="color: rgba(255,255,255,0.6); font-size: 10px; display: block; margin-bottom: 4px;">Niveau Grade</label>
+          <input id="admin-add-grade-level" type="number" min="0" max="100" value="0"
+            style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 12px; outline: none; font-family: 'Segoe UI', sans-serif;" />
+        </div>
+        <div style="flex: 2;">
+          <label style="color: rgba(255,255,255,0.6); font-size: 10px; display: block; margin-bottom: 4px;">Code (ex: boss, officer)</label>
+          <input id="admin-add-grade-name" type="text" placeholder="ex: boss"
+            style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 12px; outline: none; font-family: 'Segoe UI', sans-serif;" />
+        </div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <label style="color: rgba(255,255,255,0.6); font-size: 10px; display: block; margin-bottom: 4px;">Label (ex: Patron, Officier)</label>
+        <input id="admin-add-grade-label" type="text" placeholder="ex: Patron"
+          style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 12px; outline: none; font-family: 'Segoe UI', sans-serif;" />
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="color: rgba(255,255,255,0.6); font-size: 10px; display: block; margin-bottom: 4px;">Salaire</label>
+        <input id="admin-add-grade-salary" type="number" min="0" value="100"
+          style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 12px; outline: none; font-family: 'Segoe UI', sans-serif;" />
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <div id="admin-add-grade-cancel" style="cursor:pointer; padding: 6px 14px; background: rgba(245,245,245,0.10); border-radius: 2px; color: white; font-size: 11px; user-select: none;">Annuler</div>
+        <div id="admin-add-grade-confirm" style="cursor:pointer; padding: 6px 14px; background: rgba(0,180,120,0.45); border-radius: 2px; color: white; font-size: 11px; font-weight: 600; user-select: none;">Ajouter</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmation Suppression Job -->
+  <div id="admin-delete-job-overlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="width: 300px; background: #1c1f24; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 18px 18px 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); font-family: 'Segoe UI', sans-serif;">
+      <div style="color: #ff7070; font-size: 14px; font-weight: 600; margin-bottom: 8px;">Supprimer ce job ?</div>
+      <div id="admin-delete-job-sub" style="color: rgba(255,255,255,0.65); font-size: 11px; margin-bottom: 4px;"></div>
+      <div style="color: rgba(255,200,80,0.85); font-size: 10px; margin-bottom: 12px;">Les joueurs avec ce job seront réassignés à <strong>unemployed</strong>.</div>
+      <input type="hidden" id="admin-delete-job-name" />
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <div id="admin-delete-job-cancel" style="cursor:pointer; padding: 6px 14px; background: rgba(245,245,245,0.10); border-radius: 2px; color: white; font-size: 11px; user-select: none;">Annuler</div>
+        <div id="admin-delete-job-confirm" style="cursor:pointer; padding: 6px 14px; background: rgba(220,70,70,0.55); border-radius: 2px; color: white; font-size: 11px; font-weight: 600; user-select: none;">Supprimer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ajouter Argent Entreprise -->
+  <div id="admin-add-money-overlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="width: 280px; background: #1c1f24; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 18px 18px 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); font-family: 'Segoe UI', sans-serif;">
+      <div id="admin-add-money-title" style="color: white; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Ajouter Budget</div>
+      <div id="admin-add-money-sub" style="color: rgba(255,255,255,0.55); font-size: 11px; margin-bottom: 12px;"></div>
+      <input type="hidden" id="admin-add-money-job" />
+      
+      <input id="admin-add-money-input" type="number" min="1" max="10000000" value="10000"
+        style="width: 100%; box-sizing: border-box; padding: 6px 10px; background: rgba(245,245,245,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 2px; color: white; font-size: 13px; outline: none; font-family: 'Segoe UI', sans-serif;" />
+      
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top: 14px;">
+        <div id="admin-add-money-cancel" style="cursor:pointer; padding: 6px 14px; background: rgba(245,245,245,0.10); border-radius: 2px; color: white; font-size: 11px; user-select: none;">Annuler</div>
+        <div id="admin-add-money-confirm" style="cursor:pointer; padding: 6px 14px; background: rgba(0,120,240,0.45); border-radius: 2px; color: white; font-size: 11px; font-weight: 600; user-select: none;">Ajouter</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION CRAFT -->
+  <div id="craft-side" style="position: absolute; left: 1043px; top: 0; width: 275px; height: 707px; display: none;">
+
+    <!-- En-tête -->
+    <div
+      style="position: absolute; left: 0; top: 10px; color: white; font-size: 17px; font-family: 'Segoe UI', sans-serif; font-weight: 900; white-space: nowrap;">
+      Fabrication</div>
+    <div id="btn-back-craft" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- Conteneur principal 274×449 -->
+    <div style="position: absolute; left: 0; top: 80px; width: 274px;">
+
+      <!-- Grosse case : image pleine -->
+      <div id="craft-info-area"
+        style="position: relative; width: 274px; height: 263px; background: rgba(245,245,245,0.15); border-radius: 2px; overflow: hidden;">
+        <img id="craft-item-img" style="width: 100%; height: 100%; object-fit: contain; display: block;" src="" />
+      </div>
+
+      <!-- Nom + ingrédients sous la case -->
+      <div id="craft-item-name"
+        style="color: white; font-size: 21px; font-family: 'Segoe UI', sans-serif; font-weight: 900; margin-top: 10px; text-align: left;">
+      </div>
+      <div id="craft-ingredients-text"
+        style="color: rgba(255,255,255,0.75); font-size: 10px; font-family: 'Segoe UI', sans-serif; font-weight: 400; margin-top: 5px; line-height: 1.7;">
+      </div>
+
+      <!-- Navigation recettes -->
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 0 2px;">
+        <div id="craft-prev" class="craft-arrow">&#9664;</div>
+        <div id="craft-recipe-counter"
+          style="color: rgba(255,255,255,0.55); font-size: 11px; font-family: 'Segoe UI', sans-serif;"></div>
+        <div id="craft-next" class="craft-arrow">&#9654;</div>
+      </div>
+
+      <!-- Slots ingrédients -->
+      <div style="display: flex; gap: 14px; margin-top: 8px;">
+        <div id="craft-slot-0" class="craft-slot" style="width: 82px; height: 80px; flex-shrink: 0;"></div>
+        <div id="craft-slot-1" class="craft-slot" style="width: 82px; height: 80px; flex-shrink: 0;"></div>
+        <div id="craft-slot-2" class="craft-slot" style="width: 82px; height: 80px; flex-shrink: 0;"></div>
+      </div>
+
+      <!-- Bouton VALIDER -->
+      <div id="craft-btn-validate"
+        style="margin-top: 14px; width: 100%; height: 30px; background: #5695C8; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none;">
+        <span
+          style="color: white; font-size: 14px; font-family: 'Segoe UI', sans-serif; font-weight: 700; letter-spacing: 1px;">VALIDER</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION BOUTIQUE -->
+  <div id="shop-side" style="position: absolute; left: 1043px; top: 0; width: 275px; height: 707px; display: none;">
+    <!-- En-tête -->
+    <div id="shop-title"
+      style="position: absolute; left: 0; top: 10px; color: white; font-size: 17px; font-family: 'Segoe UI', sans-serif; font-weight: 900; white-space: nowrap;">
+      Boutique
+    </div>
+    <div id="btn-back-shop" class="back-arrow-btn" style="right: 5px; top: 10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 19l-7-7 7-7" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- Grille items -->
+    <div id="shop-items-grid"
+      style="position: absolute; left: 0; top: 84px; width: 274px; display: grid; grid-template-columns: repeat(3, 82px); gap: 14px;">
+      <!-- Se remplira en JS -->
+    </div>
+
+    <!-- Détails achat -->
+    <div id="shop-purchase-panel"
+      style="position: absolute; left: 0; bottom: 150px; width: 274px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+      <div id="shop-selected-name"
+        style="color: rgba(255,255,255,0.4); font-size: 19px; font-family: 'Segoe UI', sans-serif; font-weight: 900;">
+        Sélectionnez un article</div>
+      <div style="color: white; font-size: 14px; font-weight: 700; margin-top: 8px;">Total: <span
+          id="shop-selected-total-price">0</span><span id="shop-total-unit">$</span></div>
+
+      <div style="display: flex; gap: 12px; margin-top: 15px;">
+        <div style="flex: 1;">
+          <div style="color: rgba(255,255,255,0.5); font-size: 10px; margin-bottom: 4px;">Qté</div>
+          <input type="number" id="shop-qty-input" value="1" min="1"
+            style="width: 100%; box-sizing: border-box; height: 26px; background: rgba(245, 245, 245, 0.15); border: none; border-radius: 2px; color: white; padding: 0 8px; font-size: 12px; font-family: 'Segoe UI';">
+        </div>
+        <div style="flex: 1;">
+          <div style="color: rgba(255,255,255,0.5); font-size: 10px; margin-bottom: 4px;">Paiement</div>
+          <select id="shop-payment-method"
+            style="width: 100%; box-sizing: border-box; height: 26px; background: rgba(245, 245, 245, 0.15); border: none; border-radius: 2px; color: white; padding: 0 4px; font-size: 11px; font-family: 'Segoe UI';">
+            <option value="cash">Cash (item)</option>
+            <option value="bank">Banque</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="shop-btn-buy"
+        style="margin-top: 20px; width: 100%; height: 34px; background: #5695C8; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none;">
+        <span
+          style="color: white; font-size: 14px; font-family: 'Segoe UI', sans-serif; font-weight: 700; letter-spacing: 1px;">ACHETER</span>
+      </div>
+    </div>
+  </div>
+
+
+  <div
+    style="width: 72px; height: 33px; left: 284px; top: 648px; position: absolute; color: white; font-size: 21px; font-family: Segoe UI; font-weight: 900; word-wrap: break-word">
+    Armes<br /></div>
+  <div id="ground-title"
+    style="width: 150px; height: 33px; left: 0px; top: 0px; position: absolute; color: white; font-size: 17px; font-family: Segoe UI; font-weight: 900; white-space: nowrap">
+    À proximité</div>
+
+  <!-- SECTION ARMES -->
+  <div
+    style="width: 176px; height: 79px; left: 371px; top: 622px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+    data-equip-slot="weapon_long">
+  </div>
+
+  <div
+    style="width: 79px; height: 79px; left: 561px; top: 622px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+    data-equip-slot="weapon_pistol">
+  </div>
+
+  <div
+    style="width: 79px; height: 79px; left: 656px; top: 622px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+    data-equip-slot="weapon_tazer">
+  </div>
+
+  <!-- Slot outil/lampe : dernier slot arme (lampe UV, lampe torche, etc.) -->
+  <div
+    style="width: 79px; height: 79px; left: 846px; top: 622px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+    data-equip-slot="weapon_tool">
+  </div>
+
+  <!-- Slot misc : arme de corps-a-corps, couteau, etc. (touche 5) -->
+  <div
+    style="width: 79px; height: 79px; left: 751px; top: 622px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+    data-equip-slot="weapon_misc">
+  </div>
+
+  <div class="icon-bar">
+    <style>
+      /* ===== CRAFT PANEL ===== */
+      .craft-slot {
+        background: rgba(245, 245, 245, 0.15);
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        transition: background 200ms ease, border-color 200ms ease;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+      }
+
+      .craft-slot.has-item {
+        border-color: rgba(86, 149, 200, 0.6);
+        background: rgba(86, 149, 200, 0.15);
+      }
+
+      .craft-slot.missing-item {
+        border-color: rgba(220, 80, 80, 0.55);
+        background: rgba(220, 80, 80, 0.10);
+      }
+
+      .craft-slot .craft-qty {
+        position: absolute;
+        bottom: 4px;
+        right: 5px;
+        color: white;
+        font-size: 10px;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 600;
+        text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+      }
+
+      .craft-arrow {
+        color: #848484;
+        font-size: 11px;
+        cursor: pointer;
+        user-select: none;
+        padding: 6px 10px;
+        transition: color 150ms ease;
+      }
+
+      .craft-arrow:hover {
+        color: white;
+      }
+
+      #craft-btn-validate:hover {
+        background: #6aaee0 !important;
+      }
+
+      #craft-btn-validate.craft-disabled {
+        background: rgba(100, 100, 100, 0.45) !important;
+        cursor: not-allowed;
+      }
+
+      #btn-back-craft:hover {
+        background: rgba(255, 255, 255, 0.42) !important;
+      }
+
+      /* HOVER : fiable et simple */
+      div[style*="background: rgba(245, 245, 245, 0.15)"][style*="border-radius: 2px"]:not([style*="height: 1px"]) {
+        transition: background 200ms ease, box-shadow 200ms ease;
+        will-change: background, box-shadow, transform;
+        cursor: pointer;
+      }
+
+      div[style*="background: rgba(245, 245, 245, 0.15)"][style*="border-radius: 2px"]:not([style*="height: 1px"]):not([data-disabled="true"]):hover {
+        /* on cible le shorthand `background` (shorthand + !important pour overrider inline) */
+        background: rgba(255, 255, 255, 0.35) !important;
+
+      }
+
+      /* Icônes (classe .icon déjà dans ton HTML) */
+
+      /* ===== SHOP PANEL ===== */
+      .shop-item-slot {
+        width: 82px;
+        height: 80px;
+        background: rgba(245, 245, 245, 0.15);
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        cursor: pointer;
+        transition: background 200ms ease, border 200ms ease;
+        border: 1px solid transparent;
+      }
+
+      .shop-item-slot:hover {
+        background: rgba(255, 255, 255, 0.35) !important;
+      }
+
+      .shop-item-slot.selected {
+        border-color: #5695C8;
+        background: rgba(86, 149, 200, 0.2) !important;
+      }
+
+      .shop-item-price {
+        position: absolute;
+        bottom: 4px;
+        right: 5px;
+        color: white;
+        font-size: 10px;
+        font-family: 'Segoe UI', sans-serif;
+        font-weight: 700;
+        text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+      }
+
+      #shop-btn-buy:hover {
+        background: #6aaee0 !important;
+      }
+
+      #shop-payment-method:focus,
+      #shop-qty-input:focus {
+        outline: none;
+        background: rgba(245, 245, 245, 0.25) !important;
+      }
+
+      #shop-category-tag {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    </style>
+
+    <div class="icon-bar" style="position: absolute; top: 7px; left: 379px; padding: 0; gap: 30px;">
+      <img src="svg/panta.svg" class="icon active" data-section="panta" data-slots="10" data-capacity="25">
+      <img src="svg/hoddie.svg" class="icon" data-section="hoddie" data-slots="10" data-capacity="25">
+      <img src="svg/backpack.svg" class="icon" data-section="backpack" data-slots="22" data-capacity="50">
+      <img src="svg/briefcase.svg" class="icon" data-section="briefcase" data-slots="15" data-capacity="15">
+      <img src="svg/box.svg" class="icon" data-section="cardboard_box" data-slots="15" data-capacity="15">
+      <img src="svg/box.svg" class="icon" data-section="safe" data-slots="15" data-capacity="15">
+
+      <img src="svg/wallet.svg" class="icon" data-section="wallet" data-slots="2" data-capacity="2">
+      <img src="svg/kevlar.svg" class="icon" data-section="kevlar" data-slots="12" data-capacity="15">
+      <img src="svg/copy-icon.svg" class="icon" data-section="phone" data-slots="1" data-capacity="0.1" style="width: 16px; height: 16px; margin-top: 2px;">
+      <img src="svg/copy-icon.svg" class="icon" data-section="pot_peinture" data-slots="1" data-capacity="50" style="width: 16px; height: 16px; margin-top: 2px;">
+    </div>
+
+    <div class="target-icon-bar"
+      style="padding-left: 0; left: 379px; position: absolute; top: 10px; display: none; gap: 30px; z-index: 10; flex-direction: row;">
+      <img src="svg/panta.svg" class="icon" data-section="target_panta">
+      <img src="svg/hoddie.svg" class="icon" data-section="target_hoddie">
+      <img src="svg/backpack.svg" class="icon" data-section="target_backpack">
+      <img src="svg/briefcase.svg" class="icon" data-section="target_briefcase">
+      <img src="svg/box.svg" class="icon" data-section="target_cardboard_box">
+      <img src="svg/box.svg" class="icon" data-section="target_safe">
+      <img src="svg/wallet.svg" class="icon" data-section="target_wallet">
+      <img src="svg/kevlar.svg" class="icon" data-section="target_kevlar">
+      <img src="svg/copy-icon.svg" class="icon" data-section="target_phone" style="width: 16px; height: 16px; margin-top: 2px;">
+      <img src="svg/copy-icon.svg" class="icon" data-section="target_pot_peinture" style="width: 16px; height: 16px; margin-top: 2px;">
+    </div>
+
+    <style>
+      .icon-bar {
+        position: relative;
+        z-index: 10;
+        padding-left: 188px;
+        padding-top: 10px;
+        display: flex;
+        gap: 26px;
+        /* <-- espace entre les icônes */
+      }
+
+      /* Soulignement (onglet) de la categorie active : pose par-dessus la ligne.
+         Couleur d'accent rose/magenta (cf. maquette). */
+      .inv-icon-underline {
+        width: 0;
+        height: 2px;
+        background: #ff2e88;
+        border-radius: 1px;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 12;
+        transition: left 0.18s ease, width 0.18s ease, opacity 0.18s ease;
+      }
+
+      .icon {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        position: relative;
+        z-index: 11;
+        filter: brightness(0) saturate(100%) invert(95%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) opacity(0.4);
+        transition: filter 0.25s ease, opacity 0.25s ease, transform 0.25s ease;
+      }
+
+      .icon.locked {
+        display: none;
+      }
+
+      /* Hover : éclaircit légèrement la couleur pour rappeler le survol des cases */
+      .icon:hover {
+        filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(200%) opacity(0.6);
+        transform: scale(1.00);
+      }
+
+      /* Active : met un léger halo blanc */
+      .icon.active {
+        filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(200%) opacity(1);
+      }
+
+      .inv-item {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+        cursor: pointer;
+        color: #ffffff;
+        font-size: 10px;
+        letter-spacing: 0.2px;
+        text-align: center;
+      }
+
+      .inv-item::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(217, 217, 217, 0) 12%, var(--gradient-color, transparent) 89%);
+        border-radius: 2px;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .inv-item,
+      .equip-slot img,
+      .equip-item {
+        -webkit-user-drag: element;
+        user-select: none;
+      }
+
+      .inv-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 6px;
+        transition: transform 0.1s ease;
+      }
+
+      /* MAXIMIZE weapon icons in the equipment section */
+      [data-equip-slot="weapon_pistol"],
+      [data-equip-slot="weapon_tazer"],
+      [data-equip-slot="weapon_tool"],
+      [data-equip-slot="weapon_misc"] {
+        overflow: visible !important;
+      }
+
+      [data-equip-slot="weapon_pistol"] .equip-item img,
+      [data-equip-slot="weapon_tazer"] .equip-item img,
+      [data-equip-slot="weapon_tool"] .equip-item img,
+      [data-equip-slot="weapon_misc"] .equip-item img {
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 !important;
+        transform: scale(1.0) !important;
+      }
+
+      [data-equip-slot="weapon_long"] {
+        overflow: visible !important;
+      }
+
+      [data-equip-slot="weapon_long"] .equip-item img {
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 !important;
+        transform: scale(1.0) !important;
+      }
+
+      .inv-item img.inv-icon-svg {
+        filter: invert(95%) opacity(0.85);
+      }
+
+      .drag-preview {
+        position: fixed;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        z-index: 10000;
+        transform: translate(-50%, -50%);
+      }
+
+      .drag-preview img {
+        width: 70px;
+        height: 70px;
+        object-fit: contain;
+      }
+
+      .inv-qty {
+        position: absolute;
+        right: 4px;
+        bottom: 2px;
+        font-size: 10px;
+        color: #ffffff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+      }
+
+      .inv-selected {
+        outline: 1px solid rgba(255, 255, 255, 0.6);
+        outline-offset: -2px;
+      }
+
+      .inv-context {
+        position: fixed;
+        min-width: 160px;
+        background: rgba(0, 0, 0, 0.65);
+        border-radius: 7px;
+        color: #ffffff;
+        font-family: 'Nunito', 'Segoe UI', sans-serif;
+        font-size: 9pt;
+        padding: 4px 0;
+        z-index: 9999;
+        display: none;
+        overflow: hidden;
+      }
+
+      .inv-context-title {
+        padding: 6px 12px 6px 12px;
+        font-size: 8pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: rgba(255, 255, 255, 0.45);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 2px;
+      }
+
+      .inv-context button {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 28px;
+        background: transparent;
+        border: 0;
+        color: #cfd2da;
+        text-align: left;
+        padding: 0 12px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: 500;
+        transition: background 200ms, color 200ms;
+        box-sizing: border-box;
+      }
+
+      .inv-context button:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+      }
+
+      /* ============================================================
+         Accessoires d'armes — vue intégrée plein wrapper
+         Une cellule par accessoire, positionnée selon l'emplacement
+         physique sur l'arme (scope = haut, canon = muzzle, etc.).
+         ============================================================ */
+      /* Quand la vue accessoires est active, on masque tout le reste de
+         l'inventaire (fond, slots, équipement, icônes…) pour éviter la
+         superposition. Seule la vue accessoires reste visible. */
+      #full-ui-wrapper.attachments-active > *:not(#attachments-view) {
+        visibility: hidden !important;
+      }
+
+      #attachments-view {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1318px;
+        height: 707px;
+        display: none;
+        pointer-events: none; /* le wrapper est transparent ; seuls les enfants captent */
+        z-index: 50;
+      }
+
+      #attachments-view.is-open {
+        display: block;
+      }
+
+      /* Transparent : la vue accessoires repose sur le même fond translucide
+         que l'inventaire (body rgba(0,0,0,0.65)), pour rester raccord.
+         Le div ne sert qu'à absorber proprement les clics dans le vide. */
+      .attachments-backdrop {
+        position: absolute;
+        inset: 0;
+        background: transparent;
+        pointer-events: auto;
+      }
+
+      /* Le titre flotte au-dessus de l'arme. Le bouton fermer reste fixé en haut à droite. */
+      .attachments-header-row {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 0;
+        pointer-events: none;
+      }
+
+      .attachments-title {
+        position: absolute;
+        left: 40px;
+        top: 32px;
+        color: #ffffff;
+        font-size: 14pt;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+      }
+
+      .attachments-close {
+        position: absolute;
+        top: 32px;
+        right: 40px;
+        background: rgba(245, 245, 245, 0.10);
+        border: 0;
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 18px;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        line-height: 1;
+        padding: 0;
+        pointer-events: auto;
+      }
+
+      .attachments-close:hover {
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+      }
+
+      .attachments-lines {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .attachments-lines line {
+        stroke: rgba(255, 255, 255, 0.22);
+        stroke-width: 1;
+        stroke-dasharray: 3 4;
+        transition: stroke 200ms;
+      }
+
+      .attachments-lines line.filled {
+        stroke: rgba(255, 255, 255, 0.55);
+        stroke-width: 1.2;
+        stroke-dasharray: 0;
+      }
+
+      .attachments-lines circle.endpoint {
+        fill: rgba(255, 255, 255, 0.35);
+      }
+
+      .attachments-lines circle.endpoint.filled {
+        fill: rgba(255, 255, 255, 0.75);
+      }
+
+      .attachments-weapon-center {
+        position: absolute;
+        left: 659px;
+        top: 285px;
+        transform: translate(-50%, -50%);
+        width: 520px;
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.65));
+      }
+
+      .attachments-weapon-center img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        user-select: none;
+      }
+
+      /* Zone centrale de capture du drag pour tourner l'arme 3D. Plus petite que
+         l'image (380x240) pour ne PAS recouvrir les cellules d'accessoires en périphérie. */
+      #attachments-3d-drag {
+        position: absolute;
+        left: 659px;
+        top: 285px;
+        transform: translate(-50%, -50%);
+        width: 380px;
+        height: 240px;
+        z-index: 40; /* au-dessus du backdrop, sous #attachments-cells */
+        pointer-events: none;
+        cursor: grab;
+      }
+      #attachments-view.is-open #attachments-3d-drag {
+        pointer-events: auto;
+      }
+      #attachments-3d-drag.dragging {
+        cursor: grabbing;
+      }
+
+      .attachments-cell {
+        position: absolute;
+        width: 82px;
+        height: 80px;
+        background: rgba(245, 245, 245, 0.15);
+        border-radius: 2px;
+        cursor: pointer;
+        font-family: 'Nunito', 'Segoe UI', sans-serif;
+        transition: background 200ms, box-shadow 200ms;
+        pointer-events: auto;
+      }
+
+      .attachments-cell:hover {
+        background: rgba(245, 245, 245, 0.28);
+      }
+
+      .attachments-cell.drag-over {
+        background: rgba(120, 200, 120, 0.30);
+      }
+
+      .attachments-cell.attached {
+        background: rgba(245, 245, 245, 0.22);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+      }
+
+      .attachments-cell.unavailable {
+        opacity: 0.40;
+        cursor: not-allowed;
+      }
+
+      .attachments-cell.unavailable:hover {
+        background: rgba(245, 245, 245, 0.15);
+      }
+
+      .attachments-cell-icon {
+        position: absolute;
+        inset: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .attachments-cell-icon img {
+        max-width: 48px;
+        max-height: 48px;
+        object-fit: contain;
+        pointer-events: none;
+      }
+
+      .attachments-cell-label {
+        position: absolute;
+        left: -10px;
+        right: -10px;
+        bottom: -18px;
+        text-align: center;
+        font-size: 8pt;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+
+      .attachments-cell.attached .attachments-cell-label {
+        color: rgba(255, 255, 255, 0.90);
+      }
+
+      .attachments-cell-qty {
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+        font-size: 10px;
+        color: #ffffff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        font-weight: 600;
+      }
+
+      .attachments-cell-state {
+        position: absolute;
+        left: 4px;
+        top: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: rgba(255, 255, 255, 0.85);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        pointer-events: none;
+      }
+
+      /* Slot vide : point d'attache sans accessoire (dashed + icône fantôme). */
+      .attachments-cell.empty {
+        background: rgba(245, 245, 245, 0.06);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+      }
+
+      .attachments-cell.empty .attachments-cell-icon img {
+        opacity: 0.18;
+      }
+
+      .attachments-cell-plus {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.35);
+        pointer-events: none;
+      }
+
+      /* ===== Liste des accessoires compatibles en bas ===== */
+      .attachments-inventory {
+        position: absolute;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        width: 760px;
+        max-width: 90%;
+        pointer-events: auto;
+        font-family: 'Nunito', 'Segoe UI', sans-serif;
+      }
+
+      .attachments-inventory-title {
+        text-align: center;
+        font-size: 8pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 10px;
+      }
+
+      .attachments-inventory-list {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        min-height: 80px;
+      }
+
+      .attachments-inv-item {
+        position: relative;
+        width: 82px;
+        height: 80px;
+        background: rgba(245, 245, 245, 0.15);
+        border-radius: 2px;
+        cursor: pointer;
+        transition: background 200ms, box-shadow 200ms;
+      }
+
+      .attachments-inv-item:hover {
+        background: rgba(245, 245, 245, 0.30);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      }
+
+      .attachments-inv-item .attachments-cell-icon img {
+        opacity: 1;
+      }
+
+      .attachments-inv-item-name {
+        position: absolute;
+        left: -8px;
+        right: -8px;
+        bottom: -16px;
+        text-align: center;
+        font-size: 7.5pt;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        pointer-events: none;
+      }
+
+      .attachments-inventory-empty {
+        text-align: center;
+        font-size: 9pt;
+        color: rgba(255, 255, 255, 0.35);
+        padding: 28px 0;
+      }
+
+      .equip-slot.equipped {
+        outline: none;
+      }
+
+      .equip-slot {
+        z-index: 6;
+        pointer-events: auto;
+        transition: background 200ms ease;
+      }
+
+      .equip-slot[data-equip-slot="weapon_long"] {
+        z-index: 6;
+        pointer-events: auto;
+      }
+
+      .equip-slot:hover {
+        background: rgba(255, 255, 255, 0.35) !important;
+      }
+
+      div[style*="background: rgba(245, 245, 245, 0.15)"][style*="width: 57px"][style*="height: 57px"] {
+        pointer-events: none;
+        z-index: 0;
+        transition: background 200ms ease;
+      }
+
+      div[style*="background: rgba(245, 245, 245, 0.15)"][style*="width: 57px"][style*="height: 57px"]:hover {
+        background: rgba(255, 255, 255, 0.35) !important;
+      }
+
+      .equip-item {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+        cursor: grab;
+        z-index: 55;
+      }
+
+      .equip-item::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(217, 217, 217, 0) 12%, var(--gradient-color, rgba(210, 210, 95, 0.50)) 89%);
+        border-radius: 2px;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .equip-item img {
+        width: 49px;
+        height: 49px;
+        object-fit: contain;
+      }
+
+      .equip-slot[data-equip-slot="weapon_long"] .equip-item img {
+        width: 165px;
+        height: 70px;
+        object-fit: contain;
+      }
+
+      .equip-slot.dragging .equip-item {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Les div de fond ne bloquent plus le hover */
+      div[style*="background: rgba(245, 245, 245, 0.15)"] {
+        pointer-events: none;
+      }
+
+      div[data-zone][style*="background: rgba(245, 245, 245, 0.15)"] {
+        pointer-events: auto;
+      }
+
+      .dragging .inv-item {
+        pointer-events: none;
+      }
+
+      .icon.drag-hidden {
+        display: none;
+      }
+
+      .drag-disabled {
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      .drag-disabled .inv-item {
+        display: none;
+      }
+
+      /* Modal d'input personnalisé */
+      .input-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .input-modal.active {
+        display: flex;
+      }
+
+      .input-modal-content {
+        background: rgba(30, 30, 30, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        padding: 20px;
+        min-width: 300px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      .input-modal-title {
+        color: white;
+        font-size: 16px;
+        font-family: Segoe UI;
+        font-weight: 600;
+        margin-bottom: 15px;
+      }
+
+      .input-modal-input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        font-size: 14px;
+        font-family: Segoe UI;
+        box-sizing: border-box;
+        margin-bottom: 15px;
+      }
+
+      .input-modal-input:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .input-modal-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+      }
+
+      .input-modal-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .input-modal-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 2px;
+        font-size: 14px;
+        font-family: Segoe UI;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+
+      .input-modal-btn-confirm {
+        background: rgba(100, 200, 100, 0.3);
+        color: rgba(100, 255, 100, 0.8);
+        border: 1px solid rgba(100, 255, 100, 0.3);
+      }
+
+      .input-modal-btn-confirm:hover {
+        background: rgba(100, 200, 100, 0.5);
+        border-color: rgba(100, 255, 100, 0.5);
+      }
+
+      .input-modal-btn-cancel {
+        background: rgba(100, 100, 100, 0.2);
+        color: rgba(200, 200, 200, 0.8);
+        border: 1px solid rgba(200, 200, 200, 0.2);
+      }
+
+      .input-modal-btn-cancel:hover {
+        background: rgba(100, 100, 100, 0.4);
+        border-color: rgba(200, 200, 200, 0.4);
+      }
+    </style>
+
+
+
+  </div>
+
+  <div style="width: 67px; height: 20px; left: 379px; top: 58px; position: absolute"><span
+      id="inventory-capacity-current"
+      style="color: white; font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">0.0</span><span
+      id="inventory-capacity-max"
+      style="color: rgba(245, 245, 245, 0.35); font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">/0kg</span>
+  </div>
+  <div style="width: 74px; height: 20px; left: 862px; top: 18px; position: absolute"><span id="inventory-total-current"
+      style="color: white; font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">0.0</span><span
+      id="inventory-total-max"
+      style="color: rgba(245, 245, 245, 0.35); font-size: 15px; font-family: Albert Sans, Segoe UI; font-weight: 400; white-space: nowrap">/0kg</span>
+  </div>
+  <div
+    style="width: 160px; height: 19px; left: 376px; top: 19px; position: absolute; justify-content: flex-start; align-items: flex-start; gap: 26px; display: inline-flex">
+
+
+
+
+    <div style="width: 14.09px; height: 1.16px; background: white"></div>
+    <div style="width: 1.91px; height: 1.37px; background: white"></div>
+    <div style="width: 14.74px; height: 17.86px; background: white"></div>
+    <div style="width: 1.92px; height: 1.37px; background: white"></div>
+    <div style="width: 24px; height: 19px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 25px; height: 19.79px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 4.65px; height: 1.51px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 21.37px; height: 19px; background: rgba(255, 255, 255, 0.30)"></div>
+    <div style="width: 6.10px; height: 4.56px; background: rgba(255, 255, 255, 0.30)"></div>
+  </div>
+
+
+
+
+
+</div>
+
+<!-- Modal d'input personnalisé -->
+<div id="inputModal" class="input-modal">
+  <div class="input-modal-content">
+    <div class="input-modal-title" id="inputModalTitle">Entrez une valeur</div>
+    <input type="number" id="inputModalInput" class="input-modal-input" placeholder="0" />
+    <div class="input-modal-buttons">
+      <button class="input-modal-btn input-modal-btn-cancel" id="inputModalCancel">Annuler</button>
+      <button class="input-modal-btn input-modal-btn-confirm" id="inputModalConfirm">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+
+<body>
+  <!-- ===== Radio (importée depuis l'ex-resource [interact]/radio) ===== -->
+  <link rel="stylesheet" href="radio/style.css">
+  <div id="radio-root">
+    <div id="container">
+      <header><img src="radio/img/5.png"></header>
+    </div>
+    <div class="radioUI" style="display:none;">
+      <div class="radioState" step="any"></div>
+      <div class="radioScreen">
+        <img src="radio/img/mute.png" class="radioRec" id="radioMute">
+        <img src="radio/img/network.png" class="radioRec" id="radioNetwork" style="float: right;">
+        <img src="radio/img/rec.png" class="radioRec" id="radioRec" style="left: 0; bottom: 0; position: absolute;">
+        <img src="radio/img/hertz.png" class="radioRec" id="radioHZ" style="right: 0; bottom: 0; position: absolute;">
+      </div>
+      <div class="radioPanel">
+        <button class="buttonRadio" id="radioUP"></button>
+        <button class="buttonRadio" id="radioDown"></button>
+      </div>
+      <div class="radioSmallPanel">
+        <button class="buttonSmallRadio" id="radioManual"></button>
+      </div>
+      <div class="radioSmallPanel">
+        <button class="buttonSmallRadio" id="radioButtonMute"></button>
+        <button class="buttonSmallRadio" id="radioToggle"></button>
+      </div>
+      <!-- Overlay boutons du skin 80s (SECURECOM) : visible seulement en mode 80s -->
+      <div class="radio80s">
+        <button class="button80s" id="r80_man"   title="Fréquence"></button>
+        <button class="button80s" id="r80_up"    title="Volume +"></button>
+        <button class="button80s" id="r80_ok"    title="Valider la fréquence"></button>
+        <button class="button80s" id="r80_mute"  title="Mute"></button>
+        <button class="button80s" id="r80_down"  title="Volume -"></button>
+        <button class="button80s" id="r80_power" title="On / Off"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="radio/script.js"></script>
+  <script>
+    // L'inventaire masque tout son <body> à la fermeture (display:none). On sort
+    // #radio-root et #inputModal du body pour que le HUD radio et la modale d'input restent visibles même inventaire fermé.
+    (function () {
+      var rr = document.getElementById('radio-root');
+      if (rr && document.documentElement) document.documentElement.appendChild(rr);
+      var im = document.getElementById('inputModal');
+      if (im && document.documentElement) document.documentElement.appendChild(im);
+    })();
+  </script>
+
+  <script src="app.js"></script>
+  <script src="paint_picker.js"></script>
+</body>
+
+</html>

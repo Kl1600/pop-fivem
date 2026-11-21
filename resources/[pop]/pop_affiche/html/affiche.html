@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin: 0; padding: 0; }
+        body {
+            width: 1024px;
+            height: 1024px;
+            background: #000;
+            overflow: hidden;
+        }
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .preview-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(20, 20, 20, 0.85);
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            border: 5px dashed rgba(255,255,255,0.35);
+            box-sizing: border-box;
+        }
+        .preview-overlay.visible { display: flex; }
+    </style>
+</head>
+<body>
+    <img id="img" src="" alt="">
+    <div class="preview-overlay" id="overlay">AFFICHE</div>
+
+    <script>
+        const img     = document.getElementById('img');
+        const overlay = document.getElementById('overlay');
+
+        // Mode preview pendant le placement
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('preview') === '1') {
+            overlay.classList.add('visible');
+        }
+
+        // Réception immédiate depuis l'URL de base si présente
+        const initialUrl = params.get('url');
+        if (initialUrl) {
+            img.src = initialUrl;
+            overlay.classList.remove('visible');
+        }
+
+        // Réception de l'URL image depuis pop_duiengine:SendMessage
+        window.addEventListener('message', function(e) {
+            const d = e.data;
+            if (!d) return;
+            if (d.type === 'setUrl' && d.url) {
+                img.src = d.url;
+                overlay.classList.remove('visible');
+            }
+        });
+
+        // Handshake de démarrage pour prévenir le script Lua qu'on est prêt à recevoir l'image
+        const dbId = params.get('dbId');
+        if (dbId) {
+            fetch(`https://pop_affiche/duiReady`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dbId: dbId })
+            }).catch(e => console.log("Handshake Error:", e));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Dispatch</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Floating Notifications */
+    .floating-container { position: absolute; top: 20px; right: 20px; width: 320px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; pointer-events: none; transform: scale(var(--rsp, 1)); transform-origin: top right; }
+    .floating-container .call { pointer-events: auto; animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden; margin-bottom: 0 !important; opacity: 0.85; }
+    .floating-container .call.fade-out { animation: fadeOutRight 0.4s ease forwards; }
+    @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 0.85; } }
+    @keyframes fadeOutRight { from { transform: translateX(0); opacity: 0.85; } to { transform: translateX(120%); opacity: 0; } }
+  </style></head>
+<body>
+  <div id="toast" class="toast-right">
+    <div class="toast-icon">
+      <!-- Icône d'information -->
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 15h-2v-2h2Zm0-4h-2V7h2Z"/></svg>
+    </div>
+    <div class="toast-text" id="toast-text"></div>
+  </div>
+  <div id="floating-notifications" class="floating-container"></div>
+  
+  <div id="app" class="hidden">
+    <div class="frame">
+
+      <!-- Onglets -->
+      <nav class="tabs">
+        <button class="tab active" data-tab="notifications">Notifications</button>
+        <button class="tab" data-tab="units">Unités</button>
+        <button class="tab" data-tab="search">Recherche</button>
+        <button class="tab" data-tab="bracelets">Bracelets</button>
+      </nav>
+
+      <!-- Barre d'actions -->
+      <div class="actionbar">
+        <!-- Gauche : Job sous l'onglet Notifications -->
+        <div class="dept-block">
+          <div class="dept" id="dept-name">Police</div>
+        </div>
+
+        <!-- Centre : Matricule entre onglets Unités et Recherche -->
+        <div class="header-center">
+          <div class="header-mat-label">MAT-<span id="header-matricule">000</span></div>
+        </div>
+
+        <!-- Droite : boutons renfort (jaune, orange, rouge) -->
+        <div class="bk-group">
+          <button id="btn-backup-1" class="bk-btn bk-yellow" title="Renfort niveau 1">
+            <svg viewBox="0 0 24 24"><path d="M12 2 4 5v7c0 5 3.5 9 8 10 4.5-1 8-5 8-10V5l-8-3Z"/></svg>
+          </button>
+          <button id="btn-backup-2" class="bk-btn bk-orange" title="Renfort niveau 2">
+            <svg viewBox="0 0 24 24"><path d="M12 2 4 5v7c0 5 3.5 9 8 10 4.5-1 8-5 8-10V5l-8-3Z"/></svg>
+          </button>
+          <button id="btn-backup-3" class="bk-btn bk-red" title="Urgence absolue">
+            <svg viewBox="0 0 24 24"><path d="M12 2 4 5v7c0 5 3.5 9 8 10 4.5-1 8-5 8-10V5l-8-3Z"/></svg>
+          </button>
+        </div>
+
+        <!-- Icônes masquées gardées pour la logique JS -->
+        <button id="btn-units-icon" class="sq sq-b pos-xx hidden" title="Unités en service">
+          <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3 0-9 1.5-9 4.5V21h18v-2.5c0-3-6-4.5-9-4.5Z"/></svg>
+          <span>XX</span>
+        </button>
+        <button id="btn-shield" class="sq sq-shield pos-shield hidden" title="Mode"></button>
+        <button id="btn-mute"   class="sq sq-bell pos-bell hidden" title="Couper notifications"></button>
+      </div>
+
+      <!-- Toast interne (Tablette ouverte) -->
+      <div id="in-menu-toast" class="in-menu-toast hidden"></div>
+
+      <!-- NOTIFICATIONS -->
+      <section id="tab-notifications" class="tab-panel active">
+        <div id="notifications-list" class="list"></div>
+      </section>
+
+      <!-- UNITES -->
+      <section id="tab-units" class="tab-panel">
+
+        <!-- État 1 : Pas de patrouille déclarée -->
+        <div id="patrol-empty" class="patrol-empty">
+          <button id="btn-duty" class="duty-btn">Prendre service</button>
+          <button id="btn-new-patrol" class="big-btn green">
+            + Déclarer une patrouille
+          </button>
+        </div>
+
+        <!-- État 2 : Création de patrouille (formulaire) -->
+        <div id="patrol-form" class="patrol-form hidden">
+          <div class="ph-row">
+            <label>Type</label>
+            <select id="patrol-type">
+              <option value="Lincoln">Lincoln</option>
+              <option value="Adam">Adam</option>
+              <option value="William">William</option>
+              <option value="Henry-01">Henry-01</option>
+              <option value="Marry">Marry</option>
+              <option value="David">David</option>
+            </select>
+          </div>
+          <div class="ph-row">
+            <label>Indicatif</label>
+            <input id="patrol-callsign" maxlength="12" placeholder="PRIME #1" />
+          </div>
+          <div class="ph-row">
+            <label>Secteur</label>
+            <input id="patrol-sector" maxlength="32" placeholder="Centre-ville" />
+          </div>
+          <div class="ph-row">
+            <label>Canal</label>
+            <input id="patrol-radio" maxlength="16" placeholder="5" />
+          </div>
+          <div class="ph-row">
+            <label>Véhicule</label>
+            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+              <button id="btn-assign-veh" class="veh-btn">Assigner l'actuel</button>
+              <span id="assigned-veh-status" class="veh-status">Aucun</span>
+            </div>
+          </div>
+
+          <!-- Section agents — visible uniquement pour Duo / Trio / GAV / K9 -->
+          <div id="patrol-members-wrap" class="hidden">
+            <div class="ph-section-title" style="margin-top: 8px;">Membres assignés</div>
+            <div id="patrol-members" style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;"></div>
+          </div>
+
+          <!-- Le message d'erreur -->
+          <div id="patrol-error-msg" class="hidden" style="color: #e74c3c; font-size: 11px; text-align: center; margin-bottom: 8px; font-weight: 600; background: rgba(231, 76, 60, 0.1); padding: 4px; border-radius: 2px;"></div>
+
+          <div id="patrol-error-msg" class="hidden" style="color: #e74c3c; font-size: 11px; text-align: center; margin-bottom: 8px; font-weight: 600; background: rgba(231, 76, 60, 0.1); padding: 4px; border-radius: 2px;"></div>
+
+          <div class="ph-actions">
+            <button id="btn-cancel-patrol" class="big-btn ghost">Annuler</button>
+            <button id="btn-confirm-patrol" class="big-btn green">Valider</button>
+          </div>
+        </div>
+
+
+        <!-- État 3 : Patrouille déclarée -->
+        <div id="patrol-active" class="patrol-active hidden">
+
+          <!-- Boutons en premier -->
+          <button id="btn-duty" class="duty-btn on">En service</button>
+          <button id="btn-end-patrol" class="big-btn red">Terminer la patrouille</button>
+
+          <!-- Ma patrouille : indicatif + canal -->
+          <div class="unit-row">
+            <span id="my-situation" class="sit-pill c4">10-8</span>
+            <div class="cs-wrap">
+              <span id="my-callsign-text" class="cs-text">PRIME #1</span>
+              <input id="my-callsign-input" class="cs-input hidden" maxlength="12" />
+            </div>
+            <!-- Canal cliquable -->
+            <span id="my-radio-label" class="radio-label-btn" title="Cliquer pour modifier le canal"></span>
+            <input id="my-radio-input" class="radio-inline-input hidden" maxlength="10"
+                   pattern="[0-9.]*" inputmode="decimal" placeholder="Canal…" />
+          </div>
+
+          <!-- Sous-ligne : info patrouille -->
+          <div class="unit-row sub">
+            <button id="open-situation" class="mini" title="Changer ma situation">
+              <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 15h-2v-2h2Zm2.07-7.75-.9.92A3.4 3.4 0 0 0 13 13h-2v-.5a4 4 0 0 1 1.17-2.83l1.24-1.26a2 2 0 1 0-3.41-1.41h-2A4 4 0 1 1 15.07 9.25Z"/></svg>
+            </button>
+            <div class="who" id="patrol-meta"></div>
+          </div>
+        </div>
+
+
+
+
+        <!-- Accordéon — Patrouilles actives -->
+        <div class="acc-head" data-cat="patrols-list" id="patrols-acc-head">
+          <button class="plus">+</button>
+          <span class="acc-title">
+            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm6 2H6a4 4 0 0 0-4 4v1h20v-1a4 4 0 0 0-4-4Z"/></svg>
+            Patrouilles actives
+            <span id="patrol-count" style="background:rgba(255,255,255,0.12);border-radius:2px;padding:1px 6px;font-size:10px;">0</span>
+          </span>
+        </div>
+        <div class="acc-body" data-body="patrols-list">
+          <div id="patrols-list" class="list"></div>
+        </div>
+
+        <!-- Accordéon — Agents -->
+        <div class="acc-head" data-cat="agents-list">
+          <button class="plus">+</button>
+          <span class="acc-title">
+            <svg viewBox="0 0 24 24"><path d="M17 11c.34 0 .67.04 1 .09V6.27L10.5 3 3 6.27v4.91c0 4.54 3.2 8.79 7.5 9.82.55-.13 1.08-.32 1.6-.55A6.5 6.5 0 0 0 17 21a6 6 0 1 0 0-12Zm-6.5 6.17c-2.52-.92-4.5-3.55-4.5-6.99V7.8L10.5 5.35 15 7.8v2.54A6.5 6.5 0 0 0 10.5 17.17ZM17 19a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/></svg>
+            Agents
+            <span id="agents-count" style="background:rgba(255,255,255,0.12);border-radius:2px;padding:1px 6px;font-size:10px;">0</span>
+          </span>
+        </div>
+        <div class="acc-body" data-body="agents-list">
+          <div id="agents-list"></div>
+        </div>
+
+        <!-- Menu codes situation -->
+        <div id="sit-menu" class="ctx hidden"></div>
+      </section>
+
+
+
+      <!-- RECHERCHE -->
+      <section id="tab-search" class="tab-panel">
+        <input id="search-input" class="search" placeholder="Rechercher" />
+
+        <!-- Résultats BDD — directement sous la barre de recherche -->
+        <div id="db-search-container" class="hidden">
+          <div id="db-res-list" class="list"></div>
+        </div>
+
+        <!-- 1. Liste des véhicules recherchés -->
+        <div class="acc-head" data-cat="veh-list">
+          <button class="plus">+</button>
+          <span class="acc-title">
+            <svg viewBox="0 0 24 24"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h1a1 1 0 0 1 1 1v4h-2v2a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-2H8v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2H3v-4a1 1 0 0 1 1-1h1Zm2 0h10l-1-3H8l-1 3Z"/></svg>
+            Avis de recherche
+          </span>
+        </div>
+        <div class="acc-body" data-body="veh-list">
+          <div id="veh-list" class="list small scroll-list"></div>
+        </div>
+
+        <!-- 2. Ajouter un véhicule -->
+        <div class="acc-head" data-cat="veh-add">
+          <button class="plus">+</button>
+          <span class="acc-title">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Ajouter un véhicule
+          </span>
+        </div>
+        <div class="acc-body" data-body="veh-add">
+          <div class="add-form v-form">
+            <div class="form-row">
+              <input class="mini-in" data-k="plate" placeholder="Plaque" />
+              <button class="mini cancel" data-act="cancel-veh">
+                <svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12Z"/></svg>
+              </button>
+              <button class="mini confirm" data-act="add-veh">
+                <svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19l12-12-1.4-1.4Z"/></svg>
+              </button>
+            </div>
+            <div class="form-row">
+              <input class="mini-in wide" data-k="model" placeholder="Modèle" />
+            </div>
+            <div class="form-row">
+              <input class="mini-in wide" data-k="note" placeholder="Description" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Liste des citoyens recherchés -->
+        <div class="acc-head" data-cat="cit-list">
+          <button class="plus">+</button>
+          <span class="acc-title">
+            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3 0-9 1.5-9 4.5V21h18v-2.5c0-3-6-4.5-9-4.5Z"/></svg>
+            Avis de recherche
+          </span>
+        </div>
+        <div class="acc-body" data-body="cit-list">
+          <div id="cit-list" class="list small scroll-list"></div>
+        </div>
+
+        <!-- 4. Ajouter un citoyen -->
+        <div class="acc-head" data-cat="cit-add">
+          <button class="plus">+</button>
+          <span class="acc-title">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Ajouter un citoyen
+          </span>
+        </div>
+        <div class="acc-body" data-body="cit-add">
+          <div class="add-form c-form">
+            <div class="form-row">
+              <input class="mini-in" data-k="name" placeholder="Nom prenom" />
+              <button class="mini cancel" data-act="cancel-cit">
+                <svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12Z"/></svg>
+              </button>
+              <button class="mini confirm" data-act="add-cit">
+                <svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19l12-12-1.4-1.4Z"/></svg>
+              </button>
+            </div>
+            <div class="form-row">
+              <input class="mini-in wide" data-k="reason" placeholder="Raison" />
+            </div>
+            <div class="form-row">
+              <input class="mini-in wide" data-k="desc" placeholder="Description" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BRACELETS -->
+      <section id="tab-bracelets" class="tab-panel">
+        <div id="bracelets-list" class="list small empty">Aucun bracelet GPS</div>
+      </section>
+
+      <!-- Menu contextuel d'un appel -->
+      <div id="ctx" class="ctx hidden">
+        <button data-act="assign-all">Assigner toutes les unités à l'appel</button>
+        <button data-act="accept"><span class="chk">✓</span> Accepter l'appel</button>
+        <button data-act="remove">Enlever cette notification</button>
+        <button data-act="clear-all">Enlever toutes les notifications</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* responsive scale: --rsp = 1.0 @ 1920x1080, >1 sur plus haute resolution */
+    (function () {
+      function rsp() {
+        document.documentElement.style.setProperty('--rsp', Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+      }
+      window.addEventListener('resize', rsp);
+      rsp();
+    })();
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

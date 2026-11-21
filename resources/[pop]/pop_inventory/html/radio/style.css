@@ -1,0 +1,210 @@
+.voiceIndicator {
+	display: none;
+	position: fixed;
+	top: 880px;
+	bottom: 2%;
+	/* background-image: ; */
+	background-size: cover;
+	width: 40px;
+	height: 40px;
+	right: 1%;
+}
+
+.radioUI {
+    display: block;
+	position: absolute;
+	min-width: 250px;
+	min-height: 665px;
+	background-image: url("img/radio.png");
+	background-size: cover;
+	font-family: 'DS-Digital', 'Share Tech Mono', 'Orbitron', monospace;
+	right: 40px;
+	top: 50px;
+	user-select: none;
+}
+
+.radioState {
+	position: absolute;
+	color: white;
+	top: 335px;
+	left: 50px;
+	font-size: 42px;
+	min-width: 150px;
+	text-align: center;
+}
+
+.radioPanel {
+	position: relative;
+	display: block;
+	top: 341px;
+	left: 106px;
+	width: 34px;
+	z-index: 1;
+}
+
+.buttonRadio {
+	display: inline-block;
+	opacity: .0;
+	width: 38px;
+	height: 26px;
+	border: none;
+	background: transparent;
+	outline: none;
+	transition: background-color 0.15s ease, opacity 0.15s ease;
+	border-radius: 2px;
+}
+
+.buttonRadio:hover {
+	cursor: pointer;
+	background-color: rgba(46, 204, 113, 0.35);
+	opacity: 1;
+}
+
+.radioSmallPanel {
+	position: relative;
+	display: block;
+	top: 288px;
+	left: 78px;
+	width: 200px;
+	height: 26px;
+}
+
+.buttonSmallRadio {
+	display: inline-block;
+	opacity: .0;
+	width: 20px;
+	height: 20px;
+	margin-right: 45px;
+	border: none;
+	background: transparent;
+	outline: none;
+	transition: background-color 0.15s ease, opacity 0.15s ease;
+	border-radius: 2px;
+}
+
+.buttonSmallRadio:hover {
+	cursor: pointer;
+	background-color: rgba(46, 204, 113, 0.35);
+	opacity: 1;
+}
+
+.radioScreen {
+	position: relative;
+	display: block;
+	width: 130px;
+	height: 70px;
+	top: 320px;
+	left: 60px;
+}
+
+.radioRec {
+	display: none;
+	width: 10px;
+	height: 10px;
+}
+
+/* =========================================================
+   SKIN 80s — SECURECOM (mode rétro piloté par Config.RadioSkin)
+   ========================================================= */
+.radio80s { display: none; }
+
+/* Fond = ton PNG SECURECOM (746x2109), affiché en 250x707. */
+.radioUI.skin-80s {
+	background-image: url("img/radio_80s.png");
+	min-width: 250px;
+	min-height: 707px;
+	width: 250px;
+	height: 707px;
+}
+
+/* On masque les overlays du skin moderne */
+.radioUI.skin-80s .radioPanel,
+.radioUI.skin-80s .radioSmallPanel {
+	display: none;
+}
+
+/* Overlay des boutons 80s (mêmes hovers que le skin moderne) */
+.radioUI.skin-80s .radio80s {
+	display: block;
+	position: absolute;
+	inset: 0;
+}
+
+.radioUI.skin-80s .button80s {
+	position: absolute;
+	width: 42px;
+	height: 36px;
+	border: none;
+	background: transparent;
+	outline: none;
+	opacity: 0;
+	border-radius: 6px;
+	transition: background-color 0.15s ease, opacity 0.15s ease;
+	cursor: pointer;
+}
+
+.radioUI.skin-80s .button80s:hover {
+	opacity: 1;
+	background-color: rgba(46, 204, 113, 0.35);
+}
+
+/* Rangée 1 : MAN / ▲ / ✓   —   Rangée 2 : 🔇 / ▼ / ⏻ (calées via l'éditeur) */
+#r80_man   { top: 345px; left: 66px;  width: 30px; height: 27px; }
+#r80_up    { top: 346px; left: 105px; width: 34px; height: 24px; }
+#r80_ok    { top: 344px; left: 151px; width: 28px; height: 29px; }
+#r80_mute  { top: 383px; left: 68px;  width: 28px; height: 23px; }
+#r80_down  { top: 382px; left: 106px; width: 32px; height: 25px; }
+#r80_power { top: 383px; left: 152px; width: 26px; height: 24px; }
+
+/* Écran LCD : fréquence + icônes repositionnées sur la dalle */
+.radioUI.skin-80s .radioState {
+	top: 249px;
+	left: 67px;
+	width: 106px;
+	font-size: 40px;
+	color: #d8d2c4;
+	text-shadow: 0 0 6px rgba(216, 210, 196, 0.45);
+}
+
+.radioUI.skin-80s .radioScreen {
+	top: 0;
+	left: 0;
+	position: absolute;
+}
+
+.radioUI.skin-80s #radioMute    { position: absolute; top: 230px; left: 58px;  }
+.radioUI.skin-80s #radioNetwork { position: absolute; top: 230px; left: 172px; }
+.radioUI.skin-80s #radioRec     { position: absolute; top: 302px; left: 63px;  }
+.radioUI.skin-80s #radioHZ      { position: absolute; top: 303px; left: 168px; }
+
+@font-face{
+	font-family: 'DS-Digital';
+	src: url('https://cdn.jsdelivr.net/gh/greentfrapp/fonts@main/Digital7Mono.ttf') format('truetype');
+}
+
+#container {
+    position: absolute;
+    top: 86.8%;
+    bottom: -100%;
+    right: 0.3%;
+    width: 65px;
+    height: 45px;
+    display: none;
+    flex-direction: column;
+	user-select: none;
+}
+
+header {
+    width: 45px;
+    height: 45px;
+    opacity: 1;
+    border-top-left-radius: 40px;
+    border-top-right-radius: 40px;
+}
+
+header img {
+    width: 45px;
+    height: 45px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}

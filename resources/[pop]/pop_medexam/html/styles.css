@@ -1,0 +1,154 @@
+@import url(https://fonts.cdnfonts.com/css/tt-firs-neue-trl);
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --low:  #6fcf97;
+  --med:  #e3c878;
+  --high: #e0a36b;
+  --crit: #e07b85;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'TT Firs Neue Trl', 'Segoe UI', sans-serif;
+  color: #fff;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#exam {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#exam.hidden { display: none; }
+
+#lines, #labels {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Point d'ancrage sur le corps ─────────────────────────── */
+.node {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.08);
+  transform: scale(var(--rsp, 1));
+}
+.node.sev-low  { background: var(--low);  }
+.node.sev-med  { background: var(--med);  }
+.node.sev-high { background: var(--high); }
+.node.sev-crit { background: var(--crit); }
+
+/* ── Carte d'information ───────────────────────────────────── */
+.label {
+  --c: #fff;
+  position: absolute;
+  transform: translateY(-50%) scale(var(--rsp, 1));
+  transform-origin: left center;
+  width: 150px;
+  padding: 9px 11px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  opacity: 0;
+  animation: fade .2s ease forwards;
+}
+@keyframes fade { to { opacity: 1; } }
+
+.label .name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+.label .name i { font-size: 10px; }
+
+.label.align-right .name { flex-direction: row-reverse; }
+.label.align-right { text-align: right; transform-origin: right center; }
+
+.label .hp {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--c);
+}
+.label .hp small {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* mini barre de vie */
+.label .bar {
+  height: 3px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.label .bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--c);
+  transition: width .25s ease;
+}
+
+/* couleurs par gravité */
+.sev-low  { --c: var(--low);  }
+.sev-med  { --c: var(--med);  }
+.sev-high { --c: var(--high); }
+.sev-crit { --c: var(--crit); }
+
+/* ── Bandeau d'aide ───────────────────────────────────────── */
+#hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+#hint i { color: rgba(255, 255, 255, 0.4); }
+#hint .key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+}
