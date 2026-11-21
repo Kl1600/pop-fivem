@@ -135,11 +135,12 @@ AddEventHandler('pop_bank:depositCheque', function(checkId)
             notifyPlayer(src, 'Banque', 'Chèque invalide.', 'fas fa-triangle-exclamation')
             return
         end
-        local debitChestId = row.issuer_company and companyChestId(row.issuer_company) or personalChestId(row.issuer_identifier)
+        -- Émetteur : coffre entreprise si chèque d'entreprise, sinon compte ESX 'bank' de l'émetteur.
+        local debitChestId = row.issuer_company and companyChestId(row.issuer_company) or nil
 
-        -- Si le chèque est à l'ordre d'une entreprise existante, seul son patron peut
-        -- l'encaisser, et les fonds vont sur le coffre entreprise (pas le compte perso).
-        local creditChestId = personalChestId(xPlayer.identifier)
+        -- Bénéficiaire : compte ESX 'bank' du joueur. Si le chèque est à l'ordre d'une
+        -- entreprise existante, seul son patron peut l'encaisser, et les fonds vont au coffre entreprise.
+        local creditChestId = nil
         local orderJobName, orderJobLabel = findJobByLabel(row.receiver_name)
         if orderJobName then
             local job = xPlayer.getJob()
@@ -150,18 +151,27 @@ AddEventHandler('pop_bank:depositCheque', function(checkId)
             creditChestId = companyChestId(orderJobName)
         end
 
-        local available = INV:GetStaticChestItemCount(debitChestId, 'cash')
-        if not available or available < amount then
-            notifyPlayer(src, 'Banque', "Fonds insuffisants chez l'émetteur du chèque.", 'fas fa-triangle-exclamation')
-            return
+        -- Vérification du solde de l'émetteur (avant de réserver le chèque)
+        if debitChestId then
+            local available = INV:GetStaticChestItemCount(debitChestId, 'cash')
+            if not available or available < amount then
+                notifyPlayer(src, 'Banque', "Fonds insuffisants chez l'émetteur du chèque.", 'fas fa-triangle-exclamation')
+                return
+            end
+        else
+            local issuer = ESX.GetPlayerFromIdentifier(row.issuer_identifier)
+            if issuer and issuer.getAccount('bank').money < amount then
+                notifyPlayer(src, 'Banque', "Fonds insuffisants chez l'émetteur du chèque.", 'fas fa-triangle-exclamation')
+                return
+            end
         end
 
         -- Claim atomique : si une autre requête a déjà déposé ce chèque entre temps,
-        -- affected vaudra 0 et on s'arrête avant de toucher à un seul coffre.
+        -- affected vaudra 0 et on s'arrête avant de toucher au moindre compte.
         MySQL.update(
             "UPDATE banking_checks SET status = 'deposited', deposited_at = NOW() WHERE unique_check_id = ? AND status = 'active'",
             { checkId },
-            function(affected)
+            function(affected) CreateThread(function() -- thread : requêtes .await possibles
                 if not affected or affected == 0 then
                     notifyPlayer(src, 'Banque', 'Ce chèque vient déjà d\'être traité.', 'fas fa-triangle-exclamation')
                     return
@@ -171,24 +181,67 @@ AddEventHandler('pop_bank:depositCheque', function(checkId)
                     MySQL.update("UPDATE banking_checks SET status = 'active', deposited_at = NULL WHERE unique_check_id = ?", { checkId })
                 end
 
-                local removed = INV:RemoveItemFromStaticChest(debitChestId, 'cash', amount)
+                -- 1) Débit de l'émetteur (solde revérifié au moment du débit)
+                local removed = false
+                local refundIssuer
+                if debitChestId then
+                    removed = INV:RemoveItemFromStaticChest(debitChestId, 'cash', amount)
+                    refundIssuer = function() INV:AddItemToStaticChest(debitChestId, 'cash', amount) end
+                else
+                    local issuer = ESX.GetPlayerFromIdentifier(row.issuer_identifier)
+                    if issuer then
+                        if issuer.getAccount('bank').money >= amount then
+                            issuer.removeAccountMoney('bank', amount, 'Chèque débité')
+                            removed = true
+                        end
+                        refundIssuer = function()
+                            local p = ESX.GetPlayerFromIdentifier(row.issuer_identifier)
+                            if p then
+                                p.addAccountMoney('bank', amount, 'Chèque annulé')
+                            else
+                                MySQL.update("UPDATE users SET accounts = JSON_SET(accounts, '$.bank', JSON_EXTRACT(accounts, '$.bank') + ?) WHERE identifier = ?", { amount, row.issuer_identifier })
+                            end
+                        end
+                    else
+                        -- Émetteur hors ligne : débit direct en base, seulement si le solde suffit
+                        local changed = MySQL.update.await(
+                            "UPDATE users SET accounts = JSON_SET(accounts, '$.bank', JSON_EXTRACT(accounts, '$.bank') - ?) WHERE identifier = ? AND JSON_EXTRACT(accounts, '$.bank') >= ?",
+                            { amount, row.issuer_identifier, amount })
+                        removed = (changed or 0) > 0
+                        refundIssuer = function()
+                            MySQL.update("UPDATE users SET accounts = JSON_SET(accounts, '$.bank', JSON_EXTRACT(accounts, '$.bank') + ?) WHERE identifier = ?", { amount, row.issuer_identifier })
+                        end
+                    end
+                end
+
                 if not removed then
                     notifyPlayer(src, 'Banque', "Fonds insuffisants chez l'émetteur du chèque.", 'fas fa-triangle-exclamation')
                     revertClaim()
                     return
                 end
 
-                local credited = INV:AddItemToStaticChest(creditChestId, 'cash', amount)
-                if not credited then
-                    INV:AddItemToStaticChest(debitChestId, 'cash', amount) -- compensation : on remet les fonds débités
-                    notifyPlayer(src, 'Banque', 'Le compte destinataire est plein, dépôt annulé.', 'fas fa-triangle-exclamation')
-                    revertClaim()
-                    return
+                -- 2) Crédit du bénéficiaire
+                if creditChestId then
+                    local credited = INV:AddItemToStaticChest(creditChestId, 'cash', amount)
+                    if not credited then
+                        refundIssuer() -- compensation : on rend les fonds débités
+                        notifyPlayer(src, 'Banque', 'Le compte destinataire est plein, dépôt annulé.', 'fas fa-triangle-exclamation')
+                        revertClaim()
+                        return
+                    end
+                else
+                    local receiver = ESX.GetPlayerFromId(src)
+                    if not receiver then
+                        refundIssuer()
+                        revertClaim()
+                        return
+                    end
+                    receiver.addAccountMoney('bank', amount, 'Chèque encaissé')
                 end
 
                 INV:removeItemById(src, heldItem.id)
-                notifyPlayer(src, 'Banque', ('Chèque encaissé : %s$'):format(amount), 'fas fa-circle-check')
-            end
+                notifyPlayer(src, 'Banque', ('Chèque encaissé sur votre compte : %s$'):format(amount), 'fas fa-circle-check')
+            end) end
         )
     end)
 end)

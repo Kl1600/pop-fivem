@@ -1,6 +1,7 @@
 # Notes Chef 4 — Lot 4 (véhicules, banque et divers)
 
 ## Fait
+- pop_bank (choix du client) : un chèque encaissé arrive sur le compte ESX `bank` du bénéficiaire. Le chèque perso débite le compte `bank` de l'émetteur (solde vérifié côté serveur, en ligne ou hors ligne via la base). Chèque d'entreprise ou à l'ordre d'une entreprise : coffre entreprise, comme avant. Remboursement de l'émetteur si le crédit échoue.
 - pop_vehiclepersistence : données client comparées à l'entité serveur (netId, modèle, plaque, position serveur), export `Forget(plate)` / `IsTracked(plate)`, connexion ≠ interaction, apparition à proximité (250 m), plus de doublon à la déconnexion, vehicleSpawned/despawnFailed contrôlés, décor fFuel déclaré.
 - pop_enterprisegarage : rangement contrôlé (netId, plaque, modèle, 8 m, état out, une seule fois), Forget + clés reprises, véhicule détruit/disparu récupérable, plaques uniques.
 - pop_kilometrage : valeur comparée à la base (hausse, 10 km max par envoi), requestMileage limité à 1/s.
@@ -9,9 +10,6 @@
 - pop_emotes : plus d'objet réseau créé à chaque emote (fuite), .ytyp des props custom chargés, emote partagée relayée par son nom seulement (demande préalable, 10 m), seul le partenaire peut arrêter l'emote, deuxième prop corrigé.
 - pop_bennys : prix recalculé côté serveur (items), distance au Benny's vérifiée, `/bennys` réservé aux admins (ACE `pop.admin`), texte de plaque non modifiable (style seulement), `lua54`.
 
-
-## En attente du client
-- pop_bank : chèque encaissé en cash (coffre) ou sur le compte `bank` ?
 
 ## Bugs connus / risques
 - Persistance : véhicules non réseau (sans netId) plus sauvegardés. Comparaison du modèle modulo 2^32 à confirmer en jeu.
