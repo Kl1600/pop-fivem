@@ -1,0 +1,26 @@
+# Vérifie la syntaxe Lua et JS à chaque push et pull request.
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.4 luarocks
+          sudo luarocks install luacheck
+
+      - name: Luacheck
+        run: luacheck resources templates
+
+      - name: JS syntax
+        run: |
+          find resources templates -name "*.js" -not -path "*/node_modules/*" -print0 \
+            | xargs -0 -r -n1 node --check
