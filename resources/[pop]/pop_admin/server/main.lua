@@ -433,9 +433,20 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
     elseif action == 'money' then
         if not xTarget then return end
         local account = tostring(data.account or 'money')
-        if not xTarget.getAccount(account) then notify(src, 'Compte invalide', 'error'); return end
         local amount = math.floor(tonumber(data.amount) or 0)
         if amount == 0 then return end
+        -- Le cash est un objet de l'inventaire (pop_inventory), pas le compte ESX « money ».
+        if account == 'money' and GetResourceState('pop_inventory') == 'started' then
+            local ok
+            if amount > 0 then
+                ok = exports['pop_inventory']:GiveItem(xTarget.source, 'cash', amount)
+            else
+                ok = exports['pop_inventory']:removeItem(xTarget.source, 'cash', -amount)
+            end
+            notify(src, ok and ('%s : %s%s$ (cash)'):format(xTarget.getName(), amount > 0 and '+' or '', amount) or 'Pas assez de cash à retirer', ok and 'success' or 'error')
+            return
+        end
+        if not xTarget.getAccount(account) then notify(src, 'Compte invalide', 'error'); return end
         if amount > 0 then
             xTarget.addAccountMoney(account, amount, 'pop_admin')
         else

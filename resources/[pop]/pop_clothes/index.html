@@ -234,7 +234,6 @@
             <div class="currency-label">Devise :</div>
             <div class="currency-options-wrapper">
                 <div class="currency-option active" data-currency="cash" onclick="selectCurrency('cash')">DOLLAR ($)</div>
-                <div class="currency-option" data-currency="pesos" onclick="selectCurrency('pesos')">PESOS (₱)</div>
             </div>
         </div>
 
@@ -598,13 +597,9 @@
                 } else {
                     document.querySelector('.buy-btn').style.display = 'block';
                     document.getElementById('return-btn').style.display = 'none';
-                    if (data.mode80s) {
-                        document.getElementById('currency-selector').style.display = 'flex';
-                        selectCurrency('cash');
-                    } else {
-                        document.getElementById('currency-selector').style.display = 'none';
-                        selectedCurrency = 'cash';
-                    }
+                    // Plus de choix de devise : paiement en dollars (cash, sinon banque)
+                    document.getElementById('currency-selector').style.display = 'none';
+                    selectedCurrency = 'cash';
                 }
                 
                 document.getElementById('app').style.display = 'block';

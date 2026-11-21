@@ -133,7 +133,6 @@ Config.GroundProps = {
   bande_magnetique                 = 'prop_cs_cardbox_01',
 
   -- Argent
-  pesos = 'prop_anim_cash_pile_01',
 
   -- Drogues / chimie
   pot               = 'prop_meth_bag_01',
@@ -2418,9 +2417,7 @@ Config.Shops = {
 -- Permet de payer dans certaines boutiques avec l'item 'pesos' en plus du cash (dollar).
 Config.ShopCurrency = {
   -- Boutiques (shopId) qui acceptent le paiement en Pesos
-  PesosShops = {
-    ["LTD"] = true,
-  },
+  PesosShops = {}, -- plus de pesos sur le serveur
   -- Taux de change : combien de Pesos pour 1 dollar (les prix des items sont en $)
   -- Ex : 20 => un article à 40$ coûte 800 Pesos
   PesosPerDollar = 20,

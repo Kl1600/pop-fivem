@@ -267,7 +267,6 @@ local function OpenShopMenu(shop)
             currentGender = gender,
             isCreator = openedFromCreator,
             mode80s = Config.Mode80s,
-            pesosRate = Config.PesosPerDollar or 20
         })
         inMenu = true
         camHeading = GetEntityHeading(ped) + 180.0

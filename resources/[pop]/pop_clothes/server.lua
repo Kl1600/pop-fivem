@@ -40,69 +40,40 @@ local ItemMap = {
     ['Tops'] = 'hoddie', ['Watches'] = 'watch', ['Bracelets'] = 'bracelet', ['Decals'] = 'decal'
 }
 
-local function chargePlayer(src, totalCost, chosenCurrency)
+local function payTax(taxAmount)
+    if taxAmount <= 0 then return end
+    local accountUsName = Config.GouvUSAccount or 'society_gouv'
+    TriggerEvent('esx_addonaccount:getSharedAccount', accountUsName, function(gouvAccount)
+        if gouvAccount then
+            gouvAccount.addMoney(taxAmount)
+        else
+            exports.oxmysql:execute('UPDATE addon_account_data SET money = money + ? WHERE account_name = ?', {taxAmount, accountUsName})
+        end
+    end)
+end
+
+-- Paiement en dollars : d'abord le cash (item de l'inventaire), sinon le compte bancaire.
+local function chargePlayer(src, totalCost)
     if totalCost <= 0 then return true, 'free', 0 end
     local tvaRate = GlobalState.tva or 20
     local taxAmount = math.floor(totalCost * (tvaRate / 100))
     local finalCost = totalCost + taxAmount
 
-    if Config.Mode80s then
-        if chosenCurrency == 'pesos' then
-            local pesosRate = Config.PesosPerDollar or 20
-            local pesosCost = totalCost * pesosRate
-            local pesosTax = math.floor(pesosCost * (tvaRate / 100))
-            local finalPesos = pesosCost + pesosTax
-
-            local pesosCount = exports.pop_inventory:getItemCount(src, 'pesos') or 0
-            if pesosCount >= finalPesos then
-                local success = exports.pop_inventory:removeItem(src, 'pesos', finalPesos) == true
-                if success and pesosTax > 0 then
-                    local accountMxName = Config.GouvMXAccount or 'society_gouv2'
-                    TriggerEvent('esx_addonaccount:getSharedAccount', accountMxName, function(gouvAccount)
-                        if gouvAccount then
-                            gouvAccount.addMoney(pesosTax)
-                        else
-                            exports.oxmysql:execute('UPDATE addon_account_data SET money = money + ? WHERE account_name = ?', {pesosTax, accountMxName})
-                        end
-                    end)
-                end
-                return success, 'pesos', finalPesos
-            end
-        else
-            local cashCount = exports.pop_inventory:getItemCount(src, 'cash') or 0
-            if cashCount >= finalCost then
-                local success = exports.pop_inventory:removeItem(src, 'cash', finalCost) == true
-                if success and taxAmount > 0 then
-                    local accountUsName = Config.GouvUSAccount or 'society_gouv'
-                    TriggerEvent('esx_addonaccount:getSharedAccount', accountUsName, function(gouvAccount)
-                        if gouvAccount then
-                            gouvAccount.addMoney(taxAmount)
-                        else
-                            exports.oxmysql:execute('UPDATE addon_account_data SET money = money + ? WHERE account_name = ?', {taxAmount, accountUsName})
-                        end
-                    end)
-                end
-                return success, 'cash', finalCost
-            end
-        end
-        return false, nil, 0
-    else
-        local cashCount = exports.pop_inventory:getItemCount(src, 'cash') or 0
-        if cashCount < finalCost then return false, nil, 0 end
-        
+    local cashCount = exports.pop_inventory:getItemCount(src, 'cash') or 0
+    if cashCount >= finalCost then
         local success = exports.pop_inventory:removeItem(src, 'cash', finalCost) == true
-        if success and taxAmount > 0 then
-            local accountUsName = Config.GouvUSAccount or 'society_gouv'
-            TriggerEvent('esx_addonaccount:getSharedAccount', accountUsName, function(gouvAccount)
-                if gouvAccount then
-                    gouvAccount.addMoney(taxAmount)
-                else
-                    exports.oxmysql:execute('UPDATE addon_account_data SET money = money + ? WHERE account_name = ?', {taxAmount, accountUsName})
-                end
-            end)
-        end
+        if success then payTax(taxAmount) end
         return success, 'cash', finalCost
     end
+
+    local xPlayer = ESX and ESX.GetPlayerFromId(src)
+    local bank = xPlayer and xPlayer.getAccount('bank')
+    if bank and bank.money >= finalCost then
+        xPlayer.removeAccountMoney('bank', finalCost, 'pop_clothes')
+        payTax(taxAmount)
+        return true, 'bank', finalCost
+    end
+    return false, nil, 0
 end
 
 RegisterNetEvent('clothes:buy_all')
@@ -131,7 +102,7 @@ AddEventHandler('clothes:buy_all', function(data)
         totalCost = 0
     end
 
-    local success, method, finalCost = chargePlayer(src, totalCost, chosenCurrency)
+    local success, method, finalCost = chargePlayer(src, totalCost)
     if not success then
         TriggerClientEvent('notification:client:ShowNotify', src, {
             title = "Boutique",
@@ -197,8 +168,8 @@ AddEventHandler('clothes:buy_all', function(data)
     end
 
     local msg = "Achat effectué — <span style=\"color:#e74c3c; font-weight:bold;\">-" .. finalCost .. "$</span>."
-    if method == 'pesos' then
-        msg = "Achat effectué — <span style=\"color:#e74c3c; font-weight:bold;\">-" .. finalCost .. " Pesos</span>."
+    if method == 'bank' then
+        msg = "Achat payé par carte — <span style=\"color:#e74c3c; font-weight:bold;\">-" .. finalCost .. "$</span>."
     elseif method == 'free' then
         msg = "Achat effectué (Gratuit)."
     end

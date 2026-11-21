@@ -121,9 +121,9 @@ RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname
     -- 5. Give Wallet
     local okWallet, walletContainerId = exports['pop_inventory']:GiveAndEquip(src, 'wallet', 1)
     
-    -- 6. Give Cash/Pesos, ID Card and Passport
+    -- 6. Give Cash, ID Card and Passport
     local isMexico = (spawnLocation == 'nuevopaso')
-    local currencyItem = isMexico and 'pesos' or 'cash'
+    local currencyItem = 'cash' -- plus de pesos sur le serveur
     local currencyAmount = 500
     local passportType = isMexico and 'mx' or 'us'
     local identityData = { firstname = fn, lastname = ln, dob = dob, skin = json.encode(skin), nationality = spawnLocation }

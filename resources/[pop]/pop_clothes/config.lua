@@ -4,7 +4,6 @@ Config.GouvMXAccount = 'society_gouv2'
 Config.Framework = 'esx' -- 'esx', 'qbcore' or 'none'
 Config.Currency = '$'
 Config.Mode80s = true
-Config.PesosPerDollar = 20
 
 
 -- Shop Locations and Types
