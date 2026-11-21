@@ -156,3 +156,12 @@ Citizen.CreateThread(function()
         TriggerEvent("vfw:loading:showJoinNUI")
     end
 end)
+-- ESX : afficher l'écran « Accéder au plateau de jeu » dès que le joueur est chargé,
+-- au lieu d'attendre le délai de secours de 15 s (joueur figé en attendant).
+RegisterNetEvent('esx:playerLoaded', function()
+    SetTimeout(1000, function()
+        if not isJoinNuiActive and not hasClickedJoin then
+            TriggerEvent("vfw:loading:showJoinNUI")
+        end
+    end)
+end)

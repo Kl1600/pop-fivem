@@ -1,0 +1,74 @@
+# Outils serveur lancés à la main (onglet Actions > Server tools > Run workflow).
+#  - list        : affiche l'arborescence des ressources du serveur.
+#  - disable_esx : déplace les ressources esx_* inutiles hors de resources/
+#                  (dans esx_desactives/ à la racine du serveur, réversible).
+name: Server tools
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list ou disable_esx"
+        required: true
+        default: list
+        type: choice
+        options: [list, disable_esx]
+
+concurrency:
+  group: server-tools
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      SFTP_HOST: ${{ secrets.SFTP_HOST }}
+      SFTP_PORT: ${{ secrets.SFTP_PORT }}
+      SFTP_USER: ${{ secrets.SFTP_USER }}
+      LFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+      SFTP_REMOTE_PATH: ${{ secrets.SFTP_REMOTE_PATH }}
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Chemins
+        id: p
+        run: |
+          # SFTP_REMOTE_PATH pointe sur .../resources/[pop] ; on remonte d'un et deux niveaux.
+          RES="$(dirname "$SFTP_REMOTE_PATH")"
+          ROOT="$(dirname "$RES")"
+          echo "res=$RES" >> "$GITHUB_OUTPUT"
+          echo "root=$ROOT" >> "$GITHUB_OUTPUT"
+
+      - name: Liste des ressources
+        run: |
+          lftp -e "
+            set sftp:auto-confirm yes;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
+            cd '${{ steps.p.outputs.res }}';
+            find --maxdepth=3 . ;
+            bye
+          " | grep -v '/\.' | grep -E '^\./[^/]+/?$|^\./[^/]+/[^/]+/?$' | sort > tree.txt
+          cat tree.txt
+
+      - name: Désactiver les ressources ESX inutiles
+        if: inputs.action == 'disable_esx'
+        run: |
+          # Gardées : celles de la base d'origine + celles appelées par les scripts pop.
+          KEEP="es_extended esx_skin skinchanger cron esx_addonaccount esx_basicneeds esx_datastore esx_society esx_status esx_addoninventory"
+          : > cmds.txt
+          grep -E '/esx_[^/]+/?$' tree.txt | sed 's#/$##' | while read -r p; do
+            name="$(basename "$p")"
+            case " $KEEP " in *" $name "*) echo "garde  $p"; continue;; esac
+            echo "désactive $p"
+            echo "mv '${{ steps.p.outputs.res }}/${p#./}' '${{ steps.p.outputs.root }}/esx_desactives/$name';" >> cmds.txt
+          done
+          if [ ! -s cmds.txt ]; then echo "Rien à déplacer."; exit 0; fi
+          lftp -e "
+            set sftp:auto-confirm yes;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
+            mkdir -p -f '${{ steps.p.outputs.root }}/esx_desactives';
+            $(cat cmds.txt)
+            bye
+          "
+          echo "Terminé."

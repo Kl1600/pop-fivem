@@ -442,8 +442,7 @@ function render() {
     const m = build();
     if (!m) return;
     fixIndex(m, c);
-    $('#m-title').textContent = m.title;
-    $('#m-sub').textContent = m.sub || '';
+    $('#m-sub').textContent = m.sub ? `${m.title} · ${m.sub}` : m.title;
 
     const n = m.items.length;
     const selCount = m.items.filter(selectable).length;

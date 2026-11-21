@@ -1,7 +1,7 @@
 /* pop_admin : menu liste façon GTA 6, couleurs POP (fond sombre, blanc, accent rose). */
 :root {
-    --accent: #ff2e88;
-    --accent-dim: rgba(255, 46, 136, 0.18);
+    --accent: #ff7ab8;
+    --accent-dim: rgba(255, 122, 184, 0.18);
     --bg: rgba(10, 10, 12, 0.88);
     --bg-head: rgba(6, 6, 8, 0.94);
     --line: rgba(255, 255, 255, 0.07);
