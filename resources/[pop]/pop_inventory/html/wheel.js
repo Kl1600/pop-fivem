@@ -5,14 +5,14 @@
 (function () {
   const RES = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'pop_inventory';
   const PER_PAGE = 8;
-  const FIST_SVG = `<svg class="fist" viewBox="0 0 64 64" width="52" height="52" aria-hidden="true">
-    <g fill="currentColor" stroke="var(--fist-line)" stroke-width="1.6" stroke-linejoin="round">
-      <path d="M13 33 C13 29 15 27 18 27 L48 27 C51 27 53 29 53 33 L52 44 C51 51 46 56 39 57 L26 57 C19 56 14 51 13 44 Z"/>
-      <rect x="14" y="14" width="10" height="17" rx="5"/>
-      <rect x="23.5" y="11" width="10" height="20" rx="5"/>
-      <rect x="33" y="12" width="10" height="19" rx="5"/>
-      <rect x="42.5" y="16" width="9" height="15" rx="4.5"/>
-      <path d="M11 37 C11 33 14 31 18 31 L33 31 C37 31 39 33 39 36 C39 39 37 41 33 41 L19 41 C14 41 11 40 11 37 Z"/>
+  // Icône « mains nues » : main ouverte (silhouette pleine), prend la couleur du texte
+  const FIST_SVG = `<svg class="fist" viewBox="0 0 64 64" width="54" height="54" aria-hidden="true">
+    <g fill="currentColor">
+      <rect x="11" y="20" width="8" height="24" rx="4"/>
+      <rect x="21" y="7" width="8" height="34" rx="4"/>
+      <rect x="31" y="4" width="8" height="37" rx="4"/>
+      <rect x="41" y="9" width="8" height="32" rx="4"/>
+      <path d="M11 36 L49 36 L49 41 C49 41 52.5 36 55.5 33.2 C57.7 31.2 60.6 32.6 59.8 35.5 C58.6 39.8 54.5 47 50 52.5 C46.5 56.8 41.5 60 34 60 L27 60 C17.5 60 11 53.5 11 44 Z"/>
     </g>
   </svg>`;
 
