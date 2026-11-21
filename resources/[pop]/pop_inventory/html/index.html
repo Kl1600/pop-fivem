@@ -42,7 +42,7 @@
     background-color: transparent !important;
   }
   body {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.65);
     font-family: Arial, sans-serif;
     display: none;
     justify-content: center;
@@ -50,18 +50,6 @@
     height: 100vh;
     margin: 0;
   }
-
-  /* Voile sombre avec une « fenêtre » claire autour du ped de prévisualisation
-     (zone Vêtements), pour que le perso reste bien visible. */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: -1;
-    background: radial-gradient(ellipse 12vw 40vh at 78% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.65) 100%);
-  }
-  body.weapon-preview-active::before { display: none; }
 
   .container {
     padding-left: 112px;
@@ -703,23 +691,54 @@
     style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(255, 255, 255, 0.35); border-radius: 5px">
   </div>
   <div id="clothes-side">
-    <div style="width: 57px; height: 57px; left: 1035px; top: 80px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 225px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 290px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 355px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 430px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 495px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 80px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 145px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 225px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 290px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 355px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 430px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 495px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1068px; top: 590px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div style="width: 57px; height: 57px; left: 1133px; top: 590px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
-    <div id="pager-slot-bg" style="display: none; width: 57px; height: 57px; left: 1198px; top: 590px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px"></div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 114px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 214px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 214px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 214px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 412px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 412px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 412px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 413px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 314px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 314px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 511px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 511px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
+    <div id="pager-slot-bg"
+      style="display: none; width: 57px; height: 57px; left: 1165px; top: 511px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px">
+    </div>
 
     <!-- SECTION VÊTEMENTS -->
     <!-- Titre -->
@@ -741,59 +760,115 @@
       </svg>
     </div>
 
-        <!-- Zone du ped : le clone du joueur est affiché ici par le jeu (client.lua).
-         Glisser un vêtement dessus le rend transparent puis l'équipe. -->
-    <div id="ped-dropzone" style="position:absolute; left:1096px; top:70px; width:140px; height:510px; z-index:2;"></div>
-    <div style="width: 200px; height: 20px; left: 1035px; top: 566px; position: absolute; color: #ffffffb3; font-size: 13px; font-family: Segoe UI; font-weight: 400;">Communication</div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 80px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="hat">
+    <!-- SOUS-TITRES -->
+    <div
+      style="width: 123px; height: 33px; left: 1036px; top: 88px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Tête</div>
+    <div
+      style="width: 123px; height: 33px; left: 1035px; top: 183px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Corps</div>
+    <div
+      style="width: 123px; height: 33px; left: 1036px; top: 283px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Bas</div>
+    <div
+      style="width: 123px; height: 33px; left: 1035px; top: 383px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Utilitaire</div>
+    <div
+      style="width: 171px; height: 33px; left: 1036px; top: 480px; position: absolute; color: #ffe8f2; font-size: 15px; font-family: Segoe UI; font-weight: 400; word-wrap: break-word">
+      Communication</div>
+
+    <!-- TÊTE -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 114px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="hat">
       <img src="svg/broad-brimmed-hat.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 145px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="mask">
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 114px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="mask">
       <img src="svg/carnival-mask-silhouette.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 225px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="hoddie">
-      <img src="svg/hoddie.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 290px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="tshirt">
-      <img src="svg/casual-t-shirt-.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 355px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="kevlar">
-      <img src="svg/kevlar.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 430px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="panta">
-      <img src="svg/pants.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1035px; top: 495px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="shoes">
-      <img src="svg/men-shoe.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 80px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="glasses">
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 114px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="glasses">
       <img src="svg/sunglasses.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 145px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="tie">
-      <img src="svg/tie.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 225px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="backpack">
-      <img src="svg/backpack.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 290px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="decal">
-      <img src="svg/decal.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
-    </div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 355px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="accessory">
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 114px; position: absolute;   border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="accessory">
       <img src="svg/classic-cufflinks.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 430px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="wallet">
+
+    <!-- CORPS -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 214px; position: absolute;   border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="hoddie">
+      <img src="svg/hoddie.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 214px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="tshirt">
+      <img src="svg/casual-t-shirt-.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 214px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="tie">
+      <img src="svg/tie.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 214px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="decal">
+      <img src="svg/decal.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+
+    <!-- BAS -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 314px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="panta">
+      <img src="svg/pants.svg" style="width:25px; height:25px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 314px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="shoes">
+      <img src="svg/men-shoe.svg" style="width:30px; height:30px; filter: invert(95%) opacity(0.35);" />
+    </div>
+
+    <!-- UTILITAIRE -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="backpack">
+      <img src="svg/backpack.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="wallet">
       <img src="svg/wallet.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div style="width: 57px; height: 57px; left: 1240px; top: 495px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="briefcase">
+    <div
+      style="width: 57px; height: 57px; left: 1165px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="kevlar">
+      <img src="svg/kevlar.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
+    </div>
+    <div
+      style="width: 57px; height: 57px; left: 1230px; top: 412px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="briefcase">
       <img src="svg/briefcase.svg" style="width:23px; height:23px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div style="width: 57px; height: 57px; left: 1068px; top: 590px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="phone">
+
+    <!-- COMMUNICATION -->
+    <div
+      style="width: 57px; height: 57px; left: 1035px; top: 511px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="phone">
       <img src="svg/smartphone-call.svg" style="width:26px; height:26px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div style="width: 57px; height: 57px; left: 1133px; top: 590px; position: absolute; border-radius: 2px; display:flex; align-items:center; justify-content:center;" data-equip-slot="radio">
+    <div
+      style="width: 57px; height: 57px; left: 1100px; top: 511px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="radio">
       <img src="svg/walkie-talkie.svg" style="width:34px; height:34px; filter: invert(95%) opacity(0.35);" />
     </div>
-    <div id="pager-slot" style="display: none; width: 57px; height: 57px; left: 1198px; top: 590px; position: absolute; border-radius: 2px; align-items:center; justify-content:center;" data-equip-slot="pager">
+    <div id="pager-slot"
+      style="display: none; width: 57px; height: 57px; left: 1165px; top: 511px; position: absolute;  border-radius: 2px; display:flex; align-items:center; justify-content:center;"
+      data-equip-slot="pager">
       <img src="svg/pager.svg" style="width:22px; height:22px; margin-top: 3px; filter: invert(95%) opacity(0.35);" />
     </div>
 

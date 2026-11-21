@@ -117,35 +117,6 @@
     openPanel('clothes-side', { isBack: true });
   };
 
-  // --- Ped de prévisualisation (zone Vêtements) ---
-  let pedHoverState = false;
-  const setPedHover = (hover) => {
-    if (pedHoverState === hover) return;
-    pedHoverState = hover;
-    fetch(`https://${GetParentResourceName()}/pedHover`, { method: 'POST', body: JSON.stringify({ hover }) }).catch(() => {});
-  };
-  const sendPedRect = () => {
-    const zone = document.getElementById('ped-dropzone');
-    if (!zone) return;
-    const r = zone.getBoundingClientRect();
-    if (!r.width || !r.height) return;
-    fetch(`https://${GetParentResourceName()}/pedRect`, {
-      method: 'POST',
-      body: JSON.stringify({
-        cx: (r.left + r.width / 2) / window.innerWidth,
-        top: r.top / window.innerHeight,
-        height: r.height / window.innerHeight,
-      }),
-    }).catch(() => {});
-  };
-  const isOverPed = (x, y) => {
-    const zone = document.getElementById('ped-dropzone');
-    if (!zone || zone.offsetParent === null) return false;
-    const r = zone.getBoundingClientRect();
-    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-  };
-  window.addEventListener('resize', sendPedRect);
-
   const postAction = (payload) => {
     fetch(`https://${GetParentResourceName()}/action`, {
       method: 'POST',
@@ -1667,9 +1638,6 @@
     }
     updateDragPreview(event);
 
-    // Vêtement glissé au-dessus du ped : le ped devient transparent
-    setPedHover(!!(dragState && dragState.item && dragState.item.equipSlot && isOverPed(event.clientX, event.clientY)));
-
     // Switch category if hovering icon
     if (dragState) {
       const target = document.elementFromPoint(event.clientX, event.clientY);
@@ -1697,19 +1665,6 @@
     if (!pointerDrag.active) {
       pointerDrag = null;
       return;
-    }
-
-    setPedHover(false);
-    // Lâché sur le ped : on équipe dans la case correspondant au vêtement
-    if (dragState && dragState.item && dragState.item.equipSlot && isOverPed(event.clientX, event.clientY)) {
-      const pedSlotEl = equipSlots.get(String(dragState.item.equipSlot).toLowerCase());
-      if (pedSlotEl) {
-        handleEquipDrop({ preventDefault: () => { }, currentTarget: pedSlotEl });
-        pointerDrag = null;
-        suppressClick = true;
-        setTimeout(() => { suppressClick = false; }, 0);
-        return;
-      }
     }
 
     const target = document.elementFromPoint(event.clientX, event.clientY);
@@ -2011,7 +1966,6 @@
     }
     if (data.action === 'open') {
       setVisible(true);
-      requestAnimationFrame(() => setTimeout(sendPedRect, 30));
       const wrapper = document.getElementById('full-ui-wrapper');
       if (wrapper) wrapper.style.display = 'block';
       const frame = document.getElementById('standby-frame');
