@@ -44,10 +44,11 @@ local function startInvPedPreview()
     RequestModel(model)
     local t = GetGameTimer()
     while not HasModelLoaded(model) and GetGameTimer() - t < 3000 do Wait(0) end
-    local c = GetEntityCoords(playerPed) - vector3(0.0, 0.0, 15.0)
-    previewPed = CreatePed(26, model, c.x, c.y, c.z, 0.0, false, false)
+    -- ClonePed copie directement tenue, accessoires et visage du joueur
+    previewPed = ClonePed(playerPed, false, false, true)
     if not previewPed or previewPed == 0 then previewActive = false return end
-    ClonePedToTarget(playerPed, previewPed)
+    local c = GetEntityCoords(playerPed) - vector3(0.0, 0.0, 15.0)
+    SetEntityCoordsNoOffset(previewPed, c.x, c.y, c.z, false, false, false)
     SetEntityInvincible(previewPed, true)
     SetEntityCollision(previewPed, false, false)
     SetEntityCanBeDamaged(previewPed, false)
@@ -60,14 +61,15 @@ local function startInvPedPreview()
     while previewActive and isOpen and DoesEntityExist(previewPed) do
       -- Taille à l'écran : distance calculée pour que le ped (~1,85 m) occupe la zone.
       local fov = GetGameplayCamFov()
-      local depth = 1.85 / (previewRect.height * 2.0 * math.tan(math.rad(fov) / 2.0))
-      local world, normal = GetWorldCoordFromScreenCoord(previewRect.cx, previewRect.top + previewRect.height * 0.47)
+      -- Ped un peu plus petit que la zone pour tenir entre les deux colonnes de cases
+      local depth = 1.85 / (previewRect.height * 0.68 * 2.0 * math.tan(math.rad(fov) / 2.0))
+      local world, normal = GetWorldCoordFromScreenCoord(previewRect.cx, previewRect.top + previewRect.height * 0.5)
       local pos = world + normal * depth
       local camRot = GetGameplayCamRot(2)
       SetEntityCoordsNoOffset(previewPed, pos.x, pos.y, pos.z, false, false, false)
       SetEntityRotation(previewPed, 0.0, 0.0, camRot.z + 180.0, 2, false)
       -- Suit les changements de vêtements du joueur
-      if GetGameTimer() - lastClone > 750 then
+      if GetGameTimer() - lastClone > 1000 then
         lastClone = GetGameTimer()
         ClonePedToTarget(PlayerPedId(), previewPed)
       end
