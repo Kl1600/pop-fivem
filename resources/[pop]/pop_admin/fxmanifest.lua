@@ -4,7 +4,7 @@ lua54 'yes'
 
 author 'KL'
 name 'pop_admin'
-description 'Menu admin liste façon GTA (haut à droite, clavier) : joueurs, items, jobs, véhicules, temps & météo, mode spec.'
+description 'Menu admin liste façon GTA (haut à gauche, clavier) : joueurs, items, jobs, véhicules, temps & météo, mode spec.'
 
 ui_page 'html/index.html'
 

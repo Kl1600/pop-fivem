@@ -1,6 +1,6 @@
 # pop_admin
 
-Menu admin en liste façon GTA pour ESX Legacy : en haut à droite de l'écran, piloté au clavier, sans curseur (on peut continuer à se déplacer).
+Menu admin en liste façon GTA pour ESX Legacy : en haut à gauche de l'écran, piloté au clavier, sans curseur (on peut continuer à se déplacer).
 
 ## Touches
 - **F6** : ouvrir / fermer (`Config.OpenKey`)

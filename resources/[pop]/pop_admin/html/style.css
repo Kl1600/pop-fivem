@@ -1,4 +1,4 @@
-/* pop_admin : menu liste en haut à droite, DA et couleurs de pop_inventory
+/* pop_admin : menu liste en haut à gauche, DA et couleurs de pop_inventory
    (tuiles claires translucides, angles 2px, titres Segoe UI Black, séparateurs fins, sans couleur d'accent : sélection en blanc). */
 :root {
     --tile: rgba(28, 31, 36, 0.88);
@@ -33,7 +33,7 @@ body {
 #menu {
     position: absolute;
     top: 4vh;
-    right: 2.2vw;
+    left: 2.2vw;
     width: 24rem;
     animation: fade 150ms ease-out;
 }
