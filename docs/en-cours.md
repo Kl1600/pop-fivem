@@ -6,6 +6,6 @@ Répartition de l'audit (`docs/audit.md`) : démarrage au GO du client.
 
 - pop.cfg, .github/, CLAUDE.md, docs/coordination-chefs.md : Chef 1 (coordination)
 - Lot 1 — pop_admin, pop_management, pop_interim, pop_duiengine, pop_computer, ox_target, clm_ProgressBar : Chef 1
-- Lot 3 — pop_grandtheftauto, pma_voice_challenge, ultra-voltlab, kq_lasers, chHyperSound, interact-sound, pop_dealing, pop_weed, pop_crew, pop_territories, pop_bikerental, pop_voice_ui, pop_livraison, object_gizmo : Chef 3
+- pop_grandtheftauto : Chef 3 (test en jeu avec le client) ; chHyperSound : Chef 3 (fichiers privés, en attente du client)
 - Lot 4 — pop_bank, pop_bennys, pop_enterprisegarage, pop_kilometrage, pop_vehiclepersistence, pop_speedometer, pop_v3dui, pop_doorlock, pop_affiche, pop_boards, pop_medexam, pop_chat, pop_emotes, pop_hud, pop_notify : Chef 4
 - Hors travaux : pop_police, pop_police80 (mis de côté par le client)
