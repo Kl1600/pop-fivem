@@ -31,23 +31,21 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 
 ## 3. Règles de travail entre Chefs (anti-conflit)
 
-1. **Chacun ne modifie que ses propres dossiers** (voir la répartition, section 6). Si un autre dossier doit changer, on demande au Chef concerné, en passant par le client.
-2. Travailler sur sa branche (`chef1/...`, `chef2/...`, `chef3/...`, `chef4/...`), puis publier ainsi :
+1. **C'est le client qui donne les tâches** à chaque Chef. Pas de domaine fixe.
+2. **Avant de toucher un script**, lire `docs/en-cours.md`. Si un autre Chef y travaille déjà, ne pas y toucher : prévenir le client.
+   Sinon, ajouter une ligne `pop_xxx : Chef N (tâche)` dans ce fichier, la pousser tout de suite, et la retirer à la fin.
+3. Travailler sur sa branche (`chefN/...`), puis publier ainsi :
    ```
    git fetch origin && git rebase origin/main && git push origin HEAD:main
    ```
    Si le push est refusé, refaire `fetch` + `rebase`. Jamais de `push -f` sur `main`.
-3. Avant chaque push sur `main` :
+4. Avant chaque push sur `main` :
    - `luac5.4 -p` sur les `.lua` modifiés (sauf `utility_lib` et `ox_target`, écrits en CfxLua) ;
    - `node --check` sur les `.js` ;
    - pas de hash entre backticks dans le code, utiliser `GetHashKey('…')`.
-4. Fichiers partagés, modifiés **uniquement par le Chef 1** :
-   - `pop.cfg`, `.github/`, `CLAUDE.md`, `docs/` (sauf les notes de chaque Chef) ;
-   - `pop_inventory`, `pop_admin`, `pop_notify`.
-
-   Les autres Chefs utilisent les exports existants (`pop_inventory:GiveItem/removeItem/getItemCount`, `pop_notify:ShowNotify`, `pop_admin:IsAdmin`).
-5. Commit en français. Terminer chaque message de commit par les lignes d'attribution de sa propre session.
-6. Chaque Chef tient ses notes dans `docs/chef<N>.md` : ce qui est fait, ce qui reste, les bugs connus.
+5. Fichiers communs (`pop.cfg`, `.github/`, `CLAUDE.md`, ce document) : ne les modifier que si le client le demande, et prévenir les autres via `docs/en-cours.md`.
+6. Commit en français. Terminer chaque message de commit par les lignes d'attribution de sa propre session.
+7. Chaque Chef tient ses notes dans `docs/chef<N>.md` : ce qui est fait, ce qui reste, les bugs connus.
 
 ## 4. Sécurité (non négociable)
 
@@ -67,19 +65,10 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 - Le client aime : réponses courtes en français, pas de jargon, aperçus visuels avant le jeu (capture Playwright de la NUI).
 - Le client teste vite : prévenir quand un déploiement est fini et quelle ressource relancer.
 
-## 6. Répartition
+## 6. Bugs connus (à attribuer par le client)
 
-| Chef | Domaine | Dossiers (seuls à modifier) |
-|---|---|---|
-| **Chef 1** (session d'origine) | Coordination, inventaire, admin, serveur | `pop_inventory`, `pop_admin`, `pop_notify`, `pop.cfg`, `.github/`, `docs/`, `CLAUDE.md`, dépendances tierces |
-| **Chef 2** | Illégal | `pop_dealing`, `pop_weed`, `pop_crew`, `pop_territories`, `pop_grandtheftauto`, `pop_doorlock`, `pop_bikerental`, `pop_livraison` |
-| **Chef 3** | Métiers et entreprises | `pop_police`, `pop_police80`, `pop_management`, `pop_interim`, `pop_enterprisegarage`, `pop_bank`, `pop_bennys`, `pop_medexam`, `pop_computer`, `pop_duiengine`, `pop_boards`, `pop_affiche` |
-| **Chef 4** | Perso, interface et véhicules | `pop_charcreator`, `pop_clothes`, `pop_hud`, `pop_speedometer`, `pop_loading`, `pop_chat`, `pop_emotes`, `pop_idcard`, `pop_passport`, `pop_voice_ui`, `pop_v3dui`, `pop_kilometrage`, `pop_vehiclepersistence` |
-
-### Bugs connus à traiter
-
-- **Chef 4** : les vêtements équipés dans l'inventaire ne s'appliquent pas sur le perso, qui reste torse nu en caleçon. Corriger côté `pop_clothes`, `pop_charcreator` et `skinchanger`. Si `pop_inventory` doit changer, demander au Chef 1.
-- **Chef 4** : flux de connexion (écran « Accéder au plateau de jeu », puis création de perso) à vérifier en jeu.
-- **Chef 1** : blocage ESX « Cleaning stale player entry » (diagnostic en place dans `pop_admin`) et touche Échap du client.
-- **Chef 2** : `pop_dealing` (modes test coupés), `MapZones` et `vehicle_keys` absents (dépendances de territoires et de location de vélos), mission `pop_grandtheftauto` à valider en jeu.
-- **Chef 3** : `pop_management` (tables, salaires), dispatch police (accès job police), banque.
+- Les vêtements équipés dans l'inventaire ne s'appliquent pas sur le perso, qui reste torse nu en caleçon. Côté `pop_clothes`, `pop_charcreator`, `skinchanger` et `pop_inventory`.
+- Flux de connexion : écran « Accéder au plateau de jeu », puis création de perso. À vérifier en jeu.
+- Blocage ESX « Cleaning stale player entry » (diagnostic dans `pop_admin`), et touche Échap qui ne marche pas chez le client.
+- `MapZones` et `vehicle_keys` absents : ce sont des dépendances de `pop_territories` et `pop_bikerental`.
+- Mission `pop_grandtheftauto` à valider en jeu.
