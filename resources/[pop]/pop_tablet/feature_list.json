@@ -1,0 +1,725 @@
+{
+  "_regle": "Seul le champ passes se modifie. Passer a true uniquement avec une preuve (sortie de commande ou capture lue).",
+  "features": [
+    {
+      "id": "socle-01",
+      "description": "Copie de pop_base renommée pop_tablet (bridge, shared, web/kit identiques à la base), fxmanifest avec server/apps/*.lua, oxmysql, ui_page web/dist",
+      "verification": "diff -r avec templates/pop_base sur bridge shared web/kit vide ; luacheck resources templates 0/0",
+      "passes": false
+    },
+    {
+      "id": "socle-02",
+      "description": "sql/install.sql crée toutes les tables de la section 5 avec index et clés étrangères",
+      "verification": "exécution de install.sql sur une base vide sans erreur ; SHOW TABLES liste les 17 tables",
+      "passes": false
+    },
+    {
+      "id": "socle-03",
+      "description": "server/hash.lua : SHA-256 + HMAC pur Lua, itérations configurables",
+      "verification": "tests/run.lua : vecteurs SHA-256 et HMAC connus identiques",
+      "passes": false
+    },
+    {
+      "id": "socle-04",
+      "description": "Numéro de série unique et numéro de téléphone unique par tablette (génération, collision, format)",
+      "verification": "tests/run.lua : 10 000 générations sans doublon, format respecté ; collision forcée gérée",
+      "passes": false
+    },
+    {
+      "id": "socle-05",
+      "description": "Lien objet-données : lecture du serial en métadonnée, conversion d un objet sans serial (retrait + ajout sous verrou)",
+      "verification": "test en jeu avec ox_inventory : objet sans serial devient objet avec serial, une seule ligne en base",
+      "passes": false
+    },
+    {
+      "id": "socle-06",
+      "description": "Repli par propriétaire quand Bridge.SupportsMetadata() est faux",
+      "verification": "test en jeu avec inventaire ESX de base : une tablette par personnage ; message console du mode",
+      "passes": false
+    },
+    {
+      "id": "socle-07",
+      "description": "Tablet.Guard : objet porté, session, déverrouillage, tailles, propriété, à chaque appel",
+      "verification": "tests/run.lua : appels sans objet, session expirée, serial forgé, charge trop grande tous refusés",
+      "passes": false
+    },
+    {
+      "id": "socle-08",
+      "description": "Session par joueur (serial, déverrouillé, dernière activité), nettoyage au drop, à OnPlayerUnloaded et à l arrêt",
+      "verification": "test en jeu : drop puis reconnexion, aucune session résiduelle (commande debug)",
+      "passes": false
+    },
+    {
+      "id": "socle-09",
+      "description": "Premier allumage : device:setup (code 4 chiffres haché avec sel et pepper, nom, langue, adresse mail unique)",
+      "verification": "test en jeu : code stocké haché (colonne code_hash), jamais en clair ; seconde configuration refusée",
+      "passes": false
+    },
+    {
+      "id": "socle-10",
+      "description": "Déverrouillage : device:unlock, 5 échecs -> blocage progressif, comparaison à temps constant",
+      "verification": "tests/run.lua : blocage 60 s puis x2 ; test en jeu : message de blocage",
+      "passes": false
+    },
+    {
+      "id": "socle-11",
+      "description": "Changement de code (ancien code exigé, mêmes limites)",
+      "verification": "test en jeu : mauvais ancien code refusé, bon accepté, nouveau code actif",
+      "passes": false
+    },
+    {
+      "id": "socle-12",
+      "description": "Batterie paresseuse par horodatage (ouverture refusée sous le minimum)",
+      "verification": "tests/run.lua : calcul de décharge/recharge sur durées simulées",
+      "passes": false
+    },
+    {
+      "id": "socle-13",
+      "description": "server/limits.lua : tailles max et validation des types/énumérations",
+      "verification": "tests/run.lua : chaque limite de la section 7.4 rejette à N+1",
+      "passes": false
+    },
+    {
+      "id": "socle-14",
+      "description": "Push serveur -> client ciblé (notify, message, mail, call, market, share, open, forceClose, apps) en paquets < 1 Ko",
+      "verification": "test en jeu : taille des paquets relevée (console debug) <= 1 Ko",
+      "passes": false
+    },
+    {
+      "id": "socle-15",
+      "description": "Scheduler serveur : une SetTimeout pour la prochaine échéance (minuteurs en secondes réelles), aucune boucle",
+      "verification": "revue du code : aucun while true ni SetInterval ; test en jeu : minuteur 10 s notifie",
+      "passes": false
+    },
+    {
+      "id": "socle-16",
+      "description": "Commande /pop_tablet_give réservée à Bridge.IsAdmin",
+      "verification": "test en jeu : refusée sans droit, donne l objet avec serial avec droit",
+      "passes": false
+    },
+    {
+      "id": "socle-17",
+      "description": "Conservation des données : purge des messages/appels anciens au démarrage seulement",
+      "verification": "tests/run.lua ou test en jeu : lignes plus vieilles que Config.Retention.Days supprimées au démarrage",
+      "passes": false
+    },
+    {
+      "id": "cli-01",
+      "description": "Ouverture par utilisation de l objet (Bridge.RegisterUsableItem) et par touche RegisterKeyMapping (F5)",
+      "verification": "test en jeu : les deux voies ouvrent ; sans objet la touche ne fait rien",
+      "passes": false
+    },
+    {
+      "id": "cli-02",
+      "description": "Focus NUI (SetNuiFocus), blocage des contrôles sans boucle permanente, fermeture propre (Échap, bouton, mort, objet perdu)",
+      "verification": "test en jeu : focus rendu dans tous les cas ; resmon 0,00 ms fermée",
+      "passes": false
+    },
+    {
+      "id": "cli-03",
+      "description": "Animation tablette en main + prop, supprimés à la fermeture et à l arrêt de la ressource",
+      "verification": "test en jeu : restart pop_tablet pendant l usage ne laisse ni prop ni animation",
+      "passes": false
+    },
+    {
+      "id": "cli-04",
+      "description": "client/locale.lua : table de textes en + langue de la tablette (Locales[lang]), RTL",
+      "verification": "test en jeu : tablette en ar s affiche en RTL ; tests vitest sur clés manquantes",
+      "passes": false
+    },
+    {
+      "id": "cli-05",
+      "description": "client/nui.lua : relais tablet:call vers callbacks serveur avec liste blanche des noms",
+      "verification": "test en jeu : nom hors liste rejeté ; tests vitest du client typé",
+      "passes": false
+    },
+    {
+      "id": "cli-06",
+      "description": "Horloge et date du jeu envoyées en snapshot, avancées par la NUI, resynchronisation 60 s seulement Horloge/Météo ouverte",
+      "verification": "test en jeu : heure NUI = GetClockHours/Minutes à +- 1 min ; aucune minuterie Lua si autre appli",
+      "passes": false
+    },
+    {
+      "id": "cli-07",
+      "description": "Scheduler client : une SetTimeout vers la prochaine échéance (minutes de jeu -> ms), relecture de l heure, re-planification",
+      "verification": "tests/run.lua : calcul de délai ; test en jeu : alarme à +2 min jeu sonne tablette fermée",
+      "passes": false
+    },
+    {
+      "id": "cli-08",
+      "description": "Exports client IsOpen, Close, OpenApp",
+      "verification": "test en jeu : appel depuis une ressource de test",
+      "passes": false
+    },
+    {
+      "id": "cli-09",
+      "description": "Fermeture forcée (forceClose) quand l objet est perdu ou le joueur meurt",
+      "verification": "test en jeu : retirer l objet pendant l usage ferme la tablette",
+      "passes": false
+    },
+    {
+      "id": "ui-01",
+      "description": "Projet ui/pop-os (Vite, React, TS, motion, pnpm) construit vers web/dist ; fichiers versionnés ; dist <= 450 Ko JS",
+      "verification": "pnpm build puis taille de dist ; git status montre dist",
+      "passes": false
+    },
+    {
+      "id": "ui-02",
+      "description": "Séparation device/ sdk/ apps/ : aucune importation d apps vers device",
+      "verification": "vitest ou script lint : aucun import device dans apps/",
+      "passes": false
+    },
+    {
+      "id": "ui-03",
+      "description": "sdk : AppProps layout regular/compact, useT, useNui, useNotify, composants communs",
+      "verification": "vitest : rendu de chaque composant en regular et compact sans erreur",
+      "passes": false
+    },
+    {
+      "id": "ui-04",
+      "description": "i18n : toutes les chaînes visibles viennent de la table de clés ; RTL",
+      "verification": "script de contrôle : aucune chaîne littérale visible ; vitest RTL",
+      "passes": false
+    },
+    {
+      "id": "ui-05",
+      "description": "Thème clair et sombre, accent Config.AccentColor, transparence réglable, prefers-reduced-motion",
+      "verification": "capture clair/sombre ; vitest sur le thème",
+      "passes": false
+    },
+    {
+      "id": "ui-06",
+      "description": "Page sans CDN ni police externe ; pop:ready et close implémentés ; messages kit ignorés",
+      "verification": "revue : aucun réseau au chargement ; test en jeu : console NUI vide",
+      "passes": false
+    },
+    {
+      "id": "ui-07",
+      "description": "Boutons matériels (haut = verrouiller, volume +/-) et barre d accueil",
+      "verification": "vitest + capture clair/sombre comparée à la maquette",
+      "passes": false
+    },
+    {
+      "id": "ui-08",
+      "description": "Écran de verrouillage : heure et date du jeu, widgets réels, notifications",
+      "verification": "vitest + capture clair/sombre comparée à la maquette",
+      "passes": false
+    },
+    {
+      "id": "ui-09",
+      "description": "Saisie du code (4 chiffres, secousse, compteur de blocage)",
+      "verification": "vitest + capture clair/sombre comparée à la maquette ; test en jeu avec mauvais code",
+      "passes": false
+    },
+    {
+      "id": "ui-10",
+      "description": "Premier allumage (langue, code, nom, adresse mail)",
+      "verification": "vitest + capture clair/sombre comparée à la maquette ; test en jeu",
+      "passes": false
+    },
+    {
+      "id": "ui-11",
+      "description": "Écran d accueil : grille paginée, dock, widgets, mode édition",
+      "verification": "vitest + capture clair/sombre comparée à la maquette",
+      "passes": false
+    },
+    {
+      "id": "ui-12",
+      "description": "Barre d état (heure du jeu, batterie réelle, application au premier plan)",
+      "verification": "vitest + capture clair/sombre comparée à la maquette",
+      "passes": false
+    },
+    {
+      "id": "ui-13",
+      "description": "Centre de notifications et bannière",
+      "verification": "vitest + capture clair/sombre comparée à la maquette ; test en jeu : notification reçue tablette ouverte et fermée",
+      "passes": false
+    },
+    {
+      "id": "ui-14",
+      "description": "Centre de contrôle (luminosité, volume, sombre, concentration, minuteur, calculette, photo, notes, lecteur, partage) sans bascule factice",
+      "verification": "vitest + capture clair/sombre comparée à la maquette",
+      "passes": false
+    },
+    {
+      "id": "ui-15",
+      "description": "Recherche (applis, contacts, notes) et sélecteur d applis",
+      "verification": "vitest + capture clair/sombre comparée à la maquette",
+      "passes": false
+    },
+    {
+      "id": "ui-16",
+      "description": "Transitions d ouverture/fermeture d applis avec motion, sans animation en continu hors écran",
+      "verification": "vitest ; profil NUI : pas de frame >16 ms sur ouverture d appli (relevé noté)",
+      "passes": false
+    },
+    {
+      "id": "ui-17",
+      "description": "Listes virtualisées au-delà de 100 éléments",
+      "verification": "vitest : 1000 éléments, nombre de nœuds DOM <= 60",
+      "passes": false
+    },
+    {
+      "id": "app-set-01",
+      "description": "Réglages : nom, langue (10), thème, fond, transparence, luminosité, volume, sonnerie",
+      "verification": "vitest + capture clair/sombre comparée à la maquette ; test en jeu : langue changée persistée après réouverture",
+      "passes": false
+    },
+    {
+      "id": "app-set-02",
+      "description": "Réglages : code, batterie, informations de l appareil (numéro, série masqué)",
+      "verification": "vitest + capture clair/sombre comparée à la maquette",
+      "passes": false
+    },
+    {
+      "id": "app-sto-01",
+      "description": "Boutique : catalogue, installer, retirer, filtre par job côté serveur",
+      "verification": "test en jeu : appli retirée disparaît de l accueil ; appli d un job refusée à un autre job",
+      "passes": false
+    },
+    {
+      "id": "app-cam-01",
+      "description": "Appareil photo : CreateMobilePhone + CellCamActivate, retournement selfie, fermeture sans fuite",
+      "verification": "test en jeu : activation/désactivation 10 fois sans erreur ni objet résiduel",
+      "passes": false
+    },
+    {
+      "id": "app-cam-02",
+      "description": "Appareil photo : obturateur via screencapture serveur (mode database), interface masquée pendant la capture",
+      "verification": "test en jeu : photo en base <= 150 Ko, visible dans Photos",
+      "passes": false
+    },
+    {
+      "id": "app-cam-03",
+      "description": "Appareil photo : mode remote avec clé en convar set (jamais setr)",
+      "verification": "test en jeu avec hébergeur de test ; revue : aucune clé dans le dépôt ni envoyée au client",
+      "passes": false
+    },
+    {
+      "id": "app-pho-01",
+      "description": "Photos : galerie paginée, favoris, suppression, envoi en pièce jointe",
+      "verification": "vitest + capture clair/sombre comparée à la maquette ; test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-not-01",
+      "description": "Notes : créer, modifier, supprimer, épingler, recherche, limites",
+      "verification": "vitest + test en jeu ; 201e note refusée",
+      "passes": false
+    },
+    {
+      "id": "app-cal-01",
+      "description": "Calendrier : vues mois/jour, créer/modifier/supprimer événement (dates du jeu)",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-cal-02",
+      "description": "Calendrier : alerte à l heure (scheduler), notification tablette fermée",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-rem-01",
+      "description": "Rappels : listes, rappels, échéance, alerte, cocher",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-fil-01",
+      "description": "Fichiers : dossiers, documents texte, raccourcis photos/enregistrements/tableaux, déplacement",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-fil-02",
+      "description": "Fichiers : lien de partage par jeton, ouverture d un jeton reçu",
+      "verification": "test en jeu à deux joueurs",
+      "passes": false
+    },
+    {
+      "id": "app-tab-01",
+      "description": "Tableau : dessin (traits, couleurs, gomme), sauvegarde, rechargement identique",
+      "verification": "test en jeu : rechargement fidèle ; tableau >128 Ko refusé",
+      "passes": false
+    },
+    {
+      "id": "app-hor-01",
+      "description": "Horloge : heure du jeu et horloges du monde fictives",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-hor-02",
+      "description": "Horloge : alarmes (répétition, activation) qui sonnent tablette fermée",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-hor-03",
+      "description": "Horloge : minuteur persistant à la fermeture, chronomètre NUI",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-calc-01",
+      "description": "Calculette : opérations, priorité, erreurs (division par zéro)",
+      "verification": "vitest",
+      "passes": false
+    },
+    {
+      "id": "app-met-01",
+      "description": "Météo : type, pluie, vent, jour/nuit du jeu, prévision actuel -> suivant",
+      "verification": "test en jeu : /weather modifie le jeu et la Météo suit à la resynchronisation",
+      "passes": false
+    },
+    {
+      "id": "app-pla-01",
+      "description": "Plans : position, rue, recherche de lieux de shared/places.lua",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-pla-02",
+      "description": "Plans : itinéraire par SetNewWaypoint, annulation par SetWaypointOff",
+      "verification": "test en jeu : le GPS natif apparaît puis disparaît",
+      "passes": false
+    },
+    {
+      "id": "app-pla-03",
+      "description": "Plans : carte du menu pause natif et récupération du point posé",
+      "verification": "test en jeu : hash et sprite validés, ou limite documentée",
+      "passes": false
+    },
+    {
+      "id": "app-dic-00",
+      "description": "Dictaphone : test du micro NUI (getUserMedia) et décision granted/denied documentée",
+      "verification": "test en jeu : résultat noté dans PROGRESS ; si denied, appli en mode dégradé ou masquée selon décision",
+      "passes": false
+    },
+    {
+      "id": "app-dic-01",
+      "description": "Dictaphone : enregistrement, lecture, renommage, suppression (si micro accordé)",
+      "verification": "test en jeu ; sinon preuve du mode dégradé",
+      "passes": false
+    },
+    {
+      "id": "app-tra-01",
+      "description": "Traduire : conversation entre deux langues via service configuré, cache, limites",
+      "verification": "test en jeu avec un service de test ; sans service l appli est masquée",
+      "passes": false
+    },
+    {
+      "id": "app-bou-01",
+      "description": "Bourse : simulation serveur, symboles fictifs, bornes de prix",
+      "verification": "tests/run.lua : 10 000 pas, prix dans [5 %, 10x]",
+      "passes": false
+    },
+    {
+      "id": "app-bou-02",
+      "description": "Bourse : minuterie seulement avec abonné, push par index, zéro envoi aux non abonnés",
+      "verification": "test en jeu : resmon serveur 0,00 ms sans abonné ; capture réseau : paquets <= 200 octets",
+      "passes": false
+    },
+    {
+      "id": "app-bou-03",
+      "description": "Bourse : liste de suivi, chiffres clés, actualités depuis les modèles de locale",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-msg-01",
+      "description": "Messages : liste de conversations, fil, envoi, réception en direct, non lus",
+      "verification": "test en jeu à deux joueurs",
+      "passes": false
+    },
+    {
+      "id": "app-msg-02",
+      "description": "Messages : pièces jointes photo/contact/position, propriété vérifiée",
+      "verification": "test en jeu : photo d un autre refusée",
+      "passes": false
+    },
+    {
+      "id": "app-msg-03",
+      "description": "Messages : destinataire hors ligne ou sans tablette, remise à la prochaine ouverture",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-tel-01",
+      "description": "Téléphone : clavier, journal, appels manqués",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-tel-02",
+      "description": "Téléphone : appel avec voix via pma-voice setPlayerCall, fin propre à la déconnexion",
+      "verification": "test en jeu à deux joueurs : audio entendu, setPlayerCall remis à la sortie",
+      "passes": false
+    },
+    {
+      "id": "app-tel-03",
+      "description": "Téléphone : occupé, refus, non décroché, sans pma-voice (erreur claire)",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-mai-01",
+      "description": "Mail : boîtes, lecture, rédaction, envoi entre tablettes, notification",
+      "verification": "test en jeu à deux joueurs",
+      "passes": false
+    },
+    {
+      "id": "app-mai-02",
+      "description": "Mail : dossiers, drapeau, corbeille, limites (5000 car., 300 mails)",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-con-01",
+      "description": "Contacts : créer, modifier, supprimer, favoris, appeler/écrire",
+      "verification": "vitest + test en jeu",
+      "passes": false
+    },
+    {
+      "id": "app-nav-01",
+      "description": "Navigateur : pages internes pop://, sites enregistrés par API, favoris",
+      "verification": "test en jeu avec RegisterSite",
+      "passes": false
+    },
+    {
+      "id": "app-nav-02",
+      "description": "Navigateur : liens externes seulement AllowedHosts, message clair si intégration refusée",
+      "verification": "test en jeu : hôte hors liste refusé",
+      "passes": false
+    },
+    {
+      "id": "app-mus-01",
+      "description": "Musique : stations configurées, lecture, volume, mini-lecteur du centre de contrôle",
+      "verification": "test en jeu : lecture continue tablette fermée",
+      "passes": false
+    },
+    {
+      "id": "app-sha-01",
+      "description": "Partage de proximité : liste des joueurs proches, offre, acceptation, distance revérifiée",
+      "verification": "test en jeu : refus à 10 m, succès à 2 m",
+      "passes": false
+    },
+    {
+      "id": "api-01",
+      "description": "RegisterApp : validation (id, page de la ressource appelante, doublon), retrait à l arrêt de la ressource",
+      "verification": "test en jeu avec ressource d exemple ; restart de celle-ci retire l appli",
+      "passes": false
+    },
+    {
+      "id": "api-02",
+      "description": "Applis API : filtre par jobs côté serveur à l installation, l ouverture et onCall",
+      "verification": "test en jeu : mauvais job refusé à chaque étape",
+      "passes": false
+    },
+    {
+      "id": "api-03",
+      "description": "Notify par source et par serial, clés traduites par la tablette, limites et débit",
+      "verification": "test en jeu : 6 notifications/s, la 6e rejetée",
+      "passes": false
+    },
+    {
+      "id": "api-04",
+      "description": "OpenApp serveur et client, passe par le code de la tablette",
+      "verification": "test en jeu : tablette verrouillée demande le code puis ouvre l appli",
+      "passes": false
+    },
+    {
+      "id": "api-05",
+      "description": "Appel appli -> ressource (pop-app:call) et événements vers la page, iframe sandbox",
+      "verification": "test en jeu : appli d exemple échange un message, sans accès aux données de la tablette",
+      "passes": false
+    },
+    {
+      "id": "api-06",
+      "description": "Exports GetSerial, RegisterSite, MarketShock, GetApiVersion",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "api-07",
+      "description": "Exemple d appli API documenté (ressource de test hors dépôt ou dossier examples/)",
+      "verification": "revue de docs/api-applis.md à jour avec l exemple",
+      "passes": false
+    },
+    {
+      "id": "perf-01",
+      "description": "0,00 ms au repos côté client (tablette fermée)",
+      "verification": "resmon relevé et noté dans PROGRESS ; revue : aucun CreateThread avec boucle",
+      "passes": false
+    },
+    {
+      "id": "perf-02",
+      "description": "0,00 ms au repos côté serveur (sans abonné Bourse)",
+      "verification": "resmon serveur relevé ; revue : aucun while true ni SetInterval",
+      "passes": false
+    },
+    {
+      "id": "perf-03",
+      "description": "Usage normal <= 0,05 ms client, caméra <= 0,10 ms",
+      "verification": "resmon relevé pendant l usage",
+      "passes": false
+    },
+    {
+      "id": "perf-04",
+      "description": "Aucun polling : push seulement ; paquets <= 1 Ko",
+      "verification": "relevé réseau en jeu",
+      "passes": false
+    },
+    {
+      "id": "perf-05",
+      "description": "Une requête SQL maximum par callback, index vérifiés (EXPLAIN)",
+      "verification": "EXPLAIN sur les requêtes principales, notes dans PROGRESS",
+      "passes": false
+    },
+    {
+      "id": "perf-06",
+      "description": "Bundle et mémoire NUI : dist JS <= 450 Ko, mémoire client < 40 Mo ouverte",
+      "verification": "taille de dist ; relevé de mémoire",
+      "passes": false
+    },
+    {
+      "id": "perf-07",
+      "description": "Revue : une seule boucle autorisée pendant l ouverture, justifiée par écrit si présente",
+      "verification": "revue de code client",
+      "passes": false
+    },
+    {
+      "id": "sec-01",
+      "description": "Objet porté vérifié à chaque callback (aucune confiance au serial client)",
+      "verification": "test en jeu : callback appelé sans objet via exécution NUI forcée, refusé",
+      "passes": false
+    },
+    {
+      "id": "sec-02",
+      "description": "Code jamais en clair ni journalisé ni renvoyé ; pepper en convar set",
+      "verification": "revue de code + recherche du code dans les journaux",
+      "passes": false
+    },
+    {
+      "id": "sec-03",
+      "description": "Propriété : tout WHERE porte serial de session",
+      "verification": "revue de code : grep des requêtes sans serial",
+      "passes": false
+    },
+    {
+      "id": "sec-04",
+      "description": "Anti-spam par callback et limites par action (Callback + limites)",
+      "verification": "test en jeu : rafale de 50 appels, rejet après la limite",
+      "passes": false
+    },
+    {
+      "id": "sec-05",
+      "description": "Tailles max appliquées côté serveur partout",
+      "verification": "tests/run.lua",
+      "passes": false
+    },
+    {
+      "id": "sec-06",
+      "description": "Aucune clé ni secret dans le dépôt ; clés en convar set, jamais setr",
+      "verification": "revue : grep des motifs de clé ; convars lues côté serveur seulement",
+      "passes": false
+    },
+    {
+      "id": "sec-07",
+      "description": "Texte utilisateur affiché sans HTML (aucun dangerouslySetInnerHTML)",
+      "verification": "grep dans ui/pop-os/src : zéro occurrence",
+      "passes": false
+    },
+    {
+      "id": "sec-08",
+      "description": "Appels SQL paramétrés uniquement",
+      "verification": "revue : grep de concaténation dans les requêtes",
+      "passes": false
+    },
+    {
+      "id": "sec-09",
+      "description": "Relais NUI -> serveur limité à la liste blanche",
+      "verification": "test en jeu",
+      "passes": false
+    },
+    {
+      "id": "i18n-01",
+      "description": "10 fichiers de locales avec les mêmes clés, aucune clé manquante",
+      "verification": "script de comparaison des clés : 0 manquante",
+      "passes": false
+    },
+    {
+      "id": "i18n-02",
+      "description": "Aucun texte en dur dans Lua ni dans l interface",
+      "verification": "grep/script de contrôle : 0 chaîne visible littérale",
+      "passes": false
+    },
+    {
+      "id": "i18n-03",
+      "description": "Arabe en RTL : toutes les vues miroir correctes",
+      "verification": "capture ar de chaque écran système et de 5 applis",
+      "passes": false
+    },
+    {
+      "id": "i18n-04",
+      "description": "Mise en page compact rendue par chaque appli (futur téléphone)",
+      "verification": "vitest : rendu compact de chacune des 22 applis sans erreur",
+      "passes": false
+    },
+    {
+      "id": "lint-01",
+      "description": "luacheck 0/0 sur resources et templates",
+      "verification": "luacheck resources templates : 0 warnings / 0 errors",
+      "passes": false
+    },
+    {
+      "id": "lint-02",
+      "description": "luac5.4 -p sur tous les .lua du script",
+      "verification": "luac5.4 -p sans erreur (luac5.4 à installer sur le poste)",
+      "passes": false
+    },
+    {
+      "id": "lint-03",
+      "description": "tsc --noEmit, vitest, build Vite verts ; dist à jour dans git",
+      "verification": "pnpm typecheck && pnpm test && pnpm build ; git diff dist vide après second build",
+      "passes": false
+    },
+    {
+      "id": "lint-04",
+      "description": "node --check sur les .js hors dist",
+      "verification": "node --check sur chaque fichier",
+      "passes": false
+    },
+    {
+      "id": "doc-01",
+      "description": "README du script : installation, item, convars, config, mode repli",
+      "verification": "relecture",
+      "passes": false
+    },
+    {
+      "id": "arb-01",
+      "description": "Centre de contrôle : Mode Avion et Wi-Fi coupent réellement SMS, appels, mails, Navigateur, Boutique ; Bluetooth, rotation, recopie mémorisés",
+      "verification": "test vitest de la logique réseau + appel serveur refusé quand mode avion (log)",
+      "passes": false
+    },
+    {
+      "id": "arb-02",
+      "description": "Enregistrement d écran depuis le centre de contrôle : photo de l écran ajoutée à Photos",
+      "verification": "capture en jeu ou chemin serveur testé",
+      "passes": false
+    },
+    {
+      "id": "arb-03",
+      "description": "Traduire hors ligne : dictionnaire embarqué 10 langues, phrases puis mot à mot, jamais masquée",
+      "verification": "vitest sur la fonction de traduction (fr->en, en->es, phrase connue et mot inconnu)",
+      "passes": false
+    },
+    {
+      "id": "arb-04",
+      "description": "Dictaphone : repli mémo dicté (texte horodaté + synthèse vocale si disponible) quand le micro est refusé",
+      "verification": "vitest sur le choix de mode + rendu de l écran dégradé",
+      "passes": false
+    }
+  ]
+}
