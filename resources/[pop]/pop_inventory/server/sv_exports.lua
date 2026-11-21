@@ -166,8 +166,11 @@ AddEventHandler('onResourceStop', function(resourceName)
   if resourceName ~= GetCurrentResourceName() then
     return
   end
+  -- Sauvegarde immédiate de tous les inventaires (la boucle de sauvegarde
+  -- s'arrête avec la ressource, un simple markDirty serait perdu).
   for identifier, store in pairs(Stores) do
-    markDirty(identifier)
+    if store._loaded then store._dirty = true end
+    pcall(saveStore, identifier, store, true)
   end
   saveGround(true)
 end)

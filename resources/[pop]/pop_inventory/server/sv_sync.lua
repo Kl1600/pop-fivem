@@ -6,15 +6,17 @@ RegisterNetEvent('pop_inventory:server:playerReady', function(coords)
     return
   end
   
-  local store = loadStore(identifier)
-  if not store then
-    -- Erreur critique de chargement, on kick pour éviter de corrompre les données ?
-    -- Ou au moins on n'active pas le store
-    DropPlayer(src, "[POP_INVENTORY] Erreur critique lors du chargement de l'inventaire. Reconnectez-vous.")
-    return
+  -- Inventaire déjà en mémoire : on ne le recharge pas depuis la base (sinon un
+  -- playerReady répété écraserait l'état courant et permettrait de dupliquer).
+  if not Stores[identifier] then
+    local store = loadStore(identifier)
+    if not store then
+      DropPlayer(src, "[POP_INVENTORY] Erreur critique lors du chargement de l'inventaire. Reconnectez-vous.")
+      return
+    end
+    Stores[identifier] = store
   end
 
-  Stores[identifier] = store
   sendState(src, coords)
   TriggerClientEvent('pop_inventory:client:applyEquipment', src, buildEquipmentDefs(Stores[identifier]))
 end)

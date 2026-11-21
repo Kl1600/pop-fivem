@@ -1127,19 +1127,30 @@ CreateThread(function()
 end)
 
 
+-- Les valeurs peuvent arriver en chaînes (pop_clothes, JSON) : tout est converti
+-- en nombre. Renvoie true si le composant 3 (bras) a été posé.
 local function applyComponents(ped, components)
+  local setArms = false
   for compId, data in pairs(components or {}) do
-    SetPedComponentVariation(ped, tonumber(compId), data.drawable or 0, data.texture or 0, data.palette or 0)
+    local id = tonumber(compId)
+    if id and id >= 0 and id <= 11 and type(data) == 'table' then
+      SetPedComponentVariation(ped, id, tonumber(data.drawable) or 0, tonumber(data.texture) or 0, tonumber(data.palette) or 0)
+      if id == 3 then setArms = true end
+    end
   end
+  return setArms
 end
 
 local function applyProps(ped, props)
   for propId, data in pairs(props or {}) do
-    local drawable = data.drawable
-    if drawable == nil or drawable < 0 then
-      ClearPedProp(ped, tonumber(propId))
-    else
-      SetPedPropIndex(ped, tonumber(propId), drawable, data.texture or 0, true)
+    local id = tonumber(propId)
+    if id and type(data) == 'table' then
+      local drawable = tonumber(data.drawable)
+      if drawable == nil or drawable < 0 then
+        ClearPedProp(ped, id)
+      else
+        SetPedPropIndex(ped, id, drawable, tonumber(data.texture) or 0, true)
+      end
     end
   end
 end
@@ -1180,6 +1191,7 @@ end
 applyClothing = function(equipment)
   local ped = PlayerPedId()
   applyNude()
+  local armsFromClothes = false
 
   for _, item in pairs(equipment or {}) do
     local defId = item
@@ -1191,7 +1203,7 @@ applyClothing = function(equipment)
     end
     
     if meta and (meta.components or meta.props) then
-        if meta.components then applyComponents(ped, meta.components) end
+        if meta.components and applyComponents(ped, meta.components) then armsFromClothes = true end
         if meta.props then applyProps(ped, meta.props) end
     else
         local config = Config.Clothing and Config.Clothing[defId]
@@ -1199,7 +1211,7 @@ applyClothing = function(equipment)
           local gender = getGender()
           local data = config[gender]
           if data then
-            applyComponents(ped, data.components)
+            if applyComponents(ped, data.components) then armsFromClothes = true end
             applyProps(ped, data.props)
           end
         end
@@ -1210,7 +1222,9 @@ applyClothing = function(equipment)
   -- Après l'application de TOUS les vêtements de l'inventaire, on écrase de force 
   -- l'éventuelle texture de bras (component 3) chargée par un t-shirt pour garder
   -- 100% des bras choisis par l'utilisateur dans son menu inventaire.
-  if customTorso ~= nil then
+  -- Exception : si un vêtement porté fixe lui-même les bras (haut du créateur ou
+  -- de la boutique), on les garde, sinon le haut s'affiche avec des bras décalés.
+  if customTorso ~= nil and not armsFromClothes then
     SetPedComponentVariation(ped, 3, customTorso, 0, 0)
   end
 end
@@ -1352,10 +1366,33 @@ exports('RefreshEquipment', function()
     end
 end)
 
+-- Réapplique la tenue portée après un rechargement du skin (ESX/skinchanger
+-- remettent le skin sauvegardé, « nu », au spawn). Les appels rapprochés sont
+-- regroupés en un seul. Rien pendant la création de perso.
+local reapplyToken = 0
+local function reapplyEquipment(delay)
+  reapplyToken = reapplyToken + 1
+  local token = reapplyToken
+  SetTimeout(delay or 500, function()
+    if token ~= reapplyToken then return end
+    if LocalPlayer.state.charcreatorOpen then return end
+    if currentEquipment then
+      applyClothing(currentEquipment)
+    end
+  end)
+end
+
+local function esxReady()
+  if not ESX then return true end
+  return ESX.IsPlayerLoaded and ESX.IsPlayerLoaded() or false
+end
+
 local function playerReady()
   CreateThread(function()
-    Wait(4000) -- Délai de sécurité rallongé pour laisser le temps au charcreator et skinchanger de finir
-    applyNude()
+    Wait(4000) -- laisse le temps au charcreator et à skinchanger de finir
+    -- En ESX, on attend que le joueur soit chargé : sinon l'inventaire serait
+    -- demandé trop tôt (vide). esx:playerLoaded relancera playerReady.
+    if not esxReady() then return end
     local coords = GetEntityCoords(PlayerPedId())
     TriggerServerEvent('pop_inventory:server:playerReady', { x = coords.x, y = coords.y, z = coords.z })
   end)
@@ -1363,6 +1400,21 @@ end
 
 AddEventHandler('playerSpawned', function()
   playerReady()
+  reapplyEquipment(1500)
+end)
+
+AddEventHandler('esx:onPlayerSpawn', function()
+  reapplyEquipment(1500)
+end)
+
+AddEventHandler('skinchanger:modelLoaded', function()
+  reapplyEquipment(500)
+end)
+
+-- Un rechargement du skin (esx_skin au spawn, coiffeur, admin…) remet le perso
+-- « nu » : on remet la tenue de l'inventaire par-dessus.
+AddEventHandler('skinchanger:loadSkin', function()
+  reapplyEquipment(800)
 end)
 
 RegisterNetEvent('esx:playerLoaded', function()

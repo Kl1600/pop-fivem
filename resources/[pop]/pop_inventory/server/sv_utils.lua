@@ -21,19 +21,24 @@ function createStore()
   }
 end
 
+-- Cache source -> identifiant ESX : sert pendant playerDropped, quand ESX a déjà
+-- retiré le joueur (sinon l'inventaire ne serait pas sauvegardé à la déconnexion).
+local SourceIdentifier = {}
+
 function getIdentifier(source)
-  print("^3[PAINTGUN][SV] getIdentifier called with source: " .. tostring(source) .. "^7")
   if not source or source == 0 or source == '' then
-    print("^1[PAINTGUN][SV] getIdentifier: source is invalid^7")
     return nil
   end
+  source = tonumber(source) or source
   if ESX then
     local xPlayer = ESX.GetPlayerFromId(source)
-    print("^3[PAINTGUN][SV] getIdentifier ESX: xPlayer = " .. tostring(xPlayer) .. "^7")
     if xPlayer and xPlayer.identifier then
-      print("^2[PAINTGUN][SV] getIdentifier ESX success: " .. tostring(xPlayer.identifier) .. "^7")
+      SourceIdentifier[source] = xPlayer.identifier
       return xPlayer.identifier
     end
+    -- Pas de repli sur la license en ESX : un joueur pas encore chargé aurait
+    -- sinon un inventaire vide (chargé sous sa license) et apparaîtrait en caleçon.
+    return SourceIdentifier[source]
   elseif QBCore then
     local xPlayer = QBCore.Functions.GetPlayer(source)
     if xPlayer and xPlayer.PlayerData.citizenid then
@@ -42,15 +47,19 @@ function getIdentifier(source)
   end
 
   local license = GetPlayerIdentifierByType(source, 'license')
-  print("^3[PAINTGUN][SV] getIdentifier license = " .. tostring(license) .. "^7")
   if license and license ~= '' then
     return license
   end
 
   local identifiers = GetPlayerIdentifiers(source)
-  print("^3[PAINTGUN][SV] getIdentifier fallback identifiers count = " .. tostring(identifiers and #identifiers or 0) .. "^7")
   return identifiers and identifiers[1]
 end
+
+-- Le cache est vidé un peu après la déconnexion, une fois les sauvegardes faites.
+AddEventHandler('playerDropped', function()
+  local src = tonumber(source) or source
+  SetTimeout(10000, function() SourceIdentifier[src] = nil end)
+end)
 
 function toVector3(coords)
   if not coords then

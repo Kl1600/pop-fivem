@@ -2319,9 +2319,11 @@ Config.Clothing = {
     male = { components = { [11] = { drawable = 524, texture = 6, palette = 0 } } },
     female = { components = { [11] = { drawable = 0, texture = 0, palette = 0 } } },
   },
+  -- T-shirt simple : haut (11) + sous-haut vide (8) + bras assortis (3).
+  -- Avant : composant 38 inexistant (homme) et haut 15 = torse nu (femme).
   tshirt = {
-    male = { components = { [38] = { drawable = 15, texture = 0, palette = 0 } } },
-    female = { components = { [11] = { drawable = 15, texture = 0, palette = 0 } } },
+    male = { components = { [11] = { drawable = 0, texture = 0, palette = 0 }, [8] = { drawable = 15, texture = 0, palette = 0 }, [3] = { drawable = 0, texture = 0, palette = 0 } } },
+    female = { components = { [11] = { drawable = 0, texture = 0, palette = 0 }, [8] = { drawable = 14, texture = 0, palette = 0 }, [3] = { drawable = 0, texture = 0, palette = 0 } } },
   },
   shoes = {
     male = { components = { [6] = { drawable = 1, texture = 0, palette = 0 } } },

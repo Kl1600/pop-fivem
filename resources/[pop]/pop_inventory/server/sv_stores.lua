@@ -65,7 +65,7 @@ function loadStore(identifier)
   return store
 end
 
-function saveStore(identifier, store)
+function saveStore(identifier, store, noYield)
   if not store or not store._loaded or not store._dirty then
     return
   end
@@ -89,8 +89,8 @@ function saveStore(identifier, store)
     end
   end
   
-  --[ Manière Forte: Yield before blocking encoding ]--
-  Wait(0)
+  -- Petite pause avant l'encodage (sauf à l'arrêt de la ressource, où Wait est impossible)
+  if not noYield then Wait(0) end
   local payload = json.encode({
     items = cleanItems,
     containers = cleanContainers,
