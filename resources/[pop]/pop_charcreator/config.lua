@@ -37,22 +37,10 @@ Config.SpawnPoints = {
 Config.Mode80s = true
 
 -- =============================================================
--- DATE DE NAISSANCE
--- -------------------------------------------------------------
--- Le serveur se déroule en 1980 : le champ reste librement
--- modifiable, mais on interdit une année incohérente avec l'époque
--- (impossible d'être né après le serveur, ex. 1990) tout en imposant
--- un âge minimum réaliste.
---
---  serverYear : année en jeu (le perso ne peut pas être né après).
---  minAge     : âge minimum -> année de naissance max = serverYear - minAge.
---  minYear    : borne basse de sécurité.
+-- DATE DE NAISSANCE : saisie libre au format JJ/MM/AAAA
+-- (les « / » s'ajoutent automatiquement, aucune limite d'année).
 -- =============================================================
-Config.BirthDate = {
-    serverYear = 1980,
-    minAge     = 18,
-    minYear    = 1900,
-}
+Config.BirthDate = {}
 
 -- =============================================================
 -- GESTION DE LA TAILLE DU PERSONNAGE (HAUTEUR)
