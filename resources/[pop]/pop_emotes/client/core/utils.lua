@@ -245,13 +245,11 @@ function PlayEmote(emote, emoteName)
 
         if emote.AnimationOptions.Prop then
             local x, y, z, xR, yR, zR = table.unpack(emote.AnimationOptions.PropPlacement)
-            local propEntity = CreateObject(GetHashKey(emote.AnimationOptions.Prop), 0, 0, 0, true, true, true)
             AttachProp(emote.AnimationOptions.Prop, emote.AnimationOptions.PropBone, x, y, z, xR, yR, zR, emote.AnimationOptions.PropTextureVariation)
         end
 
         if emote.AnimationOptions.SecondProp then
             local x, y, z, xR, yR, zR = table.unpack(emote.AnimationOptions.SecondPropPlacement)
-            local propEntity = CreateObject(GetHashKey(emote.AnimationOptions.SecondProp), 0, 0, 0, true, true, true)
             AttachProp(emote.AnimationOptions.SecondProp, emote.AnimationOptions.SecondPropBone, x, y, z, xR, yR, zR, emote.AnimationOptions.SecondPropTextureVariation)
         end
 
@@ -350,14 +348,12 @@ function PlaySharedEmote(emote, player)
 
         if emote.AnimationOptions.Prop then
             local x, y, z, xR, yR, zR = table.unpack(emote.AnimationOptions.PropPlacement)
-            local propEntity = CreateObject(GetHashKey(emote.AnimationOptions.Prop), 0, 0, 0, true, true, true)
             AttachProp(emote.AnimationOptions.Prop, emote.AnimationOptions.PropBone, x, y, z, xR, yR, zR, emote.AnimationOptions.PropTextureVariation)
         end
 
         if emote.AnimationOptions.SecondProp then
             local x, y, z, xR, yR, zR = table.unpack(emote.AnimationOptions.SecondPropPlacement)
-            local propEntity = CreateObject(GetHashKey(emote.AnimationOptions.SecondProp), 0, 0, 0, true, true, true)
-            AttachProp(emote.AnimationOptions.Prop, emote.AnimationOptions.PropBone, x, y, z, xR, yR, zR, emote.AnimationOptions.PropTextureVariation)
+            AttachProp(emote.AnimationOptions.SecondProp, emote.AnimationOptions.SecondPropBone, x, y, z, xR, yR, zR, emote.AnimationOptions.SecondPropTextureVariation)
         end
 
         if emote.AnimationOptions.EmoteMoving or IsPedInVehicle(PlayerPedId(-1), GetVehiclePedIsIn(PlayerPedId(-1), false), false) then

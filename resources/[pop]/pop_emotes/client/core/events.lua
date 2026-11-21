@@ -1,15 +1,17 @@
 RegisterNetEvent("emotes:AskForSharedEmote")
-AddEventHandler("emotes:AskForSharedEmote", function(emote, player)
+AddEventHandler("emotes:AskForSharedEmote", function(emoteName, player)
+    local emote = EmotesList.Shared[emoteName]
+    if not emote then return end
     EmoteNotify({
         type = 'VERT',
         duration = 5,
-        content = "Appuyer sur ~K Y pour accepter l'animation ~s".. emote[3]
+        content = "Appuyer sur ~K Y pour accepter l'animation ~s".. tostring(emote[3] or emoteName)
     })
     CreateThread(function()
         local timeout = GetGameTimer() + 5000
         while GetGameTimer() < timeout do
             if IsControlJustPressed(0, 246) then
-                TriggerServerEvent("emotes:AcceptSharedEmote", emote, player)
+                TriggerServerEvent("emotes:AcceptSharedEmote", emoteName, player)
                 return
             end
             Wait(0)
@@ -18,13 +20,14 @@ AddEventHandler("emotes:AskForSharedEmote", function(emote, player)
 end)
 
 RegisterNetEvent("emotes:PlaySharedEmote")
-AddEventHandler("emotes:PlaySharedEmote", function(emote, role, player)
-    if role == 1 then
-        PlaySharedEmote(emote, player)
-    elseif role == 2 then
+AddEventHandler("emotes:PlaySharedEmote", function(emoteName, role, player)
+    local emote = EmotesList.Shared[emoteName]
+    if not emote then return end
+    if role == 2 then
         emote = EmotesList.Shared[emote[4]]
-        PlaySharedEmote(emote, player)
+        if not emote then return end
     end
+    PlaySharedEmote(emote, player)
 end)
 
 RegisterNetEvent("emotes:StopEmote")
@@ -80,7 +83,7 @@ RegisterCommand("nearby", function(source, args)
     if not EmotesList.Shared[arg] then return end
     local player = GetClosestPlayer(3.0)
     if player ~= nil then
-        TriggerServerEvent("emotes:AskForSharedEmote", GetPlayerServerId(player), EmotesList.Shared[arg])
+        TriggerServerEvent("emotes:AskForSharedEmote", GetPlayerServerId(player), arg)
     else
         EmoteNotify({
             type = 'ROUGE',
@@ -91,16 +94,18 @@ end)
 
 RegisterNetEvent("emotes:RequestCloneEmote")
 AddEventHandler("emotes:RequestCloneEmote", function(player)
-    local emotes = GetCurrentEmote()
-    if emotes == nil then
+    local name = GetCurrentEmoteName()
+    if not name or name == '' then
         return
     end
-    TriggerServerEvent("emotes:GiveEmoteCloned", player, emotes)
+    TriggerServerEvent("emotes:GiveEmoteCloned", player, name)
 end )
 
 RegisterNetEvent("emotes:PlayEmote")
-AddEventHandler("emotes:PlayEmote", function(emote)
-    PlayEmote(emote)
+AddEventHandler("emotes:PlayEmote", function(emoteName)
+    local emote = type(emoteName) == 'string' and AllEmotes[emoteName] or nil
+    if not emote then return end
+    PlayEmote(emote, emoteName)
 end)
 
 CreateThread(function()
@@ -116,15 +121,14 @@ end)
 
 RegisterNetEvent("emotes:RequestCopyEmote")
 AddEventHandler("emotes:RequestCopyEmote", function(requester)
-    local emote = GetCurrentEmote()
-    local name = current_emote_name or ''
-    TriggerServerEvent("emotes:GiveCopiedEmote", requester, emote, name)
+    TriggerServerEvent("emotes:GiveCopiedEmote", requester, current_emote_name or '')
 end)
 
 RegisterNetEvent("emotes:ReceiveCopiedEmote")
-AddEventHandler("emotes:ReceiveCopiedEmote", function(emote, emoteName)
+AddEventHandler("emotes:ReceiveCopiedEmote", function(emoteName)
+    local emote = type(emoteName) == 'string' and AllEmotes[emoteName] or nil
     if not emote then return end
-    PlayEmote(emote)
+    PlayEmote(emote, emoteName)
     local label = (emoteName and emoteName ~= '') and emoteName or 'inconnue'
     EmoteNotify({
         type = 'VERT',
