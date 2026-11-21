@@ -62,8 +62,23 @@ local function placePreviewCam()
   PointCamAtCoord(previewCam, aim.x, aim.y, aim.z)
 end
 
+-- L'aperçu n'est utilisé que si le perso est debout, libre et immobile.
+-- En voiture, en emote, en scénario/activité, à terre ou dans l'eau : vue normale.
+local function canUsePreview()
+  local ped = PlayerPedId()
+  if IsPedInAnyVehicle(ped, true) or not IsPedOnFoot(ped) then return false end
+  if IsEntityDead(ped) or IsPedRagdoll(ped) or IsPedFalling(ped) or IsPedSwimming(ped) then return false end
+  if IsPedUsingAnyScenario(ped) or IsPedCuffed(ped) or IsPedClimbing(ped) then return false end
+  local emote = LocalPlayer.state.currentEmote
+  if emote and emote ~= '' then return false end
+  if GetEntitySpeed(ped) > 0.5 then return false end
+  if IsEntityAttached(ped) then return false end
+  return true
+end
+
 local function startInvPedPreview()
   if previewActive then return end
+  if not canUsePreview() then return end
   previewActive = true
   previewCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
   SetCamFov(previewCam, CAM_FOV)
@@ -72,6 +87,7 @@ local function startInvPedPreview()
   RenderScriptCams(true, true, 300, true, false)
   CreateThread(function()
     while previewActive and isOpen do
+      if not canUsePreview() then break end -- monte en voiture, lance une emote…
       placePreviewCam()
       Wait(250)
     end
@@ -84,8 +100,8 @@ RegisterNUICallback('pedRect', function(_, cb)
 end)
 
 RegisterNUICallback('pedHover', function(data, cb)
-  -- Transparent mais garde la forme du perso
-  if data and data.hover then
+  -- Transparent mais garde la forme du perso (seulement si l'aperçu est affiché)
+  if data and data.hover and previewActive then
     SetEntityAlpha(PlayerPedId(), 120, false)
   else
     ResetEntityAlpha(PlayerPedId())
