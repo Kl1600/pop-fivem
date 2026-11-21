@@ -1,0 +1,51 @@
+/* Jetons, verre et polices de POP OS. Aucune ressource externe : la police Inter est embarquée par le build. */
+@font-face{font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap;src:url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap;src:url('@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2') format('woff2-variations');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+:root{--accent:#0088ff}
+html,body,#root{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}
+:where(button,input,textarea){all:unset;box-sizing:border-box}
+button{cursor:pointer}
+.pop{font-family:Inter,system-ui,"Segoe UI","Noto Sans Arabic",sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;color:#fff}
+.pop button{font-family:inherit}
+.pop *{box-sizing:border-box}
+
+/* Verre : un seul backdrop-filter par couche (les panneaux imbriqués dans une couche floutée sont à plat). */
+.g{background:rgba(255,255,255,var(--ga,.42));-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(255,255,255,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 1px rgba(0,0,0,.06),0 10px 30px rgba(0,0,0,.16)}
+.dk .g{background:rgba(28,28,32,var(--gad,.42));border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 1px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45)}
+.gw{background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 20px rgba(0,0,0,.18)}
+.wg{background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border:1px solid rgba(255,255,255,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 30px rgba(0,0,0,.12);color:#000}
+.dk .wg{background:rgba(30,30,34,.62);border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 30px rgba(0,0,0,.4);color:#fff}
+/* Variante à plat : même aspect, sans flou (panneau posé sur une couche déjà floutée, ou flou coupé). */
+.flat{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.g.flat{background:rgba(255,255,255,calc(var(--ga,.42) + .08))}
+.dk .g.flat{background:rgba(28,28,32,calc(var(--gad,.42) + .1))}
+.gw.flat{background:rgba(255,255,255,.22)}
+.wg.flat{background:rgba(255,255,255,.78)}
+.dk .wg.flat{background:rgba(30,30,34,.78)}
+/* Réglage « Flou du verre » coupé : plus aucun backdrop-filter, fonds plus opaques. */
+[data-blur="off"] .g,[data-blur="off"] .gw,[data-blur="off"] .wg,[data-blur="off"] .scrim{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+[data-blur="off"] .g{background:rgba(245,245,250,.82)}
+[data-blur="off"].dk .g,.dk[data-blur="off"] .g{background:rgba(34,34,40,.88)}
+[data-blur="off"] .scrim{background:rgba(0,0,0,.55)!important}
+
+.sub{color:rgba(60,60,67,.6)}.dk .sub{color:rgba(235,235,245,.6)}
+.tr{transition:transform .55s cubic-bezier(.2,.9,.25,1.02),opacity .35s ease}
+.fade{transition:opacity .3s ease}
+.key{transition:background .12s ease,transform .12s ease}.key:active{background:rgba(255,255,255,.5);transform:scale(.96)}
+.hot:hover{background:rgba(255,255,255,.14)}
+.btnhw{transition:transform .08s ease}
+.cc:active{transform:scale(.97)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-18px)}40%{transform:translateX(16px)}60%{transform:translateX(-10px)}80%{transform:translateX(6px)}}
+@keyframes jig{0%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}100%{transform:rotate(-2deg)}}
+.jig{animation:jig .28s ease-in-out infinite}
+.jig2{animation:jig .28s ease-in-out infinite;animation-delay:-.14s}
+.shake{animation:shake .5s ease}
+.scroll{overflow-y:auto;scrollbar-width:thin}
+
+/* Mouvement réduit : plus de transition longue ni d'animation en boucle. */
+@media (prefers-reduced-motion: reduce){
+  .tr,.fade,.key,.btnhw{transition-duration:.01s!important}
+  .jig,.jig2,.shake{animation:none!important}
+}
+[data-motion="off"] .tr,[data-motion="off"] .fade{transition-duration:.01s!important}
