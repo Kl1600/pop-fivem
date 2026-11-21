@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Horloge</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; position: relative; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden">
+
+<div class="{{c.glass}}" style="position: absolute; left: 50%; top: 26px; transform: translateX(-50%); height: 60px; border-radius: 30px; display: flex; align-items: center; gap: 4px; padding: 0 8px; z-index: 5">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button onClick="{{t.go}}" style="all: unset; cursor: pointer; height: 46px; padding: 0 20px; border-radius: 23px; display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; background: {{t.bg}}; color: {{t.fg}}; transition: background .2s"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"/></svg>{{t.label}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{isWorld}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; left: 0; right: 0; top: 110px; bottom: 0; padding: 0 70px">
+<span style="display: block; font-size: 34px; font-weight: 700; padding-bottom: 20px">Horloges</span>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px 40px">
+<sc-for list="{{clocks}}" as="k" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 28px; padding: 18px 26px; border-radius: 26px; background: {{c.cell}}">
+<svg aria-label="{{k.name}}" width="220" height="220" viewBox="0 0 200 200" style="flex-shrink: 0">
+<circle cx="100" cy="100" r="97" fill="{{k.face}}" stroke="{{c.sep}}" stroke-width="2"></circle>
+<sc-for list="{{k.ticks}}" as="tk" hint-placeholder-count="12"><line x1="{{tk.x1}}" y1="{{tk.y1}}" x2="{{tk.x2}}" y2="{{tk.y2}}" stroke="{{k.ink}}" stroke-width="3" stroke-linecap="round"></line></sc-for>
+<sc-for list="{{k.nums}}" as="n" hint-placeholder-count="4"><text x="{{n.x}}" y="{{n.y}}" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="600" fill="{{k.ink}}" font-family="Inter, system-ui, sans-serif">{{n.t}}</text></sc-for>
+<line x1="100" y1="100" x2="{{k.hx}}" y2="{{k.hy}}" stroke="{{k.ink}}" stroke-width="6" stroke-linecap="round"></line>
+<line x1="100" y1="100" x2="{{k.mx}}" y2="{{k.my}}" stroke="{{k.ink}}" stroke-width="4" stroke-linecap="round"></line>
+<line x1="{{k.tx}}" y1="{{k.ty}}" x2="{{k.sx}}" y2="{{k.sy}}" stroke="#ff9500" stroke-width="2" stroke-linecap="round"></line>
+<circle cx="100" cy="100" r="5" fill="#ff9500"></circle>
+</svg>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 24px; font-weight: 700">{{k.name}}</span>
+<span style="font-size: 15px; color: {{c.sub}}">{{k.sub}}</span>
+<span style="font-size: 40px; font-weight: 300; padding-top: 8px; font-variant-numeric: tabular-nums">{{k.digital}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isAlarm}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; right: 0; top: 110px; bottom: 0; padding: 0 150px; overflow-y: auto">
+<div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 18px">
+<span style="font-size: 34px; font-weight: 700">Alarmes</span>
+<span style="display: flex; gap: 10px">
+<button onClick="{{toggleEdit}}" class="{{c.glass}}" style="all: unset; cursor: pointer; height: 44px; padding: 0 20px; border-radius: 22px; display: flex; align-items: center; font-size: 16px; font-weight: 600; color: #ff9500">{{editLabel}}</button>
+<button onClick="{{newAlarm}}" aria-label="Ajouter une alarme" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: #ff9500"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</span>
+</div>
+<div style="border-radius: 20px; background: {{c.cell}}; overflow: hidden">
+<sc-for list="{{alarms}}" as="a" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 24px; border-bottom: 1px solid {{c.sep}}">
+<sc-if value="{{editMode}}" hint-placeholder-val="{{false}}"><button onClick="{{a.remove}}" aria-label="Supprimer l’alarme" style="all: unset; cursor: pointer; width: 26px; height: 26px; border-radius: 13px; background: #ff383c; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button></sc-if>
+<button onClick="{{a.open}}" style="all: unset; cursor: pointer; flex-grow: 1; display: flex; flex-direction: column; gap: 2px; opacity: {{a.dim}}; transition: opacity .2s">
+<span style="font-size: 56px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.1">{{a.time}}</span>
+<span style="font-size: 16px; color: {{c.sub}}">{{a.label}}, {{a.rep}}</span>
+</button>
+<button onClick="{{a.flip}}" aria-label="Activer l’alarme" style="all: unset; cursor: pointer; width: 54px; height: 32px; border-radius: 16px; background: {{a.track}}; position: relative; transition: background .2s"><span style="position: absolute; top: 2px; left: 2px; width: 28px; height: 28px; border-radius: 14px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.25); transform: translateX({{a.knob}}px); transition: transform .2s"></span></button>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSw}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; right: 0; top: 110px; bottom: 0; display: flex; flex-direction: column; align-items: center">
+<span style="font-size: 150px; font-weight: 200; font-variant-numeric: tabular-nums; padding-top: 40px; line-height: 1">{{swText}}</span>
+<div style="display: flex; gap: 70px; padding: 40px 0 30px">
+<button onClick="{{swLap}}" aria-label="Tour ou réinitialiser" style="all: unset; cursor: pointer; width: 104px; height: 104px; border-radius: 52px; background: {{c.fill}}; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: {{c.fg}}">{{swLeft}}</button>
+<button onClick="{{swToggle}}" aria-label="Démarrer ou arrêter" style="all: unset; cursor: pointer; width: 104px; height: 104px; border-radius: 52px; background: {{swColor}}; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fff">{{swRight}}</button>
+</div>
+<div style="width: 760px; flex-grow: 1; overflow-y: auto; border-top: 1px solid {{c.sep}}">
+<sc-for list="{{laps}}" as="l" hint-placeholder-count="3">
+<div style="display: flex; justify-content: space-between; padding: 14px 6px; border-bottom: 1px solid {{c.sep}}; font-size: 20px; color: {{l.color}}; font-variant-numeric: tabular-nums"><span>Tour {{l.n}}</span><span>{{l.t}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isTimer}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; right: 0; top: 110px; bottom: 0; display: flex; flex-direction: column; align-items: center">
+<div style="position: relative; width: 340px; height: 340px; margin-top: 10px">
+<svg aria-hidden="true" width="340" height="340" viewBox="0 0 340 340" style="transform: rotate(-90deg)">
+<circle cx="170" cy="170" r="150" fill="none" stroke="{{c.fill}}" stroke-width="12"></circle>
+<circle cx="170" cy="170" r="150" fill="none" stroke="{{ringColor}}" stroke-width="12" stroke-linecap="round" stroke-dasharray="942.5" stroke-dashoffset="{{ringOffset}}" style="transition: stroke-dashoffset .2s linear"></circle>
+</svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<span style="font-size: 72px; font-weight: 200; font-variant-numeric: tabular-nums">{{tmText}}</span>
+<span style="font-size: 16px; color: {{c.sub}}">{{tmSub}}</span>
+</div>
+</div>
+<div style="display: flex; gap: 70px; padding: 30px 0 26px">
+<button onClick="{{tmReset}}" aria-label="Annuler le minuteur" style="all: unset; cursor: pointer; width: 96px; height: 96px; border-radius: 48px; background: {{c.fill}}; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: {{c.fg}}">Annuler</button>
+<button onClick="{{tmToggle}}" aria-label="Démarrer ou mettre en pause" style="all: unset; cursor: pointer; width: 96px; height: 96px; border-radius: 48px; background: {{tmColor}}; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fff">{{tmRight}}</button>
+</div>
+<div style="display: flex; align-items: center; gap: 12px">
+<button onClick="{{tmLess}}" aria-label="Moins une minute" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: {{c.fg}}">−</button>
+<sc-for list="{{presets}}" as="p" hint-placeholder-count="6">
+<button onClick="{{p.go}}" style="all: unset; cursor: pointer; height: 44px; padding: 0 20px; border-radius: 22px; font-size: 16px; font-weight: 600; background: {{p.bg}}; color: {{p.fg}}; transition: background .2s">{{p.label}}</button>
+</sc-for>
+<button onClick="{{tmMore}}" aria-label="Plus une minute" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: {{c.fg}}">+</button>
+</div>
+<div style="width: 560px; margin-top: 28px; border-radius: 16px; background: {{c.cell}}; display: flex; justify-content: space-between; padding: 15px 20px; font-size: 17px; box-sizing: border-box"><span>Au terme</span><span style="color: {{c.sub}}">Sonnerie Vinewood</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasEd}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 10">
+<div class="{{c.glass}}" style="width: 520px; border-radius: 30px; padding: 26px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+<span style="font-size: 22px; font-weight: 700; text-align: center">{{ed.title}}</span>
+<div style="display: flex; justify-content: center; align-items: center; gap: 16px">
+<span style="display: flex; flex-direction: column; align-items: center; gap: 6px"><button onClick="{{hUp}}" aria-label="Heure plus" style="all: unset; cursor: pointer; width: 60px; height: 36px; border-radius: 12px; background: {{c.fill}}; text-align: center; color: {{c.fg}}">▲</button><span style="font-size: 72px; font-weight: 300; font-variant-numeric: tabular-nums">{{ed.hh}}</span><button onClick="{{hDown}}" aria-label="Heure moins" style="all: unset; cursor: pointer; width: 60px; height: 36px; border-radius: 12px; background: {{c.fill}}; text-align: center; color: {{c.fg}}">▼</button></span>
+<span style="font-size: 64px; font-weight: 300">:</span>
+<span style="display: flex; flex-direction: column; align-items: center; gap: 6px"><button onClick="{{mUp}}" aria-label="Minutes plus" style="all: unset; cursor: pointer; width: 60px; height: 36px; border-radius: 12px; background: {{c.fill}}; text-align: center; color: {{c.fg}}">▲</button><span style="font-size: 72px; font-weight: 300; font-variant-numeric: tabular-nums">{{ed.mm}}</span><button onClick="{{mDown}}" aria-label="Minutes moins" style="all: unset; cursor: pointer; width: 60px; height: 36px; border-radius: 12px; background: {{c.fill}}; text-align: center; color: {{c.fg}}">▼</button></span>
+</div>
+<input aria-label="Nom de l’alarme" placeholder="Nom" value="{{ed.label}}" onInput="{{onLabel}}" style="all: unset; height: 46px; padding: 0 16px; border-radius: 14px; background: {{c.fill}}; font-size: 17px; color: {{c.fg}}">
+<div style="display: flex; gap: 10px; justify-content: space-between">
+<button onClick="{{edCancel}}" style="all: unset; cursor: pointer; flex: 1; height: 46px; border-radius: 23px; background: {{c.fill}}; text-align: center; line-height: 46px; font-size: 17px; font-weight: 600; color: {{c.fg}}">Annuler</button>
+<button onClick="{{edSave}}" style="all: unset; cursor: pointer; flex: 1; height: 46px; border-radius: 23px; background: #ff9500; text-align: center; line-height: 46px; font-size: 17px; font-weight: 600; color: #fff">Enregistrer</button>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { dark: !!props.dark, tab: 'world', now: Date.now(), editMode: false, ed: null, nid: 5,
+alarms: [{ id: 1, h: 7, m: 0, label: 'Prise de service', rep: 'En semaine', on: true }, { id: 2, h: 6, m: 30, label: 'Réveil', rep: 'Tous les jours', on: true }, { id: 3, h: 12, m: 15, label: 'Pause déjeuner', rep: 'En semaine', on: false }, { id: 4, h: 22, m: 0, label: 'Patrouille de nuit', rep: 'Ven, Sam', on: false }],
+sw: { running: false, base: 0, start: 0, laps: [] }, tm: { total: 300, left: 300000, running: false, end: 0, done: false } };
+}
+componentDidMount() { this.ck = setInterval(() => { if (this.state.tab === 'world') this.setState({ now: Date.now() }); }, 1000); }
+componentWillUnmount() { clearInterval(this.ck); clearInterval(this.iv); this.iv = null; }
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+startTick() {
+if (this.iv) return;
+this.iv = setInterval(() => {
+const s = this.state; const t = Date.now();
+if (s.tm.running && t >= s.tm.end) this.setState({ tm: { ...s.tm, running: false, left: 0, done: true }, now: t });
+else this.setState({ now: t });
+if (!this.state.sw.running && !this.state.tm.running) { clearInterval(this.iv); this.iv = null; }
+}, 50);
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#3a3a3c', glass: 'glass dk' }
+: { bg: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass' };
+const p2 = (n) => String(n).padStart(2, '0');
+const now = Date.now();
+const polar = (deg, r) => ({ x: +(100 + r * Math.sin(deg * Math.PI / 180)).toFixed(1), y: +(100 - r * Math.cos(deg * Math.PI / 180)).toFixed(1) });
+const zones = [['Los Santos', -8, 'Aujourd’hui, +0 h'], ['Liberty City', -5, 'Aujourd’hui, +3 h'], ['Vice City', -5, 'Aujourd’hui, +3 h'], ['Paris', 1, 'Demain, +9 h']];
+const clocks = zones.map((z) => {
+const d = new Date(now + z[1] * 3600000); const h = d.getUTCHours(); const m = d.getUTCMinutes(); const sec = d.getUTCSeconds();
+const night = h < 6 || h >= 18; const hp = polar(((h % 12) + m / 60) * 30, 52); const mp = polar((m + sec / 60) * 6, 76); const sp = polar(sec * 6, 84); const tp = polar(sec * 6 + 180, 18);
+const ticks = []; for (let i = 0; i < 12; i++) { const a = polar(i * 30, 90); const b = polar(i * 30, 82); ticks.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }); }
+const nums = [[0, '12'], [90, '3'], [180, '6'], [270, '9']].map((n) => { const q = polar(n[0], 68); return { x: q.x, y: q.y, t: n[1] }; });
+const sub = z[0] === 'Los Santos' ? z[2] : z[2];
+return { name: z[0], sub, digital: p2(h) + ':' + p2(m), face: night ? '#1c1c1e' : '#ffffff', ink: night ? '#ffffff' : '#000000', ticks, nums, hx: hp.x, hy: hp.y, mx: mp.x, my: mp.y, sx: sp.x, sy: sp.y, tx: tp.x, ty: tp.y };
+});
+const tdef = [['world', 'Horloges', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18'], ['alarm', 'Alarmes', 'M12 6a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM12 10v4l2 2M4 6l3-3M20 6l-3-3'], ['sw', 'Chronomètre', 'M12 7a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM12 11v4M10 3h4M12 3v4'], ['timer', 'Minuteurs', 'M6 3h12M6 21h12M7 3c0 6 10 6 10 9s-10 3-10 9']];
+const tabs = tdef.map((t) => ({ label: t[1], d: t[2], bg: s.tab === t[0] ? '#ff9500' : 'transparent', fg: s.tab === t[0] ? '#ffffff' : c.fg, go: () => this.setState({ tab: t[0], now: Date.now() }) }));
+const fmtSw = (ms) => { const cs = Math.floor(ms / 10) % 100; const sec = Math.floor(ms / 1000) % 60; const mi = Math.floor(ms / 60000); return p2(mi) + ':' + p2(sec) + ',' + p2(cs); };
+const swMs = s.sw.base + (s.sw.running ? now - s.sw.start : 0);
+const laps = []; let prev = 0; s.sw.laps.forEach((tot, i) => { laps.push({ n: i + 1, d: tot - prev }); prev = tot; });
+const durs = laps.map((l) => l.d); const best = Math.min.apply(null, durs); const worst = Math.max.apply(null, durs);
+const lapRows = laps.map((l) => ({ n: l.n, t: fmtSw(l.d), color: laps.length > 2 && l.d === best ? '#34c759' : laps.length > 2 && l.d === worst ? '#ff383c' : c.fg })).reverse();
+const tmLeft = s.tm.running ? Math.max(0, s.tm.end - now) : s.tm.left;
+const tsec = Math.ceil(tmLeft / 1000);
+const tmText = tsec >= 3600 ? Math.floor(tsec / 3600) + ':' + p2(Math.floor(tsec / 60) % 60) + ':' + p2(tsec % 60) : p2(Math.floor(tsec / 60)) + ':' + p2(tsec % 60);
+const setTotal = (sec) => this.setState({ tm: { total: sec, left: sec * 1000, running: false, end: 0, done: false } });
+const presets = [[60, '1 min'], [300, '5 min'], [600, '10 min'], [900, '15 min'], [1800, '30 min'], [3600, '1 h']].map((p) => ({ label: p[1], bg: s.tm.total === p[0] ? '#ff9500' : c.fill, fg: s.tm.total === p[0] ? '#ffffff' : c.fg, go: () => setTotal(p[0]) }));
+const alarms = s.alarms.map((a) => ({ time: p2(a.h) + ':' + p2(a.m), label: a.label, rep: a.rep, dim: a.on ? 1 : 0.45, track: a.on ? '#34c759' : (dark ? '#39393d' : '#e3e3e8'), knob: a.on ? 22 : 0,
+flip: () => this.setState({ alarms: s.alarms.map((x) => (x.id === a.id ? { ...x, on: !x.on } : x)) }),
+remove: () => this.setState({ alarms: s.alarms.filter((x) => x.id !== a.id) }),
+open: () => this.setState({ ed: { id: a.id, h: a.h, m: a.m, label: a.label, rep: a.rep } }) }));
+const ed = s.ed ? { title: s.ed.id ? 'Modifier l’alarme' : 'Ajouter une alarme', hh: p2(s.ed.h), mm: p2(s.ed.m), label: s.ed.label } : { title: '', hh: '', mm: '', label: '' };
+const setEd = (p) => this.setState({ ed: { ...s.ed, ...p } });
+return {
+c, dark, tabs, clocks, alarms, ed, laps: lapRows, presets, hasEd: !!s.ed, editMode: s.editMode, editLabel: s.editMode ? 'Terminé' : 'Modifier',
+isWorld: s.tab === 'world', isAlarm: s.tab === 'alarm', isSw: s.tab === 'sw', isTimer: s.tab === 'timer',
+toggleEdit: () => this.setState({ editMode: !s.editMode }),
+newAlarm: () => this.setState({ ed: { id: null, h: 8, m: 0, label: 'Alarme', rep: 'Jamais' } }),
+hUp: () => setEd({ h: (s.ed.h + 1) % 24 }), hDown: () => setEd({ h: (s.ed.h + 23) % 24 }), mUp: () => setEd({ m: (s.ed.m + 5) % 60 }), mDown: () => setEd({ m: (s.ed.m + 55) % 60 }),
+onLabel: (e) => setEd({ label: e.target.value }), edCancel: () => this.setState({ ed: null }),
+edSave: () => { const e2 = s.ed; if (e2.id) this.setState({ alarms: s.alarms.map((x) => (x.id === e2.id ? { ...x, h: e2.h, m: e2.m, label: e2.label || 'Alarme', on: true } : x)), ed: null }); else this.setState({ alarms: s.alarms.concat([{ id: s.nid, h: e2.h, m: e2.m, label: e2.label || 'Alarme', rep: e2.rep, on: true }]), nid: s.nid + 1, ed: null }); },
+swText: fmtSw(swMs), swLeft: s.sw.running ? 'Tour' : 'Réinit.', swRight: s.sw.running ? 'Arrêter' : 'Démarrer', swColor: s.sw.running ? '#ff383c' : '#34c759',
+swToggle: () => { if (s.sw.running) this.setState({ sw: { ...s.sw, running: false, base: swMs } }); else { this.setState({ sw: { ...s.sw, running: true, start: Date.now() } }); this.startTick(); } },
+swLap: () => { if (s.sw.running) this.setState({ sw: { ...s.sw, laps: s.sw.laps.concat([swMs]) } }); else this.setState({ sw: { running: false, base: 0, start: 0, laps: [] } }); },
+tmText, ringOffset: 942.5 * (1 - (s.tm.total ? tmLeft / (s.tm.total * 1000) : 0)), ringColor: s.tm.done ? '#ff383c' : '#ff9500',
+tmSub: s.tm.done ? 'Terminé' : (s.tm.running ? 'Se termine à ' + p2(new Date(s.tm.end).getHours()) + ':' + p2(new Date(s.tm.end).getMinutes()) : 'Durée ' + Math.round(s.tm.total / 60) + ' min'),
+tmRight: s.tm.running ? 'Pause' : (s.tm.done ? 'Relancer' : 'Démarrer'), tmColor: s.tm.running ? '#ff9500' : '#34c759',
+tmToggle: () => { if (s.tm.running) this.setState({ tm: { ...s.tm, running: false, left: Math.max(0, s.tm.end - Date.now()) } }); else { const left = s.tm.done || s.tm.left <= 0 ? s.tm.total * 1000 : s.tm.left; this.setState({ tm: { ...s.tm, running: true, done: false, left, end: Date.now() + left } }); this.startTick(); } },
+tmReset: () => setTotal(s.tm.total), tmMore: () => setTotal(Math.min(5940, s.tm.total + 60)), tmLess: () => setTotal(Math.max(60, s.tm.total - 60))
+};
+}
+}
+</script>
+</body>
+</html>

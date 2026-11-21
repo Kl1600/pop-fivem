@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+:where(button,input,textarea){all:unset;box-sizing:border-box}
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Dossiers" style="width: 280px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 14px 20px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 10px 12px">Dossiers</span>
+<span style="font-size: 13px; font-weight: 600; color: {{c.sub}}; padding: 6px 10px">Sur la tablette</span>
+<sc-for list="{{folders}}" as="f" hint-placeholder-count="5">
+<button onClick="{{f.go}}" style="cursor: pointer; display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 10px; border-radius: 10px; background: {{f.bg}}; color: {{f.fg}}">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{f.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{f.d}}"/></svg>
+<span style="flex-grow: 1; font-size: 17px">{{f.name}}</span><span style="font-size: 16px; color: {{f.sub}}">{{f.n}}</span>
+</button>
+</sc-for>
+</nav>
+
+<section aria-label="Liste des notes" style="width: 370px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.cell}}; border-right: 1px solid {{c.sep}}; display: flex; flex-direction: column">
+<div style="padding: 46px 18px 10px; display: flex; flex-direction: column; gap: 12px">
+<span style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 34px; font-weight: 700">{{folderTitle}}</span>
+<button onClick="{{newNote}}" aria-label="Nouvelle note" class="{{c.glass}}" style="cursor: pointer; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: #ffa800"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></svg></button></span>
+<label style="height: 40px; border-radius: 20px; background: {{c.fill}}; display: flex; align-items: center; gap: 8px; padding: 0 12px; color: {{c.sub}}">
+<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+<input aria-label="Rechercher dans les notes" placeholder="Rechercher" value="{{query}}" onInput="{{onQuery}}" style="flex-grow: 1; font-size: 17px; color: {{c.fg}}">
+</label>
+</div>
+<div style="flex-grow: 1; overflow-y: auto; padding: 0 12px 24px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+<span style="display: block; font-size: 15px; font-weight: 700; padding: 12px 8px 6px">{{g.head}}</span>
+<div style="border-radius: 14px; background: {{c.cellAlt}}; overflow: hidden">
+<sc-for list="{{g.items}}" as="n" hint-placeholder-count="3">
+<button onClick="{{n.pick}}" style="cursor: pointer; display: flex; flex-direction: column; gap: 2px; width: 100%; box-sizing: border-box; padding: 11px 14px; background: {{n.bg}}; color: {{n.fg}}; border-bottom: 1px solid {{n.line}}">
+<span style="font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{n.title}}</span>
+<span style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: {{n.subFg}}"><span style="color: {{n.fg}}">{{n.date}}</span>  {{n.preview}}</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+<sc-if value="{{noNotes}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 60px 10px; color: {{c.sub}}; font-size: 16px">Aucune note.</span></sc-if>
+</div>
+</section>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; position: relative; display: flex; flex-direction: column; background: {{c.cell}}">
+<sc-if value="{{hasNote}}" hint-placeholder-val="{{true}}">
+<div style="height: 76px; flex-shrink: 0; display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; padding: 0 22px 8px">
+<button onClick="{{togglePin}}" aria-label="Épingler" class="{{c.glass}}" style="cursor: pointer; height: 40px; padding: 0 16px; border-radius: 20px; display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: {{pinColor}}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="{{pinFill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3zM12 14v7"/></svg>{{pinLabel}}</button>
+<button onClick="{{delNote}}" aria-label="Supprimer la note" class="{{c.glass}}" style="cursor: pointer; width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #ff383c"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
+</div>
+<div style="flex-grow: 1; overflow-y: auto; padding: 0 60px 120px">
+<span style="display: block; text-align: center; font-size: 13px; color: {{c.sub}}; padding-bottom: 14px">{{note.stamp}}</span>
+<input aria-label="Titre de la note" value="{{note.title}}" onInput="{{onTitle}}" placeholder="Titre" style="display: block; width: 100%; font-size: {{titleSize}}; font-weight: 800; padding-bottom: 12px; color: {{c.fg}}">
+<sc-for list="{{blocks}}" as="b" hint-placeholder-count="3">
+<div style="padding: 6px 0">
+<sc-if value="{{b.isText}}" hint-placeholder-val="{{true}}"><textarea aria-label="Texte" onInput="{{b.input}}" rows="{{b.rows}}" style="display: block; width: 100%; font-size: 17px; line-height: 1.5; white-space: pre-wrap; color: {{c.fg}}">{{b.value}}</textarea></sc-if>
+<sc-if value="{{b.isTodo}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{b.items}}" as="it" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; height: 38px">
+<button onClick="{{it.toggle}}" aria-label="Cocher" style="cursor: pointer; width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box; border: 2px solid {{it.ring}}; background: {{it.fill}}; display: flex; align-items: center; justify-content: center; transition: background .2s, border-color .2s"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: {{it.check}}; transition: opacity .2s"><path d="M5 12l5 5 9-10"/></svg></button>
+<input aria-label="Élément" value="{{it.t}}" onInput="{{it.input}}" style="flex-grow: 1; font-size: 17px; color: {{it.fg}}; text-decoration: {{it.deco}}">
+</div>
+</sc-for>
+<button onClick="{{b.add}}" style="cursor: pointer; font-size: 16px; color: #ffa800; padding: 6px 0 0 36px">+ Ajouter un élément</button>
+</div>
+</sc-if>
+<sc-if value="{{b.isTable}}" hint-placeholder-val="{{false}}">
+<div style="border: 1px solid {{c.sep}}; border-radius: 10px; overflow: hidden">
+<sc-for list="{{b.rows}}" as="r" hint-placeholder-count="3">
+<div style="display: flex; background: {{r.bg}}">
+<sc-for list="{{r.cells}}" as="cl" hint-placeholder-count="3"><input aria-label="Cellule" value="{{cl.v}}" onInput="{{cl.input}}" style="flex: 1; min-width: 0; box-sizing: border-box; padding: 10px 14px; font-size: 16px; font-weight: {{r.weight}}; border-right: 1px solid {{c.sep}}; border-top: 1px solid {{c.sep}}; color: {{c.fg}}"></sc-for>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{b.isAttach}}" hint-placeholder-val="{{false}}"><div style="width: 360px; height: 220px; border-radius: 14px; background: linear-gradient(160deg,#ffae3d,#b8326f 60%,#2b1a5e); display: flex; align-items: flex-end; padding: 12px; box-sizing: border-box; color: #fff; font-size: 14px">Coucher de soleil sur Del Perro.jpg</div></sc-if>
+<sc-if value="{{b.isDraw}}" hint-placeholder-val="{{false}}"><svg aria-label="Dessin" width="360" height="160" viewBox="0 0 360 160" style="border-radius: 14px; background: {{c.cellAlt}}"><path d="M20 120c40-90 70 50 110-20s60-60 100-10 70 30 110-40" fill="none" stroke="#ff383c" stroke-width="5" stroke-linecap="round"/><path d="M30 140h300" stroke="#0088ff" stroke-width="4" stroke-linecap="round"/></svg></sc-if>
+</div>
+</sc-for>
+</div>
+<div class="{{c.glass}}" style="position: absolute; left: 50%; bottom: 28px; margin-left: -180px; width: 360px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: space-around; box-sizing: border-box; padding: 0 14px">
+<sc-for list="{{tools}}" as="t" hint-placeholder-count="5">
+<button onClick="{{t.go}}" aria-label="{{t.label}}" style="cursor: pointer; width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; background: {{t.bg}}; color: #ffa800">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"/></svg></button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noNote}}" hint-placeholder-val="{{false}}"><div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; color: {{c.sub}}; font-size: 20px">Aucune note sélectionnée</div></sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const notes = [
+{ id: 1, folder: 'notes', pinned: true, date: '10:42', stamp: '22 novembre 2026 à 10:42', title: 'Plaque suspecte Vinewood', blocks: [{ type: 'text', value: 'Fourgon blanc vu près de Vinewood Blvd, plaque 42 ABC 117.\nTémoin : Lina Costa, commerçante.' }, { type: 'todo', items: [{ t: 'Vérifier la plaque au fichier', done: true }, { t: 'Appeler le témoin', done: false }, { t: 'Rédiger le rapport', done: false }] }] },
+{ id: 2, folder: 'travail', pinned: true, date: 'Hier', stamp: '21 novembre 2026 à 18:05', title: 'Planning des patrouilles', blocks: [{ type: 'text', value: 'Équipes de la semaine à Mission Row :' }, { type: 'table', rows: [['Jour', 'Équipe', 'Secteur'], ['Lundi', 'Sam / Noah', 'Vinewood'], ['Mardi', 'Alex / Jade', 'Sandy Shores'], ['Mercredi', 'Lina / Sam', 'Paleto Bay']] }] },
+{ id: 3, folder: 'courses', pinned: false, date: 'Samedi', stamp: '21 novembre 2026 à 09:12', title: 'Courses', blocks: [{ type: 'todo', items: [{ t: 'Café', done: false }, { t: 'Pain', done: true }, { t: 'Huile moteur 5W-30', done: false }] }] },
+{ id: 4, folder: 'travail', pinned: false, date: '18/11/2026', stamp: '18 novembre 2026 à 15:30', title: 'Idées pour le garage', blocks: [{ type: 'text', value: 'Ajouter un pont élévateur, afficher les tarifs à l’entrée et proposer un abonnement entretien aux habitants de Del Perro.' }] },
+{ id: 5, folder: 'notes', pinned: false, date: '12/11/2026', stamp: '12 novembre 2026 à 20:48', title: 'Trajet vers Paleto Bay', blocks: [{ type: 'text', value: 'Prendre la route 1 jusqu’à Chumash, puis la côte nord. Station-service à Mount Chiliad.' }] }
+];
+this.state = { dark: !!props.dark, notes, folder: 'all', sel: 1, query: '', big: false, nid: 6 };
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+upd(id, fn) { this.setState({ notes: this.state.notes.map((n) => (n.id === id ? fn(n) : n)) }); }
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', side: '#000000', cell: '#1c1c1e', cellAlt: '#2c2c2e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#3a3a3c', glass: 'glass dk' }
+: { bg: '#f2f2f7', side: '#f2f2f7', cell: '#ffffff', cellAlt: '#f2f2f7', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass' };
+const fdef = [['all', 'Toutes les notes', 'M5 4h14v16H5zM9 9h6M9 13h6', '#ffa800'], ['notes', 'Notes', 'M4 6a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z', '#ffa800'], ['travail', 'Travail', 'M4 6a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z', '#ffa800'], ['courses', 'Courses', 'M4 6a2 2 0 0 1 2-2h4l2 3h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z', '#ffa800'], ['trash', 'Supprimées', 'M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13', '#ffa800']];
+const inFolder = (n) => (s.folder === 'all' ? n.folder !== 'trash' : n.folder === s.folder);
+const q = s.query.trim().toLowerCase();
+const previewOf = (n) => { const t = n.blocks.find((b) => b.type === 'text'); return t ? t.value.replace(/\n/g, ' ') : (n.blocks.find((b) => b.type === 'todo') ? 'Liste à cocher' : n.blocks.length ? 'Pièce jointe' : 'Pas de texte supplémentaire'); };
+const visible = s.notes.filter((n) => inFolder(n) && (!q || (n.title + ' ' + previewOf(n)).toLowerCase().indexOf(q) >= 0));
+const folders = fdef.map((f) => ({ name: f[1], d: f[2], n: s.notes.filter((n) => (f[0] === 'all' ? n.folder !== 'trash' : n.folder === f[0])).length, color: s.folder === f[0] ? '#fff' : f[3], bg: s.folder === f[0] ? '#ffa800' : 'transparent', fg: s.folder === f[0] ? '#fff' : c.fg, sub: s.folder === f[0] ? 'rgba(255,255,255,.85)' : c.sub, go: () => this.setState({ folder: f[0] }) }));
+const rowOf = (n, i, arr) => ({ title: n.title || 'Nouvelle note', date: n.date, preview: previewOf(n), bg: s.sel === n.id ? '#ffa800' : 'transparent', fg: s.sel === n.id ? '#fff' : c.fg, subFg: s.sel === n.id ? 'rgba(255,255,255,.85)' : c.sub, line: i < arr.length - 1 ? (s.sel === n.id ? 'transparent' : c.sep) : 'transparent', pick: () => this.setState({ sel: n.id }) });
+const pins = visible.filter((n) => n.pinned); const rest = visible.filter((n) => !n.pinned);
+const groups = [];
+if (pins.length) groups.push({ head: 'Épinglées', items: pins.map(rowOf) });
+if (rest.length) groups.push({ head: pins.length ? 'Notes' : 'Aujourd’hui et avant', items: rest.map(rowOf) });
+const cur = s.notes.find((n) => n.id === s.sel);
+const blocks = cur ? cur.blocks.map((b, bi) => {
+const setB = (fn) => this.upd(cur.id, (n) => ({ ...n, blocks: n.blocks.map((x, i) => (i === bi ? fn(x) : x)) }));
+const o = { isText: b.type === 'text', isTodo: b.type === 'todo', isTable: b.type === 'table', isAttach: b.type === 'attach', isDraw: b.type === 'draw' };
+if (o.isText) { o.value = b.value; o.rows = Math.max(2, b.value.split('\n').length + 1); o.input = (e) => setB((x) => ({ ...x, value: e.target.value })); }
+if (o.isTodo) {
+o.items = b.items.map((it, ii) => ({ t: it.t, ring: it.done ? '#ffa800' : c.sub, fill: it.done ? '#ffa800' : 'transparent', check: it.done ? 1 : 0, fg: it.done ? c.sub : c.fg, deco: it.done ? 'line-through' : 'none', toggle: () => setB((x) => ({ ...x, items: x.items.map((y, j) => (j === ii ? { ...y, done: !y.done } : y)) })), input: (e) => setB((x) => ({ ...x, items: x.items.map((y, j) => (j === ii ? { ...y, t: e.target.value } : y)) })) }));
+o.add = () => setB((x) => ({ ...x, items: x.items.concat([{ t: '', done: false }]) }));
+}
+if (o.isTable) o.rows = b.rows.map((r, ri) => ({ bg: ri === 0 ? c.cellAlt : 'transparent', weight: ri === 0 ? 700 : 400, cells: r.map((v, ci) => ({ v, input: (e) => setB((x) => ({ ...x, rows: x.rows.map((rr, i) => (i === ri ? rr.map((vv, j) => (j === ci ? e.target.value : vv)) : rr)) })) })) }));
+return o;
+}) : [];
+const add = (b) => cur && this.upd(cur.id, (n) => ({ ...n, blocks: n.blocks.concat([b]) }));
+const tools = [
+{ label: 'Style du texte', d: 'M4 19L10 5l6 14M6.500 14h7M16 19l3-7 3 7', bg: s.big ? 'rgba(255,168,0,.2)' : 'transparent', go: () => this.setState({ big: !s.big }) },
+{ label: 'Liste à cocher', d: 'M5 6l2 2 3-3M5 14l2 2 3-3M13 7h7M13 15h7', bg: 'transparent', go: () => add({ type: 'todo', items: [{ t: '', done: false }] }) },
+{ label: 'Tableau', d: 'M4 5h16v14H4zM4 10h16M4 15h16M10 5v14', bg: 'transparent', go: () => add({ type: 'table', rows: [['', '', ''], ['', '', ''], ['', '', '']] }) },
+{ label: 'Pièce jointe', d: 'M20 11l-8 8a5 5 0 0 1-7-7l8-8a3.500 3.500 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7-7', bg: 'transparent', go: () => add({ type: 'attach' }) },
+{ label: 'Dessin', d: 'M4 20l1-4L16 5l3 3L8 19zM14 7l3 3', bg: 'transparent', go: () => add({ type: 'draw' }) }
+];
+return {
+c, dark, folders, groups, tools, blocks, query: s.query, onQuery: (e) => this.setState({ query: e.target.value }),
+folderTitle: (fdef.find((f) => f[0] === s.folder) || fdef[0])[1],
+noNotes: !visible.length, hasNote: !!cur, noNote: !cur, note: cur || {}, titleSize: s.big ? '40px' : '30px',
+newNote: () => { const id = s.nid; const f = s.folder === 'all' || s.folder === 'trash' ? 'notes' : s.folder; this.setState({ notes: [{ id, folder: f, pinned: false, date: '14:32', stamp: '22 novembre 2026 à 14:32', title: '', blocks: [{ type: 'text', value: '' }] }].concat(s.notes), sel: id, nid: id + 1, query: '' }); },
+onTitle: (e) => this.upd(cur.id, (n) => ({ ...n, title: e.target.value })),
+togglePin: () => this.upd(cur.id, (n) => ({ ...n, pinned: !n.pinned })),
+pinColor: cur && cur.pinned ? '#ffa800' : c.fg, pinFill: cur && cur.pinned ? '#ffa800' : 'none', pinLabel: cur && cur.pinned ? 'Épinglée' : 'Épingler',
+delNote: () => { const rest = visible.filter((n) => n.id !== cur.id); this.upd(cur.id, (n) => ({ ...n, folder: n.folder === 'trash' ? 'notes' : 'trash', pinned: false })); this.setState({ sel: rest.length ? rest[0].id : null }); }
+};
+}
+}
+</script>
+</body>
+</html>

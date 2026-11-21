@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Dictaphone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Enregistrements" style="width: 360px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 14px 20px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 10px">Enregistrements</span>
+<span style="font-size: 14px; color: {{c.sub}}; padding: 0 10px 8px">{{count}}</span>
+<div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{items}}" as="r" hint-placeholder-count="5">
+<button onClick="{{r.pick}}" style="all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 3px; padding: 11px 12px; border-radius: 12px; background: {{r.bg}}; color: {{r.fg}}">
+<span style="font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.title}}</span>
+<span style="display: flex; justify-content: space-between; font-size: 14px; color: {{r.sub}}"><span>{{r.date}}</span><span>{{r.dur}}</span></span>
+</button>
+</sc-for>
+<sc-if value="{{noItems}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 60px 10px; color: {{c.sub}}; font-size: 16px">Aucun enregistrement.</span></sc-if>
+</div>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; position: relative; background: {{c.cell}}; display: flex; flex-direction: column; align-items: center">
+<sc-if value="{{isRec}}" hint-placeholder-val="{{false}}">
+<div style="margin-top: 160px; display: flex; align-items: center; gap: 10px; color: #ff383c; font-size: 18px; font-weight: 700"><span style="width: 12px; height: 12px; border-radius: 6px; background: #ff383c; animation: blink 1s ease-in-out infinite"></span>Enregistrement en cours</div>
+<span style="font-size: 96px; font-weight: 200; font-variant-numeric: tabular-nums; padding-top: 18px">{{recTime}}</span>
+<div aria-label="Onde en direct" style="width: 864px; height: 200px; margin-top: 40px; display: flex; align-items: center; justify-content: center; gap: 4px">
+<sc-for list="{{liveBars}}" as="b" hint-placeholder-count="48"><span style="width: 5px; height: {{b.h}}px; border-radius: 3px; background: #ff383c; opacity: {{b.op}}"></span></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{hasRec}}" hint-placeholder-val="{{true}}">
+<div style="width: 864px; margin-top: 70px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center; justify-content: space-between; height: 56px">
+<sc-if value="{{notRenaming}}" hint-placeholder-val="{{true}}"><span style="font-size: 34px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{rec.title}}</span></sc-if>
+<sc-if value="{{renaming}}" hint-placeholder-val="{{false}}"><input aria-label="Nom de l’enregistrement" value="{{rec.title}}" onInput="{{onTitle}}" style="all: unset; flex-grow: 1; height: 48px; padding: 0 14px; border-radius: 12px; background: {{c.fill}}; font-size: 28px; font-weight: 800; color: {{c.fg}}; margin-right: 12px"></sc-if>
+<span style="display: flex; gap: 10px; flex-shrink: 0">
+<button onClick="{{toggleRename}}" class="{{c.glass}}" style="all: unset; cursor: pointer; height: 42px; padding: 0 18px; border-radius: 21px; display: flex; align-items: center; font-size: 16px; font-weight: 600; color: #0088ff">{{renameLabel}}</button>
+<button onClick="{{del}}" aria-label="Supprimer" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 42px; height: 42px; border-radius: 21px; display: flex; align-items: center; justify-content: center; color: #ff383c"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
+</span>
+</div>
+<span style="font-size: 16px; color: {{c.sub}}">{{rec.date}} · {{rec.dur}}</span>
+</div>
+
+<div style="position: relative; width: 864px; height: 200px; margin-top: 40px; display: flex; align-items: center; gap: 4px; flex-shrink: 0">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="96">
+<button onClick="{{b.seek}}" aria-label="Aller à cet instant" style="all: unset; cursor: pointer; width: 5px; height: {{b.h}}px; border-radius: 3px; background: {{b.col}}"></button>
+</sc-for>
+<span style="position: absolute; top: -8px; bottom: -8px; left: {{playLeft}}px; width: 2px; background: #ff383c; border-radius: 1px; pointer-events: none"><span style="position: absolute; top: -4px; left: -4px; width: 10px; height: 10px; border-radius: 5px; background: #ff383c"></span></span>
+</div>
+<div style="width: 864px; display: flex; justify-content: space-between; font-size: 15px; color: {{c.sub}}; padding-top: 12px; font-variant-numeric: tabular-nums"><span>{{posText}}</span><span>-{{leftText}}</span></div>
+
+<div style="display: flex; align-items: center; gap: 36px; margin-top: 34px">
+<button onClick="{{speed}}" aria-label="Vitesse de lecture" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 64px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; color: #0088ff">{{speedLabel}}</button>
+<button onClick="{{back15}}" aria-label="Reculer de 15 secondes" style="all: unset; cursor: pointer; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; color: {{c.fg}}"><svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h5M4.500 9A8 8 0 1 1 4 13"/><text x="12" y="16" text-anchor="middle" font-size="7" font-weight="700" stroke="none" fill="currentColor" font-family="Inter, system-ui, sans-serif">15</text></svg></button>
+<button onClick="{{playToggle}}" aria-label="Lecture ou pause" style="all: unset; cursor: pointer; width: 76px; height: 76px; border-radius: 38px; background: {{c.fg}}; color: {{c.cell}}; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="{{playIcon}}"/></svg></button>
+<button onClick="{{fwd15}}" aria-label="Avancer de 15 secondes" style="all: unset; cursor: pointer; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; color: {{c.fg}}"><svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4v5h-5M19.500 9A8 8 0 1 0 20 13"/><text x="12" y="16" text-anchor="middle" font-size="7" font-weight="700" stroke="none" fill="currentColor" font-family="Inter, system-ui, sans-serif">15</text></svg></button>
+<span style="width: 64px"></span>
+</div>
+</sc-if>
+
+<div class="{{c.glass}}" style="position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); height: 92px; padding: 0 36px; border-radius: 46px; display: flex; align-items: center; gap: 18px">
+<span style="font-size: 16px; font-weight: 600; color: {{c.sub}}; min-width: 90px; text-align: right">{{recHint}}</span>
+<button onClick="{{recToggle}}" aria-label="Enregistrer" style="all: unset; cursor: pointer; width: 68px; height: 68px; border-radius: 34px; box-sizing: border-box; border: 4px solid {{c.fg}}; display: flex; align-items: center; justify-content: center"><span style="width: {{dotSize}}px; height: {{dotSize}}px; border-radius: {{dotRadius}}px; background: #ff383c; transition: width .2s, height .2s, border-radius .2s"></span></button>
+<span style="min-width: 90px"></span>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const recs = [
+{ id: 1, title: 'Rapport de patrouille', date: 'Aujourd’hui, 09:12', dur: 204 },
+{ id: 2, title: 'Témoignage de Lina Costa', date: 'Hier, 17:40', dur: 427 },
+{ id: 3, title: 'Idée pour le garage', date: '20/11/2026', dur: 58 },
+{ id: 4, title: 'Trajet vers Sandy Shores', date: '18/11/2026', dur: 132 },
+{ id: 5, title: 'Mémo vocal', date: '12/11/2026', dur: 31 }
+];
+this.state = { dark: !!props.dark, recs, sel: 1, pos: 0, playing: false, rate: 1, renaming: false, rec: false, recStart: 0, live: [], nid: 6, now: 0 };
+}
+componentWillUnmount() { clearInterval(this.iv); this.iv = null; }
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+startTick() {
+if (this.iv) return;
+this.iv = setInterval(() => {
+const s = this.state;
+if (s.rec) { const prev = s.live.length ? s.live[s.live.length - 1] : 0.3; const a = Math.max(0.06, Math.min(1, prev * 0.45 + Math.random() * 0.6)); this.setState({ live: s.live.concat([a]), now: Date.now() }); }
+else if (s.playing) {
+const r = s.recs.find((x) => x.id === s.sel); const np = s.pos + 0.05 * s.rate;
+if (!r || np >= r.dur) this.setState({ pos: 0, playing: false }); else this.setState({ pos: np });
+}
+if (!this.state.rec && !this.state.playing) { clearInterval(this.iv); this.iv = null; }
+}, 50);
+}
+wave(r, n) {
+if (r.amps) { const o = []; for (let i = 0; i < n; i++) o.push(r.amps[Math.min(r.amps.length - 1, Math.floor(i * r.amps.length / n))]); return o; }
+const o = []; let x = r.id * 7919 + 13;
+for (let i = 0; i < n; i++) { x = (x * 9301 + 49297) % 233280; const env = 0.3 + 0.7 * Math.abs(Math.sin(i / 8 + r.id)); o.push(Math.max(0.08, (x / 233280) * env + 0.05)); }
+return o;
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', side: '#000000', cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#3a3a3c', glass: 'glass dk', bar: 'rgba(235,235,245,.3)' }
+: { bg: '#f2f2f7', side: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass', bar: 'rgba(60,60,67,.3)' };
+const mmss = (sec) => { const t = Math.floor(sec); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+const cur = s.recs.find((r) => r.id === s.sel);
+const items = s.recs.map((r) => ({ title: r.title, date: r.date, dur: mmss(r.dur), bg: s.sel === r.id ? '#ff383c' : 'transparent', fg: s.sel === r.id ? '#fff' : c.fg, sub: s.sel === r.id ? 'rgba(255,255,255,.85)' : c.sub, pick: () => this.setState({ sel: r.id, pos: 0, playing: false, renaming: false, rec: false }) }));
+const N = 96; const w = cur ? this.wave(cur, N) : []; const frac = cur ? s.pos / cur.dur : 0;
+const bars = w.map((a, i) => ({ h: Math.round(a * 190), col: i / N < frac ? '#ff383c' : c.bar, seek: () => this.setState({ pos: (i / N) * cur.dur }) }));
+const lv = s.live.slice(-48); const liveBars = []; for (let i = 0; i < 48; i++) { const idx = i - (48 - lv.length); const a = idx >= 0 ? lv[idx] : 0.04; liveBars.push({ h: Math.round(a * 190) + 4, op: idx >= 0 ? 1 : 0.3 }); }
+const elapsed = s.rec ? Date.now() - s.recStart : 0;
+const rt = Math.floor(elapsed / 1000); const rtext = String(Math.floor(rt / 60)).padStart(2, '0') + ':' + String(rt % 60).padStart(2, '0') + ',' + String(Math.floor(elapsed / 100) % 10);
+const rates = [0.5, 1, 1.5, 2];
+const upd = (fn) => this.setState({ recs: s.recs.map((r) => (r.id === s.sel ? fn(r) : r)) });
+const seek = (d) => this.setState({ pos: Math.max(0, Math.min(cur.dur - 0.1, s.pos + d)) });
+return {
+c, dark, items, bars, liveBars, count: s.recs.length + ' enregistrements', noItems: !s.recs.length,
+hasRec: !!cur && !s.rec, isRec: s.rec, rec: cur ? { title: cur.title, date: cur.date, dur: mmss(cur.dur) } : {}, recTime: rtext,
+renaming: s.renaming, notRenaming: !s.renaming, renameLabel: s.renaming ? 'OK' : 'Renommer', toggleRename: () => this.setState({ renaming: !s.renaming }),
+onTitle: (e) => upd((r) => ({ ...r, title: e.target.value })),
+playLeft: Math.round(frac * 864), posText: cur ? mmss(s.pos) : '', leftText: cur ? mmss(Math.max(0, cur.dur - s.pos)) : '',
+speedLabel: s.rate + '×', speed: () => this.setState({ rate: rates[(rates.indexOf(s.rate) + 1) % rates.length] }),
+back15: () => seek(-15), fwd15: () => seek(15),
+playIcon: s.playing ? 'M7 5h4v14H7zM13 5h4v14h-4z' : 'M7 4l13 8-13 8z',
+playToggle: () => { if (s.playing) this.setState({ playing: false }); else { this.setState({ playing: true }); this.startTick(); } },
+del: () => { const rest = s.recs.filter((r) => r.id !== s.sel); this.setState({ recs: rest, sel: rest.length ? rest[0].id : null, pos: 0, playing: false, renaming: false }); },
+recHint: s.rec ? 'Arrêter' : 'Enregistrer', dotSize: s.rec ? 26 : 52, dotRadius: s.rec ? 7 : 26,
+recToggle: () => {
+if (!s.rec) { this.setState({ rec: true, recStart: Date.now(), live: [], playing: false, renaming: false }); this.startTick(); }
+else {
+const dur = Math.max(1, Math.round((Date.now() - s.recStart) / 1000)); const id = s.nid;
+this.setState({ rec: false, recs: [{ id, title: 'Enregistrement ' + id, date: 'Aujourd’hui, 14:32', dur, amps: s.live.length ? s.live : [0.2] }].concat(s.recs), sel: id, nid: id + 1, pos: 0, live: [] });
+}
+}
+};
+}
+}
+</script>
+</body>
+</html>

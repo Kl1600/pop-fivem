@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Plans</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+@keyframes pulse{0%{r:10;opacity:.55}100%{r:34;opacity:0}}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; position: relative; overflow: hidden; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{map.land}}; color: {{c.fg}}">
+
+<div style="position: absolute; left: -326px; top: -240px; width: 2000px; height: 1500px; transform: {{mapTf}}; transform-origin: 1000px 749px; transition: transform .8s cubic-bezier(.3,.7,.2,1)">
+<svg aria-label="Carte de Los Santos" width="2000" height="1500" viewBox="0 0 2000 1500">
+<defs><pattern id="rues" width="130" height="110" patternUnits="userSpaceOnUse" patternTransform="rotate(-9)"><path d="M0 0H130M0 0V110" stroke="{{map.minor}}" stroke-width="6" fill="none"></path></pattern></defs>
+<rect x="0" y="0" width="2000" height="1500" fill="{{map.land}}"></rect>
+<rect x="0" y="0" width="2000" height="1500" fill="url(#rues)"></rect>
+<sc-for list="{{parks}}" as="pk" hint-placeholder-count="4"><rect x="{{pk.x}}" y="{{pk.y}}" width="{{pk.w}}" height="{{pk.h}}" rx="{{pk.r}}" fill="{{map.park}}"></rect></sc-for>
+<sc-for list="{{roads}}" as="r" hint-placeholder-count="6"><path d="{{r.d}}" fill="none" stroke="{{map.roadCase}}" stroke-width="{{r.cw}}" stroke-linecap="round"></path></sc-for>
+<sc-for list="{{roads}}" as="r" hint-placeholder-count="6"><path d="{{r.d}}" fill="none" stroke="{{map.road}}" stroke-width="{{r.w}}" stroke-linecap="round"></path></sc-for>
+<path d="M0 0H570C530 150 610 260 550 380C490 500 570 600 510 720C450 840 530 960 470 1080C430 1180 490 1330 440 1500H0Z" fill="{{map.sea}}"></path>
+<path d="M570 0C530 150 610 260 550 380C490 500 570 600 510 720C450 840 530 960 470 1080C430 1180 490 1330 440 1500" fill="none" stroke="{{map.beach}}" stroke-width="7"></path>
+<path d="M545 748H655M545 772H655" stroke="{{map.roadCase}}" stroke-width="8" fill="none"></path>
+<g style="opacity: {{map.transitOp}}; transition: opacity .4s" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M700 380L900 540L1120 700L1300 940L1480 1060" stroke="#CB30E0"></path><path d="M800 1000L1000 860L1260 700L1500 600" stroke="#34C759"></path></g>
+<sc-for list="{{labels}}" as="l" hint-placeholder-count="8"><text x="{{l.x}}" y="{{l.y}}" text-anchor="middle" font-size="{{l.fs}}" font-weight="700" letter-spacing="2" fill="{{map.label}}" font-family="Inter, system-ui, sans-serif">{{l.t}}</text></sc-for>
+<polyline points="{{routePts}}" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: {{routeOff}}; transition: stroke-dashoffset .9s ease"></polyline>
+<polyline points="{{routePts}}" fill="none" stroke="#0a84ff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" pathLength="1" style="stroke-dasharray: 1; stroke-dashoffset: {{routeOff}}; transition: stroke-dashoffset .9s ease"></polyline>
+<sc-for list="{{pins}}" as="p" hint-placeholder-count="9">
+<g transform="{{p.tf}}" style="cursor: pointer" onClick="{{p.go}}">
+<circle cx="0" cy="0" r="{{p.r}}" fill="{{p.col}}" stroke="#ffffff" stroke-width="4"></circle>
+<circle cx="0" cy="0" r="6" fill="#ffffff"></circle>
+<text x="0" y="{{p.ty}}" text-anchor="middle" font-size="19" font-weight="700" fill="{{map.pinText}}" stroke="{{map.halo}}" stroke-width="5" paint-order="stroke" font-family="Inter, system-ui, sans-serif">{{p.name}}</text>
+</g>
+</sc-for>
+<g transform="translate(1000,860)"><circle cx="0" cy="0" r="10" fill="#0a84ff" opacity=".5" style="animation: pulse 2s ease-out infinite"></circle><circle cx="0" cy="0" r="12" fill="#0a84ff" stroke="#fff" stroke-width="4"></circle></g>
+</svg>
+</div>
+
+<aside aria-label="Panneau" class="{{c.glass}}" style="position: absolute; left: 20px; top: 20px; bottom: 20px; width: 380px; border-radius: 32px; box-sizing: border-box; padding: 20px 18px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<sc-if value="{{v.home}}" hint-placeholder-val="{{true}}">
+<label style="height: 46px; border-radius: 23px; background: {{c.fill}}; display: flex; align-items: center; gap: 8px; padding: 0 14px; color: {{c.sub}}; flex-shrink: 0">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+<input aria-label="Rechercher un lieu" placeholder="Rechercher dans Plans" value="{{query}}" onInput="{{onQuery}}" style="all: unset; flex-grow: 1; font-size: 17px; color: {{c.fg}}">
+</label>
+<div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{noQuery}}" hint-placeholder-val="{{true}}">
+<span style="font-size: 20px; font-weight: 700; padding: 6px 4px 2px">Favoris</span>
+<div style="display: flex; gap: 8px; padding-bottom: 8px">
+<sc-for list="{{favs}}" as="f" hint-placeholder-count="3">
+<button onClick="{{f.go}}" style="all: unset; cursor: pointer; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0">
+<span style="width: 58px; height: 58px; border-radius: 29px; background: {{f.col}}; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{f.d}}"/></svg></span>
+<span style="font-size: 14px; font-weight: 600; text-align: center">{{f.short}}</span>
+<span style="font-size: 12px; color: {{c.sub}}">{{f.area}}</span>
+</button>
+</sc-for>
+</div>
+<span style="font-size: 20px; font-weight: 700; padding: 6px 4px 2px">Récents</span>
+</sc-if>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+<button onClick="{{r.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-bottom: 1px solid {{c.sep}}">
+<span style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 20px; background: {{r.col}}; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.d}}"/></svg></span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: 14px; color: {{c.sub}}">{{r.addr}}</span></span>
+</button>
+</sc-for>
+<sc-if value="{{noRows}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 40px 10px; color: {{c.sub}}; font-size: 16px">Aucun résultat.</span></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{v.place}}" hint-placeholder-val="{{false}}">
+<button onClick="{{back}}" aria-label="Retour" style="all: unset; cursor: pointer; align-self: flex-start; display: flex; align-items: center; gap: 4px; font-size: 17px; color: #0088ff; font-weight: 600"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Plans</button>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 0 4px">
+<span style="font-size: 30px; font-weight: 800; line-height: 1.1">{{pl.name}}</span>
+<span style="font-size: 16px; color: {{c.sub}}">{{pl.cat}} · {{pl.dist}}</span>
+</div>
+<div style="display: flex; gap: 10px">
+<button onClick="{{goRoute}}" style="all: unset; cursor: pointer; flex: 1; height: 54px; border-radius: 27px; background: #0a84ff; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 18px; font-weight: 700"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-8 16-2-6z"/></svg>Itinéraire · {{pl.eta}}</button>
+<button onClick="{{toggleFav}}" aria-label="Favori" style="all: unset; cursor: pointer; width: 54px; height: 54px; border-radius: 27px; background: {{c.fill}}; display: flex; align-items: center; justify-content: center; color: #ff9f0a"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="{{favFill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.600 6.100.8-4.500 4.200 1.100 6.100L12 16.800 6.600 19.700l1.100-6.100L3.200 9.400l6.100-.8z"/></svg></button>
+</div>
+<div style="border-radius: 18px; background: {{c.cell}}; overflow: hidden">
+<sc-for list="{{infos}}" as="i" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; border-bottom: 1px solid {{c.sep}}"><span style="font-size: 13px; color: {{c.sub}}">{{i.k}}</span><span style="font-size: 16px">{{i.v}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{v.route}}" hint-placeholder-val="{{false}}">
+<button onClick="{{backPlace}}" aria-label="Retour" style="all: unset; cursor: pointer; align-self: flex-start; display: flex; align-items: center; gap: 4px; font-size: 17px; color: #0088ff; font-weight: 600"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>{{pl.name}}</button>
+<div style="display: flex; align-items: center; gap: 10px"><span style="width: 10px; height: 10px; border-radius: 5px; background: #0a84ff"></span><span style="font-size: 16px">Ma position</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span style="width: 10px; height: 10px; border-radius: 5px; background: #ff383c"></span><span style="font-size: 16px; font-weight: 600">{{pl.name}}</span></div>
+<div style="display: flex; gap: 6px; background: {{c.fill}}; border-radius: 22px; padding: 4px">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="2"><button onClick="{{m.go}}" style="all: unset; cursor: pointer; flex: 1; height: 38px; border-radius: 19px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; background: {{m.bg}}; color: {{m.fg}}; transition: background .2s"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{m.d}}"/></svg>{{m.label}}</button></sc-for>
+</div>
+<div style="border-radius: 18px; background: {{c.cell}}; padding: 18px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 44px; font-weight: 700; line-height: 1">{{trip.time}}</span>
+<span style="font-size: 16px; color: {{c.sub}}">{{trip.dist}} · arrivée à {{trip.arr}}</span>
+<span style="font-size: 15px; color: {{c.sub}}; padding-top: 6px">Via {{trip.via}}</span>
+</div>
+<button onClick="{{start}}" style="all: unset; cursor: pointer; height: 54px; border-radius: 27px; background: #34c759; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">Démarrer</button>
+</sc-if>
+
+<sc-if value="{{v.nav}}" hint-placeholder-val="{{false}}">
+<div style="border-radius: 22px; background: #0a84ff; color: #fff; padding: 18px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 14px; opacity: .85">Navigation vers {{pl.name}}</span>
+<span style="font-size: 24px; font-weight: 700; line-height: 1.2">{{trip.step1}}</span>
+</div>
+<div style="border-radius: 18px; background: {{c.cell}}; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: {{c.sub}}">Ensuite</span><span style="font-size: 17px">{{trip.step2}}</span></div>
+<div style="display: flex; justify-content: space-between; padding: 6px 6px"><span style="font-size: 28px; font-weight: 700">{{trip.time}}</span><span style="font-size: 17px; color: {{c.sub}}; align-self: flex-end">{{trip.dist}} · {{trip.arr}}</span></div>
+<button onClick="{{stop}}" style="all: unset; cursor: pointer; height: 54px; border-radius: 27px; background: #ff383c; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">Terminer</button>
+</sc-if>
+</aside>
+
+<div style="position: absolute; right: 22px; top: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-end">
+<button onClick="{{toggleMenu}}" aria-label="Type de carte" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; color: {{c.fg}}"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg></button>
+<sc-if value="{{menu}}" hint-placeholder-val="{{false}}">
+<div class="{{c.glass}}" style="width: 200px; border-radius: 22px; padding: 8px; display: flex; flex-direction: column">
+<sc-for list="{{types}}" as="t" hint-placeholder-count="3"><button onClick="{{t.go}}" style="all: unset; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 14px; font-size: 16px; font-weight: 600; background: {{t.bg}}; color: {{t.fg}}">{{t.label}}<span style="opacity: {{t.on}}">✓</span></button></sc-for>
+</div>
+</sc-if>
+<button onClick="{{toggle3d}}" aria-label="Vue 3D" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: {{btn3d}}">3D</button>
+<button onClick="{{locate}}" aria-label="Ma position" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; color: #0a84ff"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-8 16-2-6z"/></svg></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { dark: !!props.dark, mode: 'home', sel: null, query: '', favIds: ['home', 'police', 'garage'], recents: ['fleeca', 'pier', 'casino', 'customs'], tx: 0, ty: 0, d3: false, type: 'std', menu: false, travel: 'car' };
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+pois() {
+const ic = { house: 'M4 11l8-7 8 7v9H4zM10 20v-6h4v6', shield: 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z', wrench: 'M15 5a4 4 0 0 0-4 5L4 17l3 3 7-7a4 4 0 0 0 5-4l-3 3-2-1-1-2z', cross: 'M9 4h6v5h5v6h-5v5H9v-5H4V9h5z', bank: 'M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18', casino: 'M5 5h14v14H5zM9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01', pier: 'M3 17h18M6 17v-6M12 17v-6M18 17v-6M3 11h18', cup: 'M5 9h12v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4zM17 10h2a2 2 0 0 1 0 4h-2' };
+return [
+{ id: 'home', name: 'Domicile', short: 'Domicile', area: 'Vinewood', cat: 'Domicile', addr: '3 Vinewood Hills Dr', x: 1210, y: 560, col: '#0a84ff', d: ic.house, phone: '(555) 0113', hours: 'Toujours ouvert' },
+{ id: 'police', name: 'Poste de police de Mission Row', short: 'Police', area: 'Mission Row', cat: 'Service public', addr: '1 Sinner St, Mission Row', x: 1090, y: 790, col: '#30509c', d: ic.shield, phone: '(555) 0100', hours: 'Ouvert 24 h/24' },
+{ id: 'garage', name: 'Garage de La Mesa', short: 'Garage', area: 'La Mesa', cat: 'Garage automobile', addr: '27 Popular St, La Mesa', x: 1330, y: 930, col: '#ff8d28', d: ic.wrench, phone: '(555) 0127', hours: 'Ouvert · ferme à 19 h' },
+{ id: 'pillbox', name: 'Hôpital Pillbox', short: 'Hôpital', area: 'Pillbox Hill', cat: 'Hôpital', addr: '8 Strawberry Ave', x: 1150, y: 700, col: '#ff383c', d: ic.cross, phone: '(555) 0112', hours: 'Ouvert 24 h/24' },
+{ id: 'fleeca', name: 'Fleeca Bank, Legion Square', short: 'Fleeca', area: 'Legion Square', cat: 'Banque', addr: '4 Legion Square', x: 1020, y: 700, col: '#34c759', d: ic.bank, phone: '(555) 0150', hours: 'Ouvert · ferme à 17 h' },
+{ id: 'casino', name: 'Casino Diamond', short: 'Casino', area: 'Vinewood', cat: 'Casino', addr: '1 Diamond Blvd', x: 1520, y: 640, col: '#cb30e0', d: ic.casino, phone: '(555) 0199', hours: 'Ouvert 24 h/24' },
+{ id: 'pier', name: 'Del Perro Pier', short: 'Pier', area: 'Del Perro', cat: 'Site touristique', addr: 'Del Perro Beach', x: 640, y: 760, col: '#00c0e8', d: ic.pier, phone: '(555) 0160', hours: 'Toujours ouvert' },
+{ id: 'customs', name: 'Los Santos Customs', short: 'Customs', area: 'La Mesa', cat: 'Garage automobile', addr: '12 Power St', x: 1250, y: 800, col: '#ff8d28', d: ic.wrench, phone: '(555) 0188', hours: 'Ouvert · ferme à 20 h' },
+{ id: 'cafe', name: 'Café Vinewood', short: 'Café', area: 'Vinewood', cat: 'Café', addr: '19 Vinewood Blvd', x: 1130, y: 540, col: '#a2845e', d: ic.cup, phone: '(555) 0131', hours: 'Ouvert · ferme à 23 h' }
+];
+}
+trip(p) {
+const S = { x: 1000, y: 860 }; const km = (Math.abs(p.x - S.x) + Math.abs(p.y - S.y)) * 0.0042; const walk = this.state.travel === 'walk';
+const min = Math.max(1, Math.round(km / (walk ? 5 : 38) * 60)); const arrM = 32 + min;
+const pad = (n) => String(n).padStart(2, '0');
+return { km, min, S, time: min + ' min', dist: km.toFixed(1).replace('.', ',') + ' km', arr: pad(14 + Math.floor(arrM / 60)) + ':' + pad(arrM % 60) };
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: 'rgba(120,120,128,.36)', cell: 'rgba(60,60,64,.6)', glass: 'glass dk' }
+: { fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: 'rgba(120,120,128,.16)', cell: 'rgba(255,255,255,.7)', glass: 'glass' };
+const maps = {
+std: dark ? { land: '#1f2124', sea: '#0e2433', park: '#1e3a2b', road: '#44474e', roadCase: '#2b2d31', minor: '#2a2c30', beach: '#2a4a5e', label: '#8e8e93', halo: '#1f2124', pinText: '#e5e5ea', transitOp: 0 } : { land: '#f1eee5', sea: '#a9d4e2', park: '#cde8bf', road: '#ffffff', roadCase: '#d8d3c5', minor: '#faf8f3', beach: '#e6d9b0', label: '#7a7466', halo: '#f1eee5', pinText: '#2b2b2b', transitOp: 0 },
+sat: { land: '#4a5a3c', sea: '#143a52', park: '#2d5a2a', road: '#938d7d', roadCase: '#5c574b', minor: '#5d6a4b', beach: '#c4b48a', label: '#ffffff', halo: '#2b3320', pinText: '#ffffff', transitOp: 0 },
+tr: dark ? { land: '#1c1d20', sea: '#0e2433', park: '#1e3a2b', road: '#34363b', roadCase: '#26282c', minor: '#25272b', beach: '#2a4a5e', label: '#8e8e93', halo: '#1c1d20', pinText: '#e5e5ea', transitOp: 1 } : { land: '#f5f3ee', sea: '#b3d9e6', park: '#d6ebca', road: '#ececec', roadCase: '#dcd8cc', minor: '#f8f6f2', beach: '#e6d9b0', label: '#7a7466', halo: '#f5f3ee', pinText: '#2b2b2b', transitOp: 1 }
+};
+const map = maps[s.type];
+const pois = this.pois(); const poi = (id) => pois.find((p) => p.id === id);
+const pl = s.sel ? poi(s.sel) : null;
+const clampT = (tx, ty) => ({ tx: Math.max(-326, Math.min(326, tx)), ty: Math.max(-240, Math.min(240, ty)) });
+const pick = (p) => { const t = clampT(1200 - p.x, 749 - p.y); this.setState({ sel: p.id, mode: 'place', tx: t.tx, ty: t.ty, query: '', recents: [p.id].concat(s.recents.filter((x) => x !== p.id)).slice(0, 5) }); };
+const q = s.query.trim().toLowerCase();
+const rows = (q ? pois.filter((p) => (p.name + ' ' + p.cat + ' ' + p.addr).toLowerCase().indexOf(q) >= 0) : s.recents.map(poi)).map((p) => ({ name: p.name, addr: p.addr, col: p.col, d: p.d, go: () => pick(p) }));
+const favs = s.favIds.map(poi).map((p) => ({ short: p.short, area: p.area, col: p.col, d: p.d, go: () => pick(p) }));
+const roads = [['M610 200C640 420 590 560 640 700S700 960 640 1260', 16], ['M700 540C1000 520 1300 560 1760 500', 20], ['M1000 160C1010 600 990 900 1010 1360', 22], ['M700 1000C900 900 1100 820 1300 760S1600 700 1760 660', 22], ['M760 380C900 600 1000 800 1100 1300', 14], ['M1300 200C1320 500 1340 800 1380 1300', 14]].map((r) => ({ d: r[0], w: r[1], cw: r[1] + 6 }));
+const parks = [{ x: 780, y: 280, w: 300, h: 190, r: 60 }, { x: 1180, y: 330, w: 340, h: 150, r: 70 }, { x: 1120, y: 1040, w: 230, h: 140, r: 50 }, { x: 1440, y: 800, w: 190, h: 120, r: 40 }];
+const labels = [['VINEWOOD', 1260, 450, 22], ['ROCKFORD HILLS', 920, 500, 20], ['DEL PERRO', 760, 860, 22], ['VESPUCCI', 740, 1060, 22], ['DOWNTOWN', 1040, 640, 22], ['MISSION ROW', 1090, 860, 18], ['LA MESA', 1360, 1010, 22], ['DAVIS', 960, 1180, 22], ['MIRROR PARK', 1480, 420, 20], ['OCÉAN', 300, 760, 28]].map((l) => ({ t: l[0], x: l[1], y: l[2], fs: l[3] }));
+const pins = pois.map((p) => ({ name: s.sel === p.id || p.id === 'home' || p.id === 'police' || p.id === 'garage' ? p.short : '', tf: 'translate(' + p.x + ',' + p.y + ')', r: s.sel === p.id ? 24 : 16, ty: s.sel === p.id ? 50 : 40, col: p.col, go: () => pick(p) }));
+const t = pl ? this.trip(pl) : null;
+const routeOn = pl && (s.mode === 'route' || s.mode === 'nav');
+const routePts = pl ? [t.S.x + ',' + t.S.y, t.S.x + ',' + pl.y, pl.x + ',' + pl.y].join(' ') : '0,0';
+const nearM = pl ? Math.round(Math.abs(pl.y - t.S.y) * 4.2 / 10) * 10 : 0;
+const trip = t ? { time: t.time, dist: t.dist, arr: t.arr, via: 'Alta St et Vinewood Blvd', step1: 'Continuez tout droit sur Alta St pendant ' + nearM + ' m', step2: 'Tournez vers ' + (pl.x > t.S.x ? 'l’est' : 'l’ouest') + ' sur Vinewood Blvd' } : { time: '', dist: '', arr: '', via: '', step1: '', step2: '' };
+const dist0 = t ? t.dist : '';
+const tf3 = s.d3 ? 'perspective(1800px) rotateX(40deg) scale(1.35) translate(' + s.tx + 'px,' + s.ty + 'px)' : 'translate(' + s.tx + 'px,' + s.ty + 'px)';
+const typeList = [['std', 'Standard'], ['sat', 'Satellite'], ['tr', 'Transports']].map((x) => ({ label: x[1], on: s.type === x[0] ? 1 : 0, bg: s.type === x[0] ? 'rgba(10,132,255,.16)' : 'transparent', fg: s.type === x[0] ? '#0a84ff' : c.fg, go: () => this.setState({ type: x[0], menu: false }) }));
+const modeList = [['car', 'Voiture', 'M5 13l1.500-5h11L19 13M4 13h16v4H4zM7 17v2M17 17v2'], ['walk', 'À pied', 'M12 4a1.500 1.500 0 1 0 0 .01M10 21l2-6-2-3 2-4 3 3 3 1M10 12l-3 1']].map((x) => ({ label: x[1], d: x[2], bg: s.travel === x[0] ? '#0a84ff' : 'transparent', fg: s.travel === x[0] ? '#ffffff' : c.fg, go: () => this.setState({ travel: x[0] }) }));
+return {
+c, dark, map, roads, parks, labels, pins, rows, favs, pl: pl ? { name: pl.name, cat: pl.cat, dist: dist0, eta: t.time } : { name: '', cat: '', dist: '', eta: '' }, trip,
+v: { home: s.mode === 'home', place: s.mode === 'place', route: s.mode === 'route', nav: s.mode === 'nav' },
+query: s.query, onQuery: (e) => this.setState({ query: e.target.value }), noQuery: !q, noRows: !rows.length,
+infos: pl ? [{ k: 'Adresse', v: pl.addr + ', Los Santos' }, { k: 'Horaires', v: pl.hours }, { k: 'Téléphone', v: pl.phone }] : [],
+favFill: pl && s.favIds.indexOf(pl.id) >= 0 ? 'currentColor' : 'none',
+toggleFav: () => this.setState({ favIds: s.favIds.indexOf(pl.id) >= 0 ? s.favIds.filter((x) => x !== pl.id) : s.favIds.concat([pl.id]) }),
+back: () => this.setState({ mode: 'home', sel: null, tx: 0, ty: 0 }), backPlace: () => this.setState({ mode: 'place' }),
+goRoute: () => this.setState({ mode: 'route' }), start: () => this.setState({ mode: 'nav' }), stop: () => this.setState({ mode: 'home', sel: null, tx: 0, ty: 0 }),
+routePts, routeOff: routeOn ? 0 : 1, mapTf: tf3, modes: modeList, types: typeList, menu: s.menu, btn3d: s.d3 ? '#0a84ff' : c.fg,
+toggleMenu: () => this.setState({ menu: !s.menu }), toggle3d: () => this.setState({ d3: !s.d3 }),
+locate: () => { const tt = clampT(1200 - 1000, 749 - 860); this.setState({ tx: tt.tx, ty: tt.ty }); }
+};
+}
+}
+</script>
+</body>
+</html>

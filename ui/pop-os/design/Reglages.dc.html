@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Réglages</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden">
+
+<nav aria-label="Réglages" style="width: 400px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 8px">Réglages</span>
+<label style="height: 40px; border-radius: 20px; background: {{c.fill}}; display: flex; align-items: center; gap: 8px; padding: 0 12px; color: {{c.sub}}">
+<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+<input aria-label="Rechercher" placeholder="Rechercher" style="all: unset; flex-grow: 1; font-size: 17px; color: {{c.fg}}">
+</label>
+<button onClick="{{goProfile}}" style="all: unset; cursor: pointer; display: flex; gap: 14px; align-items: center; padding: 12px 14px; border-radius: 16px; background: {{c.cell}}">
+<span style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg,#ff6aae,#ff2e88); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600">AM</span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 19px; font-weight: 600">Alex Martin</span><span style="font-size: 14px; color: {{c.sub}}">Compte POP, sauvegarde, achats</span></span>
+</button>
+<sc-for list="{{groups}}" as="gr" hint-placeholder-count="3">
+<div style="border-radius: 16px; overflow: hidden; background: {{c.cell}}">
+<sc-for list="{{gr.items}}" as="it" hint-placeholder-count="4">
+<button onClick="{{it.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; padding: 0 12px; height: 46px; background: {{it.selBg}}; color: {{it.selFg}}">
+<span style="width: 30px; height: 30px; border-radius: 8px; background: {{it.color}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"/></svg>
+</span>
+<span style="flex-grow: 1; font-size: 17px">{{it.name}}</span>
+<span style="font-size: 16px; color: {{it.valFg}}">{{it.val}}</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; overflow-y: auto; box-sizing: border-box; padding: 0 70px 40px">
+<div style="height: 96px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; position: sticky; top: 0">{{title}}</div>
+
+<sc-if value="{{is.display}}" hint-placeholder-val="{{true}}">
+<span style="display: block; font-size: 13px; color: {{c.sub}}; padding: 0 16px 8px; text-transform: uppercase">Apparence</span>
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 24px 20px 6px">
+<div style="display: flex; justify-content: center; gap: 90px">
+<button onClick="{{setLight}}" style="all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 12px">
+<span style="width: 120px; height: 90px; border-radius: 12px; background: linear-gradient(160deg,#c6d4ff,#f7c3df); border: 1px solid {{c.sep}}; position: relative; overflow: hidden"><span style="position: absolute; left: 12px; right: 12px; bottom: 10px; height: 20px; border-radius: 6px; background: rgba(255,255,255,.8)"></span></span>
+<span style="font-size: 16px">Clair</span>
+<span style="width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box; border: {{radio.light}}; background: {{radio.lightBg}}"></span>
+</button>
+<button onClick="{{setDarkMode}}" style="all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 12px">
+<span style="width: 120px; height: 90px; border-radius: 12px; background: linear-gradient(160deg,#090b20,#170818); border: 1px solid {{c.sep}}; position: relative; overflow: hidden"><span style="position: absolute; left: 12px; right: 12px; bottom: 10px; height: 20px; border-radius: 6px; background: rgba(40,40,46,.9)"></span></span>
+<span style="font-size: 16px">Sombre</span>
+<span style="width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box; border: {{radio.dark}}; background: {{radio.darkBg}}"></span>
+</button>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; height: 52px; margin-top: 18px; border-top: 1px solid {{c.sep}}">
+<span style="font-size: 17px">Automatique</span>
+<span style="width: 51px; height: 31px; border-radius: 16px; background: {{c.fill}}; position: relative"><span style="position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2)"></span></span>
+</div>
+</div>
+
+<span style="display: block; font-size: 13px; color: {{c.sub}}; padding: 26px 16px 8px; text-transform: uppercase">Verre liquide</span>
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 18px 20px">
+<div style="display: flex; justify-content: space-between; font-size: 15px; color: {{c.sub}}; margin-bottom: 14px"><span>Clair</span><span>Teinté</span></div>
+<div onPointerDown="{{glassDrag}}" onPointerMove="{{glassDrag}}" style="position: relative; height: 30px; cursor: pointer; touch-action: none">
+<span style="position: absolute; left: 0; right: 0; top: 13px; height: 4px; border-radius: 2px; background: {{c.fill}}"></span>
+<span style="position: absolute; left: 0; top: 13px; height: 4px; border-radius: 2px; background: #0088ff; width: {{glassPct}}"></span>
+<span style="position: absolute; top: 1px; left: {{glassPct}}; margin-left: -14px; width: 28px; height: 28px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25)"></span>
+</div>
+</div>
+<span style="display: block; font-size: 13px; color: {{c.sub}}; padding: 8px 16px 0">Choisissez l’aspect du verre dans toute l’interface, de transparent à teinté.</span>
+
+<span style="display: block; font-size: 13px; color: {{c.sub}}; padding: 26px 16px 8px; text-transform: uppercase">Texte</span>
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 0 20px">
+<div style="display: flex; justify-content: space-between; align-items: center; height: 52px; border-bottom: 1px solid {{c.sep}}"><span style="font-size: 17px">Taille du texte</span><span style="color: {{c.sub}}">›</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; height: 52px">
+<span style="font-size: 17px">Texte en gras</span>
+<button aria-label="Texte en gras" onClick="{{toggleBold}}" style="all: unset; cursor: pointer; width: 51px; height: 31px; border-radius: 16px; background: {{bold.bg}}; position: relative; transition: background .2s"><span style="position: absolute; top: 2px; left: {{bold.x}}; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: left .2s"></span></button>
+</div>
+</div>
+
+<span style="display: block; font-size: 13px; color: {{c.sub}}; padding: 26px 16px 8px; text-transform: uppercase">Luminosité</span>
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 18px 20px; display: flex; align-items: center; gap: 16px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.sub}}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/></svg>
+<span style="flex-grow: 1; height: 4px; border-radius: 2px; background: {{c.fill}}; position: relative"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 72%; border-radius: 2px; background: #0088ff"></span><span style="position: absolute; top: -12px; left: 72%; margin-left: -14px; width: 28px; height: 28px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25)"></span></span>
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{c.sub}}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>
+</div>
+</sc-if>
+
+<sc-if value="{{is.general}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 0 26px">
+<span style="width: 70px; height: 70px; border-radius: 18px; background: linear-gradient(180deg,#a3a3aa,#636369); display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></span>
+<span style="font-size: 26px; font-weight: 700">Général</span>
+<span style="font-size: 15px; color: {{c.sub}}; text-align: center; max-width: 460px">Gérez la configuration et les préférences générales de la tablette : mises à jour, stockage, langue…</span>
+</div>
+<sc-for list="{{generalGroups}}" as="gg" hint-placeholder-count="2">
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 0 20px; margin-bottom: 26px">
+<sc-for list="{{gg.rows}}" as="r" hint-placeholder-count="3">
+<div style="display: flex; justify-content: space-between; align-items: center; height: 52px; border-bottom: {{r.line}}"><span style="font-size: 17px">{{r.k}}</span><span style="font-size: 17px; color: {{c.sub}}">{{r.v}}</span></div>
+</sc-for>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{is.wall}}" hint-placeholder-val="{{false}}">
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 26px; display: flex; flex-direction: column; align-items: center; gap: 20px">
+<div style="display: flex; gap: 30px">
+<span style="width: 260px; height: 200px; border-radius: 18px; background: linear-gradient(160deg,#c6d4ff,#f7c3df); display: flex; align-items: flex-start; justify-content: center; padding-top: 20px; box-sizing: border-box; color: #fff; font-size: 44px; font-weight: 700">14:32</span>
+<span style="width: 260px; height: 200px; border-radius: 18px; background: radial-gradient(55% 75% at 12% 88%, #ff6fb0 0%, transparent 62%), radial-gradient(55% 70% at 88% 14%, #6f9dff 0%, transparent 60%), linear-gradient(160deg,#c6d4ff,#f7c3df)"></span>
+</div>
+<div style="display: flex; gap: 30px; font-size: 15px; color: {{c.sub}}"><span>Écran verrouillé</span><span style="width: 150px"></span><span>Écran d’accueil</span></div>
+<span style="padding: 12px 26px; border-radius: 22px; background: #0088ff; color: #fff; font-size: 17px; font-weight: 600">+ Ajouter un fond d’écran</span>
+</div>
+<span style="display: block; font-size: 13px; color: {{c.sub}}; padding: 26px 16px 8px; text-transform: uppercase">Collection POP</span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+<sc-for list="{{walls}}" as="w" hint-placeholder-count="4">
+<span style="aspect-ratio: 4 / 3; border-radius: 14px; background: {{w}}"></span>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{is.notif}}" hint-placeholder-val="{{false}}">
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 0 20px; margin-bottom: 26px">
+<div style="display: flex; justify-content: space-between; align-items: center; height: 52px; border-bottom: 1px solid {{c.sep}}"><span style="font-size: 17px">Afficher les aperçus</span><span style="color: {{c.sub}}">Toujours ›</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; height: 52px"><span style="font-size: 17px">Résumé programmé</span><span style="color: {{c.sub}}">Non ›</span></div>
+</div>
+<span style="display: block; font-size: 13px; color: {{c.sub}}; padding: 0 16px 8px; text-transform: uppercase">Style de notification</span>
+<div style="border-radius: 22px; background: {{c.cell}}; padding: 0 20px">
+<sc-for list="{{notifApps}}" as="n" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 14px; height: 60px; border-bottom: {{n.line}}">
+<dc-import name="AppIcon" app-id="{{n.id}}" size="34" dark="{{dark}}" hint-size="34px,34px"></dc-import>
+<span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 17px">{{n.name}}</span><span style="font-size: 14px; color: {{c.sub}}">Bannières, sons, pastilles</span></span>
+<span style="color: {{c.sub}}">›</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{is.other}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 120px; color: {{c.sub}}">
+<span style="font-size: 26px; font-weight: 700; color: {{c.fg}}">{{title}}</span>
+<span style="font-size: 16px">Écran prévu dans un prochain lot de maquettes.</span>
+</div>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"glass":{"editor":"range","min":0,"max":100,"default":50},"onDark":{"editor":null},"onGlass":{"editor":null},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { sel: 'display', bold: false, dark: !!props.dark, glass: props.glass ?? 50 }; }
+componentDidUpdate(prev) {
+if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark });
+if (prev.glass !== this.props.glass) this.setState({ glass: this.props.glass ?? 50 });
+}
+setDark(v) { this.setState({ dark: v }); if (this.props.onDark) this.props.onDark(v); }
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', side: '#000000', cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#3a3a3c' }
+: { bg: '#f2f2f7', side: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8' };
+const D = {
+air: 'M2 16l8-3V5a2 2 0 0 1 4 0v8l8 3v2l-8-2v4l2 2h-8l2-2v-4l-8 2z', wifi: 'M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0', bt: 'M7 7l10 10-5 4V3l5 4L7 17', bat: 'M3 8h16v8H3zM21 11v2M6 11h6',
+bell: 'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4', sound: 'M4 9h4l5-4v14l-5-4H4zM16 9a4 4 0 0 1 0 6', moon: 'M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z', hour: 'M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
+gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M2 12h3M19 12h3', cc: 'M4 6h7v7H4zM13 6h7v7h-7zM4 15h16v4H4z', sun: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M2 12h2M20 12h2', home: 'M4 11l8-7 8 7v9H4z', acc: 'M12 4a2 2 0 1 0 0 .1M5 8h14M12 8v6M9 21l3-7 3 7',
+wall: 'M3 5h18v14H3zM3 16l6-6 5 5 3-3 4 4', search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4', hand: 'M8 13V5a2 2 0 0 1 4 0v6M12 11V4a2 2 0 0 1 4 0v8M16 9a2 2 0 0 1 4 0v5a7 7 0 0 1-14 0v-3', store: 'M6 7h12l-1 13H7L6 7zM9 7a3 3 0 0 1 6 0', lock: 'M5 11h14v10H5zM8 11V8a4 4 0 0 1 8 0v3'
+};
+const it = (id, name, color, d, val) => ({ id, name, color, d, val: val || '' });
+const raw = [
+[it('air', 'Mode Avion', '#ff8d28', D.air), it('wifi', 'Wi-Fi', '#0088ff', D.wifi, 'LS-Net'), it('bt', 'Bluetooth', '#0088ff', D.bt, 'Oui'), it('bat', 'Batterie', '#34c759', D.bat)],
+[it('notif', 'Notifications', '#ff383c', D.bell), it('sons', 'Sons', '#ff2d55', D.sound), it('focus', 'Concentration', '#5e5ce6', D.moon), it('temps', 'Temps d’écran', '#5e5ce6', D.hour)],
+[it('general', 'Général', '#8e8e93', D.gear), it('ccset', 'Centre de contrôle', '#8e8e93', D.cc), it('display', 'Luminosité et affichage', '#0088ff', D.sun), it('homeset', 'Écran d’accueil et multitâche', '#4f5bd5', D.home), it('acc', 'Accessibilité', '#0088ff', D.acc), it('wall', 'Fond d’écran', '#00c0e8', D.wall), it('searchset', 'Rechercher et demander', '#3a3a3c', D.search)],
+[it('priv', 'Confidentialité et sécurité', '#0088ff', D.hand), it('code', 'Code', '#ff383c', D.lock), it('shop', 'Boutique', '#ff2e88', D.store)]
+];
+const all = [].concat.apply([], raw);
+const groups = raw.map((items) => ({ items: items.map((x) => ({ name: x.name, color: x.color, d: x.d, val: x.val, selBg: s.sel === x.id ? '#0088ff' : 'transparent', selFg: s.sel === x.id ? '#ffffff' : c.fg, valFg: s.sel === x.id ? 'rgba(255,255,255,.8)' : c.sub, go: () => this.setState({ sel: x.id }) })) }));
+const cur = all.find((x) => x.id === s.sel) || all[0];
+const known = ['display', 'general', 'wall', 'notif'];
+const blue = '#0088ff';
+const rows = (list) => list.map((r, i) => ({ k: r[0], v: r[1], line: i < list.length - 1 ? '1px solid ' + c.sep : 'none' }));
+const notifList = ['messages', 'telephone', 'mail', 'calendrier', 'boutique', 'police'];
+const N = { messages: 'Messages', telephone: 'Téléphone', mail: 'Mail', calendrier: 'Calendrier', boutique: 'Boutique', police: 'Police (exemple)' };
+return {
+c, dark, groups, title: cur.name,
+is: { display: s.sel === 'display', general: s.sel === 'general', wall: s.sel === 'wall', notif: s.sel === 'notif', other: known.indexOf(s.sel) < 0 },
+goProfile: () => this.setState({ sel: 'profil' }),
+setLight: () => this.setDark(false), setDarkMode: () => this.setDark(true),
+radio: { light: dark ? '2px solid ' + c.sub : 'none', lightBg: dark ? 'transparent' : blue, dark: dark ? 'none' : '2px solid ' + c.sub, darkBg: dark ? blue : 'transparent' },
+glassPct: s.glass + '%',
+glassDrag: (e) => { if (e.type === 'pointermove' && !e.buttons) return; const r = e.currentTarget.getBoundingClientRect(); const v = Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * 100); this.setState({ glass: v }); if (this.props.onGlass) this.props.onGlass(v); },
+bold: { bg: s.bold ? '#34c759' : c.fill, x: s.bold ? '22px' : '2px' }, toggleBold: () => this.setState({ bold: !s.bold }),
+generalGroups: [
+{ rows: rows([['Informations', '›'], ['Mise à jour logicielle', 'POP OS 1.0 ›']]) },
+{ rows: rows([['Nom', 'Tablette de Alex'], ['Modèle', 'POP Tab Pro 13"'], ['Stockage', '128 Go dont 41 Go utilisés'], ['Langue et région', 'Français ›'], ['Date et heure', '›']]) }
+],
+walls: [
+'linear-gradient(160deg,#c6d4ff,#f7c3df)', 'linear-gradient(160deg,#090b20,#170818)',
+'radial-gradient(70% 90% at 30% 80%, #ff2e88 0%, transparent 60%), linear-gradient(160deg,#1a0b2e,#0b1a3a)', 'radial-gradient(60% 80% at 70% 30%, #ffd60a 0%, transparent 60%), linear-gradient(160deg,#ff8d28,#ff383c)',
+'radial-gradient(60% 80% at 20% 20%, #34c759 0%, transparent 60%), linear-gradient(160deg,#0b3a2e,#06201a)', 'linear-gradient(160deg,#e3e3e8,#a3a3aa)',
+'radial-gradient(60% 80% at 80% 80%, #00c0e8 0%, transparent 60%), linear-gradient(160deg,#0a2a6b,#04102b)', 'radial-gradient(60% 80% at 50% 50%, #cb30e0 0%, transparent 60%), linear-gradient(160deg,#2a0b3a,#120518)'
+],
+notifApps: notifList.map((id, i) => ({ id, name: N[id], line: i < notifList.length - 1 ? '1px solid ' + c.sep : 'none' }))
+};
+}
+}
+</script>
+</body>
+</html>

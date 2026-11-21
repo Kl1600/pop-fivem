@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tablette interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+:where(button,input,textarea){all:unset;box-sizing:border-box}
+body{margin:0}
+a{color:#0088ff}a:hover{color:#006ad1}
+.dev{font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em}
+.dev button{font-family:inherit}
+.g{background:rgba(255,255,255,var(--ga,.42));-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(255,255,255,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 1px rgba(0,0,0,.06),0 10px 30px rgba(0,0,0,.16)}
+.dk .g{background:rgba(28,28,32,var(--gad,.42));border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 1px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45)}
+.gw{background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 20px rgba(0,0,0,.18)}
+.wg{background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border:1px solid rgba(255,255,255,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 30px rgba(0,0,0,.12);color:#000}
+.dk .wg{background:rgba(30,30,34,.62);border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 10px 30px rgba(0,0,0,.4);color:#fff}
+.sub{color:rgba(60,60,67,.6)}.dk .sub{color:rgba(235,235,245,.6)}
+.tr{transition:transform .55s cubic-bezier(.2,.9,.25,1.02),opacity .35s ease,filter .45s ease}
+.fade{transition:opacity .3s ease}
+.key{transition:background .12s ease,transform .12s ease}.key:active{background:rgba(255,255,255,.5);transform:scale(.96)}
+.hot:hover{background:rgba(255,255,255,.14)}
+.btnhw{transition:transform .08s ease}
+.cc:active{transform:scale(.97)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-18px)}40%{transform:translateX(16px)}60%{transform:translateX(-10px)}80%{transform:translateX(6px)}}
+@keyframes jig{0%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}100%{transform:rotate(-2deg)}}
+.jig{animation:jig .28s ease-in-out infinite}
+.jig2{animation:jig .28s ease-in-out infinite;animation-delay:-.14s}
+</style>
+</helmet>
+<div class="{{rootClass}}" style="width: 1520px; height: 1200px; position: relative">
+
+<button aria-label="Bouton du haut (verrouiller)" class="btnhw" onClick="{{power}}" style="cursor: pointer; position: absolute; left: 230px; top: 57px; width: 96px; height: 9px; border-radius: 4px 4px 0 0; background: {{fin.btn}}; transform: {{pw}}"></button>
+<button aria-label="Volume plus" class="btnhw" onClick="{{volUp}}" style="cursor: pointer; position: absolute; left: 1459px; top: 190px; width: 9px; height: 70px; border-radius: 0 4px 4px 0; background: {{fin.btn}}; transform: {{vu}}"></button>
+<button aria-label="Volume moins" class="btnhw" onClick="{{volDown}}" style="cursor: pointer; position: absolute; left: 1459px; top: 272px; width: 9px; height: 70px; border-radius: 0 4px 4px 0; background: {{fin.btn}}; transform: {{vd}}"></button>
+
+<div style="position: absolute; left: 60px; top: 64px; width: 1400px; height: 1071px; box-sizing: border-box; padding: 6px; border-radius: 56px; background: {{fin.body}}; box-shadow: 0 40px 80px rgba(0,0,0,.35), inset 0 0 0 1px {{fin.edge}}">
+<div style="position: relative; width: 100%; height: 100%; box-sizing: border-box; padding: 20px; border-radius: 50px; background: #050506">
+<div aria-hidden="true" style="position: absolute; top: 6px; left: 50%; margin-left: -5px; width: 10px; height: 10px; border-radius: 50%; background: #10121a; box-shadow: inset 0 0 0 2px #1b1e2c"></div>
+
+<div data-screen="1" style="position: relative; width: 1348px; height: 1019px; border-radius: 30px; overflow: hidden; background: #000; color: #fff; --ga: {{ga}}; --gad: {{gad}}">
+
+<div aria-hidden="true" class="tr" style="position: absolute; inset: -40px; background: {{wall}}; filter: {{wallFilter}}; transform: {{wallT}}"></div>
+
+<div class="tr" style="position: absolute; inset: 0; opacity: {{L.lockO}}; transform: {{L.lockT}}; pointer-events: {{L.lockP}}">
+<div style="position: absolute; left: 70px; top: 90px; display: flex; flex-direction: column">
+<span style="font-size: 28px; font-weight: 600; opacity: .92">dimanche 22 novembre</span>
+<span style="font-size: 172px; font-weight: 700; line-height: .95; letter-spacing: -6px; color: rgba(255,255,255,.88); text-shadow: 0 2px 0 rgba(255,255,255,.25), 0 8px 40px rgba(0,0,0,.18)">14:32</span>
+<div style="display: flex; gap: 14px; margin-top: 26px">
+<div class="gw" style="width: 168px; height: 76px; border-radius: 22px; box-sizing: border-box; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center">
+<span style="font-size: 13px; font-weight: 600; opacity: .8">Los Santos</span><span style="font-size: 24px; font-weight: 600">24° · Soleil</span>
+</div>
+<div class="gw" style="width: 168px; height: 76px; border-radius: 22px; box-sizing: border-box; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center">
+<span style="font-size: 13px; font-weight: 600; opacity: .8">15:00</span><span style="font-size: 18px; font-weight: 600">Patrouille</span>
+</div>
+<div class="gw" style="width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700">87 %</div>
+</div>
+</div>
+<div style="position: absolute; right: 70px; top: 420px; width: 460px; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{lockNotifs}}" as="n" hint-placeholder-count="2">
+<div class="gw" style="border-radius: 26px; padding: 14px 16px; display: flex; gap: 12px; align-items: center">
+<dc-import name="AppIcon" app-id="{{n.app}}" size="38" dark="{{dark}}" hint-size="38px,38px"></dc-import>
+<span style="display: flex; flex-direction: column; flex-grow: 1; min-width: 0">
+<span style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 600"><span>{{n.title}}</span><span style="font-weight: 400; opacity: .7; font-size: 13px">{{n.time}}</span></span>
+<span style="font-size: 15px; opacity: .92">{{n.body}}</span>
+</span>
+</div>
+</sc-for>
+</div>
+<div style="position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; font-size: 16px; font-weight: 500; opacity: .85">Glisser vers le haut pour ouvrir</div>
+</div>
+
+<div class="tr" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 150px; box-sizing: border-box; opacity: {{L.codeO}}; pointer-events: {{L.codeP}}">
+<span style="font-size: 22px; font-weight: 500">Saisissez le code</span>
+<div style="display: flex; gap: 22px; margin: 26px 0 50px; animation: {{shakeAnim}}">
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="4">
+<span style="width: 15px; height: 15px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid #fff; background: {{d.bg}}"></span>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, 84px); gap: 22px 30px">
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="12">
+<sc-if value="{{k.show}}" hint-placeholder-val="{{true}}">
+<button class="gw key" onClick="{{k.press}}" style="cursor: pointer; width: 84px; height: 84px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22)">
+<span style="font-size: 36px; font-weight: 400; line-height: 1">{{k.d}}</span><span style="font-size: 10px; font-weight: 700; letter-spacing: 2px; opacity: .9">{{k.l}}</span>
+</button>
+</sc-if>
+<sc-if value="{{k.hide}}" hint-placeholder-val="{{false}}"><span></span></sc-if>
+</sc-for>
+</div>
+<div style="position: absolute; bottom: 44px; right: 60px; display: flex; gap: 30px; font-size: 17px">
+<button onClick="{{codeDel}}" style="cursor: pointer">Supprimer</button>
+<button onClick="{{codeCancel}}" style="cursor: pointer">Annuler</button>
+</div>
+</div>
+
+<div class="tr" style="position: absolute; inset: 0; opacity: {{L.homeO}}; transform: {{L.homeT}}; filter: {{L.homeF}}; pointer-events: {{L.homeP}}">
+<sc-if value="{{edit}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; top: 44px; left: 40px; right: 40px; display: flex; justify-content: space-between; z-index: 3">
+<span class="g" style="padding: 9px 18px; border-radius: 20px; font-size: 15px; font-weight: 600; color: {{fg}}">+ Ajouter un widget</span>
+<button class="g" onClick="{{editDone}}" style="cursor: pointer; padding: 9px 22px; border-radius: 20px; font-size: 15px; font-weight: 600; color: {{fg}}">OK</button>
+</div>
+</sc-if>
+<div style="position: absolute; left: 70px; top: 96px; width: 580px; display: flex; flex-direction: column; gap: 40px">
+<div style="display: flex; gap: 40px">
+<div style="width: 270px; height: 270px; border-radius: 34px; box-sizing: border-box; padding: 20px 22px; background: linear-gradient(180deg,#3d8cf0,#2a6fd8); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 10px 30px rgba(0,0,0,.15); display: flex; flex-direction: column">
+<span style="font-size: 17px; font-weight: 600">Los Santos ➤</span>
+<span style="font-size: 64px; font-weight: 300; line-height: 1.05; letter-spacing: -2px">24°</span>
+<div style="flex-grow: 1"></div>
+<svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="#ffd60a"><circle cx="12" cy="12" r="5"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="#ffd60a" stroke-width="2" stroke-linecap="round"/></svg>
+<span style="font-size: 16px; font-weight: 600; margin-top: 6px">Ensoleillé</span>
+<span style="font-size: 16px; font-weight: 500; opacity: .9">H:27° B:18°</span>
+</div>
+<div class="wg" style="width: 270px; height: 270px; border-radius: 34px; box-sizing: border-box; padding: 20px 22px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 14px; font-weight: 700; color: #ff383c; letter-spacing: .5px">DIMANCHE</span>
+<span style="font-size: 52px; font-weight: 400; line-height: 1; letter-spacing: -1px">22</span>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; gap: 8px"><span style="width: 4px; border-radius: 2px; background: #0088ff"></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 600">Patrouille centre</span><span class="sub" style="font-size: 14px">15:00 – 17:00</span></span></div>
+<div style="display: flex; gap: 8px; margin-top: 8px"><span style="width: 4px; border-radius: 2px; background: #ff8d28"></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 600">Réunion au poste</span><span class="sub" style="font-size: 14px">18:30</span></span></div>
+</div>
+</div>
+<div class="wg" style="width: 580px; height: 270px; border-radius: 34px; box-sizing: border-box; padding: 20px 24px; display: flex; gap: 24px">
+<div style="width: 150px; display: flex; flex-direction: column">
+<span style="width: 44px; height: 44px; border-radius: 50%; background: #ff8d28; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4" cy="6" r="1.3" fill="#fff"/><circle cx="4" cy="12" r="1.3" fill="#fff"/><circle cx="4" cy="18" r="1.3" fill="#fff"/></svg>
+</span>
+<div style="flex-grow: 1"></div>
+<span style="font-size: 44px; font-weight: 600; line-height: 1">{{remLeft}}</span>
+<span style="font-size: 17px; font-weight: 600; color: #ff8d28">Rappels</span>
+</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px">
+<sc-for list="{{rems}}" as="r" hint-placeholder-count="4">
+<button onClick="{{r.toggle}}" style="cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 16px">
+<span style="width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid {{r.ring}}; background: {{r.fill}}; flex-shrink: 0"></span>
+<span style="opacity: {{r.op}}; text-decoration: {{r.deco}}">{{r.t}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="position: absolute; left: 700px; top: 100px; width: 600px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 36px">
+<sc-for list="{{grid}}" as="a" hint-placeholder-count="16">
+<div style="position: relative; display: flex; justify-content: center">
+<button class="{{a.jig}}" onClick="{{a.open}}" onContextMenu="{{a.menu}}" onPointerDown="{{a.down}}" onPointerUp="{{a.up}}" onPointerLeave="{{a.up}}" style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 120px">
+<dc-import name="AppIcon" app-id="{{a.id}}" size="88" dark="{{dark}}" hint-size="88px,88px"></dc-import>
+<span style="font-size: 13px; font-weight: 500; text-shadow: 0 1px 6px rgba(0,0,0,.35)">{{a.name}}</span>
+</button>
+<sc-if value="{{edit}}" hint-placeholder-val="{{false}}">
+<button aria-label="Supprimer {{a.name}}" onClick="{{a.remove}}" style="cursor: pointer; position: absolute; top: -8px; left: 6px; width: 26px; height: 26px; border-radius: 50%; background: rgba(120,120,128,.85); color: #fff; font-size: 20px; font-weight: 700; line-height: 24px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,.3)">−</button>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<button class="g" onClick="{{openSearch}}" style="cursor: pointer; position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); padding: 8px 18px; border-radius: 18px; display: flex; gap: 8px; align-items: center; font-size: 15px; font-weight: 600; color: {{fg}}">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Rechercher
+</button>
+
+<div class="g" style="position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 13px; border-radius: 36px; display: flex; align-items: center; gap: 16px">
+<sc-for list="{{dock}}" as="a" hint-placeholder-count="6">
+<button aria-label="{{a.name}}" onClick="{{a.open}}" style="cursor: pointer; display: flex">
+<dc-import name="AppIcon" app-id="{{a.id}}" size="76" dark="{{dark}}" hint-size="76px,76px"></dc-import>
+</button>
+</sc-for>
+<span style="width: 1px; height: 60px; background: {{divider}}"></span>
+<sc-for list="{{recentsDock}}" as="a" hint-placeholder-count="2">
+<button aria-label="{{a.name}}" onClick="{{a.open}}" style="cursor: pointer; display: flex">
+<dc-import name="AppIcon" app-id="{{a.id}}" size="76" dark="{{dark}}" hint-size="76px,76px"></dc-import>
+</button>
+</sc-for>
+</div>
+</div>
+
+<div class="tr" style="position: absolute; inset: 0; border-radius: 30px; overflow: hidden; transform: {{A.t}}; opacity: {{A.o}}; pointer-events: {{A.p}}; background: {{A.bg}}">
+<sc-if value="{{A.isSettings}}" hint-placeholder-val="{{false}}">
+<dc-import name="Reglages" dark="{{dark}}" glass="{{glass}}" on-dark="{{setDark}}" on-glass="{{setGlass}}" hint-size="1348px,1019px"></dc-import>
+</sc-if>
+<sc-if value="{{A.is.boutique}}" hint-placeholder-val="{{false}}"><dc-import name="Boutique" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.camera}}" hint-placeholder-val="{{false}}"><dc-import name="Camera" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.photos}}" hint-placeholder-val="{{false}}"><dc-import name="Photos" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.notes}}" hint-placeholder-val="{{false}}"><dc-import name="Notes" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.calendrier}}" hint-placeholder-val="{{false}}"><dc-import name="Calendrier" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.rappels}}" hint-placeholder-val="{{false}}"><dc-import name="Rappels" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.fichiers}}" hint-placeholder-val="{{false}}"><dc-import name="Fichiers" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.tableau}}" hint-placeholder-val="{{false}}"><dc-import name="Tableau" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.horloge}}" hint-placeholder-val="{{false}}"><dc-import name="Horloge" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.calculette}}" hint-placeholder-val="{{false}}"><dc-import name="Calculette" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.meteo}}" hint-placeholder-val="{{false}}"><dc-import name="Meteo" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.plans}}" hint-placeholder-val="{{false}}"><dc-import name="Plans" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.dictaphone}}" hint-placeholder-val="{{false}}"><dc-import name="Dictaphone" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.traduire}}" hint-placeholder-val="{{false}}"><dc-import name="Traduire" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.bourse}}" hint-placeholder-val="{{false}}"><dc-import name="Bourse" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.messages}}" hint-placeholder-val="{{false}}"><dc-import name="Messages" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.telephone}}" hint-placeholder-val="{{false}}"><dc-import name="Telephone" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.mail}}" hint-placeholder-val="{{false}}"><dc-import name="Mail" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.contacts}}" hint-placeholder-val="{{false}}"><dc-import name="Contacts" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.navigateur}}" hint-placeholder-val="{{false}}"><dc-import name="Navigateur" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+<sc-if value="{{A.is.musique}}" hint-placeholder-val="{{false}}"><dc-import name="Musique" dark="{{dark}}" hint-size="1348px,1019px"></dc-import></sc-if>
+</div>
+
+<div style="position: absolute; top: 0; left: 0; right: 0; height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; font-size: 15px; font-weight: 600; color: {{sbColor}}; pointer-events: none; z-index: 5">
+<span style="opacity: {{sbLeftO}}">14:32 &#160;dim. 22 nov.<span style="opacity: .7">{{sbApp}}</span></span>
+<span style="display: flex; gap: 8px; align-items: center">
+<svg aria-hidden="true" width="19" height="15" viewBox="0 0 24 18" fill="currentColor"><path d="M12 3c3.9 0 7.4 1.5 10 4l-2 2.1C17.9 7 15.1 5.8 12 5.8S6.1 7 4 9.1L2 7c2.6-2.5 6.1-4 10-4zm0 5.6c2.4 0 4.5.9 6.1 2.4l-2 2.1c-1.1-1-2.5-1.6-4.1-1.6s-3 .6-4.1 1.6l-2-2.1c1.6-1.5 3.7-2.4 6.1-2.4zm0 5.6c.9 0 1.7.3 2.3.9L12 17.4l-2.3-2.3c.6-.6 1.4-.9 2.3-.9z"/></svg>
+<span>87 %</span>
+<svg aria-hidden="true" width="28" height="14" viewBox="0 0 28 14" fill="none"><rect x="1" y="1" width="23" height="12" rx="3.5" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2"/><rect x="3" y="3" width="17" height="8" rx="2" fill="currentColor"/><path d="M26 5v4" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/></svg>
+</span>
+</div>
+
+<div class="g tr" onClick="{{openBanner}}" style="position: absolute; top: 14px; left: 50%; margin-left: -270px; width: 540px; box-sizing: border-box; border-radius: 28px; padding: 13px 16px; display: flex; gap: 12px; align-items: center; color: {{fg}}; cursor: pointer; z-index: 6; transform: {{bannerT}}; opacity: {{bannerO}}">
+<dc-import name="AppIcon" app-id="messages" size="40" dark="{{dark}}" hint-size="40px,40px"></dc-import>
+<span style="display: flex; flex-direction: column; flex-grow: 1">
+<span style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 600"><span>Sam Leroy</span><span class="sub" style="font-weight: 400; font-size: 13px">maintenant</span></span>
+<span style="font-size: 15px">On se retrouve au poste à 15 h ?</span>
+</span>
+</div>
+
+<div class="fade" style="position: absolute; inset: 0; z-index: 7; opacity: {{O.nc}}; pointer-events: {{O.ncP}}">
+<div class="tr" onClick="{{closeAll}}" style="position: absolute; inset: 0; background: rgba(0,0,0,.18); -webkit-backdrop-filter: blur(36px) saturate(160%); backdrop-filter: blur(36px) saturate(160%); transform: {{O.ncT}}">
+<div style="position: absolute; top: 70px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center">
+<span style="font-size: 24px; font-weight: 600">dimanche 22 novembre</span>
+<span style="font-size: 120px; font-weight: 700; letter-spacing: -4px; line-height: 1; color: rgba(255,255,255,.88)">14:32</span>
+</div>
+</div>
+<div class="tr" style="position: absolute; top: 330px; left: 50%; margin-left: -280px; width: 560px; display: flex; flex-direction: column; gap: 10px; transform: {{O.ncT}}">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px">
+<span style="font-size: 22px; font-weight: 700">Notifications</span>
+<button aria-label="Tout effacer" onClick="{{clearNotifs}}" class="gw" style="cursor: pointer; width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; font-size: 16px; font-weight: 700; background: rgba(255,255,255,.2)">✕</button>
+</div>
+<sc-if value="{{ncEmpty}}" hint-placeholder-val="{{false}}"><span style="text-align: center; opacity: .7; font-size: 17px; padding: 30px">Aucune ancienne notification</span></sc-if>
+<sc-for list="{{ncGroups}}" as="gr" hint-placeholder-count="3">
+<button onClick="{{gr.toggle}}" style="cursor: pointer; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{gr.items}}" as="n" hint-placeholder-count="1">
+<div class="gw" style="border-radius: 26px; padding: 14px 16px; display: flex; gap: 12px; align-items: center">
+<dc-import name="AppIcon" app-id="{{gr.app}}" size="40" dark="{{dark}}" hint-size="40px,40px"></dc-import>
+<span style="display: flex; flex-direction: column; flex-grow: 1">
+<span style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 600"><span>{{n.title}}</span><span style="font-weight: 400; opacity: .7; font-size: 13px">{{n.time}}</span></span>
+<span style="font-size: 15px; opacity: .92">{{n.body}}</span>
+</span>
+</div>
+</sc-for>
+<sc-if value="{{gr.stacked}}" hint-placeholder-val="{{false}}">
+<span aria-hidden="true" style="display: block; margin: -14px 14px 0; height: 12px; border-radius: 0 0 18px 18px; background: rgba(255,255,255,.22)"></span>
+<span style="font-size: 13px; opacity: .75; padding-left: 16px">{{gr.more}}</span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+</div>
+
+<div class="fade" style="position: absolute; inset: 0; z-index: 7; opacity: {{O.cc}}; pointer-events: {{O.ccP}}">
+<div onClick="{{closeAll}}" style="position: absolute; inset: 0; background: rgba(0,0,0,.28); -webkit-backdrop-filter: blur(30px) saturate(150%); backdrop-filter: blur(30px) saturate(150%)"></div>
+<div class="tr" style="position: absolute; top: 76px; right: 60px; display: grid; grid-template-columns: repeat(4, 96px); grid-auto-rows: 96px; gap: 18px; transform: {{O.ccT}}; transform-origin: top right">
+<div class="gw" style="grid-column: span 2; grid-row: span 2; border-radius: 34px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); place-items: center; padding: 14px">
+<sc-for list="{{conn}}" as="c" hint-placeholder-count="4">
+<button aria-label="{{c.name}}" onClick="{{c.toggle}}" style="cursor: pointer; width: 66px; height: 66px; border-radius: 50%; background: {{c.bg}}; display: flex; align-items: center; justify-content: center">
+<svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{c.d}}"/></svg>
+</button>
+</sc-for>
+</div>
+<div class="gw" style="grid-column: span 2; grid-row: span 2; border-radius: 34px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column">
+<div style="display: flex; gap: 12px; align-items: center">
+<span style="width: 58px; height: 58px; border-radius: 12px; background: linear-gradient(135deg,#ff2e88,#7a2bff); flex-shrink: 0"></span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 15px; font-weight: 600">Nuit à Vinewood</span><span style="font-size: 14px; opacity: .7">Los Santos FM</span></span>
+</div>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; justify-content: space-around; align-items: center">
+<svg aria-hidden="true" width="30" height="22" viewBox="0 0 30 22" fill="#fff"><path d="M14 2v18L1 11zM29 2v18L16 11z"/></svg>
+<button aria-label="Lecture" onClick="{{togglePlay}}" style="cursor: pointer; display: flex">
+<sc-if value="{{playing}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" width="26" height="30" viewBox="0 0 26 30" fill="#fff"><rect x="2" y="2" width="8" height="26" rx="2"/><rect x="16" y="2" width="8" height="26" rx="2"/></svg></sc-if>
+<sc-if value="{{paused}}" hint-placeholder-val="{{true}}"><svg aria-hidden="true" width="26" height="30" viewBox="0 0 26 30" fill="#fff"><path d="M3 2l21 13L3 28z"/></svg></sc-if>
+</button>
+<svg aria-hidden="true" width="30" height="22" viewBox="0 0 30 22" fill="#fff"><path d="M1 2v18l13-9zM16 2v18l13-9z"/></svg>
+</div>
+</div>
+<div class="gw" style="grid-column: span 2; border-radius: 34px; display: flex; align-items: center; gap: 12px; padding: 0 18px">
+<span style="width: 44px; height: 44px; border-radius: 50%; background: {{focusBg}}; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg></span>
+<button onClick="{{toggleFocus}}" style="cursor: pointer; font-size: 16px; font-weight: 600">{{focusLabel}}</button>
+</div>
+<div class="gw" onPointerDown="{{bright.drag}}" onPointerMove="{{bright.drag}}" style="grid-row: span 2; border-radius: 34px; overflow: hidden; position: relative; cursor: ns-resize; touch-action: none">
+<span style="position: absolute; left: 0; right: 0; bottom: 0; height: {{bright.h}}; background: #fff"></span>
+<svg aria-label="Luminosité" role="img" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{{bright.ic}}" stroke-width="2" stroke-linecap="round" style="position: absolute; bottom: 18px; left: 34px"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>
+</div>
+<div class="gw" onPointerDown="{{volume.drag}}" onPointerMove="{{volume.drag}}" style="grid-row: span 2; border-radius: 34px; overflow: hidden; position: relative; cursor: ns-resize; touch-action: none">
+<span style="position: absolute; left: 0; right: 0; bottom: 0; height: {{volume.h}}; background: #fff"></span>
+<svg aria-label="Volume" role="img" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{{volume.ic}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; bottom: 18px; left: 34px"><path d="M4 9h4l5-4v14l-5-4H4zM17 9a4 4 0 0 1 0 6"/></svg>
+</div>
+<sc-for list="{{tiles}}" as="t" hint-placeholder-count="6">
+<button aria-label="{{t.name}}" onClick="{{t.act}}" class="gw cc" style="cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: {{t.bg}}">
+<svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="{{t.fg}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"/></svg>
+</button>
+</sc-for>
+</div>
+<div aria-hidden="true" style="position: absolute; right: 22px; top: 200px; display: flex; flex-direction: column; gap: 10px">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #fff"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.4)"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.4)"></span>
+</div>
+</div>
+
+<div class="fade" style="position: absolute; inset: 0; z-index: 7; opacity: {{O.sr}}; pointer-events: {{O.srP}}">
+<div onClick="{{closeAll}}" style="position: absolute; inset: 0; background: rgba(0,0,0,.2); -webkit-backdrop-filter: blur(34px) saturate(160%); backdrop-filter: blur(34px) saturate(160%)"></div>
+<div class="tr" style="position: absolute; top: 90px; left: 50%; margin-left: -330px; width: 660px; display: flex; flex-direction: column; gap: 22px; transform: {{O.srT}}">
+<label class="g" style="height: 54px; border-radius: 27px; display: flex; align-items: center; gap: 12px; padding: 0 20px; color: {{fg}}">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+<input aria-label="Rechercher ou demander" placeholder="Rechercher ou demander" value="{{q}}" onInput="{{onQ}}" style="flex-grow: 1; font-size: 18px; color: {{fg}}">
+</label>
+<span style="font-size: 15px; font-weight: 600; opacity: .8; padding-left: 8px">{{srTitle}}</span>
+<div class="g" style="border-radius: 30px; padding: 22px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: 20px">
+<sc-for list="{{srApps}}" as="a" hint-placeholder-count="6">
+<button onClick="{{a.open}}" style="cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: {{fg}}">
+<dc-import name="AppIcon" app-id="{{a.id}}" size="70" dark="{{dark}}" hint-size="70px,70px"></dc-import>{{a.name}}
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div class="fade" style="position: absolute; inset: 0; z-index: 7; opacity: {{O.sw}}; pointer-events: {{O.swP}}">
+<div onClick="{{closeAll}}" style="position: absolute; inset: 0; background: rgba(0,0,0,.3); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px)"></div>
+<div style="position: absolute; top: 300px; left: 0; right: 0; display: flex; justify-content: center; gap: 46px; pointer-events: none">
+<sc-if value="{{swEmpty}}" hint-placeholder-val="{{false}}"><span style="font-size: 18px; opacity: .8">Aucune appli ouverte</span></sc-if>
+<sc-for list="{{switcher}}" as="c" hint-placeholder-count="3">
+<div class="tr" style="display: flex; flex-direction: column; gap: 12px; pointer-events: auto; transform: {{c.t}}">
+<span style="display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600"><dc-import name="AppIcon" app-id="{{c.id}}" size="34" dark="{{dark}}" hint-size="34px,34px"></dc-import>{{c.name}}</span>
+<button onClick="{{c.open}}" onPointerDown="{{c.down}}" onPointerUp="{{c.up}}" style="cursor: grab; width: 360px; height: 272px; border-radius: 22px; background: {{c.bg}}; box-shadow: 0 20px 50px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; touch-action: none">
+<dc-import name="AppIcon" app-id="{{c.id}}" size="90" dark="{{dark}}" hint-size="90px,90px"></dc-import>
+</button>
+<span style="text-align: center; font-size: 12px; opacity: .7">Glisser vers le haut pour fermer</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div class="g tr" aria-hidden="true" style="position: absolute; right: 16px; top: 130px; width: 16px; height: 170px; border-radius: 8px; overflow: hidden; z-index: 8; opacity: {{hudO}}; transform: {{hudT}}">
+<span style="position: absolute; left: 0; right: 0; bottom: 0; height: {{volume.h}}; background: #fff"></span>
+</div>
+
+<button aria-label="Centre de notifications" class="hot" onClick="{{openNC}}" style="cursor: pointer; position: absolute; top: 0; left: 120px; width: 460px; height: 34px; border-radius: 0 0 16px 16px; z-index: 9; display: {{hotD}}"></button>
+<button aria-label="Centre de contrôle" class="hot" onClick="{{openCC}}" style="cursor: pointer; position: absolute; top: 0; right: 0; width: 300px; height: 34px; border-radius: 0 0 0 16px; z-index: 9; display: {{hotD}}"></button>
+<button aria-label="Barre d&#39;accueil" onClick="{{homeBar}}" onDoubleClick="{{openSwitcher}}" style="cursor: pointer; position: absolute; bottom: 0; left: 50%; margin-left: -170px; width: 340px; height: 30px; z-index: 9; display: {{homeBarD}}; align-items: center; justify-content: center">
+<span style="width: 200px; height: 6px; border-radius: 3px; background: {{hbColor}}"></span>
+</button>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; background: #000; pointer-events: none; z-index: 20; opacity: {{dimO}}"></div>
+<div class="fade" onClick="{{power}}" style="position: absolute; inset: 0; background: #000; z-index: 21; opacity: {{offO}}; pointer-events: {{offP}}"></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"finish":{"editor":"enum","options":["Noir sidéral","Argent","Rose POP","Bleu nuit"],"default":"Noir sidéral"},"glass":{"editor":"range","min":0,"max":100,"step":1,"default":50,"unit":"%"},"$preview":{"width":1520,"height":1200}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = {
+dark: !!props.dark, glass: props.glass ?? 50, on: true, scr: 'lock', code: '', err: false,
+app: null, stage: 'closed', org: { x: 674, y: 509 },
+cc: false, nc: false, search: false, sw: false, edit: false, q: '',
+vol: 55, hud: false, bright: 100, banner: false, bannerDone: false,
+recents: ['photos', 'notes'],
+home: ['calendrier','photos','camera','horloge','meteo','plans','rappels','notes','fichiers','tableau','calculette','dictaphone','traduire','bourse','contacts','boutique'],
+rem: { a: false, b: true, c: false, d: false }, expanded: {}, cleared: false,
+playing: false, focus: false, air: false, wifi: true, bt: true, share: false, rot: false,
+press: ''
+};
+}
+componentDidUpdate(prev) {
+if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark });
+if (prev.glass !== this.props.glass) this.setState({ glass: this.props.glass ?? 50 });
+}
+componentWillUnmount() { clearTimeout(this.tHud); clearTimeout(this.tBan); clearTimeout(this.tBan2); clearTimeout(this.tLong); }
+names() {
+return { reglages:'Réglages', boutique:'Boutique', camera:'Appareil photo', photos:'Photos', notes:'Notes', calendrier:'Calendrier', rappels:'Rappels', fichiers:'Fichiers', tableau:'Tableau', horloge:'Horloge', calculette:'Calculette', meteo:'Météo', plans:'Plans', dictaphone:'Dictaphone', traduire:'Traduire', bourse:'Bourse', messages:'Messages', mail:'Mail', contacts:'Contacts', telephone:'Téléphone', navigateur:'Navigateur', musique:'Musique' };
+}
+flash(k) { this.setState({ press: k }); setTimeout(() => this.setState({ press: '' }), 140); }
+power() {
+this.flash('pw');
+if (this.state.on) this.setState({ on: false, scr: 'lock', code: '', app: null, stage: 'closed', cc: false, nc: false, search: false, sw: false, edit: false });
+else this.setState({ on: true, scr: 'lock' });
+}
+vol(d) {
+this.flash(d > 0 ? 'vu' : 'vd');
+const v = Math.max(0, Math.min(100, this.state.vol + d));
+this.setState({ vol: v, hud: true });
+clearTimeout(this.tHud); this.tHud = setTimeout(() => this.setState({ hud: false }), 1500);
+}
+unlock() {
+this.setState({ scr: 'home', code: '' });
+if (!this.state.bannerDone) {
+this.tBan = setTimeout(() => this.setState({ banner: true, bannerDone: true }), 1400);
+this.tBan2 = setTimeout(() => this.setState({ banner: false }), 6500);
+}
+}
+press(d) {
+if (this.state.err) return;
+const code = (this.state.code + d).slice(0, 4);
+this.setState({ code });
+if (code.length === 4) {
+if (code === '1234') setTimeout(() => this.unlock(), 180);
+else { this.setState({ err: true }); setTimeout(() => this.setState({ err: false, code: '' }), 600); }
+}
+}
+originOf(e) {
+const el = e && e.currentTarget; if (!el || !el.closest) return { x: 674, y: 509 };
+const scr = el.closest('[data-screen]'); if (!scr) return { x: 674, y: 509 };
+const r = scr.getBoundingClientRect(); const k = r.width / 1348 || 1; const b = el.getBoundingClientRect();
+return { x: (b.left + b.width / 2 - r.left) / k, y: (b.top + b.height / 2 - r.top) / k };
+}
+openApp(id, e) {
+if (this.state.edit) return;
+const org = this.originOf(e);
+const recents = [id].concat(this.state.recents.filter((x) => x !== id)).slice(0, 4);
+this.setState({ app: id, stage: 'opening', org, recents, cc: false, nc: false, search: false, sw: false, banner: false, scr: 'home' });
+requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ stage: 'open' })));
+}
+closeApp() {
+if (!this.state.app) return;
+this.setState({ stage: 'closing' });
+setTimeout(() => this.setState({ app: null, stage: 'closed' }), 480);
+}
+homeBar() {
+const s = this.state;
+if (!s.on) return;
+if (s.cc || s.nc || s.search || s.sw) return this.closeAll();
+if (s.scr === 'lock') return this.setState({ scr: 'code' });
+if (s.edit) return this.setState({ edit: false });
+if (s.app) return this.closeApp();
+}
+closeAll() { this.setState({ cc: false, nc: false, search: false, sw: false, q: '' }); }
+slider(key, e) {
+if (e.type === 'pointermove' && !e.buttons) return;
+const r = e.currentTarget.getBoundingClientRect();
+const v = Math.round(Math.max(0, Math.min(1, (r.bottom - e.clientY) / r.height)) * 100);
+const o = {}; o[key] = Math.max(key === 'bright' ? 15 : 0, v); this.setState(o);
+}
+longStart(id) { clearTimeout(this.tLong); this.tLong = setTimeout(() => { this.longFired = true; this.setState({ edit: true }); }, 550); }
+longEnd() { clearTimeout(this.tLong); }
+renderVals() {
+const s = this.state; const N = this.names(); const dark = s.dark;
+const fins = {
+'Noir sidéral': { body: 'linear-gradient(135deg,#3a3a3d,#1b1b1d 45%,#2c2c2f)', edge: 'rgba(255,255,255,.12)', btn: '#2a2a2d' },
+'Argent': { body: 'linear-gradient(135deg,#f1f2f4,#c9cbcf 45%,#e3e4e7)', edge: 'rgba(255,255,255,.7)', btn: '#c4c6ca' },
+'Rose POP': { body: 'linear-gradient(135deg,#ff7ab5,#d81b70 45%,#ff4f9b)', edge: 'rgba(255,255,255,.35)', btn: '#e0307f' },
+'Bleu nuit': { body: 'linear-gradient(135deg,#3b4a6b,#1a2238 45%,#2e3b58)', edge: 'rgba(255,255,255,.18)', btn: '#27324d' }
+};
+const fin = fins[this.props.finish] || fins['Noir sidéral'];
+const g = s.glass / 100;
+const wall = dark
+? 'radial-gradient(55% 75% at 12% 88%, #a3195f 0%, transparent 62%), radial-gradient(55% 70% at 88% 14%, #2a3fa8 0%, transparent 60%), radial-gradient(45% 55% at 62% 72%, #5e2290 0%, transparent 60%), linear-gradient(160deg,#090b20,#170818)'
+: 'radial-gradient(55% 75% at 12% 88%, #ff6fb0 0%, transparent 62%), radial-gradient(55% 70% at 88% 14%, #6f9dff 0%, transparent 60%), radial-gradient(45% 55% at 62% 72%, #ffb067 0%, transparent 60%), linear-gradient(160deg,#c6d4ff,#f7c3df)';
+const overlay = s.cc || s.nc || s.search || s.sw;
+const blurWall = s.scr === 'code' || overlay;
+const home = s.scr === 'home'; const lock = s.scr === 'lock'; const codeScr = s.scr === 'code';
+const appOn = !!s.app; const appVisible = appOn && (s.stage === 'open');
+const ox = s.org.x - 674, oy = s.org.y - 509;
+const appT = s.stage === 'open' ? 'none' : 'translate(' + ox + 'px,' + oy + 'px) scale(.065)';
+const appO = !appOn ? 0 : (s.stage === 'closing' ? 0 : 1);
+const L = {
+lockO: lock ? 1 : 0, lockT: lock ? 'none' : (codeScr ? 'translateY(-40px)' : 'translateY(-100%)'), lockP: lock ? 'auto' : 'none',
+codeO: codeScr ? 1 : 0, codeP: codeScr ? 'auto' : 'none',
+homeO: home ? 1 : 0, homeT: home ? (appVisible ? 'scale(.92)' : 'none') : 'scale(1.12)', homeF: appVisible ? 'blur(3px)' : 'none', homeP: home && !appOn && !overlay ? 'auto' : 'none'
+};
+const appBg = dark ? '#000000' : '#f2f2f7';
+const A = { t: appT, o: appO, p: appOn && s.stage === 'open' ? 'auto' : 'none', bg: appBg, id: s.app || 'reglages', name: N[s.app] || '', isSettings: s.app === 'reglages', is: Object.keys(N).reduce((o, k) => { o[k] = s.app === k; return o; }, {}), fg: dark ? '#fff' : '#000' };
+const inLightApp = appVisible && !dark && !overlay;
+const O = {
+nc: s.nc ? 1 : 0, ncP: s.nc ? 'auto' : 'none', ncT: s.nc ? 'none' : 'translateY(-60px)',
+cc: s.cc ? 1 : 0, ccP: s.cc ? 'auto' : 'none', ccT: s.cc ? 'none' : 'scale(.9)',
+sr: s.search ? 1 : 0, srP: s.search ? 'auto' : 'none', srT: s.search ? 'none' : 'translateY(-30px)',
+sw: s.sw ? 1 : 0, swP: s.sw ? 'auto' : 'none'
+};
+const mk = (id) => ({ id, name: N[id], open: (e) => this.openApp(id, e) });
+const grid = s.home.map((id, i) => Object.assign(mk(id), {
+jig: s.edit ? (i % 2 ? 'jig2' : 'jig') : '',
+open: (e) => { if (this.longFired) { this.longFired = false; return; } this.openApp(id, e); },
+menu: (e) => { e.preventDefault(); this.setState({ edit: true }); },
+down: () => this.longStart(id), up: () => this.longEnd(),
+remove: () => this.setState({ home: s.home.filter((x) => x !== id) })
+}));
+const dock = ['messages','telephone','mail','navigateur','musique','reglages'].map(mk);
+const recentsDock = s.recents.filter((id) => dock.every((d) => d.id !== id)).slice(0, 2).map(mk);
+const remList = [{ k: 'a', t: 'Récupérer le dossier Leroy' }, { k: 'b', t: 'Faire le plein de la voiture' }, { k: 'c', t: 'Appeler le central' }, { k: 'd', t: 'Rapport de patrouille' }];
+const rems = remList.map((r) => ({ t: r.t, ring: s.rem[r.k] ? '#ff8d28' : (dark ? 'rgba(235,235,245,.4)' : 'rgba(60,60,67,.35)'), fill: s.rem[r.k] ? '#ff8d28' : 'transparent', op: s.rem[r.k] ? .45 : 1, deco: s.rem[r.k] ? 'line-through' : 'none', toggle: () => this.setState({ rem: Object.assign({}, s.rem, { [r.k]: !s.rem[r.k] }) }) }));
+const remLeft = remList.filter((r) => !s.rem[r.k]).length;
+const keysRaw = [['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['',''],['0',''],['','']];
+const keys = keysRaw.map((k) => ({ d: k[0], l: k[1], show: k[0] !== '', hide: k[0] === '', press: () => this.press(k[0]) }));
+const dots = [0,1,2,3].map((i) => ({ bg: i < s.code.length ? '#fff' : 'transparent' }));
+const groupsRaw = [
+{ app: 'telephone', items: [{ title: 'Appel manqué', body: 'Lina Costa', time: '10 min' }, { title: 'Appel manqué', body: 'Central', time: '1 h' }] },
+{ app: 'messages', items: [{ title: 'Sam Leroy', body: 'On se retrouve au poste à 15 h ?', time: '12 min' }, { title: 'Lina Costa', body: 'Merci pour hier !', time: '2 h' }, { title: 'Alex Martin', body: 'Photo envoyée', time: '3 h' }] },
+{ app: 'boutique', items: [{ title: 'Boutique', body: 'Mise à jour disponible pour Plans', time: '4 h' }] },
+{ app: 'calendrier', items: [{ title: 'Patrouille centre', body: 'Aujourd’hui à 15:00', time: '5 h' }] }
+];
+const ncGroups = s.cleared ? [] : groupsRaw.map((gr) => {
+const ex = !!s.expanded[gr.app];
+return { app: gr.app, items: ex ? gr.items : gr.items.slice(0, 1), stacked: !ex && gr.items.length > 1, more: (gr.items.length - 1) + ' notification' + (gr.items.length > 2 ? 's' : '') + ' de plus', toggle: () => this.setState({ expanded: Object.assign({}, s.expanded, { [gr.app]: !ex }) }) };
+});
+const lockNotifs = [{ app: 'messages', title: 'Sam Leroy', body: 'On se retrouve au poste à 15 h ?', time: '12 min' }, { app: 'telephone', title: 'Appel manqué', body: 'Lina Costa', time: '10 min' }];
+const P = (d) => d;
+const onBg = (on, c) => on ? c : 'rgba(255,255,255,.18)';
+const conn = [
+{ name: 'Mode avion', d: P('M2 16l8-3V5a2 2 0 0 1 4 0v8l8 3v2l-8-2v4l2 2h-8l2-2v-4l-8 2z'), bg: onBg(s.air, '#ff8d28'), toggle: () => this.setState({ air: !s.air }) },
+{ name: 'Wi-Fi', d: P('M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01'), bg: onBg(s.wifi && !s.air, '#0088ff'), toggle: () => this.setState({ wifi: !s.wifi }) },
+{ name: 'Bluetooth', d: P('M7 7l10 10-5 4V3l5 4L7 17'), bg: onBg(s.bt, '#0088ff'), toggle: () => this.setState({ bt: !s.bt }) },
+{ name: 'Partage à proximité', d: P('M12 13a2 2 0 1 0 0-.1M8 17a6 6 0 1 1 8 0M5 20a10 10 0 1 1 14 0'), bg: onBg(s.share, '#0088ff'), toggle: () => this.setState({ share: !s.share }) }
+];
+const tiles = [
+{ name: 'Verrouillage de la rotation', d: 'M12 4a8 8 0 1 0 8 8M20 4v5h-5M10 11h4v5h-4zM11 11V9.5a1 1 0 0 1 2 0V11', bg: s.rot ? '#fff' : 'rgba(255,255,255,.18)', fg: s.rot ? '#ff383c' : '#fff', act: () => this.setState({ rot: !s.rot }) },
+{ name: 'Recopie de l’écran', d: 'M3 5h18v11H3zM8 21h8M12 16v5', bg: 'rgba(255,255,255,.18)', fg: '#fff', act: () => {} },
+{ name: 'Mode sombre', d: 'M12 3v18M12 3a9 9 0 0 1 0 18', bg: dark ? '#fff' : 'rgba(255,255,255,.18)', fg: dark ? '#000' : '#fff', act: () => this.setState({ dark: !dark }) },
+{ name: 'Minuteur', d: 'M12 8v5l3 2M9 2h6M12 4a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', bg: 'rgba(255,255,255,.18)', fg: '#fff', act: (e) => this.openApp('horloge', e) },
+{ name: 'Calculette', d: 'M6 3h12v18H6zM9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01', bg: 'rgba(255,255,255,.18)', fg: '#fff', act: (e) => this.openApp('calculette', e) },
+{ name: 'Appareil photo', d: 'M3 8h4l2-3h6l2 3h4v12H3zM12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', bg: 'rgba(255,255,255,.18)', fg: '#fff', act: (e) => this.openApp('camera', e) },
+{ name: 'Notes rapides', d: 'M5 4h10l4 4v12H5zM9 12h6M9 16h4', bg: 'rgba(255,255,255,.18)', fg: '#fff', act: (e) => this.openApp('notes', e) },
+{ name: 'Enregistrement', d: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', bg: 'rgba(255,255,255,.18)', fg: '#fff', act: () => {} }
+];
+const sl = (v, key) => ({ h: v + '%', ic: v > 18 ? '#8e8e93' : '#fff', drag: (e) => this.slider(key, e) });
+const all = Object.keys(N);
+const q = s.q.trim().toLowerCase();
+const srApps = (q ? all.filter((id) => N[id].toLowerCase().indexOf(q) >= 0) : ['messages','notes','reglages','photos','calendrier','boutique']).slice(0, 12).map(mk);
+const switcher = s.recents.map((id) => Object.assign(mk(id), {
+bg: dark ? '#1c1c1e' : '#f2f2f7', t: 'none',
+open: (e) => { if (this.swDrag) { this.swDrag = false; return; } this.openApp(id, e); },
+down: (e) => { this.swY = e.clientY; },
+up: (e) => { if (this.swY != null && this.swY - e.clientY > 60) { this.swDrag = true; this.setState({ recents: s.recents.filter((x) => x !== id), app: s.app === id ? null : s.app, stage: s.app === id ? 'closed' : s.stage }); } this.swY = null; }
+}));
+return {
+rootClass: dark ? 'dev dk' : 'dev', dark, glass: s.glass, fin,
+ga: (0.12 + g * 0.6).toFixed(2), gad: (0.18 + g * 0.55).toFixed(2),
+pw: s.press === 'pw' ? 'translateY(3px)' : 'none', vu: s.press === 'vu' ? 'translateX(-3px)' : 'none', vd: s.press === 'vd' ? 'translateX(-3px)' : 'none',
+power: () => this.power(), volUp: () => this.vol(8), volDown: () => this.vol(-8),
+wall, wallFilter: blurWall ? 'blur(34px) saturate(140%)' : 'none', wallT: blurWall ? 'scale(1.08)' : 'none',
+L, A, O, lockNotifs, dots, keys, shakeAnim: s.err ? 'shake .5s ease' : 'none',
+codeDel: () => this.setState({ code: s.code.slice(0, -1) }), codeCancel: () => this.setState({ scr: 'lock', code: '' }),
+edit: s.edit, editDone: () => this.setState({ edit: false }), fg: dark ? '#fff' : '#000',
+grid, dock, recentsDock, divider: dark ? 'rgba(255,255,255,.25)' : 'rgba(0,0,0,.15)', rems, remLeft,
+openSearch: () => this.setState({ search: true }),
+setDark: (v) => this.setState({ dark: !!v }), setGlass: (v) => this.setState({ glass: v }),
+sbColor: inLightApp ? '#000' : '#fff', sbLeftO: lock || codeScr ? 0 : 1, sbApp: appVisible ? ' · ' + N[s.app] : '',
+bannerT: s.banner ? 'none' : 'translateY(-140px)', bannerO: s.banner ? 1 : 0,
+openBanner: (e) => this.openApp('messages', e),
+closeAll: () => this.closeAll(), clearNotifs: () => this.setState({ cleared: true }), ncGroups, ncEmpty: s.cleared,
+conn, tiles, playing: s.playing, paused: !s.playing, togglePlay: () => this.setState({ playing: !s.playing }),
+focusBg: s.focus ? '#5e5ce6' : 'rgba(255,255,255,.18)', focusLabel: s.focus ? 'Ne pas déranger' : 'Concentration', toggleFocus: () => this.setState({ focus: !s.focus }),
+bright: sl(s.bright, 'bright'), volume: sl(s.vol, 'vol'),
+q: s.q, onQ: (e) => this.setState({ q: e.target.value }), srApps, srTitle: q ? 'Résultats' : 'Suggestions',
+switcher, swEmpty: s.recents.length === 0,
+hudO: s.hud ? 1 : 0, hudT: s.hud ? 'none' : 'translateX(30px)',
+openNC: () => this.setState({ nc: !s.nc, cc: false, search: false, sw: false }),
+openCC: () => this.setState({ cc: !s.cc, nc: false, search: false, sw: false }),
+openSwitcher: () => { if (s.scr === 'home') this.setState({ sw: true, cc: false, nc: false, search: false }); },
+homeBar: () => this.homeBar(),
+hotD: s.on && !codeScr ? 'block' : 'none', homeBarD: s.on && !codeScr ? 'flex' : 'none', hbColor: inLightApp ? '#000' : '#fff',
+dimO: ((100 - s.bright) * 0.006).toFixed(2), offO: s.on ? 0 : 1, offP: s.on ? 'none' : 'auto'
+};
+}
+}
+</script>
+</body>
+</html>

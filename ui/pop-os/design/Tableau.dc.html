@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tableau</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; position: relative; overflow: hidden; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.canvas}}; color: {{c.fg}}">
+
+<div onPointerDown="{{bgDown}}" onPointerMove="{{move}}" onPointerUp="{{up}}" style="position: absolute; left: 0; top: 0; width: 1348px; height: 1019px; background-image: radial-gradient(circle, {{c.dot}} 1.4px, transparent 1.6px); background-size: 26px 26px; touch-action: none">
+<svg aria-hidden="true" width="1348" height="1019" viewBox="0 0 1348 1019" style="position: absolute; left: 0; top: 0; pointer-events: none">
+<sc-for list="{{arrows}}" as="a" hint-placeholder-count="2">
+<line x1="{{a.x1}}" y1="{{a.y1}}" x2="{{a.x2}}" y2="{{a.y2}}" stroke="{{a.hit}}" stroke-width="18" stroke-linecap="round" style="pointer-events: stroke; cursor: move" onPointerDown="{{a.down}}"></line>
+<line x1="{{a.x1}}" y1="{{a.y1}}" x2="{{a.x2}}" y2="{{a.y2}}" stroke="{{a.main}}" stroke-width="4" stroke-linecap="round"></line>
+<polygon points="{{a.head}}" fill="{{a.main}}"></polygon>
+</sc-for>
+</svg>
+<sc-for list="{{items}}" as="it" hint-placeholder-count="3">
+<div onPointerDown="{{it.down}}" style="position: absolute; left: {{it.x}}px; top: {{it.y}}px; width: {{it.w}}px; height: {{it.h}}px; outline: {{it.ring}}; outline-offset: 3px; border-radius: {{it.radius}}; cursor: {{it.cursor}}">
+<sc-if value="{{it.isNote}}" hint-placeholder-val="{{true}}">
+<div style="width: 100%; height: 100%; border-radius: 4px 4px 18px 4px; background: {{it.soft}}; box-shadow: 0 10px 22px rgba(0,0,0,.22); display: flex; flex-direction: column; overflow: hidden">
+<div style="height: 22px; flex-shrink: 0; background: {{it.main}}; opacity: .55"></div>
+<textarea aria-label="Texte du post-it" placeholder="Écrire…" onInput="{{it.input}}" style="all: unset; flex-grow: 1; padding: 10px 14px; font-size: 19px; line-height: 1.3; font-weight: 600; color: #1c1c1e; white-space: pre-wrap">{{it.text}}</textarea>
+</div>
+</sc-if>
+<sc-if value="{{it.isShape}}" hint-placeholder-val="{{false}}">
+<div style="width: 100%; height: 100%; box-sizing: border-box; border-radius: {{it.radius}}; background: {{it.tint}}; border: 3px solid {{it.main}}; display: flex; align-items: center; justify-content: center">
+<input aria-label="Texte de la forme" placeholder="Texte" value="{{it.text}}" onInput="{{it.input}}" style="all: unset; width: 80%; text-align: center; font-size: 18px; font-weight: 700; color: {{c.fg}}">
+</div>
+</sc-if>
+<sc-if value="{{it.isText}}" hint-placeholder-val="{{false}}">
+<input aria-label="Texte libre" value="{{it.text}}" onInput="{{it.input}}" style="all: unset; width: 100%; font-size: {{it.fs}}px; font-weight: 800; color: {{c.fg}}">
+</sc-if>
+<sc-if value="{{it.isImage}}" hint-placeholder-val="{{false}}">
+<div style="width: 100%; height: 100%; border-radius: 12px; background: linear-gradient(160deg,#ffae3d,#b8326f 60%,#2b1a5e); box-shadow: 0 10px 22px rgba(0,0,0,.25); display: flex; align-items: flex-end; padding: 10px; box-sizing: border-box; color: #fff; font-size: 14px; font-weight: 600">{{it.text}}</div>
+</sc-if>
+</div>
+</sc-for>
+<svg aria-label="Dessin" width="1348" height="1019" viewBox="0 0 1348 1019" onPointerDown="{{down}}" style="position: absolute; left: 0; top: 0; pointer-events: {{overlayEvents}}; cursor: crosshair">
+<sc-for list="{{strokes}}" as="st" hint-placeholder-count="2">
+<polyline points="{{st.pts}}" fill="none" stroke="{{st.main}}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></polyline>
+</sc-for>
+</svg>
+</div>
+
+<button onClick="{{toggleBoards}}" aria-label="Liste des tableaux" class="{{c.glass}}" style="all: unset; cursor: pointer; position: absolute; left: 24px; top: 24px; height: 48px; padding: 0 18px; border-radius: 24px; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; color: {{c.fg}}"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0088ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>{{boardName}}</button>
+
+<div class="{{c.glass}}" style="position: absolute; left: 50%; top: 24px; transform: translateX(-50%); height: 56px; border-radius: 28px; display: flex; align-items: center; gap: 4px; padding: 0 10px">
+<sc-for list="{{tools}}" as="t" hint-placeholder-count="6">
+<button onClick="{{t.go}}" aria-label="{{t.label}}" style="all: unset; cursor: pointer; width: 46px; height: 46px; border-radius: 23px; display: flex; align-items: center; justify-content: center; background: {{t.bg}}; color: {{t.fg}}; transition: background .2s"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"/></svg></button>
+</sc-for>
+<button onClick="{{toggleColors}}" aria-label="Couleur" style="all: unset; cursor: pointer; width: 46px; height: 46px; border-radius: 23px; display: flex; align-items: center; justify-content: center"><span style="width: 26px; height: 26px; border-radius: 13px; background: {{curColor}}; border: 3px solid rgba(255,255,255,.85); box-shadow: 0 0 0 1.5px {{c.sep}}"></span></button>
+</div>
+
+<div style="position: absolute; right: 24px; top: 24px; display: flex; gap: 10px">
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{false}}"><button onClick="{{delSel}}" aria-label="Supprimer la sélection" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; color: #ff383c"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></sc-if>
+<button onClick="{{undo}}" aria-label="Annuler" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; color: {{c.fg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7L4 12l5 5M4 12h10a6 6 0 0 1 0 8"/></svg></button>
+</div>
+
+<sc-if value="{{showShapes}}" hint-placeholder-val="{{false}}">
+<div class="{{c.glass}}" style="position: absolute; left: 50%; top: 94px; transform: translateX(-50%); height: 52px; border-radius: 26px; display: flex; align-items: center; gap: 4px; padding: 0 10px">
+<sc-for list="{{shapes}}" as="sh" hint-placeholder-count="3">
+<button onClick="{{sh.go}}" aria-label="{{sh.label}}" style="all: unset; cursor: pointer; width: 42px; height: 42px; border-radius: 21px; display: flex; align-items: center; justify-content: center; background: {{sh.bg}}; color: {{sh.fg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{sh.d}}"/></svg></button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{showColors}}" hint-placeholder-val="{{false}}">
+<div class="{{c.glass}}" style="position: absolute; left: 50%; top: 94px; margin-left: 40px; height: 52px; border-radius: 26px; display: flex; align-items: center; gap: 8px; padding: 0 14px">
+<sc-for list="{{palette}}" as="p" hint-placeholder-count="6">
+<button onClick="{{p.go}}" aria-label="{{p.label}}" style="all: unset; cursor: pointer; width: 30px; height: 30px; border-radius: 15px; background: {{p.main}}; box-shadow: 0 0 0 3px {{p.ring}}; transition: box-shadow .2s"></button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{showBoards}}" hint-placeholder-val="{{false}}">
+<div class="{{c.glass}}" style="position: absolute; left: 24px; top: 84px; width: 520px; max-height: 760px; overflow-y: auto; box-sizing: border-box; border-radius: 28px; padding: 18px">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px 12px"><span style="font-size: 24px; font-weight: 700">Tableaux</span>
+<button onClick="{{newBoard}}" aria-label="Nouveau tableau" style="all: unset; cursor: pointer; height: 36px; padding: 0 14px; border-radius: 18px; background: #0088ff; color: #fff; font-size: 15px; font-weight: 600; display: flex; align-items: center">+ Nouveau</button></div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
+<sc-for list="{{thumbs}}" as="b" hint-placeholder-count="3">
+<button onClick="{{b.pick}}" style="all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 6px">
+<svg aria-hidden="true" width="226" height="171" viewBox="0 0 1348 1019" style="border-radius: 14px; background: {{c.canvas}}; outline: {{b.ring}}; outline-offset: 2px; box-shadow: 0 2px 8px rgba(0,0,0,.15)">
+<sc-for list="{{b.rects}}" as="r" hint-placeholder-count="3"><rect x="{{r.x}}" y="{{r.y}}" width="{{r.w}}" height="{{r.h}}" rx="{{r.r}}" fill="{{r.fill}}"></rect></sc-for>
+<sc-for list="{{b.lines}}" as="l" hint-placeholder-count="1"><polyline points="{{l.pts}}" fill="none" stroke="{{l.main}}" stroke-width="10" stroke-linecap="round"></polyline></sc-for>
+</svg>
+<span style="font-size: 15px; font-weight: 600; color: {{c.fg}}; padding: 0 4px">{{b.name}}</span>
+<span style="font-size: 13px; color: {{c.sub}}; padding: 0 4px">{{b.date}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const boards = [
+{ id: 1, name: 'Enquête Vinewood', date: 'Modifié aujourd’hui', items: [
+{ id: 1, type: 'text', x: 120, y: 120, w: 520, h: 50, fs: 38, col: 0, text: 'Enquête Vinewood' },
+{ id: 2, type: 'note', x: 120, y: 220, w: 190, h: 190, col: 0, text: 'Fourgon blanc, plaque 42 ABC 117' },
+{ id: 3, type: 'note', x: 360, y: 200, w: 190, h: 190, col: 1, text: 'Témoin : Lina Costa, commerçante' },
+{ id: 4, type: 'note', x: 600, y: 240, w: 190, h: 190, col: 2, text: 'Caméra de Vinewood Blvd à vérifier' },
+{ id: 5, type: 'shape', shape: 'rect', x: 170, y: 560, w: 200, h: 110, col: 3, text: 'Suspect A' },
+{ id: 6, type: 'shape', shape: 'circle', x: 560, y: 540, w: 170, h: 130, col: 4, text: 'Garage Del Perro' },
+{ id: 7, type: 'image', x: 900, y: 230, w: 280, h: 200, col: 0, text: 'Scène du 21 novembre' },
+{ id: 8, type: 'arrow', x1: 260, y1: 420, x2: 270, y2: 550, col: 5 },
+{ id: 9, type: 'arrow', x1: 690, y1: 440, x2: 650, y2: 530, col: 5 },
+{ id: 10, type: 'text', x: 880, y: 480, w: 330, h: 40, fs: 24, col: 0, text: 'Hypothèse : livraison de nuit' }],
+strokes: [{ id: 11, col: 1, pts: [[130, 700], [260, 715], [420, 705], [560, 725], [700, 700]] }] },
+{ id: 2, name: 'Plan du braquage', date: 'Hier', items: [
+{ id: 20, type: 'text', x: 140, y: 140, w: 500, h: 50, fs: 34, col: 0, text: 'Fleeca de Legion Square' },
+{ id: 21, type: 'note', x: 160, y: 260, w: 190, h: 190, col: 4, text: 'Alarme coupée à 22 h' },
+{ id: 22, type: 'shape', shape: 'rect', x: 500, y: 280, w: 220, h: 120, col: 2, text: 'Coffre' },
+{ id: 23, type: 'arrow', x1: 360, y1: 350, x2: 490, y2: 340, col: 5 }], strokes: [] },
+{ id: 3, name: 'Idées pour le garage', date: '18/11/2026', items: [
+{ id: 30, type: 'note', x: 200, y: 200, w: 190, h: 190, col: 3, text: 'Pont élévateur' },
+{ id: 31, type: 'note', x: 440, y: 220, w: 190, h: 190, col: 0, text: 'Abonnement entretien' }], strokes: [] }
+];
+this.state = { dark: !!props.dark, boards, cur: 0, tool: 'select', shape: 'rect', col: 0, sel: null, showBoards: false, showColors: false, nid: 100, drawing: null, drag: null };
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+cols() { return [{ n: 'Jaune', main: '#FFCC00', soft: '#FFE680' }, { n: 'Rose', main: '#FF2D55', soft: '#FFB3C1' }, { n: 'Bleu', main: '#0088FF', soft: '#B3DAFF' }, { n: 'Vert', main: '#34C759', soft: '#B8EBC5' }, { n: 'Orange', main: '#FF8D28', soft: '#FFD3A8' }, { n: 'Violet', main: '#CB30E0', soft: '#EDB5F5' }]; }
+setBoard(fn) { this.setState({ boards: this.state.boards.map((b, i) => (i === this.state.cur ? fn(b) : b)) }); }
+setItem(id, patch) { this.setBoard((b) => ({ ...b, items: b.items.map((x) => (x.id === id ? { ...x, ...patch } : x)) })); }
+addItem(o) { const id = this.state.nid; this.setBoard((b) => ({ ...b, items: b.items.concat([{ id, col: this.state.col, ...o }]) })); this.setState({ nid: id + 1, sel: id, tool: 'select' }); }
+pos(e) { const r = e.currentTarget.getBoundingClientRect(); const k = 1348 / r.width; return { x: Math.round((e.clientX - r.left) * k), y: Math.round((e.clientY - r.top) * k), k }; }
+down(e) {
+e.stopPropagation(); const s = this.state; const p = this.pos(e); const t = s.tool;
+if (t === 'pen') { this.setState({ drawing: { pts: [[p.x, p.y]] } }); return; }
+if (t === 'note') this.addItem({ type: 'note', x: p.x - 95, y: p.y - 95, w: 190, h: 190, text: '' });
+else if (t === 'shape' && s.shape === 'arrow') this.addItem({ type: 'arrow', x1: p.x - 90, y1: p.y + 35, x2: p.x + 90, y2: p.y - 35 });
+else if (t === 'shape') this.addItem({ type: 'shape', shape: s.shape, x: p.x - 90, y: p.y - 60, w: 180, h: 120, text: '' });
+else if (t === 'text') this.addItem({ type: 'text', x: p.x - 100, y: p.y - 20, w: 280, h: 40, fs: 28, text: 'Texte' });
+else if (t === 'image') this.addItem({ type: 'image', x: p.x - 130, y: p.y - 95, w: 260, h: 190, text: 'Photo' });
+}
+itemDown(e, it) {
+e.stopPropagation(); if (this.state.tool !== 'select') return;
+this.setState({ sel: it.id, showColors: false, showBoards: false });
+const tg = e.target.tagName; if (tg === 'TEXTAREA' || tg === 'INPUT') return;
+const r = e.currentTarget.parentElement.getBoundingClientRect();
+this.setState({ drag: { id: it.id, sx: e.clientX, sy: e.clientY, k: 1348 / r.width, o: { ...it } } });
+}
+renderVals() {
+const s = this.state; const dark = s.dark; const cols = this.cols();
+const c = dark
+? { canvas: '#1c1c1e', dot: 'rgba(255,255,255,.2)', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', glass: 'glass dk' }
+: { canvas: '#ffffff', dot: 'rgba(60,60,67,.3)', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', glass: 'glass' };
+const b = s.boards[s.cur];
+const pts2 = (a) => a.map((p) => p.join(',')).join(' ');
+const items = b.items.filter((i) => i.type !== 'arrow').map((i) => {
+const col = cols[i.col] || cols[0]; const isSel = s.sel === i.id;
+return { x: i.x, y: i.y, w: i.w, h: i.h, fs: i.fs || 28, text: i.text, main: col.main, soft: col.soft, tint: col.main + '26', isNote: i.type === 'note', isShape: i.type === 'shape', isText: i.type === 'text', isImage: i.type === 'image', radius: i.shape === 'circle' ? '50%' : '10px', ring: isSel ? '2px solid #0088ff' : '2px solid transparent', cursor: s.tool === 'select' ? 'move' : 'default', input: (e) => this.setItem(i.id, { text: e.target.value }), down: (e) => this.itemDown(e, i) };
+});
+const arrows = b.items.filter((i) => i.type === 'arrow').map((i) => {
+const a = Math.atan2(i.y2 - i.y1, i.x2 - i.x1); const tip = [i.x2, i.y2];
+const p1 = [tip[0] - 18 * Math.cos(a - 0.4), tip[1] - 18 * Math.sin(a - 0.4)]; const p2 = [tip[0] - 18 * Math.cos(a + 0.4), tip[1] - 18 * Math.sin(a + 0.4)];
+return { x1: i.x1, y1: i.y1, x2: i.x2, y2: i.y2, main: (cols[i.col] || cols[0]).main, hit: s.sel === i.id ? 'rgba(0,136,255,.3)' : 'transparent', head: [tip, p1, p2].map((p) => p[0].toFixed(0) + ',' + p[1].toFixed(0)).join(' '), down: (e) => this.itemDown(e, i) };
+});
+const strokes = b.strokes.map((st) => ({ pts: pts2(st.pts), main: cols[st.col].main }));
+if (s.drawing) strokes.push({ pts: pts2(s.drawing.pts), main: cols[s.col].main });
+const tdef = [['select', 'Sélection', 'M5 3l14 8-6 2-2 6z'], ['pen', 'Crayon', 'M4 20l1-4L16 5l3 3L8 19zM14 7l3 3'], ['shape', 'Formes', 'M4 4h9v9H4zM17.500 13a4 4 0 1 1 0 .01'], ['text', 'Texte', 'M5 6V4h14v2M12 4v16M9 20h6'], ['note', 'Post-it', 'M5 4h14v11l-5 5H5zM14 20v-5h5'], ['image', 'Image', 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01']];
+const tools = tdef.map((t) => ({ label: t[1], d: t[2], bg: s.tool === t[0] ? 'rgba(0,136,255,.18)' : 'transparent', fg: s.tool === t[0] ? '#0088ff' : c.fg, go: () => this.setState({ tool: t[0], showColors: false, showBoards: false, sel: t[0] === 'select' ? s.sel : null }) }));
+const sdef = [['rect', 'Rectangle', 'M4 6h16v12H4z'], ['circle', 'Cercle', 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z'], ['arrow', 'Flèche', 'M4 19L19 5M10 5h9v9']];
+const shapes = sdef.map((x) => ({ label: x[1], d: x[2], bg: s.shape === x[0] ? 'rgba(0,136,255,.18)' : 'transparent', fg: s.shape === x[0] ? '#0088ff' : c.fg, go: () => this.setState({ shape: x[0] }) }));
+const palette = cols.map((x, i) => ({ label: x.n, main: x.main, ring: s.col === i ? '#0088ff' : 'transparent', go: () => { this.setState({ col: i, showColors: false }); if (s.sel) this.setItem(s.sel, { col: i }); } }));
+const thumbs = s.boards.map((bd, i) => ({ name: bd.name, date: bd.date, ring: i === s.cur ? '3px solid #0088ff' : '3px solid transparent',
+rects: bd.items.filter((it) => it.type !== 'arrow').map((it) => ({ x: it.x, y: it.y, w: it.w, h: it.h, r: it.shape === 'circle' ? it.w / 2 : 14, fill: it.type === 'text' ? 'rgba(128,128,128,.35)' : cols[it.col].soft })),
+lines: bd.strokes.map((st) => ({ pts: pts2(st.pts), main: cols[st.col].main })), pick: () => this.setState({ cur: i, sel: null, showBoards: false }) }));
+return {
+c, dark, items, arrows, strokes, tools, shapes, palette, thumbs, boardName: b.name,
+showShapes: s.tool === 'shape', showColors: s.showColors, showBoards: s.showBoards, hasSel: !!s.sel, curColor: cols[s.col].main,
+overlayEvents: s.tool === 'select' ? 'none' : 'auto',
+toggleBoards: () => this.setState({ showBoards: !s.showBoards, showColors: false }),
+toggleColors: () => this.setState({ showColors: !s.showColors, showBoards: false }),
+bgDown: () => this.setState({ sel: null, showColors: false, showBoards: false }),
+down: (e) => this.down(e),
+move: (e) => {
+const r = e.currentTarget.getBoundingClientRect(); const k = 1348 / r.width;
+if (s.drawing) { this.setState({ drawing: { pts: s.drawing.pts.concat([[Math.round((e.clientX - r.left) * k), Math.round((e.clientY - r.top) * k)]]) } }); }
+else if (s.drag) { const d = s.drag; const dx = (e.clientX - d.sx) * d.k; const dy = (e.clientY - d.sy) * d.k; const o = d.o;
+this.setItem(d.id, o.type === 'arrow' ? { x1: o.x1 + dx, y1: o.y1 + dy, x2: o.x2 + dx, y2: o.y2 + dy } : { x: o.x + dx, y: o.y + dy }); }
+},
+up: () => {
+if (s.drawing && s.drawing.pts.length > 1) { const id = s.nid; const pts = s.drawing.pts; this.setBoard((b2) => ({ ...b2, strokes: b2.strokes.concat([{ id, col: s.col, pts }]) })); this.setState({ nid: id + 1 }); }
+this.setState({ drawing: null, drag: null });
+},
+delSel: () => { const id = s.sel; this.setBoard((b2) => ({ ...b2, items: b2.items.filter((x) => x.id !== id) })); this.setState({ sel: null }); },
+undo: () => {
+const li = b.items.length ? b.items[b.items.length - 1].id : -1; const ls = b.strokes.length ? b.strokes[b.strokes.length - 1].id : -1;
+if (li < 0 && ls < 0) return;
+if (ls > li) this.setBoard((b2) => ({ ...b2, strokes: b2.strokes.slice(0, -1) })); else this.setBoard((b2) => ({ ...b2, items: b2.items.slice(0, -1) }));
+this.setState({ sel: null });
+},
+newBoard: () => { const id = s.nid; this.setState({ boards: s.boards.concat([{ id, name: 'Tableau ' + (s.boards.length + 1), date: 'À l’instant', items: [], strokes: [] }]), cur: s.boards.length, nid: id + 1, showBoards: false, sel: null }); }
+};
+}
+}
+</script>
+</body>
+</html>

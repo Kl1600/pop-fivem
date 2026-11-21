@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Calculette</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<sc-if value="{{showHist}}" hint-placeholder-val="{{true}}">
+<nav aria-label="Historique" style="width: 320px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 18px 20px; display: flex; flex-direction: column">
+<span style="font-size: 34px; font-weight: 700; padding: 0 6px 14px">Historique</span>
+<div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column">
+<sc-for list="{{history}}" as="h" hint-placeholder-count="4">
+<button onClick="{{h.pick}}" style="all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding: 12px 8px; border-bottom: 1px solid {{c.sep}}">
+<span style="font-size: 15px; color: {{c.sub}}">{{h.e}}</span>
+<span style="font-size: 30px; font-weight: 300; font-variant-numeric: tabular-nums">{{h.r}}</span>
+</button>
+</sc-for>
+<sc-if value="{{noHist}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 60px 10px; color: {{c.sub}}; font-size: 16px">Aucun calcul.</span></sc-if>
+</div>
+<button onClick="{{clearHist}}" style="all: unset; cursor: pointer; text-align: center; padding: 12px; font-size: 17px; color: #ff383c">Effacer l’historique</button>
+</nav>
+</sc-if>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; position: relative; display: flex; flex-direction: column; align-items: center">
+<div style="position: absolute; left: 22px; right: 22px; top: 26px; display: flex; justify-content: space-between">
+<button onClick="{{toggleHist}}" aria-label="Afficher l’historique" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 46px; height: 46px; border-radius: 23px; display: flex; align-items: center; justify-content: center; color: {{c.fg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM9 5v14"/></svg></button>
+<button onClick="{{toggleSci}}" class="{{c.glass}}" style="all: unset; cursor: pointer; height: 46px; padding: 0 20px; border-radius: 23px; display: flex; align-items: center; font-size: 16px; font-weight: 600; color: {{sciColor}}">Scientifique</button>
+</div>
+<div style="width: {{padW}}px; margin-top: 108px; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; height: 200px">
+<span style="font-size: 24px; color: {{c.sub}}; height: 34px; white-space: nowrap; overflow: hidden; max-width: 100%">{{expr}}</span>
+<span style="font-size: {{fontSize}}px; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap">{{display}}</span>
+</div>
+<div style="display: flex; gap: 44px; margin-top: 26px">
+<sc-if value="{{sci}}" hint-placeholder-val="{{true}}">
+<div style="display: grid; grid-template-columns: repeat(3, 100px); grid-auto-rows: 100px; gap: 14px">
+<sc-for list="{{sciKeys}}" as="k" hint-placeholder-count="15">
+<button onClick="{{k.go}}" aria-label="{{k.aria}}" style="all: unset; cursor: pointer; width: 100px; height: 100px; border-radius: 50px; background: {{k.bg}}; color: {{k.fg}}; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 500">{{k.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat(4, 100px); grid-auto-rows: 100px; gap: 14px">
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="19">
+<button onClick="{{k.go}}" aria-label="{{k.aria}}" style="all: unset; cursor: pointer; grid-column: span {{k.span}}; height: 100px; border-radius: 50px; box-sizing: border-box; background: {{k.bg}}; color: {{k.fg}}; display: flex; align-items: center; justify-content: {{k.jc}}; padding-left: {{k.pad}}px; font-size: 40px; font-weight: 400">{{k.label}}</button>
+</sc-for>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { dark: !!props.dark, cur: '0', acc: null, op: null, fresh: true, lastOp: false, closed: false, stack: [], expr: '', deg: true, sci: true, showHist: true,
+hist: [{ e: '1 250 × 12', r: '15 000' }, { e: '89,90 + 34,50', r: '124,4' }, { e: '√(144)', r: '12' }] };
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+fmt(v) {
+if (v === 'Erreur') return v;
+if (v.indexOf('e') >= 0) return v.replace('.', ',');
+const neg = v.charAt(0) === '-'; const body = neg ? v.slice(1) : v; const parts = body.split('.');
+const ip = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+return (neg ? '-' : '') + ip + (parts.length > 1 ? ',' + parts[1] : '');
+}
+press(k) {
+const s = this.state; let { cur, acc, op, fresh, lastOp, closed, deg } = s; let stack = s.stack.slice(); let expr = s.expr; let hist = s.hist;
+const num = (v) => parseFloat(v);
+const str = (v) => (isFinite(v) ? String(parseFloat(v.toPrecision(12))) : 'Erreur');
+const ap = (a, o, b) => (o === '+' ? a + b : o === '−' ? a - b : o === '×' ? a * b : o === '÷' ? (b === 0 ? NaN : a / b) : o === '^' ? Math.pow(a, b) : b);
+const f = (v) => this.fmt(v);
+if (cur === 'Erreur' && k !== 'AC') return;
+const OPS = ['+', '−', '×', '÷', '^'];
+if (/^\d$/.test(k)) {
+if (fresh) { cur = k; fresh = false; lastOp = false; closed = false; } else if (cur === '0') cur = k; else if (cur.replace(/[-.]/g, '').length < 12) cur += k;
+} else if (k === '.') {
+if (fresh) { cur = '0.'; fresh = false; lastOp = false; closed = false; } else if (cur.indexOf('.') < 0) cur += '.';
+} else if (k === 'AC') {
+if (cur !== '0' && !fresh && s.cur !== 'Erreur') { cur = '0'; fresh = false; } else { cur = '0'; acc = null; op = null; fresh = true; lastOp = false; closed = false; stack = []; expr = ''; }
+} else if (k === 'neg') { cur = cur.charAt(0) === '-' ? cur.slice(1) : (cur === '0' ? '0' : '-' + cur);
+} else if (k === '%') { cur = str(num(cur) / 100); fresh = true;
+} else if (OPS.indexOf(k) >= 0) {
+if (lastOp) { expr = expr.slice(0, -3) + ' ' + k + ' '; op = k; }
+else {
+const v = num(cur); acc = op && acc !== null ? ap(acc, op, v) : v;
+expr += (closed ? '' : f(cur)) + ' ' + k + ' ';
+lastOp = true; closed = false; op = k; cur = str(acc); fresh = true;
+}
+} else if (k === '(') { stack.push({ acc, op }); acc = null; op = null; expr += '('; cur = '0'; fresh = true; lastOp = false; closed = false;
+} else if (k === ')') {
+if (!stack.length) return;
+const v = op && acc !== null ? ap(acc, op, num(cur)) : num(cur);
+expr += (closed || lastOp ? '' : f(cur)) + ')'; const fr = stack.pop(); acc = fr.acc; op = fr.op; cur = str(v); fresh = true; closed = true; lastOp = false;
+} else if (k === '=') {
+let v = num(cur); let e = expr + (closed ? '' : f(cur));
+while (stack.length) { v = op && acc !== null ? ap(acc, op, v) : v; const fr = stack.pop(); acc = fr.acc; op = fr.op; e += ')'; }
+if (op && acc !== null) {
+const res = str(ap(acc, op, v)); if (res !== 'Erreur') hist = [{ e, r: f(res) }].concat(hist).slice(0, 30);
+cur = res; acc = null; op = null; expr = ''; fresh = true; lastOp = false; closed = false;
+}
+} else if (k === 'deg') { deg = !deg;
+} else if (k === 'pi') { cur = str(Math.PI); fresh = true; lastOp = false;
+} else if (k === 'e') { cur = str(Math.E); fresh = true; lastOp = false;
+} else {
+const v = num(cur); const r = deg ? Math.PI / 180 : 1; let res = NaN; let label = '';
+if (k === 'sin') { res = Math.sin(v * r); label = 'sin'; } else if (k === 'cos') { res = Math.cos(v * r); label = 'cos'; } else if (k === 'tan') { res = Math.tan(v * r); label = 'tan'; }
+else if (k === 'sq') { res = v * v; label = 'sqr'; } else if (k === 'sqrt') { res = v < 0 ? NaN : Math.sqrt(v); label = '√'; } else if (k === 'ln') { res = v <= 0 ? NaN : Math.log(v); label = 'ln'; }
+else if (k === 'log') { res = v <= 0 ? NaN : Math.log10(v); label = 'log'; } else if (k === 'fact') { res = v >= 0 && v <= 20 && Math.floor(v) === v ? 1 : NaN; for (let i = 2; i <= v && res === res; i++) res *= i; label = 'fact'; }
+const out = Math.abs(res) < 1e-12 ? 0 : res;
+cur = str(out); fresh = true; lastOp = false; if (cur !== 'Erreur') hist = [{ e: label + '(' + f(String(v)) + ')', r: f(cur) }].concat(hist).slice(0, 30);
+}
+this.setState({ cur, acc, op, fresh, lastOp, closed, stack, expr, deg, hist });
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', side: '#000000', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', num: '#333333', numFg: '#ffffff', fn: '#a5a5a5', fnFg: '#000000', op: '#ff9f0a', opOn: '#ffffff', sci: '#1f1f21', glass: 'glass dk' }
+: { bg: '#f2f2f7', side: '#f2f2f7', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', num: '#ffffff', numFg: '#000000', fn: '#d4d4d9', fnFg: '#000000', op: '#ff9500', opOn: '#ffffff', sci: '#e3e3e8', glass: 'glass' };
+const disp = this.fmt(s.cur); const len = disp.length;
+const clr = s.cur !== '0' && !s.fresh ? 'C' : 'AC';
+const pend = (k) => s.op === k && s.lastOp;
+const std = [['AC', clr, 'fn'], ['neg', '±', 'fn'], ['%', '%', 'fn'], ['÷', '÷', 'op'], ['7', '7', 'num'], ['8', '8', 'num'], ['9', '9', 'num'], ['×', '×', 'op'], ['4', '4', 'num'], ['5', '5', 'num'], ['6', '6', 'num'], ['−', '−', 'op'], ['1', '1', 'num'], ['2', '2', 'num'], ['3', '3', 'num'], ['+', '+', 'op'], ['0', '0', 'num'], ['.', ',', 'num'], ['=', '=', 'op']];
+const keys = std.map((d) => {
+const on = d[2] === 'op' && pend(d[0]);
+return { label: d[1], aria: d[1], span: d[0] === '0' ? 2 : 1, jc: d[0] === '0' ? 'flex-start' : 'center', pad: d[0] === '0' ? 38 : 0,
+bg: d[2] === 'op' ? (on ? c.opOn : c.op) : d[2] === 'fn' ? c.fn : c.num, fg: d[2] === 'op' ? (on ? c.op : '#ffffff') : d[2] === 'fn' ? c.fnFg : c.numFg, go: () => this.press(d[0]) };
+});
+const sdef = [['(', '('], [')', ')'], ['inv', '1/x'], ['sin', 'sin'], ['cos', 'cos'], ['tan', 'tan'], ['sq', 'x²'], ['sqrt', '√'], ['^', 'xʸ'], ['ln', 'ln'], ['log', 'log'], ['e', 'e'], ['pi', 'π'], ['deg', s.deg ? 'Deg' : 'Rad'], ['fact', 'x!']];
+const sciKeys = sdef.map((d) => ({ label: d[1], aria: d[1], bg: pend(d[0]) ? c.opOn : c.sci, fg: pend(d[0]) ? c.op : c.fg, go: () => (d[0] === 'inv' ? this.press1(c) : this.press(d[0])) }));
+return {
+c, dark, keys, sciKeys, display: disp, expr: s.expr, sci: s.sci, showHist: s.showHist,
+fontSize: len <= 7 ? 112 : len <= 10 ? 90 : len <= 13 ? 70 : 54, padW: s.sci ? 814 : 442, sciColor: s.sci ? '#ff9500' : c.fg,
+history: s.hist.map((h) => ({ e: h.e, r: h.r, pick: () => this.setState({ cur: h.r.replace(/ /g, '').replace(',', '.'), fresh: true, lastOp: false, closed: false }) })),
+noHist: !s.hist.length, clearHist: () => this.setState({ hist: [] }),
+toggleHist: () => this.setState({ showHist: !s.showHist }), toggleSci: () => this.setState({ sci: !s.sci })
+};
+}
+press1() {
+const v = parseFloat(this.state.cur); const r = v === 0 || isNaN(v) ? 'Erreur' : String(parseFloat((1 / v).toPrecision(12)));
+this.setState({ cur: r, fresh: true, lastOp: false, hist: [{ e: '1/(' + this.fmt(String(v)) + ')', r: this.fmt(r) }].concat(this.state.hist).slice(0, 30) });
+}
+}
+</script>
+</body>
+</html>

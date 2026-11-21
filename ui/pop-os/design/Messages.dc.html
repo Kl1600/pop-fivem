@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Messages</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.cell}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Conversations" style="width: 390px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.cell}}; border-right: 1px solid {{c.sep}}; display: flex; flex-direction: column">
+<div style="padding: 46px 18px 8px; display: flex; flex-direction: column; gap: 10px">
+<span style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 34px; font-weight: 700">Messages</span>
+<button onClick="{{openNew}}" aria-label="Nouveau message" class="{{c.glass}}" style="box-sizing: border-box; padding: 0; font: inherit; outline: none; cursor: pointer; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: #0088ff"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></svg></button></span>
+<span style="font-size: 13px; color: {{c.sub}}">Moi · {{myNumber}}</span>
+<label style="height: 40px; border-radius: 20px; background: {{c.fill}}; display: flex; align-items: center; gap: 8px; padding: 0 12px; color: {{c.sub}}">
+<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+<input aria-label="Rechercher" placeholder="Rechercher" value="{{query}}" onInput="{{onQuery}}" style="all: unset; flex-grow: 1; font-size: 17px; color: {{c.fg}}">
+</label>
+</div>
+<div style="flex-grow: 1; overflow-y: auto; padding-bottom: 20px">
+<sc-if value="{{hasPins}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; justify-content: space-around; padding: 10px 10px 14px">
+<sc-for list="{{pins}}" as="p" hint-placeholder-count="3">
+<button onClick="{{p.pick}}" aria-label="{{p.name}}" style="all: unset; cursor: pointer; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative">
+<span style="width: 76px; height: 76px; border-radius: 38px; background: {{p.grad}}; color: #fff; font-size: 28px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px {{p.ring}}">{{p.ini}}</span>
+<span style="font-size: 14px; font-weight: 500">{{p.short}}</span>
+<span style="position: absolute; top: 0; left: 6px; min-width: 20px; height: 20px; border-radius: 10px; background: #0088ff; color: #fff; font-size: 12px; font-weight: 700; display: {{p.dot}}; align-items: center; justify-content: center">{{p.unread}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<button onClick="{{r.pick}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; margin: 0 8px; padding: 10px 10px; border-radius: 14px; box-sizing: border-box; width: calc(100% - 16px); background: {{r.bg}}">
+<span style="width: 52px; height: 52px; flex-shrink: 0; border-radius: 26px; background: {{r.grad}}; color: #fff; font-size: 19px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{r.ini}}</span>
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-size: 17px; font-weight: 600; color: {{r.fg}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><span style="font-size: 14px; color: {{r.sub}}; flex-shrink: 0">{{r.time}}</span></span>
+<span style="display: flex; align-items: center; gap: 8px"><span style="flex-grow: 1; font-size: 15px; line-height: 1.3; color: {{r.sub}}; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{r.preview}}</span><span style="width: 12px; height: 12px; border-radius: 6px; background: #0088ff; flex-shrink: 0; opacity: {{r.dot}}"></span></span>
+</span>
+</button>
+</sc-for>
+<sc-if value="{{noRows}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 50px 10px; color: {{c.sub}}; font-size: 16px">Aucun résultat.</span></sc-if>
+</div>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; position: relative; display: flex; flex-direction: column; background: {{c.cell}}">
+<sc-if value="{{hasConv}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; top: 20px; left: 24px; right: 24px; z-index: 5; display: flex; justify-content: space-between; align-items: center; pointer-events: none">
+<span style="width: 48px"></span>
+<span class="{{c.glass}}" style="height: 52px; border-radius: 26px; display: flex; align-items: center; gap: 10px; padding: 0 20px 0 6px; pointer-events: auto">
+<span style="width: 40px; height: 40px; border-radius: 20px; background: {{conv.grad}}; color: #fff; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{conv.ini}}</span>
+<span style="font-size: 17px; font-weight: 600">{{conv.name}}</span></span>
+<button onClick="{{call}}" aria-label="Appeler" class="{{c.glass}}" style="box-sizing: border-box; padding: 0; font: inherit; outline: none; cursor: pointer; width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; color: #0088ff; pointer-events: auto"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></button>
+</div>
+<div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column-reverse">
+<div style="padding: 96px 28px 100px; display: flex; flex-direction: column; gap: 3px">
+<sc-for list="{{msgs}}" as="m" hint-placeholder-count="4">
+<span style="display: {{m.stampShow}}; text-align: center; font-size: 12px; color: {{c.sub}}; padding: 14px 0 6px"><b>{{m.stamp}}</b> {{m.time}}</span>
+<div style="display: flex; justify-content: {{m.align}}; margin-top: {{m.gap}}">
+<button onClick="{{m.react}}" aria-label="Réagir" style="all: unset; cursor: pointer; position: relative; max-width: 460px; box-sizing: border-box; border-radius: 20px; background: {{m.bg}}; color: {{m.fg}}; padding: {{m.pad}}; font-size: 17px; line-height: 1.35; overflow: visible">
+<sc-if value="{{m.isText}}" hint-placeholder-val="{{true}}"><span>{{m.text}}</span></sc-if>
+<sc-if value="{{m.isPhoto}}" hint-placeholder-val="{{false}}"><span style="display: block; width: 300px; height: 200px; border-radius: 20px; background: linear-gradient(160deg,#ffae3d,#b8326f 60%,#2b1a5e); position: relative; overflow: hidden"><svg aria-label="Photo partagée" width="300" height="200" viewBox="0 0 300 200"><circle cx="210" cy="70" r="26" fill="#ffd36b" opacity=".9"/><path d="M0 150l60-40 50 30 70-50 120 60v50H0z" fill="#1a1040" opacity=".75"/></svg></span></sc-if>
+<sc-if value="{{m.isLoc}}" hint-placeholder-val="{{false}}"><span style="display: block; width: 300px; border-radius: 20px; overflow: hidden; background: {{c.cell}}; color: {{c.fg}}"><svg aria-label="Position partagée" width="300" height="150" viewBox="0 0 300 150"><rect width="300" height="150" fill="{{c.map}}"/><path d="M0 100h300M90 0v150M200 0l-60 150" stroke="{{c.road}}" stroke-width="10" fill="none"/><path d="M0 40l300 20" stroke="#ffcc00" stroke-width="6" opacity=".7"/><path d="M150 52a16 16 0 0 1 16 16c0 12-16 30-16 30s-16-18-16-30a16 16 0 0 1 16-16z" fill="#ff383c"/><circle cx="150" cy="68" r="6" fill="#fff"/></svg><span style="display: block; padding: 8px 12px; font-size: 14px"><b>Position partagée</b><br>Vinewood Boulevard</span></span></sc-if>
+<span style="position: absolute; top: -14px; {{m.rSide}}: -8px; width: 30px; height: 30px; border-radius: 15px; background: {{m.rbg}}; border: 2px solid {{c.cell}}; box-sizing: border-box; display: {{m.rShow}}; align-items: center; justify-content: center; color: #fff">
+<sc-if value="{{m.isHeart}}" hint-placeholder-val="{{false}}"><svg aria-label="Cœur" width="15" height="15" viewBox="0 0 24 24" fill="#ff2d55" stroke="#ff2d55" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-8-5-8-11a4.500 4.500 0 0 1 8-2.500A4.500 4.500 0 0 1 20 10c0 6-8 11-8 11z"/></svg></sc-if>
+<sc-if value="{{m.isThumb}}" hint-placeholder-val="{{false}}"><svg aria-label="Pouce" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0088ff" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4v-9zM7 11l4-7c2 0 3 1 3 3v3h5a2 2 0 0 1 2 2l-1 6a2 2 0 0 1-2 2H7"/></svg></sc-if>
+</span>
+</button>
+</div>
+<span style="display: {{m.statusShow}}; text-align: right; font-size: 12px; font-weight: 500; color: {{c.sub}}; padding: 2px 4px">{{m.status}}</span>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{plusOpen}}" hint-placeholder-val="{{false}}">
+<div class="{{c.glass}}" style="position: absolute; left: 24px; bottom: 84px; width: 210px; border-radius: 18px; padding: 6px; z-index: 6; display: flex; flex-direction: column">
+<button onClick="{{sendPhoto}}" style="all: unset; cursor: pointer; height: 44px; padding: 0 12px; border-radius: 12px; font-size: 17px; display: flex; align-items: center; gap: 10px"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0088ff" stroke-width="2" stroke-linejoin="round"><path d="M4 7h4l2-3h4l2 3h4v13H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Photo</button>
+<button onClick="{{sendLoc}}" style="all: unset; cursor: pointer; height: 44px; padding: 0 12px; border-radius: 12px; font-size: 17px; display: flex; align-items: center; gap: 10px"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5z"/></svg>Position</button>
+</div>
+</sc-if>
+<div style="position: absolute; left: 24px; right: 24px; bottom: 20px; display: flex; gap: 10px; align-items: center">
+<button onClick="{{togglePlus}}" aria-label="Ajouter" class="{{c.glass}}" style="box-sizing: border-box; padding: 0; font: inherit; outline: none; cursor: pointer; width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; color: {{c.fg}}; flex-shrink: 0; transition: transform .2s; transform: rotate({{plusRot}})"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.400" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<label class="{{c.glass}}" style="flex-grow: 1; height: 48px; border-radius: 24px; display: flex; align-items: center; padding: 0 8px 0 18px; gap: 8px; box-sizing: border-box">
+<input aria-label="Message" placeholder="Message" value="{{draft}}" onInput="{{onDraft}}" onKeyDown="{{onKey}}" style="all: unset; flex-grow: 1; font-size: 17px; color: {{c.fg}}">
+<button onClick="{{send}}" aria-label="Envoyer" style="all: unset; cursor: pointer; width: 34px; height: 34px; border-radius: 17px; background: #0088ff; color: #fff; display: flex; align-items: center; justify-content: center; transition: opacity .2s; opacity: {{sendOp}}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.800" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+</label>
+</div>
+</sc-if>
+<sc-if value="{{noConv}}" hint-placeholder-val="{{false}}"><div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; color: {{c.sub}}; font-size: 20px">Aucune conversation sélectionnée</div></sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="{{c.glass}}" style="position: absolute; top: 88px; left: 50%; margin-left: -130px; width: 260px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; z-index: 8">{{toast}}</div></sc-if>
+</main>
+
+<sc-if value="{{newOpen}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 20; display: flex; align-items: center; justify-content: center">
+<div style="width: 520px; border-radius: 26px; background: {{c.cell}}; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.4)">
+<span style="display: flex; justify-content: space-between; align-items: center"><button onClick="{{closeNew}}" style="all: unset; cursor: pointer; font-size: 17px; color: #0088ff">Annuler</button><span style="font-size: 17px; font-weight: 700">Nouveau message</span><button onClick="{{createConv}}" style="all: unset; cursor: pointer; font-size: 17px; font-weight: 600; color: #0088ff">Créer</button></span>
+<label style="display: flex; align-items: center; gap: 8px; height: 46px; border-radius: 12px; background: {{c.fill}}; padding: 0 14px"><span style="color: {{c.sub}}; font-size: 17px">À :</span><input aria-label="Destinataire" placeholder="Nom ou numéro" value="{{newTo}}" onInput="{{onNewTo}}" style="all: unset; flex-grow: 1; font-size: 17px; color: {{c.fg}}"></label>
+<span style="font-size: 13px; color: {{c.sub}}">Suggestions</span>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<sc-for list="{{suggest}}" as="u" hint-placeholder-count="4"><button onClick="{{u.pick}}" style="all: unset; cursor: pointer; height: 34px; padding: 0 14px; border-radius: 17px; background: {{c.fill}}; font-size: 15px; display: flex; align-items: center">{{u.name}}</button></sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const t = (me, text, time, extra) => ({ me, text, time, type: 'text', react: '', ...(extra || {}) });
+const convs = [
+{ id: 1, name: 'Lina Costa', pinned: true, unread: 0, time: '10:42', status: 'Lu', g: ['#ff8d28', '#ff2d55'], msgs: [t(false, 'Salut ! Tu as vu le fourgon blanc ce matin ?', '10:31', { stamp: 'Aujourd’hui' }), t(true, 'Oui, devant ta boutique. Je note la plaque.', '10:36'), t(false, '', '10:38', { type: 'photo', react: 'heart' }), t(true, 'Parfait, merci Lina. Je passe en début d’après-midi.', '10:42')] },
+{ id: 2, name: 'Sam Leroy', pinned: true, unread: 2, time: '09:15', status: 'Distribué', g: ['#34c759', '#00c0e8'], msgs: [t(false, 'Briefing à Mission Row à 18h, ne sois pas en retard.', '09:10', { stamp: 'Aujourd’hui' }), t(false, 'On prend ma voiture pour Sandy Shores.', '09:15')] },
+{ id: 3, name: 'Noah Petit', pinned: true, unread: 0, time: 'Hier', status: 'Lu', g: ['#0088ff', '#cb30e0'], msgs: [t(true, 'Tu es où ? Je t’envoie ma position.', '21:02', { stamp: 'Hier' }), t(true, '', '21:02', { type: 'loc' }), t(false, 'Je te vois, j’arrive dans 5 minutes.', '21:05', { react: 'thumb' }), t(true, 'Top.', '21:06')] },
+{ id: 4, name: 'Jade Moreau', pinned: false, unread: 1, time: 'Hier', status: 'Distribué', g: ['#cb30e0', '#ff2d55'], msgs: [t(false, 'Le concert à Vinewood Bowl, c’est toujours bon pour samedi ?', '19:48', { stamp: 'Hier' })] },
+{ id: 5, name: 'Garage Del Perro', pinned: false, unread: 0, time: 'Samedi', status: 'Lu', g: ['#8e8e93', '#48484a'], msgs: [t(false, 'Votre véhicule est prêt, vous pouvez passer le récupérer.', '16:20', { stamp: 'Samedi' }), t(true, 'Merci, je viens demain matin.', '16:44')] },
+{ id: 6, name: 'Équipe Mission Row', pinned: false, unread: 0, time: 'Vendredi', status: 'Lu', g: ['#0088ff', '#00c0e8'], msgs: [t(false, 'Rappel : rapports à rendre avant dimanche.', '08:00', { stamp: 'Vendredi' }), t(true, 'Bien reçu.', '08:12')] },
+{ id: 7, name: 'Maze Bank', pinned: false, unread: 0, time: '15/11/2026', status: 'Lu', g: ['#ff383c', '#ff8d28'], msgs: [t(false, 'Maze Bank : votre virement de 1 200 $ a bien été reçu.', '11:02', { stamp: '15 novembre' })] },
+{ id: 8, name: 'Eli Garcia', pinned: false, unread: 0, time: '12/11/2026', status: 'Lu', g: ['#ffcc00', '#ff8d28'], msgs: [t(false, 'On se retrouve à Paleto Bay pour la pêche ?', '17:30', { stamp: '12 novembre' }), t(true, 'Avec plaisir, dimanche matin.', '17:41')] }
+];
+this.state = { dark: !!props.dark, convs, sel: 1, query: '', draft: '', plusOpen: false, newOpen: false, newTo: '', toast: '', nid: 9 };
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+upd(id, fn) { this.setState({ convs: this.state.convs.map((x) => (x.id === id ? fn(x) : x)) }); }
+now() { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+push(msg) {
+const s = this.state; if (!s.sel) return;
+const id = s.sel;
+this.upd(id, (x) => ({ ...x, time: this.now(), status: 'Distribué', msgs: x.msgs.concat([{ me: true, text: '', type: 'text', react: '', time: this.now(), ...msg }]) }));
+this.setState({ draft: '', plusOpen: false });
+setTimeout(() => this.upd(id, (x) => ({ ...x, status: 'Lu' })), 2500);
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#3a3a3c', glass: 'glass dk', bubble: '#3a3a3c', map: '#2c3a2c', road: '#48484a' }
+: { cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass', bubble: '#e9e9eb', map: '#dcebd2', road: '#ffffff' };
+const ini = (n) => n.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+const grad = (x) => 'linear-gradient(160deg,' + x.g[0] + ',' + x.g[1] + ')';
+const prev = (x) => { const m = x.msgs[x.msgs.length - 1]; return !m ? 'Nouvelle conversation' : m.type === 'photo' ? 'Photo' : m.type === 'loc' ? 'Position partagée' : m.text; };
+const q = s.query.trim().toLowerCase();
+const match = (x) => !q || (x.name + ' ' + prev(x)).toLowerCase().indexOf(q) >= 0;
+const pins = s.convs.filter((x) => x.pinned && match(x)).map((x) => ({ name: x.name, short: x.name.split(' ')[0], ini: ini(x.name), grad: grad(x), unread: x.unread, dot: x.unread ? 'flex' : 'none', ring: s.sel === x.id ? '#0088ff' : 'transparent', pick: () => this.upd(x.id, (y) => ({ ...y, unread: 0 })) || this.setState({ sel: x.id }) }));
+const rows = s.convs.filter((x) => !x.pinned && match(x)).map((x) => ({ name: x.name, ini: ini(x.name), grad: grad(x), time: x.time, preview: prev(x), dot: x.unread ? 1 : 0, bg: s.sel === x.id ? '#0088ff' : 'transparent', fg: s.sel === x.id ? '#fff' : c.fg, sub: s.sel === x.id ? 'rgba(255,255,255,.8)' : c.sub, pick: () => { this.upd(x.id, (y) => ({ ...y, unread: 0 })); this.setState({ sel: x.id }); } }));
+const cur = s.convs.find((x) => x.id === s.sel);
+const msgs = cur ? cur.msgs.map((m, i, a) => {
+const last = i === a.length - 1;
+const newGroup = i === 0 || a[i - 1].me !== m.me;
+const media = m.type !== 'text';
+return {
+text: m.text, time: m.time, stamp: m.stamp || '', stampShow: m.stamp ? 'block' : 'none',
+align: m.me ? 'flex-end' : 'flex-start', gap: newGroup ? '8px' : '0px',
+bg: media ? 'transparent' : (m.me ? '#0088ff' : c.bubble), fg: m.me ? '#fff' : c.fg, pad: media ? '0' : '8px 14px',
+isText: m.type === 'text', isPhoto: m.type === 'photo', isLoc: m.type === 'loc',
+isHeart: m.react === 'heart', isThumb: m.react === 'thumb', rShow: m.react ? 'flex' : 'none', rSide: m.me ? 'left' : 'right', rbg: c.cell,
+status: cur.status, statusShow: m.me && last ? 'block' : 'none',
+react: () => this.upd(cur.id, (x) => ({ ...x, msgs: x.msgs.map((y, j) => (j === i ? { ...y, react: y.react === '' ? 'heart' : y.react === 'heart' ? 'thumb' : '' } : y)) }))
+};
+}) : [];
+const sendNow = () => { const t = s.draft.trim(); if (t) this.push({ text: t }); };
+const suggest = ['Lina Costa', 'Sam Leroy', 'Noah Petit', 'Jade Moreau', 'Eli Garcia'].map((n) => ({ name: n, pick: () => this.setState({ newTo: n }) }));
+return {
+c, dark, myNumber: '555-0142', query: s.query, onQuery: (e) => this.setState({ query: e.target.value }),
+pins, hasPins: pins.length > 0, rows, noRows: !rows.length && !pins.length,
+hasConv: !!cur, noConv: !cur, conv: cur ? { name: cur.name, ini: ini(cur.name), grad: grad(cur) } : {}, msgs,
+draft: s.draft, onDraft: (e) => this.setState({ draft: e.target.value }), onKey: (e) => { if (e.key === 'Enter') sendNow(); },
+send: sendNow, sendOp: s.draft.trim() ? 1 : 0.35,
+plusOpen: s.plusOpen, plusRot: s.plusOpen ? '45deg' : '0deg', togglePlus: () => this.setState({ plusOpen: !s.plusOpen }),
+sendPhoto: () => this.push({ type: 'photo' }), sendLoc: () => this.push({ type: 'loc' }),
+call: () => { this.setState({ toast: 'Appel de ' + (cur ? cur.name : '') + '…' }); setTimeout(() => this.setState({ toast: '' }), 2000); }, toast: s.toast,
+newOpen: s.newOpen, openNew: () => this.setState({ newOpen: true, newTo: '' }), closeNew: () => this.setState({ newOpen: false }),
+newTo: s.newTo, onNewTo: (e) => this.setState({ newTo: e.target.value }), suggest,
+createConv: () => {
+const name = s.newTo.trim(); if (!name) return;
+const ex = s.convs.find((x) => x.name.toLowerCase() === name.toLowerCase());
+if (ex) { this.setState({ sel: ex.id, newOpen: false }); return; }
+this.setState({ convs: [{ id: s.nid, name, pinned: false, unread: 0, time: this.now(), status: '', g: ['#5e5ce6', '#0088ff'], msgs: [] }].concat(s.convs), sel: s.nid, nid: s.nid + 1, newOpen: false });
+}
+};
+}
+}
+</script>
+</body>
+</html>

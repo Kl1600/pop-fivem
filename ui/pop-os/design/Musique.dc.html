@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Musique</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.cell}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Musique" style="width: 280px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 14px 20px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 10px 12px">Musique</span>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<span style="display: {{n.headShow}}; font-size: 13px; font-weight: 600; color: {{c.sub}}; padding: 14px 10px 6px">Bibliothèque</span>
+<button onClick="{{n.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 10px; border-radius: 10px; background: {{n.bg}}; color: {{n.fg}}">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{n.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"/></svg>
+<span style="font-size: 17px">{{n.name}}</span>
+</button>
+</sc-for>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; position: relative; background: {{c.cell}}">
+<div style="position: absolute; inset: 0; overflow-y: auto; padding: 46px 40px 130px">
+<span style="display: block; font-size: 34px; font-weight: 700; padding-bottom: 18px">{{title}}</span>
+
+<sc-if value="{{isHome}}" hint-placeholder-val="{{true}}">
+<span style="display: block; font-size: 22px; font-weight: 700; padding: 6px 0 12px">Écoutés récemment</span>
+<div style="display: flex; gap: 20px; flex-wrap: wrap">
+<sc-for list="{{recent}}" as="a" hint-placeholder-count="4">
+<button onClick="{{a.go}}" style="all: unset; cursor: pointer; width: 190px; display: flex; flex-direction: column; gap: 4px"><span style="display: block; width: 190px; height: 190px; border-radius: 12px; background: {{a.bg}}; box-shadow: 0 6px 16px rgba(0,0,0,.2)"></span><span style="font-size: 16px; font-weight: 600; padding-top: 6px">{{a.title}}</span><span style="font-size: 14px; color: {{c.sub}}">{{a.sub}}</span></button>
+</sc-for>
+</div>
+<span style="display: block; font-size: 22px; font-weight: 700; padding: 30px 0 12px">Radios de Los Santos</span>
+<div style="display: flex; gap: 16px; flex-wrap: wrap">
+<sc-for list="{{radiosHome}}" as="r" hint-placeholder-count="4">
+<button onClick="{{r.go}}" style="all: unset; cursor: pointer; width: 250px; height: 140px; border-radius: 16px; background: {{r.bg}}; color: #fff; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end"><span style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; opacity: .85">{{r.tag}}</span><span style="font-size: 20px; font-weight: 800">{{r.name}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isGrid}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 22px; flex-wrap: wrap">
+<sc-for list="{{cards}}" as="a" hint-placeholder-count="6">
+<button onClick="{{a.go}}" style="all: unset; cursor: pointer; width: 190px; display: flex; flex-direction: column; gap: 4px"><span style="display: block; width: 190px; height: 190px; border-radius: 12px; background: {{a.bg}}; box-shadow: 0 6px 16px rgba(0,0,0,.2)"></span><span style="font-size: 16px; font-weight: 600; padding-top: 6px">{{a.title}}</span><span style="font-size: 14px; color: {{c.sub}}">{{a.sub}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isRadio}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px">
+<sc-for list="{{radios}}" as="r" hint-placeholder-count="6">
+<button onClick="{{r.go}}" style="all: unset; cursor: pointer; height: 160px; border-radius: 18px; background: {{r.bg}}; color: #fff; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; position: relative"><span style="position: absolute; top: 16px; right: 16px; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,.3)">{{r.live}}</span><span style="font-size: 12px; font-weight: 800; letter-spacing: 0.1em; opacity: .85">{{r.tag}}</span><span style="font-size: 22px; font-weight: 800">{{r.name}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isArtists}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{artists}}" as="a" hint-placeholder-count="5">
+<button onClick="{{a.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 16px; width: 100%; box-sizing: border-box; padding: 10px 0; border-bottom: 1px solid {{c.sep}}"><span style="width: 64px; height: 64px; border-radius: 32px; background: {{a.bg}}"></span><span style="font-size: 19px; font-weight: 600; flex-grow: 1">{{a.name}}</span><span style="font-size: 15px; color: {{c.sub}}">{{a.sub}}</span></button>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{isSongs}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{songs}}" as="t" hint-placeholder-count="8">
+<button onClick="{{t.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 14px; width: 100%; box-sizing: border-box; height: 58px; border-bottom: 1px solid {{c.sep}}"><span style="width: 44px; height: 44px; border-radius: 8px; background: {{t.bg}}"></span><span style="flex-grow: 1; display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 600; color: {{t.color}}">{{t.title}}</span><span style="font-size: 14px; color: {{c.sub}}">{{t.artist}}</span></span><span style="font-size: 15px; color: {{c.sub}}">{{t.dur}}</span></button>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{isAlbum}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 32px; align-items: flex-end; padding-bottom: 24px">
+<span style="display: block; width: 260px; height: 260px; border-radius: 14px; background: {{album.bg}}; box-shadow: 0 10px 28px rgba(0,0,0,.3); flex-shrink: 0"></span>
+<span style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 34px; font-weight: 800">{{album.title}}</span><span style="font-size: 22px; color: #ff2d55; font-weight: 600">{{album.artist}}</span><span style="font-size: 14px; color: {{c.sub}}">{{album.meta}}</span>
+<span style="display: flex; gap: 10px; padding-top: 14px">
+<button onClick="{{playAlbum}}" style="all: unset; cursor: pointer; height: 44px; padding: 0 28px; border-radius: 22px; background: #ff2d55; color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M7 4l13 8-13 8z"/></svg>Lecture</button>
+<button onClick="{{shuffleAlbum}}" style="all: unset; cursor: pointer; height: 44px; padding: 0 28px; border-radius: 22px; background: {{c.fill}}; color: #ff2d55; font-size: 17px; font-weight: 700; display: flex; align-items: center">Aléatoire</button>
+</span></span>
+</div>
+<sc-for list="{{tracks}}" as="t" hint-placeholder-count="5">
+<button onClick="{{t.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 16px; width: 100%; box-sizing: border-box; height: 52px; border-bottom: 1px solid {{c.sep}}"><span style="width: 28px; text-align: center; font-size: 16px; color: {{t.numColor}}">{{t.n}}</span><span style="flex-grow: 1; font-size: 17px; font-weight: 500; color: {{t.color}}">{{t.title}}</span><span style="font-size: 15px; color: {{c.sub}}">{{t.dur}}</span></button>
+</sc-for>
+</sc-if>
+</div>
+
+<sc-if value="{{hasPlayer}}" hint-placeholder-val="{{true}}">
+<div class="{{c.glass}}" style="position: absolute; left: 50%; bottom: 22px; margin-left: -330px; width: 660px; height: 68px; border-radius: 34px; display: flex; align-items: center; gap: 12px; padding: 0 14px 0 10px; box-sizing: border-box; z-index: 5">
+<button onClick="{{openFull}}" aria-label="Ouvrir le lecteur" style="all: unset; cursor: pointer; flex-grow: 1; min-width: 0; display: flex; align-items: center; gap: 12px"><span style="width: 48px; height: 48px; border-radius: 24px; background: {{pl.bg}}; flex-shrink: 0"></span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{pl.title}}</span><span style="font-size: 13px; color: {{c.sub}}">{{pl.artist}}</span></span></button>
+<button onClick="{{toggle}}" aria-label="{{pl.playLabel}}" style="all: unset; cursor: pointer; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="{{pl.playIcon}}"/></svg></button>
+<button onClick="{{next}}" aria-label="Suivant" style="all: unset; cursor: pointer; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.500" stroke-linejoin="round"><path d="M5 5l10 7-10 7zM18 5v14"/></svg></button>
+</div>
+</sc-if>
+
+<div style="position: absolute; inset: 0; z-index: 20; background: {{pl.full}}; color: #fff; display: flex; flex-direction: column; transition: transform .4s, opacity .3s; transform: translateY({{fullY}}); opacity: {{fullOp}}; pointer-events: {{fullPe}}">
+<div style="display: flex; justify-content: center; padding-top: 18px"><button onClick="{{closeFull}}" aria-label="Fermer le lecteur" style="all: unset; cursor: pointer; width: 60px; height: 28px; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="34" height="14" viewBox="0 0 34 14" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3l13 8 13-8"/></svg></button></div>
+<div style="flex-grow: 1; display: flex; gap: 40px; padding: 10px 56px 40px; min-height: 0">
+<div style="width: 480px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; justify-content: center">
+<span style="display: block; width: 440px; height: 440px; border-radius: 18px; background: {{pl.bg}}; box-shadow: 0 24px 60px rgba(0,0,0,.45); align-self: center"></span>
+<span style="display: flex; flex-direction: column; padding-top: 8px"><span style="font-size: 26px; font-weight: 800">{{pl.title}}</span><span style="font-size: 19px; opacity: .75">{{pl.artist}}</span></span>
+<input type="range" aria-label="Progression" min="0" max="{{pl.dur}}" value="{{pl.pos}}" onInput="{{onSeek}}" style="width: 100%; accent-color: #ffffff; margin: 0; opacity: {{pl.seekOp}}">
+<span style="display: flex; justify-content: space-between; font-size: 13px; opacity: .7"><span>{{pl.posLabel}}</span><span>{{pl.durLabel}}</span></span>
+<span style="display: flex; justify-content: center; align-items: center; gap: 30px">
+<button onClick="{{prev}}" aria-label="Précédent" style="all: unset; cursor: pointer; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-width="1.500" stroke-linejoin="round"><path d="M19 5L9 12l10 7zM6 5v14"/></svg></button>
+<button onClick="{{toggle}}" aria-label="{{pl.playLabel}}" style="all: unset; cursor: pointer; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="#fff"><path d="{{pl.playIcon}}"/></svg></button>
+<button onClick="{{next}}" aria-label="Suivant" style="all: unset; cursor: pointer; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-width="1.500" stroke-linejoin="round"><path d="M5 5l10 7-10 7zM18 5v14"/></svg></button>
+</span>
+<span style="display: flex; align-items: center; gap: 12px; opacity: .85"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/></svg><input type="range" aria-label="Volume" min="0" max="100" value="{{vol}}" onInput="{{onVol}}" style="flex-grow: 1; accent-color: #ffffff; margin: 0"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.500 6a8 8 0 0 1 0 12"/></svg></span>
+</div>
+<div style="flex-grow: 1; overflow-y: auto; padding: 60px 0; display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{lyrics}}" as="l" hint-placeholder-count="8"><span style="font-size: 34px; font-weight: 800; line-height: 1.2; opacity: {{l.op}}; transition: opacity .4s">{{l.t}}</span></sc-for>
+</div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const tr = (list) => list.map((x) => ({ t: x[0], dur: x[1] }));
+const albums = [
+{ id: 'a1', title: 'Néons de Vinewood', artist: 'Les Palmiers', year: 2026, g: ['#ff2d55', '#5e17eb'], tracks: tr([['Boulevard au crépuscule', 214], ['Néon rose', 187], ['Dernier métro', 241], ['Vinewood Hills', 203], ['Sunset Drive', 228]]) },
+{ id: 'a2', title: 'Route 68', artist: 'Sandy Kings', year: 2025, g: ['#ff8d28', '#8a2c0f'], tracks: tr([['Poussière rouge', 198], ['Station-service', 176], ['Désert de Grand Senora', 255], ['Moteur chaud', 210]]) },
+{ id: 'a3', title: 'Nuits à Del Perro', artist: 'Pier 17', year: 2026, g: ['#00c0e8', '#0a2a6b'], tracks: tr([['Vagues sur la jetée', 222], ['Grande roue', 193], ['Marée basse', 207], ['Jetée de minuit', 236]]) },
+{ id: 'a4', title: 'Mont Chiliad', artist: 'Echo Peak', year: 2024, g: ['#34c759', '#0a3d2b'], tracks: tr([['Sentier du matin', 182], ['Brume', 219], ['Sommet', 247], ['Descente', 201]]) },
+{ id: 'a5', title: 'Blues du comté', artist: 'Blaine County Band', year: 2023, g: ['#ffcc00', '#7a3b00'], tracks: tr([['Tracteur et guitare', 233], ['Pluie sur Grapeseed', 208], ['Dernier saloon', 264]]) },
+{ id: 'a6', title: 'Paleto Sun', artist: 'Les Pêcheurs', year: 2026, g: ['#0088ff', '#cb30e0'], tracks: tr([['Filet du matin', 190], ['Phare de Paleto', 215], ['Retour au port', 232], ['Soleil d’hiver', 199]]) }
+];
+const pick = (a, i) => ({ ...albums[a].tracks[i], artist: albums[a].artist });
+const playlists = [
+{ id: 'p1', title: 'Roadtrip Route 1', artist: 'Playlist', year: 2026, g: ['#ff8d28', '#ff2d55'], tracks: [pick(1, 0), pick(1, 2), pick(3, 0), pick(5, 1), pick(0, 3)] },
+{ id: 'p2', title: 'Nuit à Vinewood', artist: 'Playlist', year: 2026, g: ['#5e17eb', '#ff2d55'], tracks: [pick(0, 0), pick(0, 1), pick(0, 2), pick(2, 3)] },
+{ id: 'p3', title: 'Concentration', artist: 'Playlist', year: 2026, g: ['#34c759', '#0088ff'], tracks: [pick(3, 1), pick(2, 2), pick(3, 3), pick(4, 1)] }
+];
+const radios = [
+{ id: 'r1', name: 'Los Santos Rock Radio', tag: 'ROCK', g: ['#ff383c', '#7a0b1c'] }, { id: 'r2', name: 'Non-Stop-Pop FM', tag: 'POP', g: ['#ff2d55', '#cb30e0'] },
+{ id: 'r3', name: 'Radio Los Santos', tag: 'HIP-HOP', g: ['#ffcc00', '#b45309'] }, { id: 'r4', name: 'West Coast Classics', tag: 'CLASSIQUES', g: ['#ff8d28', '#9a3412'] },
+{ id: 'r5', name: 'Channel X', tag: 'PUNK', g: ['#111827', '#6b7280'] }, { id: 'r6', name: 'Worldwide FM', tag: 'ÉLECTRO', g: ['#00c0e8', '#1e3a8a'] }
+];
+this.state = { dark: !!props.dark, page: 'home', albumId: 'a1', albums, playlists, radios, cur: { kind: 'track', col: 'a1', idx: 0 }, playing: false, pos: 42, vol: 70, full: false };
+}
+componentDidMount() { this.timer = setInterval(() => this.tick(), 1000); }
+componentWillUnmount() { clearInterval(this.timer); }
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+cols() { return this.state.albums.concat(this.state.playlists); }
+tick() {
+const s = this.state; if (!s.playing) return;
+if (s.cur.kind === 'radio') { this.setState({ pos: s.pos + 1 }); return; }
+const col = this.cols().find((x) => x.id === s.cur.col); const d = col.tracks[s.cur.idx].dur;
+if (s.pos + 1 >= d) this.step(1); else this.setState({ pos: s.pos + 1 });
+}
+step(dir) {
+const s = this.state; if (s.cur.kind === 'radio') return;
+const col = this.cols().find((x) => x.id === s.cur.col); const n = col.tracks.length;
+this.setState({ cur: { kind: 'track', col: s.cur.col, idx: (s.cur.idx + dir + n) % n }, pos: 0, playing: true });
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { side: '#000000', cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#2c2c2e', glass: 'glass dk' }
+: { side: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass' };
+const grad = (g) => 'radial-gradient(circle at 72% 24%, rgba(255,255,255,.35), transparent 45%), linear-gradient(150deg,' + g[0] + ',' + g[1] + ')';
+const fmt = (n) => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
+const cols = this.cols();
+const colOf = (id) => cols.find((x) => x.id === id);
+const playTrack = (col, idx) => this.setState({ cur: { kind: 'track', col, idx }, pos: 0, playing: true });
+const playRadio = (r) => () => this.setState({ cur: { kind: 'radio', id: r.id }, pos: 0, playing: true });
+const open = (id) => () => this.setState({ page: 'album', albumId: id });
+const cardOf = (x) => ({ title: x.title, sub: x.artist + (x.year && x.artist !== 'Playlist' ? ' · ' + x.year : ''), bg: grad(x.g), go: open(x.id) });
+const rad = (r) => ({ name: r.name, tag: r.tag, bg: 'linear-gradient(150deg,' + r.g[0] + ',' + r.g[1] + ')', live: 'EN DIRECT', go: playRadio(r) });
+const ndef = [['home', 'Accueil', 'M4 11l8-7 8 7v9h-5v-6H9v6H4z', '#ff2d55'], ['new', 'Nouveautés', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', '#ff2d55'], ['radio', 'Radio', 'M4 9h16v11H4zM4 9l12-5M8 14h.01M13 14h6', '#ff2d55'], ['playlists', 'Playlists', 'M4 6h12M4 11h12M4 16h7M18 14v6M18 14l3-1', '#ff8d28'], ['artists', 'Artistes', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', '#cb30e0'], ['albums', 'Albums', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', '#0088ff'], ['songs', 'Morceaux', 'M9 18V6l10-2v12M9 18a3 3 0 1 1-3-3M19 16a3 3 0 1 1-3-3', '#34c759']];
+const nav = ndef.map((n) => ({ name: n[1], d: n[2], headShow: n[0] === 'playlists' ? 'block' : 'none', color: s.page === n[0] ? '#fff' : n[3], bg: s.page === n[0] ? '#ff2d55' : 'transparent', fg: s.page === n[0] ? '#fff' : c.fg, go: () => this.setState({ page: n[0] }) }));
+const p = s.page;
+const album = colOf(s.albumId) || cols[0];
+const total = album.tracks.reduce((a, t) => a + t.dur, 0);
+const nowCol = s.cur.kind === 'track' ? colOf(s.cur.col) : null;
+const tracks = album.tracks.map((t, i) => { const on = s.cur.kind === 'track' && s.cur.col === album.id && s.cur.idx === i; return { n: on ? '•' : i + 1, numColor: on ? '#ff2d55' : c.sub, color: on ? '#ff2d55' : c.fg, title: t.t, dur: fmt(t.dur), go: () => playTrack(album.id, i) }; });
+const songs = []; s.albums.forEach((a) => a.tracks.forEach((t, i) => songs.push({ title: t.t, artist: a.artist + ' · ' + a.title, dur: fmt(t.dur), bg: grad(a.g), color: s.cur.kind === 'track' && s.cur.col === a.id && s.cur.idx === i ? '#ff2d55' : c.fg, go: () => playTrack(a.id, i) })));
+const artists = s.albums.map((a) => ({ name: a.artist, sub: a.title, bg: grad(a.g), go: open(a.id) }));
+const radiosAll = s.radios.map(rad);
+let pl = { title: '', artist: '', bg: '', full: '#222', dur: 1, pos: 0, posLabel: '0:00', durLabel: '0:00', seekOp: 1, playIcon: 'M7 4l13 8-13 8z', playLabel: 'Lecture' };
+let lyricsIdx = 0; let g = ['#444', '#222'];
+const LYR = ['Les néons s’allument sur le boulevard', 'La ville respire, la nuit va commencer', 'On roule vitres ouvertes vers la côte', 'Les palmiers défilent dans le rétroviseur', 'Un dernier virage avant la jetée', 'La radio murmure notre refrain', 'Et le soleil se couche sur Los Santos', 'On garde le rythme jusqu’au matin'];
+if (s.cur.kind === 'track') {
+const t = nowCol.tracks[s.cur.idx]; g = nowCol.g;
+pl = { ...pl, title: t.t, artist: t.artist || nowCol.artist, dur: t.dur, pos: s.pos, posLabel: fmt(s.pos), durLabel: '-' + fmt(Math.max(0, t.dur - s.pos)) };
+lyricsIdx = Math.floor((s.pos / t.dur) * LYR.length);
+} else {
+const r = s.radios.find((x) => x.id === s.cur.id); g = r.g;
+pl = { ...pl, title: r.name, artist: 'En direct · Los Santos', dur: 1, pos: 1, posLabel: 'En direct', durLabel: '', seekOp: 0.3 };
+lyricsIdx = s.pos % LYR.length;
+}
+pl.bg = grad(g); pl.full = 'linear-gradient(160deg,' + g[1] + ',#0b0b10 95%)';
+pl.playIcon = s.playing ? 'M7 5h4v14H7zM15 5h4v14h-4z' : 'M7 4l13 8-13 8z'; pl.playLabel = s.playing ? 'Pause' : 'Lecture';
+const off = s.cur.kind === 'track' ? s.cur.idx * 2 : 0;
+const lyrics = LYR.map((_, i) => ({ t: LYR[(i + off) % LYR.length], op: i === lyricsIdx ? 1 : i < lyricsIdx ? 0.3 : 0.5 }));
+return {
+c, dark, nav, title: p === 'album' ? '' : (ndef.find((n) => n[0] === p) || ndef[0])[1],
+isHome: p === 'home', isGrid: p === 'new' || p === 'playlists' || p === 'albums', isRadio: p === 'radio', isArtists: p === 'artists', isSongs: p === 'songs', isAlbum: p === 'album',
+recent: [s.albums[0], s.albums[2], s.albums[1], s.albums[5]].map(cardOf), radiosHome: s.radios.slice(0, 4).map(rad),
+cards: (p === 'playlists' ? s.playlists : p === 'new' ? s.albums.slice().reverse() : s.albums).map(cardOf),
+radios: radiosAll, artists, songs, tracks,
+album: { title: album.title, artist: album.artist, bg: grad(album.g), meta: album.tracks.length + ' morceaux · ' + Math.round(total / 60) + ' minutes' + (album.year && album.artist !== 'Playlist' ? ' · ' + album.year : '') },
+playAlbum: () => playTrack(album.id, 0), shuffleAlbum: () => playTrack(album.id, Math.floor(Math.random() * album.tracks.length)),
+hasPlayer: true, pl, lyrics, vol: s.vol, onVol: (e) => this.setState({ vol: Number(e.target.value) }),
+toggle: () => this.setState({ playing: !s.playing }), next: () => this.step(1), prev: () => (s.pos > 3 ? this.setState({ pos: 0 }) : this.step(-1)),
+onSeek: (e) => this.setState({ pos: Number(e.target.value) }),
+openFull: () => this.setState({ full: true }), closeFull: () => this.setState({ full: false }),
+fullY: s.full ? '0px' : '1019px', fullOp: s.full ? 1 : 0, fullPe: s.full ? 'auto' : 'none'
+};
+}
+}
+</script>
+</body>
+</html>
