@@ -26,6 +26,70 @@ local function genPlate()
     return p
 end
 
+local function scalarAwait(query, params)
+    local p = promise.new()
+    exports.oxmysql:scalar(query, params, function(r) p:resolve(r) end)
+    return Citizen.Await(p)
+end
+
+-- Plaque unique : absente de la flotte, des véhicules joueurs et de la persistance
+local function uniquePlate()
+    for _ = 1, 20 do
+        local plate = genPlate()
+        local used = (tonumber(scalarAwait('SELECT COUNT(*) FROM enterprise_garage_vehicles WHERE plate = ?', { plate })) or 0) > 0
+        if not used then
+            local ok, n = pcall(scalarAwait, 'SELECT COUNT(*) FROM owned_vehicles WHERE REPLACE(plate, " ", "") = ?', { plate })
+            used = ok and (tonumber(n) or 0) > 0
+        end
+        if not used then
+            local ok, n = pcall(scalarAwait, 'SELECT COUNT(*) FROM persistent_vehicles WHERE plate = ?', { plate })
+            used = ok and (tonumber(n) or 0) > 0
+        end
+        if not used then return plate end
+    end
+    return genPlate()
+end
+
+local function persistenceStarted()
+    return GetResourceState('pop_vehiclepersistence') == 'started'
+end
+
+-- Retire la plaque de la persistance (mémoire + base) pour qu'elle ne réapparaisse pas
+local function forgetPersistent(plate)
+    if persistenceStarted() then
+        local ok = pcall(function() exports.pop_vehiclepersistence:Forget(plate) end)
+        if ok then return end
+    end
+    exports.oxmysql:execute('DELETE FROM persistent_vehicles WHERE plate = ?', { plate })
+end
+
+-- Entité réseau d'une plaque (usage ponctuel)
+local function findVehicleByPlate(plate)
+    for _, veh in ipairs(GetAllVehicles()) do
+        if DoesEntityExist(veh) and normalPlate(GetVehicleNumberPlateText(veh)) == plate then
+            return veh
+        end
+    end
+    return nil
+end
+
+local function isWrecked(veh)
+    return GetEntityHealth(veh) <= 0 or GetVehicleEngineHealth(veh) <= -3900.0 or GetVehicleBodyHealth(veh) <= 0.0
+end
+
+-- Reprend les clés de cette plaque au joueur (pop_inventory)
+local function takeKeys(src, plate)
+    if GetResourceState('pop_inventory') ~= 'started' then return end
+    pcall(function()
+        local items = exports.pop_inventory:GetPlayerItems(src, 'carkeys') or {}
+        for _, item in ipairs(items) do
+            if item.meta and item.meta.plate and normalPlate(item.meta.plate) == plate and item.id then
+                exports.pop_inventory:removeItemById(src, item.id)
+            end
+        end
+    end)
+end
+
 -- ── Table + seed de la flotte ────────────────────────────────────────────────
 CreateThread(function()
     exports.oxmysql:execute([[
@@ -46,13 +110,15 @@ CreateThread(function()
         for _, g in ipairs(Config.Garages) do
             exports.oxmysql:scalar('SELECT COUNT(*) FROM enterprise_garage_vehicles WHERE garage = ?', { g.label }, function(count)
                 if (count or 0) > 0 then return end
-                for _, v in ipairs(g.vehicles or {}) do
-                    exports.oxmysql:execute(
-                        'INSERT INTO enterprise_garage_vehicles (garage, job, model, label, plate, state) VALUES (?, ?, ?, ?, ?, ?)',
-                        { g.label, g.job, v.model, v.label or v.model, genPlate(), 'in' }
-                    )
-                end
-                print(('[EntrepriseGarage] Flotte initialisée pour "%s" (%d véhicules).'):format(g.label, #(g.vehicles or {})))
+                CreateThread(function()
+                    for _, v in ipairs(g.vehicles or {}) do
+                        exports.oxmysql:execute(
+                            'INSERT INTO enterprise_garage_vehicles (garage, job, model, label, plate, state) VALUES (?, ?, ?, ?, ?, ?)',
+                            { g.label, g.job, v.model, v.label or v.model, uniquePlate(), 'in' }
+                        )
+                    end
+                    print(('[EntrepriseGarage] Flotte initialisée pour "%s" (%d véhicules).'):format(g.label, #(g.vehicles or {})))
+                end)
             end)
         end
     end)
@@ -107,14 +173,23 @@ RegisterNetEvent('pop_enterprisegarage:takeOut', function(garageName, plate)
         function(rows)
             local row = rows and rows[1]
             if not row then return end
+            local fromState = 'in'
             if row.state ~= 'in' then
-                TriggerClientEvent('esx:showNotification', src, 'Ce véhicule est déjà sorti.')
-                return
+                -- Véhicule sorti : récupérable seulement s'il n'existe plus dans le monde
+                -- (détruit, supprimé, ou rangé loin de tout joueur). Sinon : déjà sorti.
+                local veh = findVehicleByPlate(plate)
+                if veh and not isWrecked(veh) then
+                    TriggerClientEvent('esx:showNotification', src, 'Ce véhicule est déjà sorti.')
+                    return
+                end
+                if veh then DeleteEntity(veh) end
+                forgetPersistent(plate)
+                fromState = row.state
             end
-            -- Passage atomique 'in' -> 'out' : empêche une double sortie simultanée.
+            -- Passage atomique -> 'out' : empêche une double sortie simultanée.
             exports.oxmysql:update(
                 'UPDATE enterprise_garage_vehicles SET state = ? WHERE garage = ? AND plate = ? AND state = ?',
-                { 'out', garageName, plate, 'in' },
+                { 'out', garageName, plate, fromState },
                 function(affected)
                     if not affected or affected == 0 then return end
                     local props = nil
@@ -152,30 +227,76 @@ RegisterNetEvent('pop_enterprisegarage:giveKeys', function(plate)
 end)
 
 -- ── Ranger un véhicule ───────────────────────────────────────────────────────
-RegisterNetEvent('pop_enterprisegarage:store', function(garageName, plate, props)
+-- Contrôles serveur : véhicule de ce garage, sorti ('out'), entité réelle portant
+-- cette plaque et ce modèle, à côté du joueur. Empêche la duplication.
+local storing = {}
+
+RegisterNetEvent('pop_enterprisegarage:store', function(garageName, plate, props, netId)
     local src = source
     local garage = findGarage(garageName)
     if not canUse(src, garage) then return end
     plate = normalPlate(plate)
+    if plate == '' or storing[plate] then return end
 
+    local veh = tonumber(netId) and NetworkGetEntityFromNetworkId(tonumber(netId)) or 0
+    if not veh or veh == 0 or not DoesEntityExist(veh) or GetEntityType(veh) ~= 2
+        or normalPlate(GetVehicleNumberPlateText(veh)) ~= plate then
+        TriggerClientEvent('esx:showNotification', src, 'Aucun véhicule à ranger.')
+        return
+    end
+    local ped = GetPlayerPed(src)
+    if ped == 0 or #(GetEntityCoords(ped) - GetEntityCoords(veh)) > 8.0 then
+        TriggerClientEvent('esx:showNotification', src, 'Approchez-vous du véhicule.')
+        return
+    end
+
+    storing[plate] = true
     exports.oxmysql:execute(
-        'SELECT state FROM enterprise_garage_vehicles WHERE garage = ? AND plate = ?',
+        'SELECT model, state FROM enterprise_garage_vehicles WHERE garage = ? AND plate = ?',
         { garageName, plate },
         function(rows)
             local row = rows and rows[1]
             if not row then
+                storing[plate] = nil
                 TriggerClientEvent('esx:showNotification', src, 'Ce véhicule n\'appartient pas à ce garage.')
                 return
             end
-            -- Range : sauve les props, repasse en garage.
-            exports.oxmysql:execute(
-                'UPDATE enterprise_garage_vehicles SET state = ?, props = ? WHERE garage = ? AND plate = ?',
-                { 'in', type(props) == 'table' and json.encode(props) or nil, garageName, plate }
-            )
-            -- Collaboration : retire la plaque de la persistance physique.
-            exports.oxmysql:execute('DELETE FROM persistent_vehicles WHERE plate = ?', { plate })
+            if row.state ~= 'out' then
+                storing[plate] = nil
+                TriggerClientEvent('esx:showNotification', src, 'Ce véhicule est déjà au garage.')
+                return
+            end
+            if math.tointeger(GetEntityModel(veh) % 4294967296) ~= math.tointeger(GetHashKey(row.model) % 4294967296) then
+                storing[plate] = nil
+                TriggerClientEvent('esx:showNotification', src, 'Ce véhicule n\'appartient pas à ce garage.')
+                return
+            end
 
-            TriggerClientEvent('pop_enterprisegarage:confirmStore', src, plate)
+            -- Props : table de taille raisonnable, plaque et modèle forcés
+            local propsJson = nil
+            if type(props) == 'table' then
+                props.plate = plate
+                props.model = GetHashKey(row.model)
+                local ok, encoded = pcall(json.encode, props)
+                if ok and encoded and #encoded <= 16000 then propsJson = encoded end
+            end
+
+            exports.oxmysql:update(
+                'UPDATE enterprise_garage_vehicles SET state = ?, props = ? WHERE garage = ? AND plate = ? AND state = ?',
+                { 'in', propsJson, garageName, plate, 'out' },
+                function(affected)
+                    storing[plate] = nil
+                    if not affected or affected == 0 then return end
+                    -- Collaboration : retire la plaque de la persistance (mémoire + base).
+                    forgetPersistent(plate)
+                    takeKeys(src, plate)
+                    TriggerClientEvent('pop_enterprisegarage:confirmStore', src, plate)
+                    -- Filet de sécurité : supprime l'entité si le client ne l'a pas fait.
+                    SetTimeout(2000, function()
+                        if DoesEntityExist(veh) then DeleteEntity(veh) end
+                    end)
+                end
+            )
         end
     )
 end)

@@ -31,6 +31,8 @@ local function startTracking(vehicle, plate)
     end
 end
 
+local lastAskTime = nil
+
 RegisterNetEvent('pop_kilometrage:client:receiveMileage', function(plate, mileage)
     if not trackedVehicle or normalPlate(GetVehicleNumberPlateText(trackedVehicle)) ~= plate then return end
     currentMileage = mileage
@@ -51,6 +53,12 @@ CreateThread(function()
 
             if trackedVehicle ~= vehicle then
                 startTracking(vehicle, plate)
+            elseif not mileageFetched then
+                -- Réponse perdue (limite serveur d'une demande/s) : on redemande toutes les 3 s
+                if not lastAskTime or GetGameTimer() - lastAskTime > 3000 then
+                    lastAskTime = GetGameTimer()
+                    TriggerServerEvent('pop_kilometrage:server:requestMileage', plate)
+                end
             elseif mileageFetched then
                 local coords = GetEntityCoords(vehicle)
 

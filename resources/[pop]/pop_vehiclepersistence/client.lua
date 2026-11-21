@@ -7,6 +7,21 @@ local isInVehicle = false
 local hasRequestedVehicles = false
 local pendingSpawnPlates = {}  -- plaques en cours de spawn (entre CreateVehicle et SetVehicleProperties)
 
+-- Décor carburant : déclaré ici pour pouvoir le lire/écrire sans erreur
+if not DecorIsRegisteredAsType("fFuel", 1) then DecorRegister("fFuel", 1) end
+
+-- Carburant : décor s'il existe sur le véhicule, sinon niveau natif
+local function GetFuel(vehicle)
+    if DecorExistOn(vehicle, "fFuel") then return DecorGetFloat(vehicle, "fFuel") end
+    return GetVehicleFuelLevel(vehicle)
+end
+
+-- Identifiant réseau : le serveur vérifie que le véhicule existe et correspond
+local function GetNetId(vehicle)
+    if NetworkGetEntityIsNetworked(vehicle) then return NetworkGetNetworkIdFromEntity(vehicle) end
+    return nil
+end
+
 -- Custom GetVehicleProperties to ensure all mods are saved
 local function GetVehicleProperties(vehicle)
     if DoesEntityExist(vehicle) then
@@ -264,8 +279,8 @@ function SaveVehicle()
         vehicleData.y = pos.y
         vehicleData.z = pos.z
         vehicleData.heading = heading
-        -- Prefer Decor fuel if available as it is often used for persistence
-        vehicleData.fuel = DecorGetFloat(vehicle, "fFuel")
+        vehicleData.fuel = GetFuel(vehicle)
+        vehicleData.netId = GetNetId(vehicle)
         
         -- Save tyre states
         local tyres = {}
@@ -296,7 +311,8 @@ function updateServer()
         vehicleData.y = pos.y
         vehicleData.z = pos.z
         vehicleData.heading = heading
-        vehicleData.fuel = DecorGetFloat(vehicle, "fFuel")
+        vehicleData.fuel = GetFuel(vehicle)
+        vehicleData.netId = GetNetId(vehicle)
         
         -- Save tyre states
         local tyres = {}
@@ -406,7 +422,10 @@ function RespawnPlayerInVehicle(vehicleData, shouldWarp)
         end
 
         SetModelAsNoLongerNeeded(vehicleHash)
-        if vehicleData.fuel then DecorSetFloat(vehicle, "fFuel", vehicleData.fuel + 0.0) end
+        if vehicleData.fuel then
+            DecorSetFloat(vehicle, "fFuel", vehicleData.fuel + 0.0)
+            SetVehicleFuelLevel(vehicle, vehicleData.fuel + 0.0)
+        end
         notifyVehicleSpawned(vehicleData.plate)
         
         -- User requested NOT to spawn inside the vehicle.
@@ -439,7 +458,8 @@ local function buildVehicleDataFromEntity(veh)
     props.y       = pos.y
     props.z       = pos.z
     props.heading = GetEntityHeading(veh)
-    props.fuel    = DecorGetFloat(veh, "fFuel")
+    props.fuel    = GetFuel(veh)
+    props.netId   = GetNetId(veh)
     local tyres = {}
     for i = 0, 7 do
         if IsVehicleTyreBurst(veh, i, false) then tyres[i] = true end

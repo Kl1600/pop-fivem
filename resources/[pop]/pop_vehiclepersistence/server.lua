@@ -69,13 +69,79 @@ local function isDriven(plate)
 end
 
 -- ── Validation des données client ────────────────────────────────────────────
+-- Plaques retirées volontairement (rangement garage, export Forget) : on ignore
+-- pendant un moment les dernières données envoyées par le client pour cette plaque.
+local forgotten = {}  -- [plate] = os.time() d'expiration
+local function isForgotten(plate)
+    local t = forgotten[plate]
+    if not t then return false end
+    if os.time() > t then forgotten[plate] = nil return false end
+    return true
+end
+
+local function clamp(x, a, b) x = tonumber(x) or a; if x ~= x then return a end; return math.max(a, math.min(b, x)) end
+
+-- Nettoyage récursif : nombres finis et bornés, chaînes courtes, profondeur et taille limitées.
+local function cleanValue(val, depth, budget)
+    local t = type(val)
+    if t == 'number' then
+        if val ~= val or val == math.huge or val == -math.huge then return nil end
+        return math.max(-100000, math.min(100000, val))
+    elseif t == 'boolean' then
+        return val
+    elseif t == 'string' then
+        return val:sub(1, 64)
+    elseif t == 'table' then
+        if depth >= 4 then return nil end
+        local out = {}
+        for k, sub in pairs(val) do
+            budget.n = budget.n - 1
+            if budget.n < 0 then break end
+            local key = type(k) == 'number' and k or tostring(k):sub(1, 32)
+            local c = cleanValue(sub, depth + 1, budget)
+            if c ~= nil then out[key] = c end
+        end
+        return out
+    end
+    return nil
+end
+
+-- Le véhicule doit exister côté serveur (netId), avoir le même modèle et la même plaque.
+-- La position vient de l'entité serveur, pas du client.
 local function sanitize(v)
-    if type(v) ~= 'table' or not v.plate then return nil end
-    if not tonumber(v.model) or not tonumber(v.x) or not tonumber(v.y) or not tonumber(v.z) then return nil end
+    if type(v) ~= 'table' or type(v.plate) ~= 'string' or #v.plate > 12 then return nil end
+    if not tonumber(v.model) or not tonumber(v.netId) then return nil end
+
+    local entity = NetworkGetEntityFromNetworkId(tonumber(v.netId))
+    if not entity or entity == 0 or not DoesEntityExist(entity) or GetEntityType(entity) ~= 2 then return nil end
+    -- Hash signé (client) ou non signé (serveur) : on compare modulo 2^32
+    if math.tointeger(GetEntityModel(entity) % 4294967296) ~= math.tointeger(math.floor(tonumber(v.model)) % 4294967296) then return nil end
+    if normalPlate(GetVehicleNumberPlateText(entity)) ~= normalPlate(v.plate) then return nil end
+
+    local model = math.tointeger(math.floor(tonumber(v.model)))
+    v = cleanValue(v, 0, { n = 600 })
+    if not v then return nil end
+    v.model = model -- le hash dépasse les bornes du nettoyage
+    v.netId = nil
+
+    local pos = GetEntityCoords(entity)
+    v.x, v.y, v.z = pos.x, pos.y, pos.z
+    v.heading = GetEntityHeading(entity)
+
+    if v.fuel ~= nil then v.fuel = clamp(v.fuel, 0.0, 100.0) end
+    if v.fuelLevel ~= nil then v.fuelLevel = clamp(v.fuelLevel, 0.0, 100.0) end
+    if v.bodyHealth ~= nil then v.bodyHealth = clamp(v.bodyHealth, 0.0, 1000.0) end
+    if v.engineHealth ~= nil then v.engineHealth = clamp(v.engineHealth, -4000.0, 1000.0) end
+    if v.tankHealth ~= nil then v.tankHealth = clamp(v.tankHealth, -1000.0, 1000.0) end
+    if v.health ~= nil then v.health = clamp(v.health, 0.0, 1000.0) end
+
     -- Clés numériques creuses -> chaînes (encodage JSON sûr ; le client fait tonumber()).
     if type(v.tyres) == 'table' then
         local t = {}
-        for k, b in pairs(v.tyres) do t[tostring(k)] = b and true or nil end
+        for k, b in pairs(v.tyres) do
+            local idx = tonumber(k)
+            if idx and idx >= 0 and idx <= 7 and b then t[tostring(idx)] = true end
+        end
         v.tyres = t
     end
     return v
@@ -126,6 +192,7 @@ local function saveVehicle(identifier, v, touch)
     if not v or not v.plate then return end
     if touch == nil then touch = true end
     local plate = normalPlate(v.plate)
+    if isForgotten(plate) then return end
 
     local owner = originalOwner[plate] or identifier
     originalOwner[plate] = owner
@@ -152,6 +219,37 @@ local function forget(plate)
     lastSnapshots[plate], lastSeen[plate], lastRespawn[plate] = nil, nil, nil
     gridRemove(plate)
 end
+
+-- Recherche l'entité réseau d'une plaque (coûteux : usage ponctuel seulement)
+local function findEntityByPlate(plate)
+    for _, veh in ipairs(GetAllVehicles()) do
+        if DoesEntityExist(veh) and normalPlate(GetVehicleNumberPlateText(veh)) == plate then
+            return veh
+        end
+    end
+    return nil
+end
+
+-- Export : retire définitivement une plaque de la persistance (mémoire + base).
+-- Utilisé par pop_enterprisegarage au rangement.
+local function Forget(plate)
+    plate = normalPlate(plate)
+    if plate == '' then return false end
+    forgotten[plate] = os.time() + 120
+    local claimer = spawnedPlates[plate]
+    if claimer and GetPlayerName(claimer) then
+        TriggerClientEvent('pop_vehiclepersistence:despawnVehicle', claimer, plate)
+    end
+    for _, e in pairs(current) do
+        if e.vehicles then e.vehicles[plate] = nil end
+        if e.active == plate then e.active = nil end
+    end
+    forget(plate)
+    exports.oxmysql:execute('DELETE FROM persistent_vehicles WHERE plate = ?', { plate })
+    return true
+end
+exports('Forget', Forget)
+exports('IsTracked', function(plate) return allVehicles[normalPlate(plate)] ~= nil end)
 
 -- ── Base de données ──────────────────────────────────────────────────────────
 local function loadAll()
@@ -329,12 +427,15 @@ CreateThread(function()
             local queue = {}
             for _, e in pairs(current) do
                 if e.identifier then
-                    for _, v in pairs(e.vehicles) do queue[#queue + 1] = { e.identifier, v } end
+                    for plate, v in pairs(e.vehicles) do
+                        -- Seul le véhicule conduit compte comme une interaction
+                        queue[#queue + 1] = { e.identifier, v, e.active == plate }
+                    end
                 end
             end
             for i = 1, #queue do
                 if needsSave(queue[i][2]) then
-                    saveVehicle(queue[i][1], queue[i][2])
+                    saveVehicle(queue[i][1], queue[i][2], queue[i][3])
                     Wait(500)
                 end
             end
@@ -353,8 +454,26 @@ end)
 -- ── Événements ───────────────────────────────────────────────────────────────
 AddEventHandler('playerDropped', function()
     local pid = source
+    local claimed = {}
     for plate, claimer in pairs(spawnedPlates) do
-        if claimer == pid then spawnedPlates[plate] = nil end
+        if claimer == pid then claimed[#claimed + 1] = plate end
+    end
+    -- Anti-doublon : si l'entité a migré vers un autre joueur, il devient le détenteur ;
+    -- sinon la plaque est libérée et la boucle spatiale la refera apparaître.
+    if #claimed > 0 then
+        SetTimeout(3000, function()
+            for _, plate in ipairs(claimed) do
+                if spawnedPlates[plate] == pid then
+                    local ent = findEntityByPlate(plate)
+                    local owner = ent and NetworkGetEntityOwner(ent) or nil
+                    if owner and owner > 0 and GetPlayerName(owner) then
+                        spawnedPlates[plate] = owner
+                    else
+                        spawnedPlates[plate] = nil
+                    end
+                end
+            end
+        end)
     end
     local entry = current[pid]
     if entry then
@@ -365,6 +484,7 @@ AddEventHandler('playerDropped', function()
 end)
 
 local function track(pid, plate, v)
+    if isForgotten(plate) then return end
     spawnedPlates[plate] = pid
     allVehicles[plate] = v
     gridUpdate(plate, v)
@@ -375,7 +495,7 @@ RegisterNetEvent('saveVehicleToDatabase', function(v)
     v = sanitize(v)
     if not v or not isNearPlayer(pid, v) then return end
     local plate = normalPlate(v.plate)
-    if not hasKey(pid, plate) then return end
+    if isForgotten(plate) or not hasKey(pid, plate) then return end
     local id = getIdentifier(pid)
     if not id then return end
 
@@ -406,6 +526,7 @@ RegisterNetEvent('CurrentVehicle', function(v)
     v = sanitize(v)
     if not v or not isNearPlayer(pid, v) then return end
     local plate = normalPlate(v.plate)
+    if isForgotten(plate) then return end
 
     if entry then
         local old = entry.active
@@ -434,12 +555,28 @@ RegisterNetEvent('CurrentVehicle', function(v)
     end
 end)
 
+-- Le joueur doit être près du véhicule connu, et ne pas voler la plaque d'un autre détenteur en ligne.
+local function canClaim(src, plate)
+    local v = allVehicles[plate]
+    if not v or isForgotten(plate) then return false end
+    local ped = GetPlayerPed(src)
+    if ped == 0 then return false end
+    local dist = #(GetEntityCoords(ped) - vector3(num(v.x), num(v.y), num(v.z)))
+    if dist > CULL_RADIUS + 100.0 then return false end
+    local claimer = spawnedPlates[plate]
+    return not claimer or claimer == src or not GetPlayerName(claimer)
+end
+
 RegisterNetEvent('pop_vehiclepersistence:vehicleSpawned', function(plate)
-    spawnedPlates[normalPlate(plate)] = source
+    local src = source
+    plate = normalPlate(plate)
+    if canClaim(src, plate) then spawnedPlates[plate] = src end
 end)
 
 RegisterNetEvent('pop_vehiclepersistence:despawnFailed', function(plate)
-    spawnedPlates[normalPlate(plate)] = source
+    local src = source
+    plate = normalPlate(plate)
+    if canClaim(src, plate) then spawnedPlates[plate] = src end
 end)
 
 -- Liste complète / stats : outil de debug (/showvehicles), réservé aux admins (ace 'command').
@@ -492,6 +629,8 @@ RegisterNetEvent('requestSavedVehicle', function()
         if not rows or #rows == 0 then return end
         current[pid] = current[pid] or { identifier = id, vehicles = {} }
         local days, now = maxDays(), os.time()
+        local ped = GetPlayerPed(pid)
+        local ppos = ped ~= 0 and GetEntityCoords(ped) or nil
         local cutoff = days > 0 and (now - days * DAY) or 0
 
         -- Spawn séquentiel (500 ms entre chaque) pour ne pas inonder le client.
@@ -503,16 +642,20 @@ RegisterNetEvent('requestSavedVehicle', function()
                     local plate = normalPlate(v.plate)
                     local seen = tonumber(row.last_seen) or 0
                     if seen == 0 then seen = now end
-                    if days <= 0 or seen >= cutoff then
+                    if (days <= 0 or seen >= cutoff) and not isForgotten(plate) then
                         lastSeen[plate] = seen
                         allVehicles[plate] = v
                         originalOwner[plate] = id
                         current[pid].vehicles[plate] = v
                         gridUpdate(plate, v)
+                        -- La connexion n'est pas une interaction : pas de sauvegarde (ni last_seen) ensuite.
+                        lastSnapshots[plate] = snapshot(v)
 
-                        -- Anti-doublon : ne respawn pas si un autre joueur en ligne le détient déjà.
+                        -- Seulement les véhicules proches ; les autres apparaîtront via la boucle
+                        -- spatiale quand un joueur s'en approchera (plus de véhicules partout).
+                        local near = ppos and #(ppos - vector3(num(v.x), num(v.y), num(v.z))) < CULL_RADIUS
                         local claimer = spawnedPlates[plate]
-                        if not (claimer and GetPlayerName(claimer)) then
+                        if near and not (claimer and GetPlayerName(claimer)) then
                             spawnedPlates[plate] = pid
                             TriggerClientEvent('respawnPlayerInVehicle', pid, v, i == #rows)
                         end

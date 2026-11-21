@@ -7,6 +7,9 @@ local MAX_STEP_KM    = 10.0  -- saut maximal accepte entre deux mises a jour
 
 local pending = {}  -- [plate] = mileage a ecrire
 local known   = {}  -- [plate] = dernier kilometrage connu (anti-triche)
+local loading = {}  -- [plate] = true pendant la lecture en base
+local lastAsk = {}  -- [src] = GetGameTimer() de la derniere demande
+local ASK_COOLDOWN_MS = 1000
 
 local function normalPlate(plate)
     return string.upper(string.gsub(tostring(plate or ''), '%s+', ''))
@@ -44,19 +47,35 @@ AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() then flush() end
 end)
 
+AddEventHandler('playerDropped', function() lastAsk[source] = nil end)
+
 RegisterNetEvent('pop_kilometrage:server:requestMileage', function(plate)
     local src = source
     plate = normalPlate(plate)
+    if plate == '' or #plate > 12 then return end
+    -- Limite : une demande par seconde et par joueur
+    local now = GetGameTimer()
+    if lastAsk[src] and now - lastAsk[src] < ASK_COOLDOWN_MS then return end
+    lastAsk[src] = now
 
     if pending[plate] then
         TriggerClientEvent('pop_kilometrage:client:receiveMileage', src, plate, pending[plate])
         return
     end
     exports.oxmysql:scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(mileage)
-        known[plate] = mileage or 0
-        TriggerClientEvent('pop_kilometrage:client:receiveMileage', src, plate, mileage or 0)
+        if known[plate] == nil then known[plate] = tonumber(mileage) or 0 end
+        TriggerClientEvent('pop_kilometrage:client:receiveMileage', src, plate, known[plate])
     end)
 end)
+
+-- Applique une valeur apres verification (le kilometrage connu vient toujours de la base)
+local function applyMileage(plate, mileage)
+    local prev = known[plate] or 0
+    -- Le kilometrage ne peut qu'augmenter, et par pas raisonnables.
+    if mileage < prev - 0.01 or mileage - prev > MAX_STEP_KM then return end
+    known[plate]   = mileage
+    pending[plate] = mileage
+end
 
 RegisterNetEvent('pop_kilometrage:server:updateMileage', function(plate, mileage)
     local src = source
@@ -68,12 +87,18 @@ RegisterNetEvent('pop_kilometrage:server:updateMileage', function(plate, mileage
     local veh = GetVehiclePedIsIn(GetPlayerPed(src), false)
     if veh == 0 or normalPlate(GetVehicleNumberPlateText(veh)) ~= plate then return end
 
-    -- Le kilometrage ne peut qu'augmenter, et par pas raisonnables.
-    local prev = known[plate]
-    if prev and (mileage < prev - 0.01 or mileage - prev > MAX_STEP_KM) then return end
-
-    known[plate]   = mileage
-    pending[plate] = mileage
+    if known[plate] ~= nil then
+        applyMileage(plate, mileage)
+        return
+    end
+    -- Premiere valeur : on lit d'abord la base (plus de valeur acceptee les yeux fermes)
+    if loading[plate] then return end
+    loading[plate] = true
+    exports.oxmysql:scalar('SELECT mileage FROM vehicle_mileage WHERE plate = ?', { plate }, function(dbMileage)
+        loading[plate] = nil
+        if known[plate] == nil then known[plate] = tonumber(dbMileage) or 0 end
+        applyMileage(plate, mileage)
+    end)
 end)
 
 --------------------

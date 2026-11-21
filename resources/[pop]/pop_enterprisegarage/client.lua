@@ -111,8 +111,9 @@ RegisterNUICallback('store', function(_, cb)
     end
     local plate = normalPlate(GetVehicleNumberPlateText(veh))
     local props = ESX.Game.GetVehicleProperties(veh)
+    local netId = NetworkGetEntityIsNetworked(veh) and NetworkGetNetworkIdFromEntity(veh) or nil
     if currentGarage then
-        TriggerServerEvent('pop_enterprisegarage:store', currentGarage, plate, props)
+        TriggerServerEvent('pop_enterprisegarage:store', currentGarage, plate, props, netId)
     end
     closeMenu()
     cb('ok')
