@@ -13,8 +13,8 @@ end)
 
 RegisterNetEvent("vfw:loading:showJoinNUI")
 AddEventHandler("vfw:loading:showJoinNUI", function()
-    if hasClickedJoin then 
-        return 
+    if hasClickedJoin then
+        return
     end
     ShutdownLoadingScreen()
     ShutdownLoadingScreenNui()
@@ -30,7 +30,7 @@ RegisterNUICallback('closeUI', function(data, cb)
     -- Un seul clic pris en compte : les clics pendant la transition sont ignorés
     if hasClickedJoin then
         if cb then cb('ok') end
-        return 
+        return
     end
     hasClickedJoin = true
 
@@ -115,25 +115,25 @@ RegisterNUICallback('closeUI', function(data, cb)
                 Citizen.Wait(500)
             end
         end)
-        
+
         -- Activer le HUD (les bars de vie, faim, soif, etc.)
         TriggerEvent("esx:loadingScreenOff")
     end)
-    
+
     -- NOTE : on n'appelle PAS spawnmanager:spawnPlayer() ici.
     -- Sur un serveur ESX, ESX.SpawnPlayer (déclenché via esx:playerLoaded) a déjà
     -- exécuté NetworkResurrectLocalPlayer aux coords sauvegardées du joueur.
     -- Appeler spawnmanager:spawnPlayer écraserait la position avec un point arbitraire.
     -- ShutdownLoadingScreen() / ShutdownLoadingScreenNui() sont déjà appelés plus haut
     -- (lignes 14, 32-33) et dans le thread de transition (lignes 79-80).
-    
+
     if cb then cb('ok') end
 end)
 
 Citizen.CreateThread(function()
     -- Activer le contrôle manuel et le routage NUI pour l'écran de chargement natif
     SetManualShutdownLoadingScreenNui(true)
-    
+
     -- Désactive l'auto-spawn de spawnmanager pour attendre le clic du joueur
     local state = GetResourceState('spawnmanager')
     if state == 'started' or state == 'starting' then
