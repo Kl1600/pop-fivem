@@ -6,6 +6,7 @@ local TARGET_DISTANCE = 2.0
 local PED_DISTANCE    = 40.0
 
 local isOpen = false
+local session = 0
 local pending = false    -- attente de getOffers (évite le double clic)
 local openLoc = nil      -- index du lieu ouvert
 local blips = {}
@@ -21,16 +22,17 @@ local ready = false
 local function close()
     if not isOpen then return end
     isOpen = false
+    session = session + 1
     openLoc = nil
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'pop_exchange:close' })
 end
 
 -- Surveillance pendant l'ouverture : éloignement ou mort → fermeture.
-local function watch(i)
+local function watch(i, activeSession)
     local center = Config.Locations[i].coords.xyz
     CreateThread(function()
-        while isOpen and openLoc == i do
+        while isOpen and session == activeSession do
             local ped = PlayerPedId()
             if IsEntityDead(ped) or #(GetEntityCoords(ped) - center) > ACTION_DISTANCE then
                 close()
@@ -51,10 +53,11 @@ local function open(i)
         return
     end
     isOpen = true
+    session = session + 1
     openLoc = i
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'pop_exchange:open', offers = offers or {} })
-    watch(i)
+    watch(i, session)
 end
 
 local function translate(reason, arg)
@@ -67,8 +70,9 @@ RegisterNUICallback('pop_exchange:exchange', function(data, cb)
         return
     end
     data = type(data) == 'table' and data or {}
-    local amount = math.floor(tonumber(data.amount) or 0)
-    local ok, reason, arg, offers = Callback.Await('pop_exchange:exchange', openLoc, tostring(data.id or ''), amount)
+    local id = type(data.id) == 'string' and data.id or ''
+    local preset = type(data.preset) == 'string' and data.preset or ''
+    local ok, reason, arg, offers = Callback.Await('pop_exchange:exchange', openLoc, id, preset)
     cb({ ok = ok == true, message = translate(reason, arg), offers = offers })
 end)
 
@@ -90,7 +94,7 @@ local function options(i)
             icon = 'fa-solid fa-money-bill-transfer',
             distance = TARGET_DISTANCE,
             canInteract = function() return not isOpen and not pending end,
-            onSelect = function() open(i) end,
+            onSelect = function() CreateThread(function() open(i) end) end,
         },
     }
 end
@@ -101,7 +105,10 @@ local function loadModel(model)
     RequestModel(hash)
     local timeout = GetGameTimer() + 3000
     while not HasModelLoaded(hash) do
-        if GetGameTimer() > timeout then return nil end
+        if GetGameTimer() > timeout then
+            SetModelAsNoLongerNeeded(hash)
+            return nil
+        end
         Wait(50)
     end
     return hash
@@ -191,7 +198,7 @@ end)
 ------------------------------------------------------------------------
 
 RegisterNetEvent('pop_exchange:client:policeAlert', function(coords)
-    if type(coords) ~= 'table' or not tonumber(coords.x) or not tonumber(coords.y) then return end
+    if source ~= 65535 or type(coords) ~= 'table' or not tonumber(coords.x) or not tonumber(coords.y) then return end
     Bridge.Notify(L('police_alert'), 'warning')
     local blip = AddBlipForCoord(coords.x + 0.0, coords.y + 0.0, (tonumber(coords.z) or 0) + 0.0)
     SetBlipSprite(blip, 500)

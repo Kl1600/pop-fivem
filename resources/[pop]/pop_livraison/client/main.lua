@@ -288,7 +288,7 @@ local function request(name, ...)
     pending = false
     if not ok then
         Bridge.Notify(L(reason or 'error', arg), 'error')
-        if reason == 'no_run' or reason == 'vehicle_missing' then cleanupRun() end
+        if reason == 'no_run' or reason == 'vehicle_missing' or reason == 'run_expired' then cleanupRun() end
         return false
     end
     return true, value

@@ -51,5 +51,12 @@ Config.Accounts = {
 
 Config.MaxAmount        = 1000000 -- montant max par dépôt / retrait / prime
 Config.MaxInvoice       = 50000   -- montant max d'une facture
+-- Montants proposés dans les menus. Le client envoie uniquement la clé du choix.
+Config.AmountPresets = {
+    transfer = { small = 500, medium = 2500, large = 10000 },
+    bonus    = { small = 250, medium = 1000, large = 5000 },
+    invoice  = { small = 250, medium = 500, large = 2500 },
+}
+
 Config.InteractDistance = 3.0     -- distance max pour recruter / facturer (mètres)
 Config.OfferTimeout     = 30      -- secondes pour accepter une offre (recrutement, facture)

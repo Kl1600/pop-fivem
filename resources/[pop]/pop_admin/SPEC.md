@@ -41,7 +41,7 @@ ou, pour un admin du framework sans ACE `pop.admin`, tous les droits si `Config.
 - Noclip et invisible : **autorisés et activés par le serveur** (event `setMode`), exécutés côté client.
 - Spectate : le serveur valide, passe l'admin dans le routing bucket de la cible, envoie les coordonnées ;
   le client observe ; arrêt par `[BACKSPACE]` ou automatiquement si la cible quitte.
-- Heal / revive : events connus des scripts de mort (esx_ambulancejob, qb-ambulancejob, qbx_medical) ou event
+- Heal / revive : events connus des scripts de mort (esx_ambulancejob, qb-ambulancejob), exports serveur de qbx_medical, ou event
   personnalisé (`Config.ReviveEvent`), sinon natives GTA. Déclenchés **uniquement** par le serveur après contrôle.
 - Météo / heure : implémentation propre au script (aucune dépendance) ; désactivable (`Config.WorldSync = false`)
   pour les serveurs qui ont déjà un script météo.
@@ -687,7 +687,7 @@ CREATE TABLE IF NOT EXISTS `pop_admin_warns` (
 
 **Requêtes** : toujours paramétrées (`?`). Démarrage : `SELECT * FROM pop_admin_bans WHERE active = 1` → cache ;
 `SELECT license, COUNT(*) AS n FROM pop_admin_warns GROUP BY license` → compteurs. Ban : `MySQL.insert.await`
-(pour l'id). Unban / expiration : `MySQL.update('UPDATE pop_admin_bans SET active = 0 WHERE id = ?', { id })`.
+(pour l'id). Unban : `MySQL.update.await('UPDATE pop_admin_bans SET active = 0 WHERE id = ?', { id })`.
 Warn : `MySQL.insert`. Aucune requête dans `playerConnecting`.
 
 ---
@@ -709,7 +709,7 @@ Bans.WarnCount(license)        -> number
 Bans.Message(ban)              -> string          -- L('ban_message', reason, expiresAt formaté ou L('ban_permanent'), id)
 ```
 Cache : `bans[id] = { id, license, identifiers = { ... }, name, reason, admin, createdAt, expiresAt }` et index
-`byIdentifier[identifiant] = id` (tous les identifiants de chaque ban).
+`byIdentifier[identifiant][id] = true` (tous les identifiants de chaque ban).
 `Bans.Ready = true` est posé par `server/main.lua` après le chargement (section suivante) ; `bans.lua` fournit la
 fonction `Bans.Load()` (CREATE TABLE ×2 + SELECT ×2) appelée par `main.lua` au démarrage.
 
@@ -720,13 +720,14 @@ AddEventHandler('playerConnecting', function(_, _, deferrals)
     deferrals.defer()
     Wait(0)
     deferrals.update(L('ban_checking'))
-    -- attendre Bans.Ready (max 10 s, Wait(100)) ; si jamais prêt : laisser entrer + log console
+    Wait(0)
+    -- attendre Bans.Ready (max 10 s, Wait(100)) ; si indisponible : refuser + log console
     local _, list = Bans.Identifiers(src)
     local ban = Bans.Find(list)
     if ban then deferrals.done(Bans.Message(ban)) else deferrals.done() end
 end)
 ```
-Expiration : `expiresAt ~= nil and expiresAt <= os.time()` → `Bans.Remove(id)` (silencieux) et le joueur entre.
+Expiration : `expiresAt ~= nil and expiresAt <= os.time()` → le ban est ignoré dans le cache et le joueur entre.
 
 ### Serveur : `server/log.lua` (fonctions globales `AdminLog`, `AdminDenied`)
 `AdminLog(src, action, target, details)` :
@@ -796,11 +797,10 @@ Expiration : `expiresAt ~= nil and expiresAt <= os.time()` → `Bans.Remove(id)`
   réapplique (nouveau ped après respawn) ; dégel → arrêt de la boucle et `FreezeEntityPosition(false)`.
 - **`heal`** : `SetEntityHealth(ped, GetEntityMaxHealth(ped))`, `ClearPedBloodDamage(ped)` ; puis, selon la
   ressource lancée : `esx_basicneeds` → `TriggerEvent('esx_basicneeds:healPlayer')` ; `qb-ambulancejob` →
-  `TriggerEvent('hospital:client:adminHeal')`. (NOTE: qbx_medical : pas d'event de soin confirmé, natives seules.)
+  `TriggerEvent('hospital:client:adminHeal')`. Avec Qbox Medical actif, le serveur appelle directement l'export `Heal`.
 - **`revive`** : `Config.ReviveEvent ~= ''` → `TriggerEvent(Config.ReviveEvent)` ; sinon `esx_ambulancejob` →
   `TriggerEvent('esx_ambulancejob:revive')` ; `qb-ambulancejob` → `TriggerEvent('hospital:client:Revive')` ;
-  `qbx_medical` → `TriggerEvent('qbx_medical:client:playerRevived')` (NOTE: nom à confirmer selon la version de
-  qbx_medical) ; aucun → natives : `NetworkResurrectLocalPlayer(coords, heading, true, false)`,
+  avec Qbox Medical actif, le serveur appelle directement l'export `Revive` ; aucun → natives : `NetworkResurrectLocalPlayer(coords, heading, true, false)`,
   `SetEntityHealth(max)`, `ClearPedTasksImmediately`, `ClearPedBloodDamage`. Le README documente
   `Config.ReviveEvent` pour les autres scripts de mort (wasabi_ambulance, etc.).
 - **`warn`** : `Bridge.Notify(L('you_warned', reason), 'warning')` + NUI `pop_admin:warn`.
@@ -856,8 +856,8 @@ et `data`, tout est revérifié. Aucun `RegisterNetEvent` serveur.
 
 **Pipeline de `pop_admin:action`** (dans cet ordre, premier échec = retour immédiat) :
 1. `type(action) == 'string'` et `ACTIONS[action]` existe, sinon `error`.
-2. `HasPermission(src, ACTIONS[action].perm)` (revérifié **à chaque appel**, jamais mis en cache), sinon
-   `no_permission` + `AdminDenied`.
+2. `HasPermission(src, ACTIONS[action].perm)` (revérifié à chaque appel), sinon
+   `no_permission` + `AdminDenied`. Le joueur peut toujours arrêter sa propre observation active.
 3. Anti-spam : `GetGameTimer() - lastAction[src] < ACTION_COOLDOWN` → `cooldown` (arg = `math.ceil(reste / 1000)`).
    `announce` : en plus `ANNOUNCE_COOLDOWN` (`lastAnnounce`). `lastAction[src]` mis à jour dès que l'étape 2 est
    passée. L'anti-spam du template (`Config.CallbackRateLimit`) reste actif sur tous les callbacks.
@@ -894,7 +894,7 @@ et `data`, tout est revérifié. Aucun `RegisterNetEvent` serveur.
   `no_permission` et rien n'est envoyé.
 - Heal / revive / freeze / teleport / fixVehicle : events client déclenchés **uniquement** par le serveur après le
   pipeline ; les events de framework (esx_ambulancejob, qb-ambulancejob, qbx_medical, esx_basicneeds) sont
-  appelés en local (`TriggerEvent`) par le client **ciblé**, à réception de l'event serveur.
+  appelés en local (`TriggerEvent`) par le client ciblé à réception de l’event serveur, ou via les exports serveur de Qbox Medical.
 - Ban : le cache est mis à jour **après** un `insert` réussi ; échec SQL → `error` et pas de drop. Les admins ne
   peuvent pas se bannir entre eux (immune). `DropPlayer` toujours après le log.
 - `playerConnecting` : aucune requête SQL, aucune donnée client ; identifiants lus par le serveur, IP ignorée.

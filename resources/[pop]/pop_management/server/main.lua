@@ -9,6 +9,8 @@ local HISTORY_DAYS = 30    -- purge de l'historique au démarrage
 local NOTE_MAX = 50        -- motif de facture
 local EXPORT_NOTE_MAX = 64 -- note des exports (colonne VARCHAR(64))
 local MAX_EMPLOYEES = 100
+local MAX_AMOUNT = 2147483647
+local ready = false
 
 local sessions = {}      -- [src] = { job, point, employees = { [id] = identifier } }
 local busy = {}          -- [src] = true pendant un traitement
@@ -36,10 +38,31 @@ end
 
 --- Montant entier dans [1, max] → n, ou nil, reason, arg.
 local function validAmount(n, max)
+    max = math.min(max, MAX_AMOUNT)
     n = toInt(n)
     if not n or n < 1 then return nil, 'invalid_amount' end
     if n > max then return nil, 'amount_too_high', L('money', max) end
     return n
+end
+
+local function presetAmount(kind, preset)
+    if type(preset) ~= 'string' or #preset > 32 then return nil, 'invalid_amount' end
+    local values = Config.AmountPresets[kind]
+    local max = kind == 'invoice' and Config.MaxInvoice or Config.MaxAmount
+    return validAmount(values and values[preset], max)
+end
+
+local function presets(kind)
+    local options = {}
+    for id in pairs(Config.AmountPresets[kind] or {}) do
+        local amount = presetAmount(kind, id)
+        if amount then options[#options + 1] = { id = id, amount = amount } end
+    end
+    table.sort(options, function(a, b)
+        if a.amount == b.amount then return a.id < b.id end
+        return a.amount < b.amount
+    end)
+    return options
 end
 
 --- Texte libre nettoyé : sans caractères de contrôle ni <>, rogné, `max` caractères ; vide → nil.
@@ -84,7 +107,7 @@ local function checkSession(src)
         return nil, job
     end
     local s = sessions[src]
-    if not s or s.job ~= job.name then
+    if not s or s.job ~= job.name or s.owner ~= Bridge.GetIdentifier(src) then
         sessions[src] = nil
         return nil, 'no_permission'
     end
@@ -108,7 +131,7 @@ end
 --- Cible d'une offre : autre joueur, connecté, chargé, vivant, proche → nil ; sinon reason.
 local function checkTarget(src, targetId)
     if targetId == src or targetId < 1 or not GetPlayerName(targetId) or not Bridge.GetIdentifier(targetId)
-        or Bridge.IsDead(targetId) then
+        or Bridge.IsDead(targetId) or GetPlayerRoutingBucket(src) ~= GetPlayerRoutingBucket(targetId) then
         return 'target_not_found'
     end
     local coords = Bridge.GetCoords(targetId)
@@ -143,6 +166,8 @@ end
 --- Enregistre l'offre, l'envoie à la cible (sans source ni identifiant) et programme son expiration.
 local function createOffer(o, payload)
     lastOfferId = lastOfferId < 2147483647 and lastOfferId + 1 or 1
+    o.fromId = Bridge.GetIdentifier(o.from)
+    o.toId = Bridge.GetIdentifier(o.to)
     o.id = lastOfferId
     o.expires = os.time() + Config.OfferTimeout
     offers[o.id] = o
@@ -165,7 +190,6 @@ end
 --- Supprime sessions, verrou et offres d'un joueur qui part ou change de personnage.
 local function cleanup(src)
     sessions[src] = nil
-    busy[src] = nil
     local id = offerByTarget[src]
     if id and offers[id] then removeOffer(offers[id]) end
     id = offerBySender[src]
@@ -190,6 +214,7 @@ end)
 -- fail : première valeur renvoyée en cas d'échec (nil pour getPanel / canInvoice, false pour les actions).
 local function register(name, fail, fn)
     Callback.Register('pop_management:' .. name, function(src, ...)
+        if not ready or not Bridge.GetIdentifier(src) or Bridge.IsDead(src) then return fail, 'error' end
         if busy[src] then return fail, 'busy' end
         busy[src] = true
         local res = table.pack(pcall(fn, src, ...))
@@ -241,7 +266,7 @@ local function buildPanel(src, job)
         society = { name = name, label = Jobs.GetLabel(name) },
         me = { grade = job.grade, gradeLabel = labels[job.grade] or job.gradeLabel or tostring(job.grade) },
         balance = Account.Get(name) or 0,
-        maxAmount = Config.MaxAmount,
+        presets = { transfer = presets('transfer'), bonus = presets('bonus') },
         now = os.time(),
         grades = grades,
         employees = employees,
@@ -270,8 +295,13 @@ register('getPanel', nil, function(src, point)
         return nil, 'too_far'
     end
 
+    local owner = Bridge.GetIdentifier(src)
     local data, ids = buildPanel(src, job)
-    sessions[src] = { job = job.name, point = point, employees = ids }
+    local _, latest = isBoss(src)
+    if Bridge.GetIdentifier(src) ~= owner or type(latest) ~= 'table' or latest.name ~= job.name then
+        return nil, 'no_permission'
+    end
+    sessions[src] = { owner = owner, job = job.name, point = point, employees = ids }
     return data
 end)
 
@@ -334,10 +364,10 @@ end
 register('promote', false, function(src, employeeId) return changeGrade(src, employeeId, 1) end)
 register('demote', false, function(src, employeeId) return changeGrade(src, employeeId, -1) end)
 
-register('pay', false, function(src, employeeId, amount)
+register('pay', false, function(src, employeeId, preset)
     local s, job = checkSession(src)
     if not s then return false, job end
-    local n, reason, arg = validAmount(amount, Config.MaxAmount)
+    local n, reason, arg = presetAmount('bonus', preset)
     if not n then return false, reason, arg end
     local emp, identifier = targetEmployee(src, s, job, employeeId)
     if not emp then return false, identifier end
@@ -349,7 +379,8 @@ register('pay', false, function(src, employeeId, amount)
         local balance = Account.Get(society)
         if not balance then return false, 'society_no_account' end
         if balance < n or not Account.Remove(society, n, L('tx_bonus')) then return false, 'society_no_money' end
-        if not Bridge.AddMoney(emp.src, Config.Accounts.bonus, n, L('tx_bonus')) then
+        if Bridge.GetIdentifier(emp.src) ~= identifier
+            or not Bridge.AddMoney(emp.src, Config.Accounts.bonus, n, L('tx_bonus')) then
             Account.Add(society, n, L('tx_bonus')) -- remboursement de la société
             return false, 'error'
         end
@@ -392,10 +423,10 @@ end)
 -- Compte
 ------------------------------------------------------------------------
 
-register('deposit', false, function(src, amount)
+register('deposit', false, function(src, preset)
     local s, job = checkSession(src)
     if not s then return false, job end
-    local n, reason, arg = validAmount(amount, Config.MaxAmount)
+    local n, reason, arg = presetAmount('transfer', preset)
     if not n then return false, reason, arg end
 
     local society, account = job.name, Config.Accounts.transfer
@@ -416,10 +447,10 @@ register('deposit', false, function(src, amount)
     return true
 end)
 
-register('withdraw', false, function(src, amount)
+register('withdraw', false, function(src, preset)
     local s, job = checkSession(src)
     if not s then return false, job end
-    local n, reason, arg = validAmount(amount, Config.MaxAmount)
+    local n, reason, arg = presetAmount('transfer', preset)
     if not n then return false, reason, arg end
 
     local society, account = job.name, Config.Accounts.transfer
@@ -448,15 +479,15 @@ end)
 register('canInvoice', nil, function(src)
     local cfg, job = checkInvoicer(src)
     if not cfg then return nil, job end
-    return { society = Jobs.GetLabel(job.name), max = Config.MaxInvoice }
+    return { society = Jobs.GetLabel(job.name), presets = presets('invoice') }
 end)
 
-register('sendInvoice', false, function(src, targetId, amount, note)
+register('sendInvoice', false, function(src, targetId, preset, note)
     local cfg, job = checkInvoicer(src)
     if not cfg then return false, job end
     targetId = toInt(targetId)
     if not targetId then return false, 'error' end
-    local n, reason, arg = validAmount(amount, Config.MaxInvoice)
+    local n, reason, arg = presetAmount('invoice', preset)
     if not n then return false, reason, arg end
     if note ~= nil and type(note) ~= 'string' then return false, 'error' end
     note = cleanNote(note, NOTE_MAX)
@@ -499,8 +530,8 @@ local function acceptRecruit(src, o)
 end
 
 local function acceptInvoice(src, o)
-    local from = Bridge.GetJob(o.from)
-    if not from or from.name ~= o.job then return false, 'offer_not_found' end
+    local cfg, from = checkInvoicer(o.from)
+    if not cfg or from.name ~= o.job then return false, 'offer_not_found' end
 
     local account = Config.Accounts.invoice
     local actor, customer = nameOf(o.from), nameOf(src)
@@ -531,7 +562,9 @@ register('answerOffer', false, function(src, offerId, accept)
     if not offerId or type(accept) ~= 'boolean' then return false, 'error' end
 
     local o = offers[offerId]
-    if not o or o.to ~= src or os.time() > o.expires then return false, 'offer_not_found' end
+    if not o or o.to ~= src or Bridge.GetIdentifier(src) ~= o.toId or os.time() > o.expires then
+        return false, 'offer_not_found'
+    end
     removeOffer(o) -- avant tout traitement : empêche une double acceptation
 
     if not accept then
@@ -539,7 +572,8 @@ register('answerOffer', false, function(src, offerId, accept)
         return true
     end
 
-    if not GetPlayerName(o.from) or not Bridge.GetIdentifier(o.from) then return false, 'offer_not_found' end
+    if Bridge.GetIdentifier(o.from) ~= o.fromId or Bridge.IsDead(o.from) then return false, 'offer_not_found' end
+    if GetPlayerRoutingBucket(o.from) ~= GetPlayerRoutingBucket(src) then return false, 'too_far' end
     local coords = Bridge.GetCoords(o.from)
     if not coords or not Bridge.IsNear(src, coords, Config.InteractDistance + 2.0) then return false, 'too_far' end
 
@@ -556,13 +590,13 @@ local function validJob(job)
 end
 
 exports('GetSocietyMoney', function(job)
-    if not validJob(job) then return nil end
+    if not ready or not validJob(job) then return nil end
     return Account.Get(job)
 end)
 
 exports('AddSocietyMoney', function(job, amount, note)
     amount = toInt(amount)
-    if not validJob(job) or not amount or amount < 1 then return false end
+    if not ready or not validJob(job) or not amount or amount < 1 or amount > MAX_AMOUNT then return false end
     note = cleanNote(note, EXPORT_NOTE_MAX)
     local ok = withSocietyLock(job, function()
         if not Account.Add(job, amount, note or L('tx_add')) then return false end
@@ -575,7 +609,7 @@ end)
 
 exports('RemoveSocietyMoney', function(job, amount, note)
     amount = toInt(amount)
-    if not validJob(job) or not amount or amount < 1 then return false end
+    if not ready or not validJob(job) or not amount or amount < 1 or amount > MAX_AMOUNT then return false end
     note = cleanNote(note, EXPORT_NOTE_MAX)
     local ok = withSocietyLock(job, function()
         if not Account.Remove(job, amount, note or L('tx_remove')) then return false end
@@ -620,7 +654,11 @@ CreateThread(function()
         ]])
         MySQL.update.await('DELETE FROM pop_management_transactions WHERE created_at < ?', { os.time() - HISTORY_DAYS * 86400 })
     end)
-    if not ok then print(('[%s] database setup failed: %s'):format(RES, tostring(err))) end
+    if not ok then
+        print(('[%s] database setup failed: %s'):format(RES, tostring(err)))
+        return
+    end
+    ready = true
 
     print(('[%s] society account backend: %s'):format(RES, Account.Backend))
     if not Jobs.Supported then

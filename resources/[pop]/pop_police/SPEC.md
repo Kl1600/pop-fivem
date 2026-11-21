@@ -41,7 +41,7 @@ l'ACE `pop.police`. Toutes les actions exigent d'être **en service**.
      menottée uniquement).
    - **Fouiller** une personne menottée ou à terre : ouvre son inventaire (pop_inventory, ox_inventory, qb-inventory
      v2) ; sinon notification avec la liste des objets trouvés.
-   - **Amende** : formulaire (montant borné par `Config.Fines`, motif court). La cible reçoit une carte
+   - **Amende** : formulaire (tarif choisi dans `Config.Fines.amounts`, motif court). La cible reçoit une carte
      « [Y] Payer  [BACK] Refuser » pendant `Config.Fines.timeout` s. Paiement par `Bridge.RemoveMoney` sur
      `Config.Fines.account`. Tout est enregistré au casier (payée, refusée, impayée, expirée).
    - **Casier** (MDT minimaliste) : recherche par nom ou ID serveur, fiche (notes, amendes, total impayé), ajout et
@@ -271,7 +271,7 @@ Callbacks qui renvoient des données : `true, nil, data` ou `false, reason`.
 | `pop_police:putInVehicle` | actions.lua | `target`, `netId` (int) | `ok, reason` |
 | `pop_police:takeOutVehicle` | actions.lua | `target` | `ok, reason` |
 | `pop_police:search` | actions.lua | `target` | `ok, reason` |
-| `pop_police:fine` | fines.lua | `target`, `amount` (int), `reason` (string) | `ok, reason, arg` |
+| `pop_police:fine` | fines.lua | `target`, `option` (index entier), `reason` (string) | `ok, reason, arg` |
 | `pop_police:respondFine` | fines.lua | `id` (int), `accept` (bool) | `ok, reason, status` (`status` ∈ `'paid'`, `'unpaid'`, `'refused'` si ok) |
 | `pop_police:panic` | main.lua | aucun | `ok, reason, arg` |
 | `pop_police:mdtSearch` | mdt.lua | `query` (string) | `true, nil, results` \| `false, reason` |
@@ -341,7 +341,7 @@ le JS l'applique à chaque fois (idempotent, §6.3).
 
 **`pop_police:fineForm`** : formulaire d'amende (remplace le menu dans le même emplacement).
 ```json
-{ "action": "pop_police:fineForm", "show": true, "theme": "modern", "target": { "serverId": 12 }, "min": 50, "max": 10000 }
+{ "action": "pop_police:fineForm", "show": true, "theme": "modern", "target": { "serverId": 12 }, "amounts": [50, 100, 250, 500, 1000, 2500, 5000, 10000] }
 ```
 
 **`pop_police:mdt`** : ouvre le casier (masque le menu). Vide à l'ouverture (champ de recherche focalisé).
@@ -367,7 +367,7 @@ changer dans les raccourcis FiveM ; le libellé affiché reste celui de la confi
 | Nom | Corps JSON | Réponse | Côté Lua |
 |---|---|---|---|
 | `action` | `{ "id": "cuff" }` | `{ "ok": true }` | `id` doit faire partie des `actions` envoyées en dernier, sinon `{ "ok": false }` et rien. `fine` → `pop_police:fineForm` ; `mdt` → `pop_police:mdt` ; autres → fermeture de l'interface puis déroulé §12.3 (dans un thread) |
-| `fine` | `{ "amount": 250, "reason": "Speeding" }` | `{ "ok": true }` ou `{ "ok": false, "error": "<clé>" }` | `pop_police:fine` sur `Police.menuTarget` ; succès → fermeture |
+| `fine` | `{ "option": 3, "reason": "Speeding" }` | `{ "ok": true }` ou `{ "ok": false, "error": "<clé>" }` | `pop_police:fine` sur `Police.menuTarget` ; succès → fermeture |
 | `mdtSearch` | `{ "query": "john" }` | `{ "ok": true, "results": [...] }` ou `{ "ok": false, "error": "<clé>" }` | `pop_police:mdtSearch` |
 | `mdtProfile` | `{ "citizenId": 4 }` ou `{ "serverId": 12 }` | `{ "ok": true, "profile": {...} }` ou erreur | `pop_police:mdtProfile` |
 | `mdtAddNote` | `{ "citizenId": 4, "text": "..." }` | idem (fiche à jour) | `pop_police:mdtAddNote` |
@@ -387,8 +387,7 @@ aucun glassmorphism, aucune ombre lourde, transitions = `.pop-fade` du kit uniqu
 quatre blocs, masqués par défaut (`pop-panel pop-fade`) :
 - `#police-menu` : en-tête `data-locale="menu_title"`, ligne `#menu-target` (petite) ; liste `#menu-actions`
   (boutons construits par le JS).
-- `#police-fine` : titre `fine_title`, `#fine-target` (petite), libellé `fine_amount` + `<input id="fine-amount"
-  type="number">`, `#fine-bounds` (petite), libellé `fine_reason` + `<input id="fine-reason" maxlength="100">`,
+- `#police-fine` : titre `fine_title`, `#fine-target` (petite), libellé `fine_amount` + `<select id="fine-amount">`, `#fine-bounds` (petite), libellé `fine_reason` + `<input id="fine-reason" maxlength="100">`,
   boutons `#fine-send` (`fine_send`, `pop-button`) et `#fine-cancel` (`cancel`).
 - `#police-mdt` : en-tête `mdt_title` + bouton `#mdt-close` (`close`) ; ligne de recherche `<input id="mdt-query"
   maxlength="50">` (placeholder `mdt_search_hint`, posé par le JS) + `#mdt-search-btn` (`mdt_search`) ; `#mdt-results`
@@ -400,14 +399,14 @@ quatre blocs, masqués par défaut (`pop-panel pop-fade`) :
   (classes `pop-key`), barre fine `#fr-timer` (3 px).
 
 **`script.js`**
-- Thème : `document.documentElement.dataset.theme = data.theme` ; si `retro80` → `Pop.setAccent('#ffb000')`.
+- Thème : `document.documentElement.dataset.theme = data.theme` ; le CSS du thème `retro80` définit l’accent ambre.
 - `pop_police:menu` : `#menu-target` = `Pop.t('menu_target', target.serverId)` ou `Pop.t('menu_no_target')` ;
   un bouton par id (`Pop.t('action_' + id)`), `panic` en `--pop-danger`. Clavier : ↑ / ↓ déplacent la sélection
   (accent), Entrée valide ; clic = valide. Valider → `Pop.post('action', { id })`. Affiche `#police-menu`, masque les autres.
 - `pop_police:fineForm` : `#fine-target` = `Pop.t('menu_target', serverId)`, `#fine-bounds` =
-  `Pop.t('fine_bounds', Pop.t('money', min), Pop.t('money', max))`, `min` / `max` sur l'input, focus sur le montant.
-  Envoi : montant entier dans les bornes et motif de 3 à 100 caractères (après `trim`), sinon bordure `--pop-danger`
-  sur le champ fautif et rien n'est envoyé ; sinon `Pop.post('fine', { amount, reason })`, boutons désactivés jusqu'à
+  `Pop.t('fine_bounds', Pop.t('money', min), Pop.t('money', max))` avec les bornes des tarifs reçus ; le sélecteur
+  prend le focus. Envoi : index du tarif et motif de 3 à 100 caractères (après `trim`). Un motif invalide colore le
+  champ avec `--pop-danger` et bloque l’envoi. Sinon `Pop.post('fine', { option, reason })`, boutons désactivés jusqu'à
   la réponse. Entrée dans un champ = envoyer. Annuler → `Pop.post('close')`.
 - `pop_police:mdt` : vide résultats et fiche, focus sur `#mdt-query`. Recherche (bouton ou Entrée) →
   `Pop.post('mdtSearch', { query })` → une ligne par résultat : nom + `Pop.t('mdt_online', serverId)` ou
@@ -501,13 +500,13 @@ CREATE TABLE IF NOT EXISTS `pop_police_fines` (
 -- INSERT IGNORE INTO `items` (`name`, `label`, `weight`) VALUES ('handcuffs', 'Handcuffs', 1);
 ```
 Règles :
-- Requêtes **toujours paramétrées** (`?`). Recherche : `WHERE name LIKE ? ORDER BY name LIMIT ?` avec
-  `'%' .. échappé .. '%'` (`%`, `_` et `\` échappés par `\`).
+- Requêtes **toujours paramétrées** (`?`). Recherche : `WHERE name LIKE ? ESCAPE '!' ORDER BY name LIMIT ?` avec
+  `'%' .. échappé .. '%'` (`!`, `%` et `_` échappés par `!`).
 - `Police.GetCitizenId(identifier, name)` (bloquant) :
   `INSERT INTO pop_police_citizens (identifier, name) VALUES (?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), id = LAST_INSERT_ID(id)`
   via `MySQL.insert.await` → id (existant ou nouveau). Nom à jour à chaque appel. Nom tronqué à 100.
-- Amende : une ligne **seulement à sa résolution** (payée, refusée, impayée, expirée) : aucune ligne « en attente »
-  ne survit à un redémarrage.
+- Amende : une ligne à sa résolution. Si le destinataire accepte, le serveur inscrit la ligne impayée avant de tenter
+  le débit, puis la marque payée après confirmation du débit. Les demandes sans réponse restent en mémoire jusqu’à leur expiration.
 - Aucune suppression d'amende. Note supprimée : `DELETE` de la ligne.
 
 ---
@@ -541,7 +540,7 @@ Config.Handcuffs = 'handcuffs'
 Config.Durations = { cuff = 2500, uncuff = 2000, search = 3000 }
 
 -- Amendes : montant borné, compte débité ('bank' ou 'cash'), délai de réponse de la personne (secondes).
-Config.Fines = { min = 50, max = 10000, account = 'bank', timeout = 30 }
+Config.Fines = { min = 50, max = 10000, account = 'bank', timeout = 30, amounts = { 50, 100, 250, 500, 1000, 2500, 5000, 10000 } }
 
 -- Bouton panique : délai entre deux alertes d'un même agent et durée du blip (secondes).
 Config.Panic = { cooldown = 30, blipTime = 90 }
@@ -569,8 +568,8 @@ Config.Outfits = {
 }
 ```
 Aucune autre clé. Les distances et limites fixes sont des constantes de `common/police.lua` (§3.1).
-Validation au démarrage (serveur, avertissement console en anglais, valeur par défaut appliquée) :
-`Config.Fines.min` entier ≥ 1, `max` ≥ `min`, `account` ∈ `bank` | `cash`, `timeout` 10..120 ;
+Validation au démarrage dans `common/police.lua` (avertissement serveur en anglais, valeur par défaut appliquée) :
+`Config.Fines.min` entier ≥ 1, `max` ≥ `min`, `account` ∈ `bank` | `cash`, `timeout` 10..120 ; `amounts` contient les tarifs entiers dans cet intervalle de montants (repli : `min`) ;
 `Config.Theme` ∈ `modern` | `retro80`.
 
 ---
@@ -767,7 +766,8 @@ Toutes : squelette §11.1, `CheckTarget`, et agent à pied (`Police.OnFoot(src)`
   `math.type(netId) == 'integer'`, `veh = NetworkGetEntityFromNetworkId(netId)`, `DoesEntityExist(veh)`,
   `GetEntityType(veh) == 2` (→ `no_vehicle`) ; véhicule à `Police.VEHICLE_SERVER_DISTANCE` de l'agent **et** de la cible
   (→ `too_far`) ; `Police.ReleaseTarget(target)` ; `ok = Callback.Await('pop_police:enterVehicle', target, netId)`
-  **verrou conservé pendant l'attente** (≤ 10 s) ; `ok ~= true` → `vehicle_full`. `-- NOTE:` le placement est fait par
+  **verrous de l'agent et de la cible conservés pendant l'attente**. Le serveur confirme que le ped cible se
+  trouve dans le véhicule validé après réplication. Sinon → `vehicle_full`. `-- NOTE:` le placement est fait par
   le client de la cible (natives de sièges client uniquement).
 - **`takeOutVehicle(target)`** : `CheckTarget(src, target, true)` ; cible menottée (`not_cuffed`) ;
   `veh = GetVehiclePedIsIn(targetPed, false)` ≠ 0 (→ `target_not_in_vehicle`) ; véhicule à
@@ -782,8 +782,8 @@ Toutes : squelette §11.1, `CheckTarget`, et agent à pied (`Police.OnFoot(src)`
   Puis `Bridge.Notify(target, L('being_searched'), 'warning')`.
 
 ### 11.4 `server/fines.lua`
-- **`fine(target, amount, reason)`** : squelette §11.1, `CheckTarget` ; `math.type(amount) == 'integer'` et
-  `Config.Fines.min <= amount <= Config.Fines.max` (→ `invalid_amount`) ; `reason` chaîne, caractères de contrôle
+- **`fine(target, option, reason)`** : squelette §11.1, `CheckTarget` ; `option` entier et index valide dans
+  les tarifs `Config.Fines.amounts` validés côté serveur (→ `invalid_amount`) ; `reason` chaîne, caractères de contrôle
   retirés (`%c`), espaces aux extrémités retirés, longueur (`utf8.len`, repli `#`) entre `Police.REASON_MIN` et
   `Police.REASON_MAX` (→ `invalid_reason`) ; pas d'amende en attente pour la cible (→ `fine_pending`) ; délai
   `Police.FINE_COOLDOWN` par agent (→ `cooldown`, arg secondes restantes) ; identifiants `Bridge.GetIdentifier` des deux
@@ -800,8 +800,10 @@ Toutes : squelette §11.1, `CheckTarget`, et agent à pied (`Police.OnFoot(src)`
     `TriggerEvent('pop_police:finePaid', src, officer, amount, reason)` ;
   - `accept` mais paiement refusé → `unpaid` : `fine_unpaid_target` (error), `fine_unpaid_officer` (warning) ;
   - refus → `refused` : `fine_refused_target` (info), `fine_refused_officer` (warning).
-  Agent notifié seulement s'il est en ligne. Enregistrement (thread) : `citizenId =
-  Police.GetCitizenId(targetIdentifier, targetName)` puis `INSERT INTO pop_police_fines`. Retour `true, nil, status`.
+  Agent notifié si son identité correspond toujours au joueur connecté. Le serveur écrit la fiche et l’amende avant le débit.
+  Si le débit réussit, le passage à `paid` est réessayé en cas d’erreur SQL. Si le changement demeure non confirmé,
+  le serveur tente de restituer le montant au même personnage et journalise l’incident avec l’ID SQL. Retour
+  `true, nil, status` après une résolution confirmée.
 - **Nettoyage** (`OnPlayerDropped` / `OnPlayerUnloaded`) : amende en attente **visant** ce joueur → enregistrée
   `expired`, agent prévenu ; les amendes **données** par ce joueur restent valables (nom et identifiant déjà copiés).
   Délais `lastFine[src]` effacés.
@@ -814,7 +816,7 @@ Toutes : squelette §11.1, `CheckTarget`, et agent à pied (`Police.OnFoot(src)`
   `math.tointeger(tonumber(query))` → joueur en ligne de cet ID uniquement ; sinon longueur ≥ 2 (→ `invalid_query`).
   Résultats : (1) joueurs en ligne de `Bridge.GetPlayers()` dont `Bridge.GetName` contient la requête (insensible à la
   casse, `string.find(nom:lower(), query:lower(), 1, true)`) ; (2) `SELECT id, name, identifier FROM
-  pop_police_citizens WHERE name LIKE ? ORDER BY name LIMIT ?` ; fusion par identifiant (une personne en ligne **et**
+  pop_police_citizens WHERE name LIKE ? ESCAPE '!' ORDER BY name LIMIT ?` ; fusion par identifiant (une personne en ligne **et**
   en base = une seule ligne avec les deux ids) ; tri par nom ; au plus `Police.RESULTS_MAX`. L'identifiant ne sort
   **jamais** du serveur.
 - **`mdtProfile(ref)`** : `ref` table avec exactement un entier `citizenId` ou `serverId` (→ `error`).
@@ -966,7 +968,7 @@ Police.escorting = nil     -- server id escorté par moi (écrit par client/acti
 
 ## 13. Règles de sécurité (serveur, toutes obligatoires)
 
-Le client n'envoie que : un **server id** de cible, un **netId**, un **index** de commissariat, un **montant** et un
+Le client n'envoie que : un **server id** de cible, un **netId**, un **index** de commissariat, un **index de tarif** et un
 **motif** (bornés et nettoyés), une **requête** / un **texte** de note, des **ids** entiers, des booléens. Jamais de
 coordonnées, d'identifiant, de nom, de prix ni d'état : tout est relu côté serveur.
 
@@ -988,7 +990,7 @@ item revérifiés à `finish` (la cible peut fuir). Pas sur une cible en véhicu
 cible ; une seule escorte par agent et par cible.
 **Fouille** : cible menottée ou morte ; ouverture forcée seulement après ces contrôles ; le repli ne renvoie que des
 noms et quantités.
-**Amendes** : montant entier dans `Config.Fines` (jamais de montant non borné), motif nettoyé, une seule amende en
+**Amendes** : montant entier dans `Config.Fines`, déterminé par le serveur à partir de l’index du tarif, motif nettoyé, une seule amende en
 attente par cible, seule la cible peut répondre, amende retirée **avant** le paiement (pas de double paiement),
 paiement uniquement par `Bridge.RemoveMoney` (qui vérifie le solde), compte lu dans la config.
 **Casier** : agents en service uniquement ; requêtes SQL paramétrées, `LIKE` échappé, résultats bornés ; aucun

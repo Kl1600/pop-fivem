@@ -216,7 +216,9 @@ end
 local function qboxNames(cids)
     local names = {}
     if #cids == 0 then return names end
-    local rows = MySQL.query.await('SELECT citizenid, charinfo FROM players WHERE citizenid IN (?)', { cids })
+    local placeholders = ('?,'):rep(#cids):sub(1, -2)
+    local rows = MySQL.query.await(
+        'SELECT citizenid, charinfo FROM players WHERE citizenid IN (' .. placeholders .. ')', cids)
     for _, r in ipairs(rows or {}) do names[r.citizenid] = charName(r.charinfo) end
     return names
 end
@@ -337,7 +339,7 @@ local function setOnlineJob(src, job, grade)
         local p = QBCore.Functions.GetPlayer(src)
         if not p or p.Functions.SetJob(job, grade) == false then return false end
         p = QBCore.Functions.GetPlayer(src)
-        return p ~= nil and p.PlayerData.job.name == job
+        return p ~= nil and p.PlayerData.job.name == job and tonumber(p.PlayerData.job.grade.level) == grade
     end
     return false
 end

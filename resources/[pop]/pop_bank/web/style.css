@@ -23,7 +23,7 @@
 }
 .bank-title { font-weight: 600; overflow-wrap: anywhere; }
 
-.bank-link, .bank-tab, .bank-chip {
+.bank-link, .bank-tab {
   font: inherit;
   color: inherit;
   background: transparent;
@@ -69,18 +69,8 @@
 }
 .bank-input:focus { border-color: var(--pop-accent); }
 .bank-input::placeholder { color: var(--pop-muted); }
-.bank-input[type=number] { -moz-appearance: textfield; appearance: textfield; }
-.bank-input[type=number]::-webkit-outer-spin-button,
-.bank-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.bank-input option { background: var(--pop-bg); }
 
-.bank-quick { display: flex; gap: 6px; }
-.bank-chip {
-  flex: 1;
-  padding: 4px 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--pop-radius);
-}
-.bank-chip:hover { border-color: var(--pop-accent); color: var(--pop-text); }
 
 .pop-button:disabled { opacity: 0.5; cursor: default; }
 .pop-button:disabled:hover { background: transparent; }

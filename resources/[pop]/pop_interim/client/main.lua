@@ -9,6 +9,7 @@ local blips = {}
 local peds = {}    -- [i] = { entity, target }
 local zones = {}   -- [i] = id de target
 local isOpen = false
+local session = 0
 local openLoc = nil
 local pending = false
 
@@ -19,6 +20,7 @@ local pending = false
 local function close()
     if not isOpen then return end
     isOpen, openLoc = false, nil
+    session = session + 1
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'pop_interim:close' })
 end
@@ -27,10 +29,10 @@ local function fail(reason, arg)
     Bridge.Notify(L(reason or 'error', arg), 'error')
 end
 
-local function watch(loc)
+local function watch(loc, activeSession)
     CreateThread(function()
         local coords = Config.Locations[loc].coords.xyz
-        while isOpen and openLoc == loc do
+        while isOpen and session == activeSession do
             local ped = PlayerPedId()
             if #(GetEntityCoords(ped) - coords) > CLOSE_DISTANCE or IsEntityDead(ped) then
                 close()
@@ -50,6 +52,7 @@ local function open(loc)
     if isOpen then return end
 
     isOpen, openLoc = true, loc
+    session = session + 1
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'pop_interim:open',
@@ -57,21 +60,18 @@ local function open(loc)
         current = current or { label = '', unemployed = true },
         cooldown = cooldown or 0,
     })
-    watch(loc)
+    watch(loc, session)
 end
 
 -- Échap ou bouton Fermer : le bridge a déjà rendu le focus.
-Bridge.OnUiClose(function()
-    if not isOpen then return end
-    isOpen, openLoc = false, nil
-    SendNUIMessage({ action = 'pop_interim:close' })
-end)
+Bridge.OnUiClose(close)
 
 -- Appelle le serveur ; succès : fermeture, échec : notification et panneau laissé ouvert.
 local function request(name, ...)
     if not isOpen then return false end
-    local loc = openLoc
-    local ok, reason, arg = Callback.Await(name, loc, ...)
+    local activeSession = session
+    local ok, reason, arg = Callback.Await(name, openLoc, ...)
+    if session ~= activeSession then return false end
     if ok then
         close()
         return true
@@ -113,7 +113,10 @@ local function spawnPed(i, loc)
     RequestModel(hash)
     local timeout = GetGameTimer() + 3000
     while not HasModelLoaded(hash) do
-        if GetGameTimer() > timeout then return end
+        if GetGameTimer() > timeout then
+            SetModelAsNoLongerNeeded(hash)
+            return
+        end
         Wait(50)
     end
     local c = loc.coords

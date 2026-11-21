@@ -9,6 +9,7 @@ local WATCH_DELAY     = 500  -- ms
 
 local isOpen = false
 local opening = false
+local session = 0
 local place = nil       -- Place courante (jamais fournie par la NUI)
 local placeCoords = nil -- vector3 du lieu, pour la surveillance de distance
 local blips = {}
@@ -29,15 +30,16 @@ end
 local function close()
     if not isOpen then return end
     isOpen = false
+    session = session + 1
     place, placeCoords = nil, nil
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'pop_bank:close' })
 end
 
 --- Surveille la distance et la mort tant que le panneau est ouvert.
-local function watch()
+local function watch(activeSession)
     CreateThread(function()
-        while isOpen do
+        while isOpen and session == activeSession do
             local ped = PlayerPedId()
             if not placeCoords or IsEntityDead(ped) or #(GetEntityCoords(ped) - placeCoords) > CLOSE_DISTANCE then
                 close()
@@ -49,8 +51,6 @@ local function watch()
 end
 
 local function open(newPlace, coords)
-    if isOpen or opening or Bridge.IsBusy() then return end
-    opening = true
     local ok, reason, arg, data = Callback.Await('pop_bank:getData', newPlace)
     opening = false
     if not ok or type(data) ~= 'table' then
@@ -59,19 +59,35 @@ local function open(newPlace, coords)
     end
     place, placeCoords = newPlace, coords
     isOpen = true
+    session = session + 1
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'pop_bank:open', data = data })
-    watch()
+    watch(session)
 end
 
 local function openBank(index)
     local coords = Config.Banks[index]
-    if not coords then return end
+    if not coords or isOpen or opening or Bridge.IsBusy() then return end
+    opening = true
     open({ type = 'bank', index = index }, vector3(coords.x, coords.y, coords.z))
+end
+
+local function atmIndex(entity)
+    if not entity or not DoesEntityExist(entity) then return end
+    local coords = GetEntityCoords(entity)
+    local nearest, index = 1.0, nil
+    for i, candidate in ipairs(Config.Atms) do
+        local distance = #(coords - candidate)
+        if distance < nearest then nearest, index = distance, i end
+    end
+    return index
 end
 
 local function openAtm(entity)
     if isOpen or opening or Bridge.IsBusy() or not entity or not DoesEntityExist(entity) then return end
+    local index = atmIndex(entity)
+    if not index then return end
+    opening = true
     local ped = PlayerPedId()
     TaskTurnPedToFaceEntity(ped, entity, 500)
     Wait(500)
@@ -80,11 +96,11 @@ local function openAtm(entity)
     })
     ClearPedTasks(ped)
     if not done then
+        opening = false
         Bridge.Notify(L('progress_cancelled'), 'error')
         return
     end
-    local c = GetEntityCoords(entity)
-    open({ type = 'atm', x = c.x, y = c.y, z = c.z }, c)
+    open({ type = 'atm', index = index }, Config.Atms[index])
 end
 
 ------------------------------------------------------------------------
@@ -99,22 +115,22 @@ local function action(name, ...)
     return { ok = ok == true, message = translate(reason, arg), data = data }
 end
 
-local function readAmount(body)
-    return math.floor(tonumber(type(body) == 'table' and body.amount) or 0)
+local function readPreset(body)
+    return type(body) == 'table' and type(body.preset) == 'string' and body.preset or ''
 end
 
 RegisterNUICallback('pop_bank:deposit', function(body, cb)
-    cb(action('deposit', readAmount(body)))
+    cb(action('deposit', readPreset(body)))
 end)
 
 RegisterNUICallback('pop_bank:withdraw', function(body, cb)
-    cb(action('withdraw', readAmount(body)))
+    cb(action('withdraw', readPreset(body)))
 end)
 
 RegisterNUICallback('pop_bank:transfer', function(body, cb)
     local target = type(body) == 'table' and body.target
     target = type(target) == 'string' and target:sub(1, 64) or ''
-    cb(action('transfer', target, readAmount(body)))
+    cb(action('transfer', target, readPreset(body)))
 end)
 
 -- Échap ou bouton Fermer : le bridge a déjà rendu le focus.
@@ -159,6 +175,7 @@ local function setup()
             label = L('target_atm'),
             icon = 'fa-solid fa-money-bill',
             distance = TARGET_DISTANCE,
+            canInteract = function(entity) return not opening and not isOpen and atmIndex(entity) ~= nil end,
             onSelect = function(entity) CreateThread(function() openAtm(entity) end) end,
         },
     })

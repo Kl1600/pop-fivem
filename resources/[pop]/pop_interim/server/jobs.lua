@@ -52,23 +52,23 @@ end
 --- Attribue le job au joueur. Renvoie true si le framework l'a accepté.
 function InterimJobs.Set(src, job, grade)
     local fw = Bridge.Framework
+    local ok, result
     if fw == 'esx' then
-        local ok = pcall(function()
-            local p = Bridge.GetPlayer(src)
-            p.setJob(job, grade)
+        ok, result = pcall(function()
+            return Bridge.GetPlayer(src).setJob(job, grade)
         end)
-        return ok
     elseif fw == 'qbcore' then
-        local ok, res = pcall(function()
+        ok, result = pcall(function()
             return Bridge.GetPlayer(src).Functions.SetJob(job, grade)
         end)
-        return ok and res ~= false
     elseif fw == 'qbox' then
-        -- NOTE: qbx_core SetJob(identifier, jobName, grade) -> success, err ; identifier accepte la source.
-        local ok, res = pcall(function()
+        ok, result = pcall(function()
             return exports.qbx_core:SetJob(src, job, grade)
         end)
-        return ok and res ~= false
     end
-    return false
+    if not ok or result == false then return false end
+
+    -- Older ESX may return nil even after rejecting an unknown job or grade.
+    local current = Bridge.GetJob(src)
+    return current ~= nil and current.name == job and current.grade == grade
 end

@@ -37,6 +37,9 @@ Config.Offers = {
     launder   = { from = { money = 'black' }, to = { money = 'cash' }, rate = 0.7,   limit = 20000,  alert = 0.15 },
 }
 
+-- Quantités par défaut. Une offre peut définir son propre tableau amounts.
+Config.Amounts = { 1, 10, 25, 100, 500, 1000, 5000, 10000 }
+
 -- Bureaux. offers = ids proposés ici. ped = modèle du PNJ (false : zone). blip = afficher sur la carte.
 Config.Locations = {
     { coords = vector4(-639.07, -180.47, 37.68, 33.0), ped = 's_m_m_cntrybar_01', blip = true,

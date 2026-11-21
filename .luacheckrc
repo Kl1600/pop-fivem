@@ -8,7 +8,7 @@ max_line_length = false
 allow_defined_top = true
 
 globals = {
-    'Config', 'Locales', 'L', 'GetLocaleTable', 'Bridge', 'Callback',
+    'Config', 'Locales', 'L', 'GetLocaleTable', 'Bridge', 'Callback', 'GlobalState',
 }
 
 read_globals = {
@@ -19,7 +19,7 @@ read_globals = {
     'TriggerEvent', 'TriggerServerEvent', 'TriggerClientEvent', 'TriggerLatentClientEvent',
     'RegisterCommand', 'RegisterKeyMapping', 'RegisterNUICallback', 'SendNUIMessage', 'SetNuiFocus',
     'GetCurrentResourceName', 'GetResourceState', 'GetResourceMetadata', 'IsDuplicityVersion',
-    'LocalPlayer', 'Player', 'Entity', 'GlobalState',
+    'LocalPlayer', 'Player', 'Entity',
     -- Bibliothèques optionnelles
     'lib', 'MySQL', 'cache',
     -- Ajouts de manifest

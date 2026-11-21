@@ -24,11 +24,12 @@ Idle cost: no `Wait(0)`, one local NPC loop (1000 / 2500 ms), no server loop.
 ## How it works
 1. Talk to the money changer (`[E] Talk to the money changer`).
 2. A small panel on the right lists the offers of this desk, your balance, the amount still available this hour and
-   a live "You receive" preview. `Max` fills in the largest possible amount.
+   a live "You receive" preview. Choose a configured amount or select `Max` to exchange the largest amount the
+   server currently allows.
 3. Confirm (button or Enter): the server checks everything and exchanges. The result shows in the panel.
 
 Rules:
-- Amounts are whole numbers; the received amount is rounded down (an exchange giving less than 1 is refused).
+- The server resolves each preset before exchanging. Amounts are whole numbers and the received amount is rounded down (an exchange giving less than 1 is refused).
 - **Hourly limit** per player and per offer (sliding 60-minute window, counted in the currency given). Limits are
   kept in memory by character identifier: they survive a reconnect, not a resource restart.
 - `alert` offers may warn on-duty police (`Config.Police.jobs`) with a notification and a temporary map blip.
@@ -51,6 +52,7 @@ Config.Offers = {
     -- from / to: { money = 'cash' | 'bank' | 'black' } or { item = 'item_name' }
     -- rate:  amount received for 1 given (rounded down)
     -- limit: max amount given per hour and per player (integer)
+    -- amounts (optional): per-offer amounts, overrides Config.Amounts
     -- alert: chance (0.0 - 1.0) to alert the police on each exchange
     gold_cash = { from = { item = 'goldbar' }, to = { money = 'cash' }, rate = 500.0, limit = 50, alert = 0.0 },
 }

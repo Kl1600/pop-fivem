@@ -24,22 +24,23 @@
   function money(n) { return Pop.t('money', numberFormat.format(Number(n) || 0)); }
   function isRtl() { return document.documentElement.dir === 'rtl'; }
 
-  // Montant entier strictement positif, sinon null (le serveur revalide tout).
-  function readAmount(input) {
-    var raw = String(input.value || '').trim();
-    var n = /^\d+$/.test(raw) ? parseInt(raw, 10) : NaN;
-    if (isNaN(n) || n <= 0) {
-      input.classList.add('is-invalid');
-      input.focus();
-      return null;
-    }
-    input.classList.remove('is-invalid');
-    return n;
+  function fillPresets(select, presets, previous) {
+    clear(select);
+    var placeholder = el('option', '', select, Pop.t('amount'));
+    placeholder.value = '';
+    placeholder.disabled = true;
+    list(presets).forEach(function (preset) {
+      var option = el('option', '', select, money(preset.amount));
+      option.value = preset.id;
+    });
+    select.value = previous || '';
+    if (select.selectedIndex < 0) select.value = '';
   }
 
-  document.addEventListener('input', function (e) {
-    if (e.target && e.target.classList) e.target.classList.remove('is-invalid');
-  });
+  function selectedPreset(select) {
+    if (!select.value) select.focus();
+    return select.value;
+  }
 
   /* ---------------- Attente de réponse ---------------- */
 
@@ -129,7 +130,7 @@
     return grades.some(function (g) { return g.grade < grade; });
   }
 
-  function employeeRow(e, grades, myGrade, maxAmount) {
+  function employeeRow(e, grades, myGrade, presets) {
     var li = el('li');
     var head = el('div', 'mgmt-emp', li);
     el('span', 'mgmt-dot' + (e.online ? ' is-online' : ''), head);
@@ -153,26 +154,21 @@
     }
 
     var payRow = null;
-    if (e.online) {
+    if (e.online && list(presets).length) {
       button(actions, 'pay', function () {
         var open = payRow.classList.toggle('pop-hidden') === false;
         if (open) payInput.focus();
       });
       payRow = el('div', 'mgmt-inline pop-hidden', li);
-      var payInput = el('input', 'mgmt-input', payRow);
-      payInput.type = 'number';
-      payInput.min = '1';
-      payInput.step = '1';
-      if (maxAmount) payInput.max = String(maxAmount);
-      payInput.placeholder = Pop.t('amount');
-      payInput.setAttribute('inputmode', 'numeric');
+      var payInput = el('select', 'mgmt-input', payRow);
+      fillPresets(payInput, presets);
+      payInput.setAttribute('aria-label', Pop.t('amount'));
       payInput.setAttribute('data-lock', '');
       payInput.disabled = pending;
       var submitPay = function () {
-        var amount = readAmount(payInput);
-        if (amount !== null) act({ action: 'pay', employeeId: e.id, amount: amount });
+        var preset = selectedPreset(payInput);
+        if (preset) act({ action: 'pay', employeeId: e.id, preset: preset });
       };
-      payInput.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') submitPay(); });
       button(payRow, 'confirm', submitPay);
     }
 
@@ -191,7 +187,7 @@
     var ul = $('mgmt-employees');
     clear(ul);
     employees.forEach(function (e) {
-      ul.appendChild(employeeRow(e, grades, myGrade, data.maxAmount));
+      ul.appendChild(employeeRow(e, grades, myGrade, (data.presets || {}).bonus));
     });
   }
 
@@ -235,7 +231,7 @@
     $('mgmt-grade').textContent = (data.me && data.me.gradeLabel) || '';
     $('mgmt-balance').textContent = money(data.balance);
     var amount = $('mgmt-amount');
-    if (data.maxAmount) amount.max = String(data.maxAmount); else amount.removeAttribute('max');
+    fillPresets(amount, (data.presets || {}).transfer, amount.value);
     renderEmployees();
     renderHistory();
   }
@@ -243,7 +239,6 @@
   function resetPanel() {
     setTab('employees');
     $('mgmt-amount').value = '';
-    $('mgmt-amount').classList.remove('is-invalid');
     disarm($('mgmt-withdraw'));
     setPending(false);
   }
@@ -299,17 +294,19 @@
   // Compte : dépôt / retrait.
   function moveMoney(action) {
     var input = $('mgmt-amount');
-    var amount = readAmount(input);
-    if (amount === null) return;
-    act({ action: action, amount: amount }).then(function (ok) { if (ok) input.value = ''; });
+    var preset = selectedPreset(input);
+    if (!preset) return;
+    act({ action: action, preset: preset }).then(function (ok) { if (ok) input.value = ''; });
   }
 
   $('mgmt-deposit').addEventListener('click', function () { moveMoney('deposit'); });
   $('mgmt-withdraw').addEventListener('click', function () {
     var btn = $('mgmt-withdraw');
-    if (!btn._armTimer && readAmount($('mgmt-amount')) === null) return;
+    if (!selectedPreset($('mgmt-amount'))) return;
     arm(btn, function () { moveMoney('withdraw'); });
   });
+
+  $('mgmt-amount').addEventListener('change', function () { disarm($('mgmt-withdraw')); });
 
   /* ---------------- Facture ---------------- */
 
@@ -333,9 +330,7 @@
 
     $('inv-society').textContent = msg.society || '';
     var amount = $('inv-amount');
-    amount.value = '';
-    amount.classList.remove('is-invalid');
-    if (msg.max) amount.max = String(msg.max); else amount.removeAttribute('max');
+    fillPresets(amount, msg.presets);
     $('inv-note').value = '';
 
     setPending(false);
@@ -347,9 +342,9 @@
     if (pending || !invoiceHasPlayers) return;
     var targetId = parseInt($('inv-target').value, 10);
     if (isNaN(targetId)) return;
-    var amount = readAmount($('inv-amount'));
-    if (amount === null) return;
-    var payload = { targetId: targetId, amount: amount };
+    var preset = selectedPreset($('inv-amount'));
+    if (!preset) return;
+    var payload = { targetId: targetId, preset: preset };
     var note = $('inv-note').value.trim();
     if (note) payload.note = note.slice(0, 50);
     send('pop_management:sendInvoice', payload);
@@ -357,9 +352,7 @@
 
   $('inv-send').addEventListener('click', sendInvoice);
   $('inv-cancel').addEventListener('click', function () { Pop.post('close'); });
-  ['inv-amount', 'inv-note'].forEach(function (id) {
-    $(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') sendInvoice(); });
-  });
+  $('inv-note').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendInvoice(); });
 
   /* ---------------- Offre [E] / [X] ---------------- */
 

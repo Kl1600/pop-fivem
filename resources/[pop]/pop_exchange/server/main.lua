@@ -5,7 +5,9 @@ local ACTION_DISTANCE = 3.0
 local HOUR = 3600
 local MAX_AMOUNT = 10000000
 
-local busy = {}    -- [src] = true pendant un échange
+local busy = {}    -- [identifier] = true pendant un échange
+local lastExchange = {} -- [identifier] = time of the last operation
+local validOffers = {}
 local history = {} -- [identifier][offerId] = { { t = os.time(), n = quantité donnée }, ... }
 
 local function debug(...)
@@ -58,7 +60,7 @@ local function used(identifier, id)
             kept[#kept + 1] = e
         end
     end
-    history[identifier][id] = kept
+    history[identifier][id] = #kept > 0 and kept or nil
     return total
 end
 
@@ -66,30 +68,65 @@ local function remainingLimit(identifier, id, offer)
     return math.max(0, math.floor(offer.limit) - used(identifier, id))
 end
 
+local function expireHistory(identifier)
+    local last = lastExchange[identifier]
+    if not last then return end
+    local left = last + HOUR - os.time()
+    if left > 0 then
+        SetTimeout(left * 1000, function() expireHistory(identifier) end)
+        return
+    end
+    history[identifier] = nil
+    lastExchange[identifier] = nil
+end
+
 local function record(identifier, id, n)
+    local now = os.time()
+    local first = lastExchange[identifier] == nil
+    lastExchange[identifier] = now
     history[identifier] = history[identifier] or {}
     local list = history[identifier][id] or {}
-    list[#list + 1] = { t = os.time(), n = n }
+    list[#list + 1] = { t = now, n = n }
     history[identifier][id] = list
+    if first then SetTimeout(HOUR * 1000, function() expireHistory(identifier) end) end
 end
 
 ------------------------------------------------------------------------
 -- Vues envoyées au client (jamais le champ alert)
 ------------------------------------------------------------------------
 
+local function presetAmount(preset, offer, max)
+    if preset == 'max' then return max end
+    local index = type(preset) == 'string' and preset:match('^preset_([1-9]%d*)$')
+    return index and (offer.amounts or Config.Amounts)[tonumber(index)] or nil
+end
+
+local function presetsFor(offer, max)
+    local result = {}
+    for i, amount in ipairs(offer.amounts or Config.Amounts) do
+        if type(amount) == 'number' and math.tointeger(amount) and amount > 0
+            and amount <= max and amount * offer.rate >= 1 then
+            result[#result + 1] = { id = 'preset_' .. i, amount = amount }
+        end
+    end
+    return result
+end
+
 local function buildOffers(src, identifier, loc)
     local views = {}
     for _, id in ipairs(loc.offers or {}) do
-        local offer = Config.Offers[id]
+        local offer = validOffers[id]
         if offer then
-            local bal = balance(src, offer.from)
+            local bal = math.max(0, balance(src, offer.from))
+            local max = math.min(remainingLimit(identifier, id, offer), bal, MAX_AMOUNT)
             views[#views + 1] = {
                 id = id,
                 from = name(offer.from),
                 to = name(offer.to),
                 rate = offer.rate + 0.0,
                 balance = bal,
-                remaining = math.min(remainingLimit(identifier, id, offer), bal),
+                remaining = max,
+                presets = presetsFor(offer, max),
             }
         end
     end
@@ -97,13 +134,12 @@ local function buildOffers(src, identifier, loc)
 end
 
 local function getLocation(loc)
-    loc = tonumber(loc)
-    if not loc or loc ~= math.floor(loc) then return nil end
+    if math.type(loc) ~= 'integer' then return nil end
     return Config.Locations[loc]
 end
 
 local function offeredHere(loc, id)
-    if type(id) ~= 'string' or not Config.Offers[id] then return false end
+    if type(id) ~= 'string' or not validOffers[id] then return false end
     for _, o in ipairs(loc.offers or {}) do
         if o == id then return true end
     end
@@ -134,37 +170,38 @@ Callback.Register('pop_exchange:getOffers', function(src, locIndex)
     local loc = getLocation(locIndex)
     if not loc then return false, 'error' end
     if not Bridge.IsNear(src, loc.coords, ACTION_DISTANCE) then return false, 'too_far' end
+    if Bridge.IsDead(src) then return false, 'error' end
     local identifier = Bridge.GetIdentifier(src)
     if not identifier then return false, 'error' end
     return true, nil, nil, buildOffers(src, identifier, loc)
 end)
 
 -- Toutes les vérifications ; renvoie ok, reason, arg. Le verrou est géré par l'appelant.
-local function doExchange(src, identifier, loc, id, amount)
-    if Bridge.IsDead(src) then return false, 'error' end
-    if not Bridge.IsNear(src, loc.coords, ACTION_DISTANCE) then return false, 'too_far' end
+local function doExchange(src, identifier, loc, id, preset)
     if not offeredHere(loc, id) then return false, 'offer_unknown' end
-    local offer = Config.Offers[id]
+    local offer = validOffers[id]
 
-    local n = tonumber(amount)
-    if not n or n ~= n or n == math.huge or n == -math.huge or n ~= math.floor(n) or n < 1 or n > MAX_AMOUNT then
+    local available = balance(src, offer.from)
+    local remaining = remainingLimit(identifier, id, offer)
+    local max = math.min(remaining, available, MAX_AMOUNT)
+    local amount = presetAmount(preset, offer, max)
+    local n = math.tointeger(type(amount) == 'number' and amount or 0)
+    if not n or n < 1 or n > MAX_AMOUNT then
         return false, 'invalid_amount'
     end
-    n = math.floor(n)
 
-    local received = math.floor(n * offer.rate)
+    local received = math.floor(n * (offer.rate + 0.0))
     if received < 1 then return false, 'amount_too_low' end
 
-    local remaining = remainingLimit(identifier, id, offer)
     if n > remaining then return false, 'hourly_limit', remaining end
 
-    if balance(src, offer.from) < n then return false, 'not_enough' end
+    if available < n then return false, 'not_enough' end
     if not canReceive(src, offer.to, received) then return false, 'inventory_full' end
 
     if not take(src, offer.from, n) then return false, 'not_enough' end
-    if not give(src, offer.to, received) then
+    if Bridge.GetIdentifier(src) ~= identifier or not give(src, offer.to, received) then
         -- Échange atomique : on rend ce qui a été pris.
-        if not give(src, offer.from, n) then
+        if Bridge.GetIdentifier(src) ~= identifier or not give(src, offer.from, n) then
             print(('[pop_exchange] refund failed for %s: %d %s (offer %s)'):format(identifier, n, name(offer.from), id))
         end
         return false, 'error'
@@ -182,43 +219,43 @@ local function doExchange(src, identifier, loc, id, amount)
     return true, 'exchanged', { label(n, offer.from), label(received, offer.to) }
 end
 
-Callback.Register('pop_exchange:exchange', function(src, locIndex, id, amount)
+Callback.Register('pop_exchange:exchange', function(src, locIndex, id, preset)
     local loc = getLocation(locIndex)
     if not loc then return false, 'error' end
     local identifier = Bridge.GetIdentifier(src)
     if not identifier then return false, 'error' end
-    if busy[src] then return false, 'busy' end
+    if busy[identifier] then return false, 'busy' end
+    if not Bridge.IsNear(src, loc.coords, ACTION_DISTANCE) then return false, 'too_far' end
+    if Bridge.IsDead(src) then return false, 'error' end
 
-    busy[src] = true
-    local success, ok, reason, arg = pcall(doExchange, src, identifier, loc, id, amount)
-    busy[src] = nil -- libéré dans tous les cas, même sur erreur Lua
+    busy[identifier] = true
+    local success, ok, reason, arg = pcall(doExchange, src, identifier, loc, id, preset)
+    busy[identifier] = nil -- libéré dans tous les cas, même sur erreur Lua
 
     if not success then
         print(('[pop_exchange] exchange error: %s'):format(ok))
         ok, reason, arg = false, 'error', nil
     end
-    return ok == true, reason or 'error', arg, buildOffers(src, identifier, loc)
+    local offers
+    if Bridge.GetIdentifier(src) == identifier and Bridge.IsNear(src, loc.coords, ACTION_DISTANCE) then
+        offers = buildOffers(src, identifier, loc)
+    end
+    return ok == true, reason or 'error', arg, offers
 end)
-
-------------------------------------------------------------------------
--- Nettoyage
-------------------------------------------------------------------------
-
-Bridge.OnPlayerDropped(function(src) busy[src] = nil end)
-Bridge.OnPlayerUnloaded(function(src) busy[src] = nil end)
 
 ------------------------------------------------------------------------
 -- Exports
 ------------------------------------------------------------------------
 
 exports('GetRate', function(id)
-    local offer = Config.Offers[id]
+    local offer = validOffers[id]
     return offer and offer.rate or nil
 end)
 
 exports('ResetLimits', function(src)
     local identifier = Bridge.GetIdentifier(tonumber(src))
     if not identifier then return false end
+    if busy[identifier] then return false end
     history[identifier] = nil
     return true
 end)
@@ -227,20 +264,28 @@ end)
 -- Vérification de la config au démarrage
 ------------------------------------------------------------------------
 
-CreateThread(function()
-    for id, offer in pairs(Config.Offers) do
-        if type(offer.rate) ~= 'number' or offer.rate <= 0 then
-            print(('[pop_exchange] offer "%s": rate must be > 0'):format(id))
-        end
-        if type(offer.limit) ~= 'number' or offer.limit ~= math.floor(offer.limit) then
-            print(('[pop_exchange] offer "%s": limit must be an integer'):format(id))
+local accounts = { cash = true, bank = true, black = true }
+local function validCurrency(cur)
+    if type(cur) ~= 'table' then return false end
+    if cur.money then return cur.item == nil and accounts[cur.money] == true end
+    return type(cur.item) == 'string' and cur.item ~= ''
+end
+
+for id, offer in pairs(Config.Offers) do
+    local limit = math.tointeger(offer.limit)
+    local rate = tonumber(offer.rate)
+    if validCurrency(offer.from) and validCurrency(offer.to)
+        and type(offer.rate) == 'number' and rate > 0 and rate <= MAX_AMOUNT
+        and limit and limit > 0 and MAX_AMOUNT >= math.min(limit, MAX_AMOUNT) * rate then
+        validOffers[id] = offer
+    else
+        print(('[pop_exchange] offer "%s" disabled: invalid currency, rate or limit'):format(id))
+    end
+end
+for i, loc in ipairs(Config.Locations) do
+    for _, id in ipairs(loc.offers or {}) do
+        if not Config.Offers[id] then
+            print(('[pop_exchange] location %d: unknown offer "%s"'):format(i, id))
         end
     end
-    for i, loc in ipairs(Config.Locations) do
-        for _, id in ipairs(loc.offers or {}) do
-            if not Config.Offers[id] then
-                print(('[pop_exchange] location %d: unknown offer "%s"'):format(i, id))
-            end
-        end
-    end
-end)
+end

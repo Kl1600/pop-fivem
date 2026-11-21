@@ -158,7 +158,7 @@ end
 function Account.Add(job, amount, reason)
     local ok, res = pcall(backend.add, job, amount, reason)
     if not ok then debug('add error for %s: %s', job, tostring(res)) end
-    return ok and res ~= false
+    return ok and (res == true or (res == nil and Account.Backend == 'qb-management'))
 end
 
 --- Retire `amount` si le solde suffit (vérifié avant, sauf backend pop : requête atomique).
@@ -169,7 +169,7 @@ function Account.Remove(job, amount, reason)
     end
     local ok, res = pcall(backend.remove, job, amount, reason)
     if not ok then debug('remove error for %s: %s', job, tostring(res)) end
-    return ok and res ~= false
+    return ok and (res == true or (res == nil and Account.Backend == 'qb-management'))
 end
 
 --- Ajoute une ligne d'historique (non bloquant).

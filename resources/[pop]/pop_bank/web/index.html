@@ -31,13 +31,7 @@
 
     <form id="bank-form" class="bank-form" autocomplete="off">
       <input id="bank-target" class="bank-input pop-hidden" type="text" maxlength="64">
-      <input id="bank-amount" class="bank-input" type="number" min="1" step="1">
-      <div class="bank-quick">
-        <button type="button" class="bank-chip pop-small" data-amount="100">100</button>
-        <button type="button" class="bank-chip pop-small" data-amount="500">500</button>
-        <button type="button" class="bank-chip pop-small" data-amount="1000">1000</button>
-        <button type="button" class="bank-chip pop-small" data-amount="5000">5000</button>
-      </div>
+      <select id="bank-amount" class="bank-input"></select>
       <button id="bank-submit" type="submit" class="pop-button" data-locale="confirm"></button>
     </form>
 

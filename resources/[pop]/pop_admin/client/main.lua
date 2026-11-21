@@ -10,6 +10,7 @@ local CLOSE_ON_SUCCESS = { ['goto'] = true, vehicle_spawn = true }
 
 local isOpen = false
 local opening = false
+local revision = 0
 local noclipPending = false
 
 local function started(name)
@@ -27,6 +28,7 @@ end
 local function closePanel()
     if not isOpen then return end
     isOpen = false
+    revision = revision + 1
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'pop_admin:close' })
 end
@@ -66,25 +68,25 @@ RegisterCommand('popadmin_noclip', function()
         if ok ~= true then fail(reason, arg) end
     end)
 end, false)
-RegisterKeyMapping('popadmin_noclip', L('keymap_noclip'), 'keyboard', Config.NoclipKey)
+if Config.NoclipKey ~= '' then
+    RegisterKeyMapping('popadmin_noclip', L('keymap_noclip'), 'keyboard', Config.NoclipKey)
+end
 
 -- Échap (kit) : le focus est déjà rendu par le bridge.
-Bridge.OnUiClose(function()
-    if not isOpen then return end
-    isOpen = false
-    SendNUIMessage({ action = 'pop_admin:close' })
-end)
+Bridge.OnUiClose(closePanel)
 
 ------------------------------------------------------------------------
 -- Callbacks NUI
 ------------------------------------------------------------------------
 
 RegisterNUICallback('players', function(_, cb)
+    if not isOpen then return cb({ players = {} }) end
     local list = Callback.Await('pop_admin:getPlayers')
     cb({ players = type(list) == 'table' and list or {} })
 end)
 
 RegisterNUICallback('bans', function(_, cb)
+    if not isOpen then return cb({ bans = {} }) end
     local list = Callback.Await('pop_admin:getBans')
     cb({ bans = type(list) == 'table' and list or {} })
 end)
@@ -113,7 +115,7 @@ local function findVehicle()
         local best = VEHICLE_SEARCH
         for _, v in ipairs(GetGamePool('CVehicle')) do
             local d = #(pos - GetEntityCoords(v))
-            if d <= best then best, veh = d, v end
+            if d <= best and NetworkGetEntityIsNetworked(v) then best, veh = d, v end
         end
     end
     if veh == 0 or not DoesEntityExist(veh) or not NetworkGetEntityIsNetworked(veh) then return nil end
@@ -121,6 +123,8 @@ local function findVehicle()
 end
 
 RegisterNUICallback('action', function(body, cb)
+    if not isOpen then return cb({ ok = false, reason = 'error' }) end
+    local activeRevision = revision
     body = type(body) == 'table' and body or {}
     local action = body.action
     if type(action) ~= 'string' then
@@ -157,9 +161,9 @@ RegisterNUICallback('action', function(body, cb)
 
     if not ok then
         fail(reason, arg)
-    elseif CLOSE_ON_SUCCESS[action]
+    elseif revision == activeRevision and (CLOSE_ON_SUCCESS[action]
         or (action == 'spectate' and target ~= nil)
-        or (action == 'noclip' and arg == true) then
+        or (action == 'noclip' and arg == true)) then
         closePanel()
     end
 
@@ -171,6 +175,7 @@ end)
 ------------------------------------------------------------------------
 
 RegisterNetEvent('pop_admin:client:teleport', function(coords)
+    if source ~= 65535 then return end
     if type(coords) ~= 'table' and type(coords) ~= 'vector3' then return end
     local x, y, z = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
     if not x or not y or not z then return end
@@ -190,12 +195,17 @@ end)
 
 -- Gel : une boucle à 1000 ms seulement tant que le joueur est gelé (nouveau ped après respawn).
 local frozen = false
-local frozenVeh = 0
+local frozenPed, frozenVeh = 0, 0
+local freezeLoop = false
 
 local function applyFreeze(state)
-    local ped = PlayerPedId()
-    FreezeEntityPosition(ped, state)
-    local veh = state and GetVehiclePedIsIn(ped, false) or 0
+    local ped = state and PlayerPedId() or 0
+    if frozenPed ~= 0 and frozenPed ~= ped and DoesEntityExist(frozenPed) then
+        FreezeEntityPosition(frozenPed, false)
+    end
+    if ped ~= 0 then FreezeEntityPosition(ped, true) end
+    frozenPed = ped
+    local veh = ped ~= 0 and GetVehiclePedIsIn(ped, false) or 0
     if frozenVeh ~= 0 and frozenVeh ~= veh and DoesEntityExist(frozenVeh) then
         FreezeEntityPosition(frozenVeh, false)
     end
@@ -204,20 +214,24 @@ local function applyFreeze(state)
 end
 
 RegisterNetEvent('pop_admin:client:freeze', function(state)
+    if source ~= 65535 then return end
     state = state == true
     if state == frozen then return end
     frozen = state
     applyFreeze(state)
-    if not state then return end
+    if not state or freezeLoop then return end
+    freezeLoop = true
     CreateThread(function()
         while frozen do
             Wait(1000)
             if frozen then applyFreeze(true) end
         end
+        freezeLoop = false
     end)
 end)
 
 RegisterNetEvent('pop_admin:client:heal', function()
+    if source ~= 65535 then return end
     local ped = PlayerPedId()
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
     ClearPedBloodDamage(ped)
@@ -226,13 +240,12 @@ RegisterNetEvent('pop_admin:client:heal', function()
 end)
 
 RegisterNetEvent('pop_admin:client:revive', function()
+    if source ~= 65535 then return end
     if type(Config.ReviveEvent) == 'string' and Config.ReviveEvent ~= '' then
         return TriggerEvent(Config.ReviveEvent)
     end
     if started('esx_ambulancejob') then return TriggerEvent('esx_ambulancejob:revive') end
     if started('qb-ambulancejob') then return TriggerEvent('hospital:client:Revive') end
-    -- NOTE: nom d'event à confirmer selon la version de qbx_medical (voir SPEC).
-    if started('qbx_medical') then return TriggerEvent('qbx_medical:client:playerRevived') end
 
     local ped = PlayerPedId()
     local c = GetEntityCoords(ped)
@@ -244,12 +257,14 @@ RegisterNetEvent('pop_admin:client:revive', function()
 end)
 
 RegisterNetEvent('pop_admin:client:warn', function(reason)
+    if source ~= 65535 then return end
     reason = tostring(reason or '')
     Bridge.Notify(L('you_warned', reason), 'warning')
     SendNUIMessage({ action = 'pop_admin:warn', reason = reason, duration = 10000 })
 end)
 
 RegisterNetEvent('pop_admin:client:announce', function(message)
+    if source ~= 65535 then return end
     SendNUIMessage({
         action = 'pop_admin:announce',
         message = tostring(message or ''),
@@ -258,6 +273,7 @@ RegisterNetEvent('pop_admin:client:announce', function(message)
 end)
 
 RegisterNetEvent('pop_admin:client:fixVehicle', function(netId)
+    if source ~= 65535 then return end
     netId = tonumber(netId)
     if not netId or not NetworkDoesNetworkIdExist(netId) then return end
     local veh = NetToVeh(netId)

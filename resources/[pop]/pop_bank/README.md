@@ -4,10 +4,11 @@ Simple, clean banking for FiveM: **deposit**, **withdraw**, **transfer** and **h
 `bank` account. No parallel accounts, no heavy UI: a small side panel, one accent color, ~0.00 ms at idle.
 
 - **Bank counters** (Fleeca branches + Pacific Standard): deposit, withdraw, transfer, history.
-- **ATMs** (every ATM prop on the map): short "inserting card" step, then deposit, withdraw (capped per
+- **ATMs** (121 base-map ATMs by default): short "inserting card" step, then deposit, withdraw (capped per
   operation) and history. Transfers are counter-only.
 - **Transfers** to an online player by **server ID** or **account number** (QBCore/Qbox citizenid, ESX identifier).
   The recipient gets a notification with the sender's name.
+- **Amounts** are selected from server-configured presets, filtered by operation.
 - **History** of the last operations per character, old rows purged automatically at startup.
 - 10 languages (en, fr, es, de, it, pt, nl, pl, tr, ar with right-to-left layout).
 
@@ -41,13 +42,17 @@ plus:
 | Key | Default | Description |
 |---|---|---|
 | `Config.Banks` | 8 counters | Counter positions (interaction zone centered on the desk) |
-| `Config.AtmModels` | 4 models | ATM props that open the ATM screen |
+| `Config.AtmModels` | 4 models | ATM prop models eligible for interaction |
+| `Config.Atms` | 121 positions | Server-validated prop positions. Add entries for custom map ATMs. |
 | `Config.Blip` | `{ sprite = 108, color = 2, scale = 0.7 }` | Counter blips (`false` = none) |
 | `Config.MaxAmount` | `1000000` | Max per deposit / counter withdrawal |
 | `Config.AtmWithdraw` | `5000` | Max per ATM withdrawal |
 | `Config.MaxTransfer` | `100000` | Max per transfer |
+| `Config.Amounts` | `100, 500, 1000, 5000, 10000, 100000, 1000000` | Selectable whole-number amounts |
 | `Config.HistorySize` | `20` | Operations shown in the panel |
 | `Config.HistoryDays` | `30` | Older rows are deleted at startup |
+
+Base-map coordinates are from the [DurtyFree GTA V data dump](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/objectslocations/worldAtms.json).
 
 ## Exports
 
@@ -72,10 +77,9 @@ exports.pop_bank:IsOpen() --> bool, true while the bank panel is open
 
 ## Security
 
-Everything is checked server-side: integer amounts only (negative, decimal, NaN, infinite values and strings are
-rejected), per-operation caps, player distance to the counter / ATM, one operation at a time per player with a
-1-second delay, dead players blocked, and refunds if a money movement fails halfway. Amounts and identifiers are
-never trusted from the client, and a player can only read their own history.
+The server resolves amount presets, enforces operation caps and checks the player's distance from the counter or
+ATM. The same character can submit one operation at a time with a one-second delay. Dead players are blocked.
+Failed credits trigger a refund attempt. Each player can read their own history.
 
 ## Languages
 

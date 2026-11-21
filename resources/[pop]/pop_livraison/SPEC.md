@@ -351,10 +351,11 @@ Aucun.
 Le client n'envoie que `withVehicle`. Adresses, paie, temps, caution : serveur uniquement.
 
 **Commun** : verrou `busy[src]` → `busy` (libéré dans tous les cas) ; `Bridge.GetIdentifier` non nil ; joueur mort →
-`error` ; anti-spam du template actif.
+`error` ; anti-spam du template actif. Une tournée est liée au personnage, à son instance et à sa date d'expiration.
+Quand un métier est configuré, le métier et le service sont revérifiés à chaque action.
 
 **`start`**
-1. Pas de tournée en cours → sinon `already_on_run`. 2. `Config.Job` faux ou `Bridge.HasJob(src, Config.Job)`, sinon
+1. Pas de tournée en cours → sinon `already_on_run`. 2. `Config.Job` faux ou `Bridge.HasJob(src, Config.Job)` avec le service actif, sinon
 `wrong_job`. 3. Délai par identifiant → `cooldown`. 4. `Bridge.IsNear(src, Config.Depot.coords, ACTION_DISTANCE)`,
 sinon `too_far`. 5. `withVehicle == true` seulement si `Config.Vehicle` ; caution retirée avant toute création ;
 toute erreur après retrait → caution rendue.
@@ -366,10 +367,11 @@ toute erreur après retrait → caution rendue.
    livrer).
 4. Mode camionnette : véhicule existant (sinon `vehicle_missing`) et à ≤ `VEHICLE_DISTANCE` de l'adresse
    (`GetEntityCoords(veh)` serveur), sinon `vehicle_too_far`.
-5. `index` incrémenté **avant** `Bridge.AddMoney` (pas de double paie).
+5. `index` incrémenté **avant** `Bridge.AddMoney` (pas de double paie) puis restauré si le versement échoue.
 
 **`finish`** : tournée camionnette en cours, sinon `no_run` ; `index > total`, sinon `run_not_done` ; caution rendue
-seulement si le véhicule existe à ≤ `RETURN_DISTANCE` du spawn (sinon tournée close sans caution) ; joueur à
+si le véhicule est intact à ≤ `RETURN_DISTANCE` du spawn. Véhicule intact mais trop éloigné → `vehicle_too_far` ;
+camionnette détruite ou absente → pas de caution ; joueur à
 ≤ `ACTION_DISTANCE` du PNJ, sinon `too_far`.
 
 **`cancel`** : tournée en cours, sinon `no_run` ; joueur près du dépôt, sinon `too_far`.

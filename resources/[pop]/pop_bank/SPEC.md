@@ -13,7 +13,7 @@ Aucun compte parallèle : le solde est celui du framework (`Bridge.GetMoney/AddM
 
 **Où**
 - **Guichets** (`Config.Banks`, agences Fleeca + Pacific Standard) : dépôt, retrait, virement, historique.
-- **ATM** (`Config.AtmModels`, tous les distributeurs de la carte) : retrait (plafonné par opération), dépôt,
+- **ATM** (`Config.AtmModels`, coordonnées autorisées dans `Config.Atms`) : retrait (plafonné par opération), dépôt,
   historique. **Pas de virement** à l'ATM.
 
 **Gestes (esprit GTA 6)** : à l'ATM, courte étape « Insertion de la carte » (barre + animation) avant l'écran ;
@@ -26,7 +26,7 @@ QBCore/Qbox, identifier ESX). Le destinataire est notifié avec le nom de l'éme
 `Config.HistoryDays` jours au démarrage.
 
 **UI** : panneau sobre à droite (≈ 320 px), focus NUI pendant l'ouverture. Soldes, 3 onglets (Dépôt / Retrait /
-Virement), champ montant entier, liste d'historique compacte, ligne d'état (message traduit).
+Virement), sélecteur de montants prédéfinis, liste d'historique compacte, ligne d'état (message traduit).
 
 **Performance** : aucune boucle permanente côté client (targets du bridge ; surveillance de distance à 500 ms
 seulement pendant l'ouverture). Serveur : aucune boucle ; une requête SQL par opération.
@@ -104,7 +104,7 @@ escrow_ignore {
 ### `Place` (client → serveur, désigne le lieu de l'opération)
 ```lua
 { type = 'bank', index = 3 }                    -- guichet : index de Config.Banks
-{ type = 'atm', x = 147.4, y = -1035.8, z = 29.3 } -- ATM : position du prop visé
+{ type = 'atm', index = 1 } -- index dans Config.Atms
 ```
 
 ### `BankData` (serveur → client → NUI)
@@ -114,6 +114,7 @@ escrow_ignore {
     bank    = 48200,           -- int, Bridge.GetMoney(src, 'bank')
     atm     = false,           -- bool, place.type == 'atm'
     account = 'ABC12345' | nil,-- identifiant affichable : citizenid en QBCore/Qbox, nil en ESX et standalone
+    presets = { deposit = { { id = 'preset_2', amount = 500 } }, withdraw = {}, transfer = {} },
     history = {                -- du plus récent au plus ancien, Config.HistorySize max
         { type = 'deposit', amount = 500, other = nil, time = 1773695584 },
         { type = 'transfer_in', amount = 2000, other = 'Jane Smith', time = 1773690000 },
@@ -129,7 +130,7 @@ escrow_ignore {
 ## 4. Events
 
 Aucun event réseau propre au script : callbacks (section 5) et `Bridge.Notify` (destinataire d'un virement).
-Bridge : `Bridge.OnPlayerDropped` / `Bridge.OnPlayerUnloaded` → libère `busy[src]` et `lastAction[src]`.
+Bridge : `Bridge.OnPlayerDropped` / `Bridge.OnPlayerUnloaded` → libère `lastAction[src]`. Le verrou par identifiant reste actif jusqu’à la fin de l’opération.
 
 ---
 
@@ -141,9 +142,9 @@ valide (sinon nil). `nil` (timeout, anti-spam) = `error`.
 | Nom | Paramètres (client → serveur) | Retour |
 |---|---|---|
 | `pop_bank:getData` | `place` (Place) | `ok, reason, arg, data` |
-| `pop_bank:deposit` | `place`, `amount` (int) | `ok, reason, arg, data` |
-| `pop_bank:withdraw` | `place`, `amount` (int) | `ok, reason, arg, data` |
-| `pop_bank:transfer` | `place`, `target` (string), `amount` (int) | `ok, reason, arg, data` |
+| `pop_bank:deposit` | `place`, `preset` (string) | `ok, reason, arg, data` |
+| `pop_bank:withdraw` | `place`, `preset` (string) | `ok, reason, arg, data` |
+| `pop_bank:transfer` | `place`, `target` (string), `preset` (string) | `ok, reason, arg, data` |
 
 Raisons : `error`, `busy`, `too_far`, `invalid_amount`, `not_enough_money`, `atm_limit` (arg = plafond),
 `transfer_limit` (arg = plafond), `transfer_atm`, `target_not_found`, `target_self`, `not_available`.
@@ -173,12 +174,12 @@ Focus `SetNuiFocus(true, true)` à l'ouverture ; Échap → kit `close` → `Bri
 ### JS → Lua (`RegisterNUICallback`)
 | Nom | Données | Réponse |
 |---|---|---|
-| `pop_bank:deposit` | `{ "amount": 500 }` | `{ "ok": true, "message": "Deposited $500", "data": BankData }` |
-| `pop_bank:withdraw` | `{ "amount": 500 }` | idem |
-| `pop_bank:transfer` | `{ "target": "12", "amount": 500 }` | idem |
+| `pop_bank:deposit` | `{ "preset": "preset_2" }` | `{ "ok": true, "message": "Deposited $500", "data": BankData }` |
+| `pop_bank:withdraw` | `{ "preset": "preset_2" }` | idem |
+| `pop_bank:transfer` | `{ "target": "12", "preset": "preset_2" }` | idem |
 | `close` | (kit) | bridge |
 
-Le client garde la `Place` courante (jamais envoyée par la NUI), arrondit `amount` (`math.floor(tonumber(x) or 0)`),
+Le client garde la `Place` courante (jamais envoyée par la NUI), transmet l'identifiant `preset`,
 limite `target` à 64 caractères, appelle le callback serveur et répond : `ok`, `message = L(reason, ...)` déjà
 traduit, `data` (peut être nil). Le JS désactive le bouton pendant l'attente.
 
@@ -190,8 +191,7 @@ traduit, `data` (peut être nil). Le JS désactive le bouton pendant l'attente.
   - onglets `#tab-deposit` (`ui_deposit`), `#tab-withdraw` (`ui_withdraw`), `#tab-transfer` (`ui_transfer`,
     **masqué si `atm`**) ;
   - formulaire : champ `#bank-target` (onglet virement seulement, placeholder `Pop.t('ui_target_hint')`) ; champ
-    `#bank-amount` (`type="number" min="1" step="1"`, placeholder `Pop.t('ui_amount')`) ; raccourcis montants
-    `100`, `500`, `1000`, `5000` (`pop-small`) ; bouton `#bank-submit` (`confirm`) ;
+    `#bank-amount` (liste des choix de `BankData.presets` pour l’action courante) ; bouton `#bank-submit` (`confirm`) ;
   - ligne `#bank-status` (message ; `--pop-danger` si `ok = false`) ;
   - historique `#bank-history` (`ui_history`) : une ligne par opération : `Pop.t('history_' + type)`, `other` si
     présent, montant signé (`+` pour `deposit`/`transfer_in`, `−` sinon ; `deposit` et `withdraw` concernent le
@@ -238,6 +238,10 @@ Config.Banks = {
 }
 
 Config.AtmModels = { 'prop_atm_01', 'prop_atm_02', 'prop_atm_03', 'prop_fleeca_atm' }
+Config.Atms = { -- positions de 121 props du jeu (liste intégrale dans config.lua)
+    vector3(-301.657, -829.589, 31.420),
+    -- ...
+}
 
 Config.Blip = { sprite = 108, color = 2, scale = 0.7 } -- guichets uniquement (false : pas de blip)
 
@@ -245,6 +249,7 @@ Config.MaxAmount   = 1000000 -- montant max par opération (dépôt, retrait au 
 Config.AtmWithdraw = 5000    -- retrait max par opération à l'ATM
 Config.MaxTransfer = 100000  -- virement max par opération
 
+Config.Amounts = { 100, 500, 1000, 5000, 10000, 100000, 1000000 }
 Config.HistorySize = 20      -- opérations affichées
 Config.HistoryDays = 30      -- les opérations plus anciennes sont supprimées au démarrage
 ```
@@ -328,8 +333,7 @@ CREATE TABLE IF NOT EXISTS `pop_bank_transactions` (
 ## 11. Comportement attendu
 
 ### Serveur
-- `toAmount(x)` : `n = tonumber(x)` ; refus si nil, `n ~= n`, `n == math.huge`, `n ~= math.floor(n)`, `n < 1` ;
-  renvoie `math.tointeger(n)`.
+- `toAmount(x)` accepte uniquement un nombre fini, entier et positif.
 - `buildData(src, place)` : soldes, `atm`, `account` (`Bridge.GetIdentifier` si `Bridge.Framework` est `qbcore` ou
   `qbox`, sinon nil), historique.
 - Virement réussi : `Bridge.Notify(target, L('transfer_received', amount, Bridge.GetName(src)), 'success')` ; deux
@@ -344,8 +348,8 @@ CREATE TABLE IF NOT EXISTS `pop_bank_transactions` (
 - `Bridge.Target.AddModel(Config.AtmModels, { { label = L('target_atm'), icon = 'fa-solid fa-money-bill',
   distance = TARGET_DISTANCE, onSelect = openAtm(entity) } })`.
 - `openAtm(entity)` : `TaskTurnPedToFaceEntity` 500 ms, `Bridge.Progress(L('inserting_card'), CARD_TIME,
-  { anim = { dict = 'amb@prop_human_atm@male@idle_a', clip = 'idle_a', flag = 1 } })` ; place = coordonnées de
-  l'entité. Puis ouverture.
+  { anim = { dict = 'amb@prop_human_atm@male@idle_a', clip = 'idle_a', flag = 1 } })`. Le client associe
+  le prop à la position la plus proche dans `Config.Atms` (moins d’un mètre) et envoie l’index.
 - Ouverture : ignorée si déjà ouvert ou `Bridge.IsBusy()` ; `Callback.Await('pop_bank:getData', place)` ; échec →
   notification ; sinon focus + `pop_bank:open`. Surveillance 500 ms tant qu'ouvert : distance au lieu > 3.0 ou mort →
   fermeture.
@@ -355,30 +359,27 @@ CREATE TABLE IF NOT EXISTS `pop_bank_transactions` (
 
 ## 12. Règles de sécurité (serveur, obligatoires)
 
-Le serveur ne fait jamais confiance au montant ni au lieu : il borne, vérifie et lit les soldes lui-même.
+Le serveur lit le montant dans `Config.Amounts` à partir de l’identifiant `preset`. Il borne le montant, vérifie
+le lieu et lit les soldes lui-même.
 
 **Commun à tous les callbacks**
 1. `Bridge.Framework ~= 'standalone'` et `Bridge.GetIdentifier(src)` non nil, sinon `not_available` / `error`.
-2. `place` est une table. `type == 'bank'` : `math.type(index) == 'integer'`, `Config.Banks[index]` existe,
-   `Bridge.IsNear(src, Config.Banks[index], ACTION_DISTANCE)`. `type == 'atm'` : `x, y, z` nombres finis,
-   `Bridge.IsNear(src, { x, y, z }, ACTION_DISTANCE)`. Sinon `too_far`.
-   (Les ATM sont des props de la carte, invisibles du serveur : la position est seulement cohérente avec le joueur.
-   Risque accepté : un tricheur ne peut que déplacer **son propre** argent entre espèces et banque, plafonné.
-   Le virement, seule opération vers un tiers, est réservé aux guichets vérifiés.)
-3. Verrou `busy[src]` → `busy` ; libéré dans tous les cas. Délai `ACTION_DELAY` entre deux opérations
+2. `place` contient un type (`bank` ou `atm`) et un index entier. Le serveur retrouve les coordonnées dans
+   `Config.Banks` ou `Config.Atms` et vérifie `Bridge.IsNear` dans un rayon de 3 m. Échec → `too_far`.
+3. Verrou par identifiant → `busy` ; libéré à la fin de l’opération. Délai `ACTION_DELAY` entre deux opérations
    (`lastAction[src]`) → `busy`. Anti-spam du template actif.
 4. Joueur mort (`Bridge.IsDead`) → `error`.
 
-**`deposit`** : `toAmount`, ≤ `Config.MaxAmount`, sinon `invalid_amount` ; `Bridge.RemoveMoney(src, 'cash', n)`,
+**`deposit`** : `presetAmount`, ≤ `Config.MaxAmount`, sinon `invalid_amount` ; `Bridge.RemoveMoney(src, 'cash', n)`,
 sinon `not_enough_money` ; `Bridge.AddMoney(src, 'bank', n)` ; si échec → rendre l'espèce et `error`.
 
-**`withdraw`** : `toAmount`, ≤ `Config.MaxAmount` ; à l'ATM ≤ `Config.AtmWithdraw`, sinon `atm_limit` (arg =
+**`withdraw`** : `presetAmount`, ≤ `Config.MaxAmount` ; à l'ATM ≤ `Config.AtmWithdraw`, sinon `atm_limit` (arg =
 plafond) ; `RemoveMoney(src, 'bank', n)`, sinon `not_enough_money` ; `AddMoney(src, 'cash', n)` ; échec → recréditer
 la banque, `error`.
 
 **`transfer`**
 1. `place.type == 'bank'`, sinon `transfer_atm`.
-2. `toAmount`, ≤ `Config.MaxTransfer`, sinon `transfer_limit` (arg = plafond) / `invalid_amount`.
+2. `presetAmount`, ≤ `Config.MaxTransfer`, sinon `transfer_limit` (arg = plafond) / `invalid_amount`.
 3. `target` : string, longueur 1-64 après suppression des espaces. Si `^%d+$` et longueur ≤ 5 → ID serveur : doit
    figurer dans `Bridge.GetPlayers()`. Sinon → identifiant : comparé (égalité exacte) à `Bridge.GetIdentifier(p)`
    pour chaque joueur de `Bridge.GetPlayers()`. Introuvable → `target_not_found`.
@@ -396,5 +397,5 @@ la banque, `error`.
 - `bridge/`, `shared/`, `web/kit/` identiques à `templates/pop_base`.
 - 10 locales complètes ; aucun texte en dur.
 - Aucun `Wait(0)` hors `Bridge.Progress` ; focus rendu (Échap, éloignement, mort, arrêt).
-- Montants non entiers, négatifs, `NaN`, `inf`, chaînes : refusés. Double clic : un seul mouvement.
+- Identifiants de montant inconnus et montants fournis directement : refusés. Double clic : un seul mouvement.
 - ESX (Legacy et ancien), QBCore, Qbox ; ox_target, qb-target, prompt natif.

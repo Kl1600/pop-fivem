@@ -179,9 +179,6 @@
   user-select: text;
 }
 .mgmt-input:focus { border-color: var(--pop-accent); }
-.mgmt-input.is-invalid { border-color: var(--pop-danger); }
-.mgmt-input::-webkit-outer-spin-button,
-.mgmt-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 select.mgmt-input option { background: #0e0e11; color: var(--pop-text); }
 
 /* ---- Offre ---- */

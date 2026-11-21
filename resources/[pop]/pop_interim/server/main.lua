@@ -5,7 +5,7 @@ local ACTION_DISTANCE = 3.0
 
 local available = {} -- [id] = true si le job existe dans le framework
 local cooldowns = {} -- [identifier] = os.time() de fin du délai
-local busy = {}      -- [src] = true pendant un traitement
+local busy = {}      -- [identifier] = true pendant un traitement
 
 local jobById = {}
 for _, entry in ipairs(Config.Jobs) do jobById[entry.id] = entry end
@@ -45,6 +45,7 @@ local function check(src, loc)
     if math.type(loc) ~= 'integer' or not Config.Locations[loc] then return nil, nil, 'error' end
     if not Bridge.IsNear(src, Config.Locations[loc].coords.xyz, ACTION_DISTANCE) then return nil, nil, 'too_far' end
     if Bridge.Framework == 'standalone' then return nil, nil, 'not_available' end
+    if Bridge.IsDead(src) then return nil, nil, 'error' end
     local identifier, job = Bridge.GetIdentifier(src), Bridge.GetJob(src)
     if not identifier or not job then return nil, nil, 'error' end
     return identifier, job
@@ -72,24 +73,31 @@ Callback.Register('pop_interim:getJobs', function(src, loc)
     return true, nil, nil, jobs, currentJob(job), remaining(identifier)
 end)
 
--- Traitement verrouillé : busy[src] est libéré dans tous les cas.
-local function locked(src, fn)
-    if busy[src] then return false, 'busy' end
-    busy[src] = true
-    local ok, res, reason, arg = pcall(fn)
-    busy[src] = nil
+local function startCooldown(identifier)
+    if Config.Cooldown <= 0 then return end
+    local expires = os.time() + Config.Cooldown
+    cooldowns[identifier] = expires
+    SetTimeout(Config.Cooldown * 1000, function()
+        if cooldowns[identifier] == expires then cooldowns[identifier] = nil end
+    end)
+end
+
+local function locked(src, loc, fn)
+    local identifier, job, reason = check(src, loc)
+    if not identifier then return false, reason end
+    if busy[identifier] then return false, 'busy' end
+    busy[identifier] = true
+    local ok, res, errorKey, arg = pcall(fn, identifier, job)
+    busy[identifier] = nil
     if not ok then
         print(('[pop_interim] error: %s'):format(res))
         return false, 'error'
     end
-    return res, reason, arg
+    return res, errorKey, arg
 end
 
 Callback.Register('pop_interim:selectJob', function(src, loc, id)
-    return locked(src, function()
-        local identifier, job, reason = check(src, loc)
-        if not identifier then return false, reason end
-
+    return locked(src, loc, function(identifier, job)
         local left = remaining(identifier)
         if left > 0 then return false, 'cooldown', left end
 
@@ -99,7 +107,7 @@ Callback.Register('pop_interim:selectJob', function(src, loc, id)
 
         if not InterimJobs.Set(src, entry.job, entry.grade) then return false, 'error' end
 
-        cooldowns[identifier] = os.time() + Config.Cooldown
+        startCooldown(identifier)
         debug('%s (%s) took job %s %s', src, identifier, entry.job, entry.grade)
         Bridge.Notify(src, L('job_set', L('job_' .. id)), 'success')
         return true
@@ -107,10 +115,7 @@ Callback.Register('pop_interim:selectJob', function(src, loc, id)
 end)
 
 Callback.Register('pop_interim:resign', function(src, loc)
-    return locked(src, function()
-        local identifier, job, reason = check(src, loc)
-        if not identifier then return false, reason end
-
+    return locked(src, loc, function(identifier, job)
         local left = remaining(identifier)
         if left > 0 then return false, 'cooldown', left end
 
@@ -118,15 +123,12 @@ Callback.Register('pop_interim:resign', function(src, loc)
 
         if not InterimJobs.Set(src, Config.Unemployed.job, Config.Unemployed.grade) then return false, 'error' end
 
-        cooldowns[identifier] = os.time() + Config.Cooldown
+        startCooldown(identifier)
         debug('%s (%s) resigned from %s', src, identifier, job.name)
         Bridge.Notify(src, L('resigned'), 'success')
         return true
     end)
 end)
-
-Bridge.OnPlayerDropped(function(src) busy[src] = nil end)
-Bridge.OnPlayerUnloaded(function(src) busy[src] = nil end)
 
 ------------------------------------------------------------------------
 -- Exports

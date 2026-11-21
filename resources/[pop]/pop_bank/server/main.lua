@@ -6,9 +6,11 @@ local ACTION_DISTANCE = 3.0  -- m, distance max au guichet / à l'ATM
 local ACTION_DELAY    = 1000 -- ms minimum entre deux opérations d'argent d'un joueur
 local MAX_LIMIT       = 100  -- lignes max pour l'export GetHistory
 
+local ready = false
+
 local TYPES = { deposit = true, withdraw = true, transfer_out = true, transfer_in = true }
 
-local busy = {}       -- [src] = true pendant une opération
+local busy = {}       -- [identifier] = true pendant une opération
 local lastAction = {} -- [src] = GetGameTimer() de la dernière opération d'argent
 
 local function log(msg, ...)
@@ -25,7 +27,7 @@ end
 
 --- Montant entier >= 1, sinon nil (refuse nil, NaN, inf, décimales, négatifs, chaînes non numériques).
 local function toAmount(x)
-    local n = tonumber(x)
+    local n = x
     if not isFinite(n) or n ~= math.floor(n) or n < 1 then return nil end
     return math.tointeger(n)
 end
@@ -44,10 +46,26 @@ end
 ------------------------------------------------------------------------
 
 local function addRow(identifier, kind, amount, other, balance)
-    MySQL.insert(
-        'INSERT INTO pop_bank_transactions (identifier, type, amount, balance, other, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-        { identifier, kind, amount, math.tointeger(tonumber(balance) or 0) or 0, clip(other, 64), os.time() }
+    return MySQL.insert.await(
+        "INSERT INTO pop_bank_transactions (identifier, type, amount, balance, other, created_at) VALUES (?, ?, ?, ?, NULLIF(?, ''), ?)",
+        { identifier, kind, amount, math.tointeger(tonumber(balance) or 0) or 0, clip(other, 64) or '', os.time() }
     )
+end
+
+local function writeHistory(fn, ...)
+    local ok, result = pcall(fn, ...)
+    if ok and result then return true end
+    print(('[pop_bank] history write failed: %s'):format(tostring(result)))
+    return false
+end
+
+local function addTransfer(identifier, destId, amount, fromName, toName, fromBalance, toBalance)
+    local now = os.time()
+    return MySQL.insert.await([[
+        INSERT INTO pop_bank_transactions (identifier, type, amount, balance, other, created_at)
+        VALUES (?, 'transfer_out', ?, ?, ?, ?), (?, 'transfer_in', ?, ?, ?, ?)
+    ]], { identifier, amount, fromBalance, clip(toName, 64), now,
+        destId, amount, toBalance, clip(fromName, 64), now })
 end
 
 local function fetchHistory(identifier, limit)
@@ -62,6 +80,31 @@ local function fetchHistory(identifier, limit)
     return out
 end
 
+local function limitFor(action, place)
+    if action == 'transfer' then return place.type == 'bank' and Config.MaxTransfer or 0 end
+    if action == 'withdraw' and place.type == 'atm' then return math.min(Config.MaxAmount, Config.AtmWithdraw) end
+    return Config.MaxAmount
+end
+
+local function presets(place)
+    local result = {}
+    for _, action in ipairs({ 'deposit', 'withdraw', 'transfer' }) do
+        local list, limit = {}, limitFor(action, place)
+        for i, amount in ipairs(Config.Amounts) do
+            if toAmount(amount) and amount <= limit then
+                list[#list + 1] = { id = 'preset_' .. i, amount = amount }
+            end
+        end
+        result[action] = list
+    end
+    return result
+end
+
+local function presetAmount(id)
+    local index = type(id) == 'string' and id:match('^preset_([1-9]%d*)$')
+    return index and toAmount(Config.Amounts[tonumber(index)]) or nil
+end
+
 --- BankData : soldes, type de lieu, n° de compte affichable, historique.
 local function buildData(src, place, identifier)
     local account
@@ -71,6 +114,7 @@ local function buildData(src, place, identifier)
         bank = math.floor(Bridge.GetMoney(src, 'bank') or 0),
         atm = type(place) == 'table' and place.type == 'atm',
         account = account,
+        presets = presets(place),
         history = fetchHistory(identifier, Config.HistorySize),
     }
 end
@@ -81,18 +125,17 @@ end
 
 --- Le lieu existe et le joueur s'y trouve (position lue côté serveur).
 local function validPlace(src, place)
-    if type(place) ~= 'table' then return false end
+    if type(place) ~= 'table' or math.type(place.index) ~= 'integer' then return false end
+    local locations
     if place.type == 'bank' then
-        local coords = math.type(place.index) == 'integer' and Config.Banks[place.index]
-        return coords ~= nil and coords ~= false and Bridge.IsNear(src, coords, ACTION_DISTANCE)
+        locations = Config.Banks
     elseif place.type == 'atm' then
-        local x, y, z = place.x, place.y, place.z
-        if not (isFinite(x) and isFinite(y) and isFinite(z)) then return false end
-        -- NOTE: les ATM sont des props de la carte, invisibles du serveur : on vérifie seulement
-        -- la cohérence avec la position du joueur (le virement, seul flux vers un tiers, est réservé aux guichets).
-        return Bridge.IsNear(src, { x = x, y = y, z = z }, ACTION_DISTANCE)
+        locations = Config.Atms
+    else
+        return false
     end
-    return false
+    local coords = locations[place.index]
+    return coords ~= nil and Bridge.IsNear(src, coords, ACTION_DISTANCE)
 end
 
 --- Cherche un joueur en ligne par ID serveur (<= 5 chiffres) ou par identifiant exact.
@@ -119,37 +162,44 @@ end
 -- Opérations
 ------------------------------------------------------------------------
 
-local function deposit(src, identifier, place, amount)
-    local n = toAmount(amount)
+local function refund(src, identifier, account, amount)
+    if Bridge.GetIdentifier(src) == identifier and Bridge.AddMoney(src, account, amount, 'pop_bank_refund') then
+        return
+    end
+    print(('[pop_bank] refund failed for %s: %d %s'):format(identifier, amount, account))
+end
+
+local function deposit(src, identifier, place, preset)
+    local n = presetAmount(preset)
     if not n or n > Config.MaxAmount then return false, 'invalid_amount' end
     if not Bridge.RemoveMoney(src, 'cash', n, 'pop_bank_deposit') then return false, 'not_enough_money' end
-    if not Bridge.AddMoney(src, 'bank', n, 'pop_bank_deposit') then
-        Bridge.AddMoney(src, 'cash', n, 'pop_bank_refund')
+    if Bridge.GetIdentifier(src) ~= identifier or not Bridge.AddMoney(src, 'bank', n, 'pop_bank_deposit') then
+        refund(src, identifier, 'cash', n)
         return false, 'error'
     end
-    addRow(identifier, 'deposit', n, nil, Bridge.GetMoney(src, 'bank'))
+    writeHistory(addRow, identifier, 'deposit', n, nil, Bridge.GetMoney(src, 'bank'))
     log('%s (%s) deposit %d', src, identifier, n)
     return true, 'deposited', n
 end
 
-local function withdraw(src, identifier, place, amount)
-    local n = toAmount(amount)
+local function withdraw(src, identifier, place, preset)
+    local n = presetAmount(preset)
     if not n then return false, 'invalid_amount' end
     if place.type == 'atm' and n > Config.AtmWithdraw then return false, 'atm_limit', Config.AtmWithdraw end
     if n > Config.MaxAmount then return false, 'invalid_amount' end
     if not Bridge.RemoveMoney(src, 'bank', n, 'pop_bank_withdraw') then return false, 'not_enough_money' end
-    if not Bridge.AddMoney(src, 'cash', n, 'pop_bank_withdraw') then
-        Bridge.AddMoney(src, 'bank', n, 'pop_bank_refund')
+    if Bridge.GetIdentifier(src) ~= identifier or not Bridge.AddMoney(src, 'cash', n, 'pop_bank_withdraw') then
+        refund(src, identifier, 'bank', n)
         return false, 'error'
     end
-    addRow(identifier, 'withdraw', n, nil, Bridge.GetMoney(src, 'bank'))
+    writeHistory(addRow, identifier, 'withdraw', n, nil, Bridge.GetMoney(src, 'bank'))
     log('%s (%s) withdraw %d (%s)', src, identifier, n, place.type)
     return true, 'withdrawn', n
 end
 
-local function transfer(src, identifier, place, target, amount)
+local function transfer(src, identifier, place, target, preset)
     if place.type ~= 'bank' then return false, 'transfer_atm' end
-    local n = toAmount(amount)
+    local n = presetAmount(preset)
     if not n then return false, 'invalid_amount' end
     if n > Config.MaxTransfer then return false, 'transfer_limit', Config.MaxTransfer end
 
@@ -160,16 +210,19 @@ local function transfer(src, identifier, place, target, amount)
     if dest == src or destId == identifier then return false, 'target_self' end
 
     if not Bridge.RemoveMoney(src, 'bank', n, 'pop_bank_transfer') then return false, 'not_enough_money' end
-    if not Bridge.AddMoney(dest, 'bank', n, 'pop_bank_transfer') then
-        Bridge.AddMoney(src, 'bank', n, 'pop_bank_refund')
+    if Bridge.GetIdentifier(dest) ~= destId or not Bridge.AddMoney(dest, 'bank', n, 'pop_bank_transfer') then
+        refund(src, identifier, 'bank', n)
         return false, 'error'
     end
 
     -- Les noms ne sont révélés qu'après un virement réussi (pas de sonde des joueurs).
     local fromName, toName = nameOf(src), nameOf(dest)
-    addRow(identifier, 'transfer_out', n, toName, Bridge.GetMoney(src, 'bank'))
-    addRow(destId, 'transfer_in', n, fromName, Bridge.GetMoney(dest, 'bank'))
-    Bridge.Notify(dest, L('transfer_received', n, fromName), 'success')
+    local fromBalance = math.floor(Bridge.GetMoney(src, 'bank') or 0)
+    local toBalance = math.floor(Bridge.GetMoney(dest, 'bank') or 0)
+    writeHistory(addTransfer, identifier, destId, n, fromName, toName, fromBalance, toBalance)
+    if Bridge.GetIdentifier(dest) == destId then
+        Bridge.Notify(dest, L('transfer_received', n, fromName), 'success')
+    end
     log('%s (%s) transfer %d to %s (%s)', src, identifier, n, dest, destId)
     return true, 'transferred', { n, toName }
 end
@@ -181,29 +234,31 @@ end
 local function register(name, handler, moneyAction)
     Callback.Register('pop_bank:' .. name, function(src, place, ...)
         if Bridge.Framework == 'standalone' then return false, 'not_available' end
+        if not ready then return false, 'busy' end
         local identifier = Bridge.GetIdentifier(src)
         if not identifier then return false, 'error' end
 
-        if busy[src] then return false, 'busy', nil, buildData(src, place, identifier) end
-        if not validPlace(src, place) then return false, 'too_far', nil, buildData(src, place, identifier) end
-        if Bridge.IsDead(src) then return false, 'error', nil, buildData(src, place, identifier) end
+        if busy[identifier] then return false, 'busy' end
+        if not validPlace(src, place) then return false, 'too_far' end
+        if Bridge.IsDead(src) then return false, 'error' end
 
         if moneyAction then
             local now = GetGameTimer()
             if lastAction[src] and now - lastAction[src] < ACTION_DELAY then
-                return false, 'busy', nil, buildData(src, place, identifier)
+                return false, 'busy'
             end
             lastAction[src] = now
         end
 
-        busy[src] = true
+        busy[identifier] = true
         local okCall, ok, reason, arg = pcall(handler, src, identifier, place, ...)
         if not okCall then
             print(('[pop_bank] %s error: %s'):format(name, tostring(ok)))
             ok, reason, arg = false, 'error', nil
         end
         local okData, data = pcall(buildData, src, place, identifier)
-        busy[src] = nil
+        busy[identifier] = nil
+        if Bridge.GetIdentifier(src) ~= identifier then return false, 'error' end
         return ok, reason, arg, okData and data or nil
     end)
 end
@@ -222,7 +277,7 @@ exports('AddTransaction', function(identifier, kind, amount, other)
     if type(identifier) ~= 'string' or identifier == '' or #identifier > 64 then return false end
     if not TYPES[kind] then return false end
     local n = toAmount(amount)
-    if not n then return false end
+    if not n or n > 4294967295 then return false end
     if other ~= nil and type(other) ~= 'string' then other = tostring(other) end
 
     local balance = 0
@@ -232,8 +287,7 @@ exports('AddTransaction', function(identifier, kind, amount, other)
             break
         end
     end
-    addRow(identifier, kind, n, other, balance)
-    return true
+    return writeHistory(addRow, identifier, kind, n, other, balance)
 end)
 
 --- Historique d'un personnage, du plus récent au plus ancien.
@@ -262,6 +316,7 @@ MySQL.ready(function()
             KEY `idx_identifier_time` (`identifier`, `created_at`)
         )
     ]])
+    ready = true
     local purged = MySQL.update.await('DELETE FROM pop_bank_transactions WHERE created_at < ?',
         { os.time() - Config.HistoryDays * 86400 })
     log('history purged: %s rows', tostring(purged))
@@ -274,7 +329,6 @@ CreateThread(function()
 end)
 
 local function cleanup(src)
-    busy[src] = nil
     lastAction[src] = nil
 end
 

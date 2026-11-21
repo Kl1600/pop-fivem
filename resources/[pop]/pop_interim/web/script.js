@@ -12,6 +12,7 @@
 
   var state = { open: false, jobs: [], current: null, selected: null, cooldown: 0, sending: false };
   var timer = null;
+  var session = 0;
 
   function selectable() {
     return state.jobs.filter(function (j) { return !isCurrent(j.id); });
@@ -116,6 +117,7 @@
   }
 
   function hide() {
+    session += 1;
     state.open = false;
     state.sending = false;
     stopTimer();
@@ -124,9 +126,11 @@
 
   function send(name, data) {
     if (locked()) return;
+    var activeSession = session;
     state.sending = true;
     updateButtons();
     Pop.post(name, data).then(function (res) {
+      if (session !== activeSession) return;
       state.sending = false;
       if (res && res.ok) {
         hide();

@@ -37,7 +37,7 @@
 .ex-info { display: flex; flex-direction: column; gap: 2px; }
 
 .ex-input { display: flex; gap: 6px; }
-.ex-input input {
+.ex-input select {
   flex: 1;
   min-width: 0;
   font: inherit;
@@ -48,9 +48,8 @@
   padding: 6px 8px;
   outline: none;
 }
-.ex-input input:focus { border-color: var(--pop-accent); }
-.ex-input input::-webkit-outer-spin-button,
-.ex-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ex-input select:focus { border-color: var(--pop-accent); }
+.ex-input select option { background: var(--pop-bg); }
 
 .ex-preview { min-height: 1.2em; overflow-wrap: anywhere; }
 

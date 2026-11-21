@@ -39,7 +39,7 @@ compte de la société, plus des **factures** envoyées par les employés à leu
 **Factures**
 - Commande `/invoice` (`Config.InvoiceCommand`, `false` = désactivé) : tout employé d'une société listée, en
   service, de grade `>= invoiceGrade`.
-- Petit formulaire : client proche (« Citoyen n°ID »), montant entier, motif facultatif (50 caractères).
+- Petit formulaire : client proche (« Citoyen n°ID »), montant dans la liste configurée, motif facultatif (50 caractères).
 - Le client reçoit une offre `[E] Payer` / `[X] Refuser` (30 s). S'il accepte : payé depuis son compte `bank`,
   argent versé **au compte de la société**, ligne d'historique, notifications des deux côtés.
 - Pas de factures impayées persistantes : une facture refusée ou expirée disparaît.
@@ -155,7 +155,7 @@ Les employés sont désignés par un `id` entier opaque, valable pour la session
     society   = { name = 'police', label = 'LSPD' },
     me        = { grade = 4, gradeLabel = 'Chief' },
     balance   = 125000,                 -- integer
-    maxAmount = 1000000,                -- Config.MaxAmount
+    presets   = { transfer = { { id = 'small', amount = 500 } }, bonus = { { id = 'small', amount = 250 } } },
     now       = 1773695600,             -- os.time() serveur (pour les durées relatives de l'historique)
     grades    = { { grade = 0, label = 'Recruit' }, { grade = 1, label = 'Officer' } }, -- triés par grade croissant
     employees = {                       -- triés : grade décroissant puis nom
@@ -173,7 +173,7 @@ Les employés sont désignés par un `id` entier opaque, valable pour la session
 - `amount` toujours **positif** ; `target` / `note` peuvent être `nil` (absents en JSON).
 
 ### Session de panneau (serveur uniquement)
-`sessions[src] = { job = 'police', point = 2 | nil, employees = { [id] = identifier } }`
+`sessions[src] = { owner = identifier, job = 'police', point = 2 | nil, employees = { [id] = identifier } }`
 Créée / remplacée par chaque `getPanel`, supprimée par `pop_management:server:closePanel`, à la déconnexion,
 au déchargement du personnage, et si le job du joueur ne correspond plus.
 
@@ -182,6 +182,7 @@ au déchargement du personnage, et si le job du joueur ne correspond plus.
 offers[offerId] = {
     id = 7, kind = 'recruit' | 'invoice',
     from = srcExpediteur, to = srcCible, job = 'police',
+    fromId = identifiantExpediteur, toId = identifiantCible,
     amount = 250,        -- invoice uniquement
     note = 'Repair',     -- invoice uniquement, ou nil
     expires = os.time() + Config.OfferTimeout,
@@ -216,7 +217,7 @@ Toutes les actions client → serveur passent par des **callbacks** (section 5),
 
 ### Évènements du bridge utilisés
 - Serveur : `Bridge.OnPlayerDropped(src)` et `Bridge.OnPlayerUnloaded(src)` → supprime `sessions[src]`,
-  `busy[src]`, les offres où `src` est expéditeur ou cible (si cible : rien à envoyer ; si expéditeur :
+  les offres où `src` est expéditeur ou cible (si cible : rien à envoyer ; si expéditeur :
   `offerClosed` à la cible).
 - Client : `Bridge.OnPlayerLoaded` / `Bridge.OnJobUpdate` → reconstruit les zones ; si le job change pendant que
   le panneau est ouvert → fermeture. `Bridge.OnUiClose` → fermeture panneau / formulaire.
@@ -237,11 +238,11 @@ En cas de succès, c'est le **serveur** qui notifie (`Bridge.Notify(src, ..., 's
 | `pop_management:fire` | `employeeId` (int) | `ok, reason, arg` |
 | `pop_management:promote` | `employeeId` (int) | `ok, reason, arg` |
 | `pop_management:demote` | `employeeId` (int) | `ok, reason, arg` |
-| `pop_management:pay` | `employeeId` (int), `amount` (int) | `ok, reason, arg` |
-| `pop_management:deposit` | `amount` (int) | `ok, reason, arg` |
-| `pop_management:withdraw` | `amount` (int) | `ok, reason, arg` |
-| `pop_management:canInvoice` | aucun | `info` (`{ society = label, max = Config.MaxInvoice }`) \| `nil, reason, arg` |
-| `pop_management:sendInvoice` | `targetId` (int), `amount` (int), `note` (string \| nil) | `ok, reason, arg` (envoie l'offre) |
+| `pop_management:pay` | `employeeId` (int), `preset` (string) | `ok, reason, arg` |
+| `pop_management:deposit` | `preset` (string) | `ok, reason, arg` |
+| `pop_management:withdraw` | `preset` (string) | `ok, reason, arg` |
+| `pop_management:canInvoice` | aucun | `info` (`{ society = label, presets = { { id = 'small', amount = 250 } } }`) \| `nil, reason, arg` |
+| `pop_management:sendInvoice` | `targetId` (int), `preset` (string), `note` (string \| nil) | `ok, reason, arg` (envoie l'offre) |
 | `pop_management:answerOffer` | `offerId` (int), `accept` (bool) | `ok, reason, arg` |
 
 **Raisons possibles** (toutes sont des clés de locale existantes) :
@@ -273,7 +274,7 @@ Renvoyé avec `show = true` après chaque action réussie (données rafraîchies
 
 **`pop_management:invoice`**
 ```json
-{ "action": "pop_management:invoice", "show": true, "society": "LSPD", "max": 50000,
+{ "action": "pop_management:invoice", "show": true, "society": "LSPD", "presets": [{ "id": "small", "amount": 250 }],
   "players": [ { "id": 12, "dist": 1.4 }, { "id": 31, "dist": 2.7 } ] }
 ```
 ```json
@@ -298,13 +299,13 @@ Renvoyé avec `show = true` après chaque action réussie (données rafraîchies
 
 | Nom | Données envoyées | Réponse |
 |---|---|---|
-| `pop_management:action` | `{ "action": "fire" \| "promote" \| "demote" \| "pay" \| "deposit" \| "withdraw" \| "recruit", "employeeId": 2, "amount": 500, "targetId": 12 }` | `{ "ok": true }` \| `{ "ok": false, "reason": "invalid_amount" }` |
+| `pop_management:action` | `{ "action": "fire" \| "promote" \| "demote" \| "pay" \| "deposit" \| "withdraw" \| "recruit", "employeeId": 2, "preset": "small", "targetId": 12 }` | `{ "ok": true }` \| `{ "ok": false, "reason": "invalid_amount" }` |
 | `pop_management:nearby` | `{}` | `{ "players": [ { "id": 12, "dist": 1.4 } ] }` |
-| `pop_management:sendInvoice` | `{ "targetId": 12, "amount": 250, "note": "Repair" }` | `{ "ok": true }` \| `{ "ok": false, "reason": "..." }` |
+| `pop_management:sendInvoice` | `{ "targetId": 12, "preset": "small", "note": "Repair" }` | `{ "ok": true }` \| `{ "ok": false, "reason": "..." }` |
 | `close` | (kit) | géré par le bridge |
 
 Champs utilisés par `pop_management:action` : `fire` / `promote` / `demote` → `employeeId` ; `pay` →
-`employeeId` + `amount` ; `deposit` / `withdraw` → `amount` ; `recruit` → `targetId`. Le Lua n'accepte que ces 7
+`employeeId` + `preset` ; `deposit` / `withdraw` → `preset` ; `recruit` → `targetId`. Le Lua n'accepte que ces 7
 actions (table blanche) et appelle le callback serveur du même nom (`pop_management:<action>`). Les notifications
 sont faites côté Lua ; la NUI se contente de réactiver ses boutons à la réponse.
 
@@ -318,13 +319,13 @@ sont faites côté Lua ; la NUI se contente de réactiver ses boutons à la rép
       lignes : nom, `gradeLabel`, pastille accent si `online` (`online` / `offline` en texte petit), `you` si `me`.
       Boutons `promote`, `demote`, `pay`, `fire` **masqués** si `me` ou `grade >= data.me.grade` ; `promote` masqué
       si le grade suivant de `data.grades` est `>= data.me.grade` ou n'existe pas ; `demote` masqué si aucun grade
-      inférieur ; `pay` masqué si `online == false`. `pay` ouvre un champ montant inline + `confirm`.
+      inférieur ; `pay` masqué si `online == false`. `pay` ouvre un sélecteur de montant inline + `confirm`.
       `fire` : premier clic → le bouton affiche `confirm` pendant 3 s, second clic → envoi.
-    - **Compte** : solde, champ `amount` (entier, min 1, max `maxAmount`), boutons `deposit` / `withdraw`
+    - **Compte** : solde, sélecteur de montant (`presets.transfer`), boutons `deposit` / `withdraw`
       (`withdraw` avec la même confirmation à deux clics), titre `history`, lignes : `Pop.t('tx_' + type)`,
       montant `+`/`−` (`+` en accent, `−` en `--pop-danger`), `actor` (→ `target` si présent), `note` (petit),
       durée relative ; `history_empty` si vide.
-  - `#mgmt-invoice` : titre `invoice_title` + société, select client (`Pop.t('player_id', id)`), champ `amount`
+  - `#mgmt-invoice` : titre `invoice_title` + société, sélecteur client (`Pop.t('player_id', id)`), sélecteur de montant (`presets`)
     (max `max`), champ `invoice_reason` (`maxlength="50"`), boutons `invoice_send` / `cancel` (`cancel` →
     `Pop.post('close')`). Liste vide → `nearby_none` et `invoice_send` désactivé.
   - `#mgmt-offer` : titre `Pop.t('offer_invoice', society)` ou `Pop.t('offer_recruit', society)` ; ligne
@@ -400,6 +401,14 @@ Config.Accounts = {
 
 Config.MaxAmount        = 1000000 -- montant max par dépôt / retrait / prime
 Config.MaxInvoice       = 50000   -- montant max d'une facture
+
+-- Montants proposés dans les menus. Le client envoie uniquement la clé du choix.
+Config.AmountPresets = {
+    transfer = { small = 500, medium = 2500, large = 10000 },
+    bonus    = { small = 250, medium = 1000, large = 5000 },
+    invoice  = { small = 250, medium = 500, large = 2500 },
+}
+
 Config.InteractDistance = 3.0     -- distance max pour recruter / facturer (mètres)
 Config.OfferTimeout     = 30      -- secondes pour accepter une offre (recrutement, facture)
 ```
@@ -671,12 +680,11 @@ Les retours explicites `false` des exports Qbox sont traités comme un échec.
 
 ## 13. Règles de sécurité (serveur, toutes obligatoires)
 
-Le client n'envoie que : un index de point, un `employeeId` opaque, un `targetId` (id serveur), un montant, une
+Le client n'envoie que : un index de point, un `employeeId` opaque, un `targetId` (id serveur), une clé de tarif `preset`, une
 note, un `offerId` et un booléen. Société, grades, soldes, noms : tout vient du serveur.
 
 **Commun**
-1. Types : `math.type(x) == 'integer'` pour `point`, `employeeId`, `targetId`, `offerId`, `amount` ; `accept`
-   booléen ; sinon `error` (montant : `invalid_amount`).
+1. Types : `math.type(x) == 'integer'` pour `point`, `employeeId`, `targetId`, `offerId` ; `accept` booléen ; sinon `error`. Le tarif `preset` est une chaîne de 32 octets maximum.
 2. Verrou par joueur `busy[src]` pendant tout traitement asynchrone → `busy` si occupé ; libéré dans tous les cas
    (`pcall` autour du traitement), à la déconnexion et au déchargement.
 3. Verrou par société `societyLock[job]` autour de **toute** opération d'argent (actions, factures, exports) →
@@ -692,8 +700,10 @@ note, un `offerId` et un booléen. Société, grades, soldes, noms : tout vient 
    sinon `too_far` ; sans point → `Config.Command` doit être une chaîne, sinon `too_far`. Les actions d'une session
    ouverte à un point revérifient `Bridge.IsNear` (sinon `too_far`).
 
-**Montants** : entier, `>= 1` (sinon `invalid_amount`), `<= Config.MaxAmount` (factures : `<= Config.MaxInvoice`),
-sinon `amount_too_high` + `L('money', max)`. Jamais de nombre décimal, NaN ou infini accepté.
+**Montants** : le serveur associe `preset` à un montant dans la section appropriée de `Config.AmountPresets`
+(`transfer`, `bonus` ou `invoice`). Une clé absente ou une valeur de config non entière ou négative donne
+`invalid_amount`. La valeur doit être positive et respecter `Config.MaxAmount` ou `Config.MaxInvoice`, plafonné à
+2147483647. Un dépassement donne `amount_too_high` et `L('money', max)`.
 
 **Employé visé** (`fire`, `promote`, `demote`, `pay`) :
 1. `identifier = sessions[src].employees[employeeId]`, sinon `employee_not_found` ;
@@ -728,7 +738,7 @@ Historique `withdraw`.
 **`canInvoice` / `sendInvoice`** :
 1. `cfg = Config.Societies[job.name]` sinon `wrong_job` ; `Config.InvoiceCommand` et `cfg.invoiceGrade ~= false`
    sinon `invoice_disabled` ; `job.grade >= cfg.invoiceGrade` sinon `no_permission` ; `job.onDuty` sinon `off_duty`.
-2. `sendInvoice` : montant (max `Config.MaxInvoice`) ; `note` : `nil` ou chaîne, nettoyée (`cleanNote` :
+2. `sendInvoice` : tarif configuré (max `Config.MaxInvoice`) ; `note` : `nil` ou chaîne, nettoyée (`cleanNote` :
    suppression des caractères de contrôle et de `<>`, espaces rognés, `NOTE_MAX` caractères max, vide → `nil`) ;
    cible validée comme pour `recruit` (points 2, 3, 5).
 3. Crée l'offre `invoice`, l'envoie, `offer_sent`.
@@ -760,6 +770,6 @@ Les messages console ne contiennent ni identifiant ni montant de joueurs en deho
 - Aucun `Wait(0)` hors affichage d'une offre / `Bridge.Progress` ; aucune boucle serveur ; < 0.02 ms au repos.
 - Fonctionne avec ESX (Legacy et ancien), QBCore, Qbox ; esx_addonaccount, qb-banking, qb-management, Renewed-Banking
   et repli `pop` ; ox_target, qb-target et prompt natif ; standalone : démarre sans erreur (avertissement console).
-- Tests de sécurité : montants négatifs / décimaux / énormes, `employeeId` d'une autre session, action après
+- Tests de sécurité : clés de tarif inconnues, nombres envoyés à la place des clés, `employeeId` d'une autre session, action après
   changement de job, double acceptation d'une offre, recrutement à distance, facture à soi-même, retrait
   simultané par deux patrons (verrou société).

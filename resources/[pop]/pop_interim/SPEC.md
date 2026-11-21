@@ -120,8 +120,7 @@ Pas d'oxmysql (aucun stockage).
 
 Aucun event réseau propre au script : tout passe par les callbacks (section 5) et `Bridge.Notify`.
 
-Évènements du bridge utilisés : serveur `Bridge.OnPlayerDropped` et `Bridge.OnPlayerUnloaded` → libère
-`busy[src]`. Le délai est indexé par **identifiant** (survit à la reconnexion).
+Le verrou et le délai sont indexés par **identifiant**. Le délai survit à la reconnexion jusqu’à son expiration.
 
 ---
 
@@ -287,10 +286,10 @@ Aucun.
 | Fonction | Retour | Implémentation |
 |---|---|---|
 | `InterimJobs.Exists(job, grade)` | bool | ESX : `ESX.DoesJobExist(job, grade)` si la fonction existe, sinon `true` (NOTE: ancien ESX) ; QBCore : `QBCore.Shared.Jobs[job]` et `grades[tostring(grade)]` ; Qbox : `exports.qbx_core:GetJob(job)` et `grades[grade]` ; standalone : `false` |
-| `InterimJobs.Set(src, job, grade)` | bool | ESX : `Bridge.GetPlayer(src).setJob(job, grade)` → `true` ; QBCore : `Bridge.GetPlayer(src).Functions.SetJob(job, grade)` (renvoie un bool) ; Qbox : `exports.qbx_core:SetJob(src, job, grade)` (NOTE: signature `(identifier, jobName, grade)` → `success, err` selon qbx_core ; à confirmer) ; standalone : `false` |
+| `InterimJobs.Set(src, job, grade)` | bool | ESX : `Bridge.GetPlayer(src).setJob(job, grade)` → `true` ; QBCore : `Bridge.GetPlayer(src).Functions.SetJob(job, grade)` (renvoie un bool) ; Qbox : `exports.qbx_core:SetJob(src, job, grade)` (signature `(identifier, jobName, grade)`, identifiant = source ou citizenid) ; standalone : `false` |
 
 - Objet ESX : `pcall(exports.es_extended.getSharedObject)`, sinon `TriggerEvent('esx:getSharedObject', ...)` (NOTE).
-  Objet QBCore : `exports['qb-core']:GetCoreObject()`. Tout appel framework est protégé par `pcall` : erreur = `false`.
+  Objet QBCore : `exports['qb-core']:GetCoreObject()`. L’attribution est confirmée en relisant le métier et le grade via `Bridge.GetJob`.
 - Au démarrage (thread, après 2 s) : pour chaque entrée de `Config.Jobs`, `available[id] = InterimJobs.Exists(...)` ;
   print anglais pour chaque job absent. Standalone : un seul print (« job center disabled in standalone »).
 
@@ -323,7 +322,7 @@ Le client n'envoie qu'un index de lieu et un `id`. Job, grade, délai : config e
 2. `Bridge.IsNear(src, Config.Locations[loc].coords, ACTION_DISTANCE)`, sinon `too_far`.
 3. `Bridge.Framework ~= 'standalone'`, sinon `not_available`. `Bridge.GetIdentifier(src)` et `Bridge.GetJob(src)`
    non nil, sinon `error`.
-4. Verrou `busy[src]` pendant le traitement → `busy` ; libéré dans tous les cas, au drop et à l'unload.
+4. Verrou par identifiant pendant le traitement → `busy` ; libéré à la fin de l’opération. Les joueurs morts sont refusés.
 5. Délai : `cooldowns[identifier] > os.time()` → `cooldown`, arg = secondes restantes.
 6. `selectJob` : `id` est une string présente dans `Config.Jobs` **et** `available[id]`, sinon `job_unknown` ;
    job actuel `name == entry.job` et `grade == entry.grade` → `already_job` ; `InterimJobs.Set` faux → `error`

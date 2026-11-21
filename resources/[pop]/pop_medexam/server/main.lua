@@ -25,7 +25,7 @@ end
 local function amount(n)
     n = tonumber(n) or 0
     if n ~= n or n < 0 then return 0 end
-    return math.floor(n)
+    return math.floor(math.min(n, 2147483647))
 end
 
 local PRICE = amount(Config.Price)
@@ -35,8 +35,8 @@ local function charge(src)
     return Bridge.RemoveMoney(src, Config.Account, PRICE, 'pop_medexam')
 end
 
-local function refund(src)
-    if PRICE <= 0 or not src then return end
+local function refund(src, identifier)
+    if PRICE <= 0 or not src or Bridge.GetIdentifier(src) ~= identifier then return end
     if not Bridge.AddMoney(src, Config.Account, PRICE, 'pop_medexam') then
         debug('refund failed for %s (%s)', src, PRICE)
     end
@@ -65,6 +65,7 @@ local function setCooldown(id)
 end
 
 local function distance(a, b)
+    if GetPlayerRoutingBucket(a) ~= GetPlayerRoutingBucket(b) then return math.huge end
     local pa, pb = Bridge.GetCoords(a), Bridge.GetCoords(b)
     if not pa or not pb then return math.huge end
     return #(pa - pb)
@@ -90,10 +91,10 @@ local function autoOpen()
 end
 
 -- Verrou busy[src] pendant fn ; toujours libéré, même en cas d'erreur.
-local function locked(src, fn, ...)
-    if inSession(src) then return false, 'busy' end
+local function locked(src, starting, fn)
+    if busy[src] or (starting and inSession(src)) then return false, 'busy' end
     busy[src] = true
-    local res = table.pack(pcall(fn, ...))
+    local res = table.pack(pcall(fn))
     busy[src] = nil
     if not res[1] then
         print(('[pop_medexam] error: %s'):format(tostring(res[2])))
@@ -121,7 +122,7 @@ local function issue(patient, doctorName)
     local metadata = nil
     if Bridge.SupportsMetadata() then
         local now = os.time()
-        local days = amount(Config.Validity)
+        local days = math.min(36500, amount(Config.Validity))
         local expires = days > 0 and now + days * 86400 or 0
         local name = Bridge.GetName(patient) or GetPlayerName(patient) or ''
         metadata = {
@@ -150,61 +151,65 @@ end)
 ------------------------------------------------------------------------
 
 Callback.Register('pop_medexam:start', function(src, loc)
-    return locked(src, function()
+    return locked(src, true, function()
         local coords = location(loc)
         if not coords then return false, 'error' end
         if not Bridge.IsNear(src, coords, ACTION_DISTANCE) then return false, 'too_far' end
         local id = Bridge.GetIdentifier(src)
-        if not id then return false, 'error' end
+        if not id or Bridge.IsDead(src) then return false, 'error' end
         if not autoOpen() then return false, 'exam_closed' end
         local wait = onCooldown(id)
         if wait then return false, 'cooldown', wait end
         if not Bridge.CanCarry(src, Config.Item, 1) then return false, 'inventory_full' end
         if not charge(src) then return false, 'not_enough_money' end
-        sessions[src] = { loc = loc, startedAt = os.time() }
+        sessions[src] = { loc = loc, startedAt = os.time(), identifier = id }
         debug('auto exam started by %s at %d', src, loc)
         return true
     end)
 end)
 
 Callback.Register('pop_medexam:finish', function(src, passed)
-    if busy[src] then return false, 'busy' end
-    local s = sessions[src]
-    if not s then return false, 'no_session' end
-    local id = Bridge.GetIdentifier(src)
-    if not id then return false, 'error' end
+    return locked(src, false, function()
+        local s = sessions[src]
+        if not s then return false, 'no_session' end
+        local id = Bridge.GetIdentifier(src)
+        if id ~= s.identifier or Bridge.IsDead(src) or type(passed) ~= 'boolean' then return false, 'error' end
 
-    local minTime = math.floor(amount(Config.Durations.pressure) / 1000) + 2
-    if os.time() - s.startedAt < minTime then
+        local minTime = math.floor(amount(Config.Durations.pressure) / 1000) + 2
+        if os.time() - s.startedAt < minTime then
+            sessions[src] = nil
+            debug('auto exam too fast for %s', src)
+            return false, 'exam_too_fast'
+        end
+        if not Bridge.IsNear(src, Config.Locations[s.loc].coords, ACTION_DISTANCE) then
+            -- NOTE: SPEC muette sur ce cas : session close et visite remboursée (aucun gain possible pour le joueur).
+            sessions[src] = nil
+            refund(src, s.identifier)
+            return false, 'too_far'
+        end
+
         sessions[src] = nil
-        debug('auto exam too fast for %s', src)
-        return false, 'exam_too_fast'
-    end
-    if not Bridge.IsNear(src, Config.Locations[s.loc].coords, ACTION_DISTANCE) then
-        -- NOTE: SPEC muette sur ce cas : session close et visite remboursée (aucun gain possible pour le joueur).
-        sessions[src] = nil
-        refund(src)
-        return false, 'too_far'
-    end
+        setCooldown(id)
+        if passed ~= true then return false, 'exam_failed' end
 
-    sessions[src] = nil
-    setCooldown(id)
-    if passed ~= true then return false, 'exam_failed' end
-
-    if not issue(src, L('auto_doctor')) then
-        refund(src)
-        return false, 'inventory_full'
-    end
-    Bridge.Notify(src, L('exam_passed'), 'success')
-    return true
+        if not issue(src, L('auto_doctor')) then
+            refund(src, s.identifier)
+            return false, 'inventory_full'
+        end
+        Bridge.Notify(src, L('exam_passed'), 'success')
+        return true
+    end)
 end)
 
 Callback.Register('pop_medexam:cancel', function(src)
-    if sessions[src] then
-        sessions[src] = nil
-        refund(src)
-    end
-    return true
+    return locked(src, false, function()
+        local s = sessions[src]
+        if s then
+            sessions[src] = nil
+            refund(src, s.identifier)
+        end
+        return true
+    end)
 end)
 
 ------------------------------------------------------------------------
@@ -218,7 +223,8 @@ local function nearestPatient(doctor)
     local best, bestDist = nil, PATIENT_DISTANCE
     for _, p in ipairs(Bridge.GetPlayers()) do
         p = tonumber(p)
-        if p and p ~= doctor and not inSession(p) and not Bridge.IsDead(p) then
+        if p and p ~= doctor and not inSession(p) and not Bridge.IsDead(p)
+            and GetPlayerRoutingBucket(p) == GetPlayerRoutingBucket(doctor) then
             local pos = Bridge.GetCoords(p)
             if pos then
                 local d = #(pos - origin)
@@ -230,11 +236,12 @@ local function nearestPatient(doctor)
 end
 
 Callback.Register('pop_medexam:emsStart', function(src, loc)
-    return locked(src, function()
+    return locked(src, true, function()
         local coords = location(loc)
         if not coords then return false, 'error' end
         if not Bridge.IsNear(src, coords, ACTION_DISTANCE) then return false, 'too_far' end
-        if not Bridge.GetIdentifier(src) then return false, 'error' end
+        local doctorId = Bridge.GetIdentifier(src)
+        if not doctorId or Bridge.IsDead(src) then return false, 'error' end
         if not isDoctor(src) then return false, 'wrong_job' end
 
         local patient = nearestPatient(src)
@@ -245,29 +252,35 @@ Callback.Register('pop_medexam:emsStart', function(src, loc)
         if wait then return false, 'cooldown', wait end
         if not Bridge.CanCarry(patient, Config.Item, 1) then return false, 'inventory_full' end
 
-        -- Le patient est réservé pendant la demande : aucun autre médecin ne peut le choisir.
-        busy[patient] = true
-        local okAwait, accepted = pcall(Callback.Await, 'pop_medexam:consent', patient, PRICE, Bridge.GetName(src) or GetPlayerName(src) or '')
-        busy[patient] = nil
-        if not okAwait or accepted ~= true then return false, 'patient_refused' end
+        return locked(patient, true, function()
+            local accepted = Callback.Await('pop_medexam:consent', patient, PRICE,
+                Bridge.GetName(src) or GetPlayerName(src) or '')
+            if accepted ~= true then return false, 'patient_refused' end
 
-        -- Revalidation après l'attente : chacun a pu bouger, changer de job ou partir.
-        if not Bridge.GetPlayer(patient) or inSession(patient) then return false, 'patient_gone' end
-        if not isDoctor(src) then return false, 'wrong_job' end
-        if not Bridge.IsNear(src, coords, ACTION_DISTANCE) then return false, 'too_far' end
-        if distance(src, patient) > PATIENT_DISTANCE then return false, 'patient_gone' end
+            -- Le consentement peut être différé. Revérifier les deux personnages avant de débiter le patient.
+            if Bridge.GetIdentifier(patient) ~= pid or Bridge.IsDead(patient) then
+                return false, 'patient_gone'
+            end
+            if Bridge.GetIdentifier(src) ~= doctorId or Bridge.IsDead(src) then return false, 'error' end
+            if not isDoctor(src) then return false, 'wrong_job' end
+            if not Bridge.IsNear(src, coords, ACTION_DISTANCE) then return false, 'too_far' end
+            if distance(src, patient) > PATIENT_DISTANCE then return false, 'patient_gone' end
+            if not Bridge.CanCarry(patient, Config.Item, 1) then return false, 'inventory_full' end
 
-        if not charge(patient) then
-            Bridge.Notify(patient, L('not_enough_money'), 'error')
-            return false, 'not_enough_money'
-        end
+            if not charge(patient) then
+                Bridge.Notify(patient, L('not_enough_money'), 'error')
+                return false, 'not_enough_money'
+            end
 
-        emsSessions[src] = { loc = loc, patient = patient, startedAt = os.time() }
-        patientOf[patient] = src
-        local patientName = Bridge.GetName(patient) or GetPlayerName(patient) or ''
-        Bridge.Notify(src, L('exam_started', patientName), 'info')
-        debug('ems exam started by %s for %s at %d', src, patient, loc)
-        return true, nil, patientName
+            emsSessions[src] = {
+                loc = loc, patient = patient, patientId = pid, doctorId = doctorId, startedAt = os.time(),
+            }
+            patientOf[patient] = src
+            local patientName = Bridge.GetName(patient) or GetPlayerName(patient) or ''
+            Bridge.Notify(src, L('exam_started', patientName), 'info')
+            debug('ems exam started by %s for %s at %d', src, patient, loc)
+            return true, nil, patientName
+        end)
     end)
 end)
 
@@ -280,43 +293,55 @@ local function closeEms(doctor)
 end
 
 Callback.Register('pop_medexam:emsFinish', function(src)
-    if busy[src] then return false, 'busy' end
-    local s = emsSessions[src]
-    if not s then return false, 'no_session' end
-    local d = Config.Durations
-    local minTime = math.floor((amount(d.pressure) + amount(d.vision) + amount(d.reflex)) / 1000) - 1
+    return locked(src, false, function()
+        local s = emsSessions[src]
+        if not s then return false, 'no_session' end
+        if Bridge.GetIdentifier(src) ~= s.doctorId or Bridge.IsDead(src) or not isDoctor(src) then
+            closeEms(src)
+            refund(s.patient, s.patientId)
+            return false, 'wrong_job'
+        end
+        local d = Config.Durations
+        local minTime = math.floor((amount(d.pressure) + amount(d.vision) + amount(d.reflex)) / 1000) - 1
 
-    if os.time() - s.startedAt < minTime then
+        if os.time() - s.startedAt < minTime then
+            closeEms(src)
+            refund(s.patient, s.patientId)
+            return false, 'exam_too_fast'
+        end
+        if not Bridge.IsNear(src, Config.Locations[s.loc].coords, ACTION_DISTANCE)
+            or Bridge.GetIdentifier(s.patient) ~= s.patientId or Bridge.IsDead(s.patient)
+            or distance(src, s.patient) > PATIENT_DISTANCE then
+            closeEms(src)
+            refund(s.patient, s.patientId)
+            return false, 'patient_gone'
+        end
+
+        local doctorName = Bridge.GetName(src) or GetPlayerName(src) or ''
+        busy[s.patient] = true
         closeEms(src)
-        refund(s.patient)
-        return false, 'exam_too_fast'
-    end
-    if not Bridge.IsNear(src, Config.Locations[s.loc].coords, ACTION_DISTANCE)
-        or distance(src, s.patient) > PATIENT_DISTANCE then
-        closeEms(src)
-        refund(s.patient)
-        return false, 'patient_gone'
-    end
+        local ok, issued = pcall(issue, s.patient, doctorName)
+        busy[s.patient] = nil
+        if not ok or not issued then
+            refund(s.patient, s.patientId)
+            return false, 'inventory_full'
+        end
+        if PRICE > 0 then Bridge.AddMoney(src, Config.Account, PRICE, 'pop_medexam') end
+        setCooldown(Bridge.GetIdentifier(s.patient))
 
-    closeEms(src)
-    local doctorName = Bridge.GetName(src) or GetPlayerName(src) or ''
-    if not issue(s.patient, doctorName) then
-        refund(s.patient)
-        return false, 'inventory_full'
-    end
-    if PRICE > 0 then Bridge.AddMoney(src, Config.Account, PRICE, 'pop_medexam') end
-    setCooldown(Bridge.GetIdentifier(s.patient))
-
-    local patientName = Bridge.GetName(s.patient) or GetPlayerName(s.patient) or ''
-    Bridge.Notify(s.patient, L('exam_passed'), 'success')
-    Bridge.Notify(src, L('exam_done_doctor', patientName, PRICE), 'success')
-    return true
+        local patientName = Bridge.GetName(s.patient) or GetPlayerName(s.patient) or ''
+        Bridge.Notify(s.patient, L('exam_passed'), 'success')
+        Bridge.Notify(src, L('exam_done_doctor', patientName, PRICE), 'success')
+        return true
+    end)
 end)
 
 Callback.Register('pop_medexam:emsCancel', function(src)
-    local s = closeEms(src)
-    if s then refund(s.patient) end
-    return true
+    return locked(src, false, function()
+        local s = closeEms(src)
+        if s then refund(s.patient, s.patientId) end
+        return true
+    end)
 end)
 
 ------------------------------------------------------------------------
@@ -349,7 +374,8 @@ local function showCertificate(src, _item, metadata)
     if not origin then return end
     for _, p in ipairs(Bridge.GetPlayers()) do
         p = tonumber(p)
-        if p and p ~= src and Bridge.IsNear(p, origin, SHOW_DISTANCE) then
+        if p and p ~= src and GetPlayerRoutingBucket(p) == GetPlayerRoutingBucket(src)
+            and Bridge.IsNear(p, origin, SHOW_DISTANCE) then
             TriggerClientEvent('pop_medexam:client:showCertificate', p, card)
         end
     end
@@ -390,7 +416,6 @@ end)
 local function cleanup(src)
     src = tonumber(src)
     if not src then return end
-    busy[src] = nil
     lastShow[src] = nil
     sessions[src] = nil -- session auto : supprimée sans remboursement
 
@@ -404,7 +429,7 @@ local function cleanup(src)
 
     -- Médecin parti : le patient est remboursé.
     local s = closeEms(src)
-    if s then refund(s.patient) end
+    if s then refund(s.patient, s.patientId) end
 end
 
 Bridge.OnPlayerDropped(cleanup)

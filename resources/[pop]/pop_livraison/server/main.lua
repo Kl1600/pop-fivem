@@ -15,6 +15,7 @@ local runs = {}      -- [src] = voir SPEC §3
 local busy = {}      -- [src] = true pendant un callback
 local cooldowns = {} -- [identifier] = os.time() de fin du délai
 local ticking = false
+local spawning = false
 
 local function log(fmt, ...)
     if Config.Debug then print(('[%s] ' .. fmt):format(RES, ...)) end
@@ -24,7 +25,7 @@ end
 local function amount(n)
     n = tonumber(n) or 0
     if n ~= n or n < 0 then return 0 end
-    return math.floor(n)
+    return math.floor(math.min(n, 2147483647))
 end
 
 local function isOnline(src)
@@ -47,15 +48,16 @@ local function giveKey(src, veh, plate)
     if GetResourceState('pop_vehiclekeys') == 'started' then
         pcall(function() exports.pop_vehiclekeys:GiveKey(src, plate) end)
     elseif GetResourceState('qbx_vehiclekeys') == 'started' then
-        -- NOTE: export à confirmer selon la version de qbx_vehiclekeys.
-        pcall(function() exports.qbx_vehiclekeys:GiveKeys(src, veh) end)
+        pcall(function() exports.qbx_vehiclekeys:GiveKeys(src, veh, true) end)
     end
 end
 
 -- Reprise de clé : indépendante du client (fin, abandon, expiration, déconnexion, arrêt).
-local function takeKey(src, plate)
+local function takeKey(src, veh, plate)
     if plate and GetResourceState('pop_vehiclekeys') == 'started' then
         pcall(function() exports.pop_vehiclekeys:RemoveKey(src, plate, true) end)
+    elseif veh and DoesEntityExist(veh) and GetResourceState('qbx_vehiclekeys') == 'started' then
+        pcall(function() exports.qbx_vehiclekeys:RemoveKeys(src, veh, true) end)
     end
 end
 
@@ -88,10 +90,10 @@ local function deleteLate(veh)
     end)
 end
 
-local function spawnClear(spawn)
+local function spawnClear(spawn, bucket)
     local pos = toVec3(spawn)
     for _, veh in ipairs(GetAllVehicles()) do
-        if #(GetEntityCoords(veh) - pos) < SPAWN_CLEAR then return false end
+        if GetEntityRoutingBucket(veh) == bucket and #(GetEntityCoords(veh) - pos) < SPAWN_CLEAR then return false end
     end
     return true
 end
@@ -122,8 +124,8 @@ local function closeRun(src, clientReason)
     if not run then return nil end
     runs[src] = nil
 
+    takeKey(src, run.vehicle, run.plate)
     deleteVehicle(run.vehicle)
-    takeKey(src, run.plate)
     setCooldown(run.identifier)
 
     if clientReason ~= false and isOnline(src) then
@@ -137,14 +139,17 @@ end
 local function tick()
     local now = os.time()
     for src, run in pairs(runs) do
-        if now >= run.expiresAt then
+        if not busy[src] and now >= run.expiresAt then
             closeRun(src, 'run_expired')
-        elseif run.vehicle and not vehicleOk(run.vehicle) then
+        elseif not busy[src] and run.vehicle and not vehicleOk(run.vehicle) then
             -- Épave ou camionnette disparue : tournée terminée, caution perdue.
             closeRun(src, 'vehicle_missing')
         end
     end
-    if next(runs) then
+    for identifier, deadline in pairs(cooldowns) do
+        if deadline <= now then cooldowns[identifier] = nil end
+    end
+    if next(runs) or next(cooldowns) then
         SetTimeout(TICK, tick)
     else
         ticking = false
@@ -196,6 +201,19 @@ local function locked(src, fn, ...)
     local ok, a, b, c, d = pcall(function(...)
         local identifier = Bridge.GetIdentifier(src)
         if not identifier or Bridge.IsDead(src) then return false, 'error' end
+        local run = runs[src]
+        if run and run.identifier ~= identifier then return false, 'no_run' end
+        if run and run.bucket ~= GetPlayerRoutingBucket(src) then return false, 'too_far' end
+        if run and os.time() >= run.expiresAt then
+            closeRun(src, false)
+            return false, 'run_expired'
+        end
+        if Config.Job then
+            local job = Bridge.GetJob(src)
+            if not job or not job.onDuty or not Bridge.HasJob(src, Config.Job) then
+                return false, 'wrong_job'
+            end
+        end
         return fn(src, identifier, ...)
     end, ...)
     busy[src] = nil
@@ -208,7 +226,6 @@ end
 
 local function start(src, identifier, withVehicle)
     if runs[src] then return false, 'already_on_run' end
-    if Config.Job and not Bridge.HasJob(src, Config.Job) then return false, 'wrong_job' end
 
     local now = os.time()
     local cd = cooldowns[identifier]
@@ -226,6 +243,7 @@ local function start(src, identifier, withVehicle)
 
     local run = {
         identifier = identifier,
+        bucket = GetPlayerRoutingBucket(src),
         dests = pickDestinations(count),
         index = 1,
         startedAt = now,
@@ -240,46 +258,60 @@ local function start(src, identifier, withVehicle)
     }
 
     if withVehicle then
-        local v = Config.Vehicle
-        if not spawnClear(v.spawn) then return false, 'spawn_blocked' end
-        local plate = generatePlate()
-        if not plate then return false, 'error' end
+        if spawning then return false, 'spawn_blocked' end
+        spawning = true
+        local vehicle, charged
+        local success, reason
+        local ok, err = pcall(function()
+            local v = Config.Vehicle
+            if not spawnClear(v.spawn, run.bucket) then reason = 'spawn_blocked' return end
+            local plate = generatePlate()
+            if not plate then return end
 
-        -- Caution retirée avant toute création ; toute erreur ensuite la rend.
-        local deposit = amount(v.deposit)
-        if deposit > 0 and not Bridge.RemoveMoney(src, Config.Account, deposit, 'pop_livraison') then
-            return false, 'not_enough_money'
-        end
-        local function refund()
-            if deposit > 0 and Bridge.GetPlayer(src) then
-                Bridge.AddMoney(src, Config.Account, deposit, 'pop_livraison')
+            local deposit = amount(v.deposit)
+            if deposit > 0 then
+                if not Bridge.RemoveMoney(src, Config.Account, deposit, RES) then
+                    reason = 'not_enough_money'
+                    return
+                end
+                charged = deposit
             end
+
+            local spot = v.spawn
+            vehicle = CreateVehicleServerSetter(joaat(v.model), 'automobile', spot.x, spot.y, spot.z, spot.w)
+            local deadline = GetGameTimer() + SPAWN_TIMEOUT
+            while vehicle and vehicle ~= 0 and not DoesEntityExist(vehicle)
+                and GetGameTimer() < deadline do
+                Wait(50)
+            end
+            if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle)
+                or Bridge.GetIdentifier(src) ~= identifier then return end
+            if Bridge.IsDead(src) or not Bridge.IsNear(src, Config.Depot.coords, ACTION_DISTANCE) then return end
+
+            if GetPlayerRoutingBucket(src) ~= run.bucket then return end
+            SetEntityRoutingBucket(vehicle, run.bucket)
+            SetEntityOrphanMode(vehicle, 2)
+            SetVehicleNumberPlateText(vehicle, plate)
+            local state = Entity(vehicle).state
+            state:set('pop_temporary', true, true)
+            state:set('fuel', 100.0, true)
+            run.vehicle, run.plate, run.deposit = vehicle, plate, deposit
+            giveKey(src, vehicle, plate)
+            success = true
+        end)
+        spawning = false
+        if not ok or not success then
+            if vehicle and vehicle ~= 0 and not DoesEntityExist(vehicle) then
+                deleteLate(vehicle)
+            else
+                deleteVehicle(vehicle)
+            end
+            if charged and Bridge.GetIdentifier(src) == identifier then
+                Bridge.AddMoney(src, Config.Account, charged, RES)
+            end
+            if not ok then log('vehicle spawn failed: %s', tostring(err)) end
+            return false, reason or 'error'
         end
-
-        local s = v.spawn
-        local veh = CreateVehicleServerSetter(joaat(v.model), 'automobile', s.x, s.y, s.z, s.w)
-        local deadline = GetGameTimer() + SPAWN_TIMEOUT
-        while not (veh and veh ~= 0 and DoesEntityExist(veh)) and GetGameTimer() < deadline do Wait(50) end
-
-        if not (veh and veh ~= 0 and DoesEntityExist(veh)) then
-            deleteLate(veh)
-            refund()
-            return false, 'error'
-        end
-        if not isOnline(src) then
-            DeleteEntity(veh)
-            refund()
-            return false, 'error'
-        end
-
-        SetEntityOrphanMode(veh, 2)
-        SetVehicleNumberPlateText(veh, plate)
-        local state = Entity(veh).state
-        state:set('pop_temporary', true, true)
-        state:set('fuel', 100.0, true)
-
-        run.vehicle, run.plate, run.deposit = veh, plate, deposit
-        giveKey(src, veh, plate)
     end
 
     runs[src] = run
@@ -311,11 +343,14 @@ local function deliver(src)
 
     -- Index incrémenté AVANT la paie (pas de double paie).
     run.index = run.index + 1
+    if pay > 0 and Bridge.Framework ~= 'standalone'
+        and not Bridge.AddMoney(src, Config.Account, pay, RES) then
+        run.index = run.index - 1
+        return false, 'error'
+    end
+    if Bridge.Framework == 'standalone' then pay = 0 end
     run.lastPos, run.lastAt = dest, os.time()
     run.paid = run.paid + pay
-    if pay > 0 and not Bridge.AddMoney(src, Config.Account, pay, 'pop_livraison') then
-        log('AddMoney failed src=%s pay=%d (standalone?)', src, pay)
-    end
     Bridge.Notify(src, L('delivered', pay), 'success')
     log('delivered src=%s index=%d pay=%d', src, run.index - 1, pay)
 
@@ -344,12 +379,12 @@ local function finish(src)
         return false, 'vehicle_too_far'
     end
 
+    if intact and run.deposit > 0 then
+        if not Bridge.AddMoney(src, Config.Account, run.deposit, RES) then return false, 'error' end
+        Bridge.Notify(src, L('deposit_returned', run.deposit), 'success')
+    end
     local done = closeRun(src, false)
     if not done then return false, 'no_run' end
-    if intact and done.deposit > 0 then
-        Bridge.AddMoney(src, Config.Account, done.deposit, 'pop_livraison')
-        Bridge.Notify(src, L('deposit_returned', done.deposit), 'success')
-    end
     Bridge.Notify(src, L('run_completed', done.paid), 'success')
     return true
 end
@@ -384,20 +419,18 @@ end)
 
 Bridge.OnPlayerDropped(function(src)
     closeRun(src, false)
-    busy[src] = nil
 end)
 
 Bridge.OnPlayerUnloaded(function(src)
     closeRun(src) -- event sans raison : le client nettoie sans notification
-    busy[src] = nil
 end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= RES then return end
     for src, run in pairs(runs) do
         runs[src] = nil
+        takeKey(src, run.vehicle, run.plate)
         deleteVehicle(run.vehicle)
-        takeKey(src, run.plate)
     end
 end)
 

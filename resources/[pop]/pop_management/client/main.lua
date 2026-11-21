@@ -15,7 +15,7 @@ local currentPoint = nil   -- index du point d'ouverture (nil = commande)
 -- Actions autorisées depuis la NUI (table blanche) et champs envoyés au serveur.
 local ACTIONS = {
     fire = 'employee', promote = 'employee', demote = 'employee',
-    pay = 'pay', deposit = 'amount', withdraw = 'amount', recruit = 'target',
+    pay = 'pay', deposit = 'preset', withdraw = 'preset', recruit = 'target',
 }
 
 ------------------------------------------------------------------------
@@ -139,7 +139,7 @@ local function openInvoice()
         SetNuiFocus(true, true)
         SendNUIMessage({
             action = 'pop_management:invoice', show = true,
-            society = info.society, max = info.max, players = nearby(),
+            society = info.society, presets = info.presets, players = nearby(),
         })
     end)
 end
@@ -220,13 +220,13 @@ RegisterNUICallback('pop_management:action', function(data, cb)
     else
         args = {}
     end
-    if kind == 'pay' or kind == 'amount' then
-        local amount = toInt(data.amount)
-        if not amount or amount < 1 then
+    if kind == 'pay' or kind == 'preset' then
+        local preset = data.preset
+        if type(preset) ~= 'string' or #preset > 32 then
             notifyError('invalid_amount')
             return cb({ ok = false, reason = 'invalid_amount' })
         end
-        args[#args + 1] = amount
+        args[#args + 1] = preset
     end
 
     CreateThread(function()
@@ -249,15 +249,15 @@ RegisterNUICallback('pop_management:sendInvoice', function(data, cb)
     if not invoiceOpen or type(data) ~= 'table' then return cb({ ok = false, reason = 'error' }) end
     local targetId = toInt(data.targetId)
     if not targetId then return cb({ ok = false, reason = 'error' }) end
-    local amount = toInt(data.amount)
-    if not amount or amount < 1 then
+    local preset = data.preset
+    if type(preset) ~= 'string' or #preset > 32 then
         notifyError('invalid_amount')
         return cb({ ok = false, reason = 'invalid_amount' })
     end
     local note = type(data.note) == 'string' and data.note ~= '' and data.note or nil
 
     CreateThread(function()
-        local ok, reason, arg = Callback.Await('pop_management:sendInvoice', targetId, amount, note)
+        local ok, reason, arg = Callback.Await('pop_management:sendInvoice', targetId, preset, note)
         if ok == true then
             closeAll()
             return cb({ ok = true })

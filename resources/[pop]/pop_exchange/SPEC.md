@@ -17,7 +17,7 @@ convertit un compte d'argent (`cash`, `bank`, `black`) ou un item vers un autre 
 
 **Boucle de jeu**
 1. Parler au changeur (`[E] Parler au changeur`).
-2. Petit panneau à droite : offres du lieu, solde de la monnaie donnée, montant à saisir, aperçu « Vous recevez »,
+2. Petit panneau à droite : offres du lieu, solde de la monnaie donnée, choix du montant, aperçu « Vous recevez »,
    limite restante de l'heure.
 3. Confirmer → le serveur vérifie et échange. Panneau mis à jour.
 
@@ -114,7 +114,8 @@ Libellé d'une monnaie : locale `currency_<nom>` (`currency_cash`, `currency_bla
     to        = 'pesos',    -- nom de la monnaie reçue
     rate      = 20.0,       -- number
     balance   = 1250,       -- int : solde du joueur dans la monnaie donnée
-    remaining = 4000,       -- int : quantité encore échangeable cette heure (min(limite restante, solde))
+    presets   = { { id = 'preset_4', amount = 100 } }, -- options choisies par le serveur
+    remaining = 1250,       -- int : quantité encore échangeable cette heure (min(limite restante, solde))
 }
 ```
 Jamais de champ `alert` envoyé au client.
@@ -128,8 +129,8 @@ Jamais de champ `alert` envoyé au client.
 |---|---|---|---|
 | `pop_exchange:client:policeAlert` | `coords` (`{ x, y, z }`) | chaque policier en service | Notification + blip temporaire |
 
-Aucun `RegisterNetEvent` serveur propre au script. Bridge : `Bridge.OnPlayerDropped` / `OnPlayerUnloaded` →
-libère `busy[src]` (les limites sont indexées par identifiant et survivent).
+Aucun `RegisterNetEvent` serveur propre au script. Le verrou et la limite horaire sont indexés par identifiant
+de personnage. Une déconnexion n’interrompt pas le verrou détenu par une opération en cours.
 
 ---
 
@@ -138,7 +139,7 @@ libère `busy[src]` (les limites sont indexées par identifiant et survivent).
 | Nom | Paramètres (client → serveur) | Retour |
 |---|---|---|
 | `pop_exchange:getOffers` | `loc` (int) | `ok, reason, arg, offers` (tableau séquentiel d'OfferView, dans l'ordre de `offers` du lieu) |
-| `pop_exchange:exchange` | `loc` (int), `id` (string), `amount` (int) | `ok, reason, arg, offers` (à jour, succès comme échec si le joueur est valide) |
+| `pop_exchange:exchange` | `loc` (int), `id` (string), `preset` (string) | `ok, reason, arg, offers` (à jour, si le personnage est encore à portée) |
 
 Échec → message `L(reason or 'error', arg)` ; succès → `reason = 'exchanged'`, `arg = { given, received }` : le client
 traduit avec `L(reason, table.unpack(type(arg) == 'table' and arg or { arg }))`. Le résultat est affiché **dans le
@@ -165,10 +166,10 @@ Focus `SetNuiFocus(true, true)` à l'ouverture. Échap → kit `close` → `Brid
 ### JS → Lua
 | Nom | Données | Réponse |
 |---|---|---|
-| `pop_exchange:exchange` | `{ "id": "usd_pesos", "amount": 100 }` | `{ "ok": true, "message": "You gave 100 Dollars and received 2000 Pesos", "offers": [ ... ] }` |
+| `pop_exchange:exchange` | `{ "id": "usd_pesos", "preset": "preset_4" }` | `{ "ok": true, "message": "You gave 100 Dollars and received 2000 Pesos", "offers": [ ... ] }` |
 | `close` | (kit) | bridge |
 
-Le client garde l'index du lieu, arrondit `amount` (`math.floor(tonumber(x) or 0)`), appelle
+Le client garde l'index du lieu, transmet l’identifiant `preset`, appelle
 `pop_exchange:exchange` et répond avec le message déjà traduit. Pendant l'attente, le JS bloque le bouton.
 
 ### Interface (Dev NUI)
@@ -178,8 +179,7 @@ Le client garde l'index du lieu, arrondit `amount` (`math.floor(tonumber(x) or 0
     et en petit `Pop.t('ui_rate', '1', Pop.t('currency_' + from), rate, Pop.t('currency_' + to))` ; première offre
     sélectionnée par défaut ;
   - `Pop.t('ui_balance', balance)`, `Pop.t('ui_remaining', remaining)` (petit) ;
-  - champ `#ex-amount` (`type="number" min="1" step="1"`, placeholder `Pop.t('ui_amount')`), bouton `Max`
-    (`data-locale="ui_max"`, remplit `remaining`) ;
+  - sélecteur `#ex-amount` (entrées de `OfferView.presets`) ; bouton `Max` sélectionne l’option `max` ;
   - aperçu `#ex-preview` : `Pop.t('ui_receive', Math.floor(amount * rate), Pop.t('currency_' + to))` en accent ;
   - bouton `#ex-confirm` (`confirm`), désactivé si l'aperçu vaut 0 ou `amount > remaining` ;
   - ligne `#ex-status` (`--pop-danger` si `ok = false`).
@@ -223,6 +223,7 @@ Config.Offers = {
 }
 
 -- Bureaux. offers = ids proposés ici. ped = modèle du PNJ (false : zone). blip = afficher sur la carte.
+Config.Amounts = { 1, 10, 25, 100, 500, 1000, 5000, 10000 } -- surcharge par offre via amounts
 Config.Locations = {
     { coords = vector4(-639.07, -180.47, 37.68, 33.0), ped = 's_m_m_cntrybar_01', blip = true,
       offers = { 'usd_pesos', 'pesos_usd' } },
@@ -292,7 +293,7 @@ Aucun. README : déclaration de l'item `pesos` (ox_inventory, qb/qs-inventory, E
 - Limites : `history[identifier][id] = { { t = os.time(), n = 100 }, ... }` ; `used = somme des n où t > now - HOUR`
   (entrées plus anciennes supprimées à la lecture) ; `remaining = max(0, limit - used)`.
 - Au démarrage : vérification de la config (print anglais pour tout id de `Config.Locations[].offers` absent de
-  `Config.Offers`, ou `rate <= 0`, ou `limit` non entier).
+  `Config.Offers`, ou offre invalide. Une offre mal configurée reste masquée. Les entrées expirées sont purgées après une heure d’inactivité).
 - Alerte : si `math.random() < offer.alert` après un échange réussi → `pop_exchange:client:policeAlert` avec
   `{ x, y, z }` du lieu à chaque `src` de `Bridge.GetPlayers()` tel que `Bridge.HasJob(src, Config.Police.jobs)` et
   `Bridge.GetJob(src).onDuty`.
@@ -313,17 +314,19 @@ Aucun. README : déclaration de l'item `pesos` (ox_inventory, qb/qs-inventory, E
 
 ## 12. Règles de sécurité (serveur, obligatoires)
 
-Le client n'envoie qu'un index de lieu, un id d'offre et un montant. Taux, monnaies, limites : config et serveur.
+Le client envoie un index de lieu, un id d’offre et un identifiant de montant. Taux, montants, monnaies et limites
+viennent de la configuration et du serveur.
 1. `loc` entier valide ; `Bridge.IsNear(src, lieu, ACTION_DISTANCE)`, sinon `too_far`.
 2. `id` string présente dans `Config.Locations[loc].offers` **et** dans `Config.Offers`, sinon `offer_unknown`.
-3. `amount` : `tonumber`, fini, entier (`n == math.floor(n)`), `1 ≤ n ≤ 10000000`, sinon `invalid_amount`.
-4. `received = math.floor(amount * offer.rate)` ; `received < 1` → `amount_too_low`.
+3. Résoudre `preset` via la configuration ou calculer le maximum côté serveur. Le montant obtenu est un
+   entier de 1 à 10 000 000, sinon `invalid_amount`.
+4. `received = math.floor(amount * offer.rate)` ; `received < 1` → `amount_too_low`. La configuration borne aussi le résultat à 10 000 000.
 5. Limite : `amount > remaining` → `hourly_limit` (arg = remaining).
 6. `balance(src, from) >= amount`, sinon `not_enough`.
 7. `canReceive(src, to, received)`, sinon `inventory_full`.
 8. Ordre : `take` (échec → `not_enough`) → `give` (échec → **rendre** `amount` via `give(src, from, amount)` et
    `error`) → enregistrer `{ t, n = amount }` dans la limite.
-9. Verrou `busy[src]` → `busy`, libéré dans tous les cas ; joueur mort → `error` ; `Bridge.GetIdentifier` non nil.
+9. Verrou par identifiant → `busy`, libéré dans tous les cas ; joueur mort → `error` ; `Bridge.GetIdentifier` non nil.
    Anti-spam du template actif.
 10. Aucune information d'alerte ou de probabilité envoyée au client.
 

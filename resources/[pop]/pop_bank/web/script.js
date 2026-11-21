@@ -21,6 +21,8 @@
   var current = 'deposit';
   var isAtm = false;
   var pending = false;
+  var presets = {};
+  var session = 0;
 
   function money(n) {
     return Pop.t('money', (Number(n) || 0).toLocaleString());
@@ -43,7 +45,19 @@
     current = name;
     tabs.forEach(function (t) { t.classList.toggle('is-active', t.getAttribute('data-tab') === name); });
     target.classList.toggle('pop-hidden', name !== 'transfer');
+    renderPresets();
     setStatus('');
+  }
+
+  function renderPresets() {
+    var selected = amount.value;
+    amount.replaceChildren(new Option(Pop.t('ui_amount'), ''));
+    (presets[current] || []).forEach(function (preset) {
+      amount.add(new Option(money(preset.amount), preset.id));
+    });
+    amount.value = Array.from(amount.options).some(function (item) { return item.value === selected; }) ? selected : '';
+    submit.disabled = pending || !amount.value;
+
   }
 
   function renderHistory(list) {
@@ -90,6 +104,8 @@
     } else {
       account.classList.add('pop-hidden');
     }
+    presets = data.presets || {};
+    renderPresets();
     renderHistory(data.history);
   }
 
@@ -100,7 +116,7 @@
     Pop.translate(panel);
     tabTransfer.classList.toggle('pop-hidden', isAtm);
     target.placeholder = Pop.t('ui_target_hint');
-    amount.placeholder = Pop.t('ui_amount');
+    amount.setAttribute('aria-label', Pop.t('ui_amount'));
     target.value = '';
     amount.value = '';
     pending = false;
@@ -112,17 +128,24 @@
   }
 
   function hide() {
+    session += 1;
     Pop.show(panel, false);
     if (document.activeElement) document.activeElement.blur();
   }
 
   function send() {
     if (pending) return;
-    var payload = { amount: Math.floor(Number(amount.value) || 0) };
+    if (!amount.value) {
+      setStatus(Pop.t('invalid_amount'), false);
+      return;
+    }
+    var activeSession = session;
+    var payload = { preset: amount.value };
     if (current === 'transfer') payload.target = target.value.trim().slice(0, 64);
     pending = true;
     submit.disabled = true;
     Pop.post('pop_bank:' + current, payload).then(function (res) {
+      if (session !== activeSession) return;
       pending = false;
       submit.disabled = false;
       if (!res) {
@@ -132,6 +155,7 @@
       setStatus(res.message, !!res.ok);
       render(res.data);
       if (res.ok) amount.value = '';
+      submit.disabled = !amount.value;
     });
   }
 
@@ -139,12 +163,7 @@
     t.addEventListener('click', function () { selectTab(t.getAttribute('data-tab')); });
   });
 
-  document.querySelectorAll('.bank-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      amount.value = chip.getAttribute('data-amount');
-      amount.focus();
-    });
-  });
+  amount.addEventListener('change', function () { submit.disabled = pending || !amount.value; });
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
