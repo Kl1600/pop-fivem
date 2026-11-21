@@ -10,7 +10,7 @@ Dépôt des scripts FiveM POP, vendus dans l'esprit 0Resmon (~0.00 ms). Identit�
 ## Règles du dépôt
 - Chaque script vit dans `resources/[pop]/pop_<nom>/` (préfixe `pop_`, minuscules, underscore).
 - Un push sur `main` qui modifie `resources/[pop]/` est déployé automatiquement sur le serveur de test par SFTP (`.github/workflows/deploy.yml`). Ne pousse sur `main` que du code qui démarre sans erreur.
-- Travail en cours : branche `script/<nom>`, puis fusion dans `main` une fois l'audit passé.
+- Travail en cours : branche `vague-<n>` (ou `script/<nom>`), puis fusion dans `main` une fois l’audit passé et le lint à 0 erreur (`luacheck resources templates`).
 - Jamais de clé de licence, mot de passe ou identifiant dans le dépôt : ils vont dans les secrets GitHub.
 
 ## Méthode pour un nouveau script
