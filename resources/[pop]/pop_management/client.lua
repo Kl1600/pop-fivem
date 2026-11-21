@@ -1618,12 +1618,14 @@ end)
 -- est actif pendant le focus DUI, ou si le chat est désactivé sur le serveur).
 -- Toutes rebindables par le joueur dans : Paramètres > Touches > FiveM.
 -- =============================
-RegisterKeyMapping('lapedity',  'Editeur position écran DUI (laptop/PC)', 'KEYBOARD', 'F6')
-RegisterKeyMapping('lapclose',  'Fermer le laptop / PC', 'KEYBOARD', 'F7')
-RegisterKeyMapping('lapplace',  'Placer un laptop / PC devant le joueur', 'KEYBOARD', 'F9')
-RegisterKeyMapping('lapnext',   'Cycle texture cible (debug)', 'KEYBOARD', 'F10')
-RegisterKeyMapping('lapside',   'Inverser le côté écran (debug)', 'KEYBOARD', 'F11')
-RegisterKeyMapping('lapcorners','Editeur 3D par 4 coins (snap)', 'KEYBOARD', 'F5')
+-- Touches par défaut choisies pour ne pas entrer en conflit avec les autres scripts
+-- (F5 emotes, F6 admin, F7 noclip, F10 police). Outils de placement : sans touche.
+RegisterKeyMapping('lapedity',  'Editeur position écran DUI (laptop/PC)', 'KEYBOARD', '')
+RegisterKeyMapping('lapclose',  'Fermer le laptop / PC', 'KEYBOARD', 'F3')
+RegisterKeyMapping('lapplace',  'Placer un laptop / PC devant le joueur', 'KEYBOARD', '')
+RegisterKeyMapping('lapnext',   'Cycle texture cible (debug)', 'KEYBOARD', '')
+RegisterKeyMapping('lapside',   'Inverser le côté écran (debug)', 'KEYBOARD', '')
+RegisterKeyMapping('lapcorners','Editeur 3D par 4 coins (snap)', 'KEYBOARD', '')
 
 RegisterCommand('lapcorners', function()
   startCornerEditor()
