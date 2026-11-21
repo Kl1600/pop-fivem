@@ -407,7 +407,7 @@ RegisterNetEvent('pop_inventory:server:adminAddGrade', function(jobName, gradeLe
             -- NOT NULL sans default dans la table, faudra ajouter une migration. Pour l'instant
             -- on tente sans, plus tolerant.
             safeUpdate(
-                "INSERT INTO job_grades (job_name, grade, name, label, salary) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female) VALUES (?, ?, ?, ?, ?, '{}', '{}')",
                 { jobName, gradeLevel, gradeName, gradeLabel, salary },
                 "INSERT grade (minimal)",
                 function(rowsIns)

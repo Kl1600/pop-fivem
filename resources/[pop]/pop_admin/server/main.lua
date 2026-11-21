@@ -696,7 +696,7 @@ RegisterNetEvent('pop_admin:jobAddGrade', function(jobName, level, gname, glabel
     salary = tonumber(salary) or 0
     if type(gname) ~= 'string' or gname == '' or type(glabel) ~= 'string' or glabel == '' then return end
     MySQL.update('DELETE FROM job_grades WHERE job_name = ? AND grade = ?', { jobName, level }, function()
-        MySQL.update('INSERT INTO job_grades (job_name, grade, name, label, salary) VALUES (?, ?, ?, ?, ?)',
+        MySQL.update('INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female) VALUES (?, ?, ?, ?, ?, '{}', '{}')',
             { jobName, level, gname, glabel, salary }, function()
             if ESX.Jobs and ESX.Jobs[jobName] then
                 ESX.Jobs[jobName].grades = ESX.Jobs[jobName].grades or {}

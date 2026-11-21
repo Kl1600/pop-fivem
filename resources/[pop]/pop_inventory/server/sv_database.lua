@@ -190,16 +190,16 @@ CreateThread(function()
   if not MySQL then print('[TAB_INVENTORY] Backfill grades : MySQL indispo'); return end
 
   MySQL.update([[
-    INSERT INTO job_grades (job_name, grade, name, label, salary)
-    SELECT j.name, 0, 'recrue', 'Recrue', 100
+    INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female)
+    SELECT j.name, 0, 'recrue', 'Recrue', 100, '{}', '{}'
     FROM jobs j
     WHERE NOT EXISTS (SELECT 1 FROM job_grades g WHERE g.job_name = j.name AND g.grade = 0)
   ]], {}, function(addedRecrue)
     print(('[TAB_INVENTORY] Backfill grades Recrue (grade 0) : affectedRows=%s'):format(tostring(addedRecrue)))
 
     MySQL.update([[
-      INSERT INTO job_grades (job_name, grade, name, label, salary)
-      SELECT j.name, 4, 'boss', 'Patron', 1000
+      INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female)
+      SELECT j.name, 4, 'boss', 'Patron', 1000, '{}', '{}'
       FROM jobs j
       WHERE NOT EXISTS (SELECT 1 FROM job_grades g WHERE g.job_name = j.name AND g.grade = 4)
     ]], {}, function(addedBoss)

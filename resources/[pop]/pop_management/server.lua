@@ -139,7 +139,23 @@ CreateThread(function()
     ensureColumn('youtool_orders', 'delivery_coords', 'VARCHAR(64) DEFAULT NULL') -- "x,y,z" capturé à la commande
     ensureColumn('youtool_orders', 'assigned_to', 'VARCHAR(50) DEFAULT NULL') -- identifier du livreur qui a validé/pris le colis
     ensureColumn('youtool_orders', 'is_bot', 'TINYINT(1) NOT NULL DEFAULT 0') -- commande PNJ générée automatiquement
-    ensureColumn('dealership_orders', 'customer_name', 'VARCHAR(100) DEFAULT NULL')
+    exports.oxmysql:execute([[
+        CREATE TABLE IF NOT EXISTS `dealership_orders` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `user_identifier` VARCHAR(60) DEFAULT NULL,
+            `society` VARCHAR(50) DEFAULT NULL,
+            `vehicle_model` VARCHAR(60) NOT NULL,
+            `vehicle_color` VARCHAR(30) DEFAULT NULL,
+            `ordered_at` INT NOT NULL DEFAULT 0,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+            `customer_name` VARCHAR(100) DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `idx_status` (`status`),
+            KEY `idx_user` (`user_identifier`)
+        )
+    ]], {}, function()
+        ensureColumn('dealership_orders', 'customer_name', 'VARCHAR(100) DEFAULT NULL')
+    end)
     -- Casiers (pop_inventory) : matricule = numéro de casier de l'employé pour son job
     -- actuel, code_casier = code à 4 chiffres demandé pour ouvrir le casier d'un collègue.
     ensureColumn('users', 'matricule', 'INT DEFAULT NULL')
