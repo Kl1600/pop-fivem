@@ -8,3 +8,4 @@ Répartition de l'audit (`docs/audit.md`) : démarrage au GO du client.
 - pop_grandtheftauto : Chef 3 (test en jeu avec le client)
 - Lot 4 — pop_bennys, pop_enterprisegarage, pop_kilometrage, pop_vehiclepersistence, pop_speedometer, pop_v3dui, pop_doorlock, pop_affiche, pop_boards, pop_medexam, pop_chat, pop_emotes, pop_hud, pop_notify : Chef 4
 - Hors travaux : pop_police, pop_police80 (mis de côté par le client)
+- pop_inventory, pop_charcreator, pop_clothes, pop_loading, pop_idcard, pop_passport : Chef 2 (gabarit POP)
