@@ -1,0 +1,37 @@
+-- Nederlands
+Locales['nl'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuleren',
+    confirm            = 'Bevestigen',
+    close              = 'Sluiten',
+    interact           = 'Interactie',
+    progress_cancelled = 'Actie geannuleerd',
+    no_permission      = 'Je hebt geen toestemming',
+    wrong_job          = 'Je hebt niet de vereiste baan',
+    too_far            = 'Je bent te ver weg',
+    not_enough_money   = 'Niet genoeg geld',
+    missing_item       = 'Je hebt nodig: %s',
+    inventory_full     = 'Je inventaris is vol',
+    cooldown           = 'Wacht nog %s s',
+    busy               = 'Je bent al bezig',
+    error              = 'Er is iets misgegaan',
+
+    -- Textes propres au script :
+    keymap_lock      = 'Voertuig: vergrendelen / ontgrendelen',
+    locked           = 'Voertuig vergrendeld',
+    unlocked         = 'Voertuig ontgrendeld',
+    no_vehicle       = 'Geen voertuig in de buurt',
+    no_key           = 'Je hebt de sleutels van dit voertuig niet',
+    no_key_engine    = 'Geen sleutel: de motor start niet',
+    key_description  = 'Kenteken: %s',
+    key_invalid      = 'Deze sleutel hoort bij geen enkel voertuig',
+    key_received     = 'Je hebt de sleutel van %s ontvangen',
+    key_removed      = 'De sleutel van %s is ingenomen',
+    vehicle_not_here = 'Voertuig %s is niet in de buurt',
+    locksmith_blip   = 'Slotenmaker',
+    locksmith_target = 'Sleutel laten bijmaken',
+    locksmith_hint   = 'Gebruik de sleutel die je wilt kopiëren vanuit je inventaris',
+    duplicating      = 'Sleutel wordt bijgemaakt ($%s)...',
+    duplicated       = 'Reservesleutel gemaakt voor %s',
+    not_supported    = 'Je inventaris ondersteunt geen voertuigsleutels',
+}

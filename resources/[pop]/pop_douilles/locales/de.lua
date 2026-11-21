@@ -1,0 +1,38 @@
+-- Deutsch
+Locales['de'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Abbrechen',
+    confirm            = 'Bestätigen',
+    close              = 'Schließen',
+    interact           = 'Interagieren',
+    progress_cancelled = 'Aktion abgebrochen',
+    no_permission      = 'Dazu hast du keine Berechtigung',
+    wrong_job          = 'Du hast nicht den erforderlichen Job',
+    too_far            = 'Du bist zu weit entfernt',
+    not_enough_money   = 'Nicht genug Geld',
+    missing_item       = 'Du brauchst: %s',
+    inventory_full     = 'Dein Inventar ist voll',
+    cooldown           = 'Bitte warte noch %s s',
+    busy               = 'Du bist bereits beschäftigt',
+    error              = 'Etwas ist schiefgelaufen',
+
+    -- Textes propres au script :
+    keymap_search      = 'Boden nach Hülsen absuchen',
+    searching          = 'Bereich wird abgesucht...',
+    found_casings      = '%s Fundstelle(n) mit Hülsen gefunden',
+    nothing_found      = 'Hier ist nichts',
+    target_pickup      = 'Hülse sichern',
+    picking_up         = 'Beweis wird gesichert...',
+    picked_up          = 'Hülse als Beweis gesichert',
+    casing_not_found   = 'Diese Hülse ist verschwunden',
+    casing_description = 'Hülse %s - %s',
+    caliber_unknown    = 'Unbekanntes Kaliber',
+    street_unknown     = 'Unbekannter Ort',
+    time_format        = '%d.%m.%Y %H:%M',
+    report_title       = 'Ballistischer Bericht',
+    report_caliber     = 'Kaliber',
+    report_signature   = 'Signatur',
+    report_time        = 'Schuss',
+    report_street      = 'Ort',
+    report_count       = 'Hülsen',
+}

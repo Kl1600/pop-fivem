@@ -1,0 +1,37 @@
+-- Türkçe
+Locales['tr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'İptal',
+    confirm            = 'Onayla',
+    close              = 'Kapat',
+    interact           = 'Etkileşim',
+    progress_cancelled = 'İşlem iptal edildi',
+    no_permission      = 'Bunun için yetkin yok',
+    wrong_job          = 'Gerekli mesleğe sahip değilsin',
+    too_far            = 'Çok uzaktasın',
+    not_enough_money   = 'Yeterli paran yok',
+    missing_item       = 'Gerekli: %s',
+    inventory_full     = 'Envanterin dolu',
+    cooldown           = 'Lütfen %s sn bekle',
+    busy               = 'Zaten meşgulsün',
+    error              = 'Bir şeyler ters gitti',
+
+    -- Textes propres au script :
+    keymap_lock      = 'Araç: kilitle / kilidi aç',
+    locked           = 'Araç kilitlendi',
+    unlocked         = 'Aracın kilidi açıldı',
+    no_vehicle       = 'Yakında araç yok',
+    no_key           = 'Bu aracın anahtarı sende yok',
+    no_key_engine    = 'Anahtar yok: motor çalışmıyor',
+    key_description  = 'Plaka: %s',
+    key_invalid      = 'Bu anahtar hiçbir araca bağlı değil',
+    key_received     = '%s plakalı aracın anahtarını aldın',
+    key_removed      = '%s plakalı aracın anahtarı senden alındı',
+    vehicle_not_here = '%s plakalı araç yakında değil',
+    locksmith_blip   = 'Çilingir',
+    locksmith_target = 'Anahtar kopyala',
+    locksmith_hint   = 'Kopyalanacak anahtarı envanterinden kullan',
+    duplicating      = 'Yedek anahtar yapılıyor ($%s)...',
+    duplicated       = '%s için yedek anahtar yapıldı',
+    not_supported    = 'Envanterin araç anahtarlarını desteklemiyor',
+}

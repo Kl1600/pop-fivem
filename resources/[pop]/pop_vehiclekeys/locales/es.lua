@@ -1,0 +1,37 @@
+-- Español
+Locales['es'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancelar',
+    confirm            = 'Confirmar',
+    close              = 'Cerrar',
+    interact           = 'Interactuar',
+    progress_cancelled = 'Acción cancelada',
+    no_permission      = 'No tienes permiso',
+    wrong_job          = 'No tienes el trabajo necesario',
+    too_far            = 'Estás demasiado lejos',
+    not_enough_money   = 'No tienes suficiente dinero',
+    missing_item       = 'Necesitas: %s',
+    inventory_full     = 'Tu inventario está lleno',
+    cooldown           = 'Espera %s s',
+    busy               = 'Ya estás ocupado',
+    error              = 'Algo salió mal',
+
+    -- Textes propres au script :
+    keymap_lock      = 'Vehículo: cerrar / abrir',
+    locked           = 'Vehículo cerrado',
+    unlocked         = 'Vehículo abierto',
+    no_vehicle       = 'No hay ningún vehículo cerca',
+    no_key           = 'No tienes las llaves de este vehículo',
+    no_key_engine    = 'Sin llave: el motor no arranca',
+    key_description  = 'Matrícula: %s',
+    key_invalid      = 'Esta llave no está vinculada a ningún vehículo',
+    key_received     = 'Has recibido la llave de %s',
+    key_removed      = 'Te han retirado la llave de %s',
+    vehicle_not_here = 'El vehículo %s no está cerca',
+    locksmith_blip   = 'Cerrajero',
+    locksmith_target = 'Hacer una copia',
+    locksmith_hint   = 'Usa desde tu inventario la llave que quieres copiar',
+    duplicating      = 'Haciendo una copia (%s $)...',
+    duplicated       = 'Copia hecha para %s',
+    not_supported    = 'Tu inventario no admite llaves de vehículo',
+}

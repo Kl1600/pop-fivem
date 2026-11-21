@@ -1,0 +1,38 @@
+-- Français
+Locales['fr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuler',
+    confirm            = 'Confirmer',
+    close              = 'Fermer',
+    interact           = 'Interagir',
+    progress_cancelled = 'Action annulée',
+    no_permission      = "Vous n'avez pas la permission",
+    wrong_job          = "Vous n'avez pas le métier requis",
+    too_far            = 'Vous êtes trop loin',
+    not_enough_money   = "Pas assez d'argent",
+    missing_item       = 'Il vous faut : %s',
+    inventory_full     = 'Votre inventaire est plein',
+    cooldown           = 'Patientez encore %s s',
+    busy               = 'Vous êtes déjà occupé',
+    error              = 'Une erreur est survenue',
+
+    -- Textes propres au script :
+    item_clamp           = 'Sabot de roue',
+    item_cutter          = 'Disqueuse',
+    no_vehicle           = 'Aucun véhicule à proximité',
+    already_clamped      = 'Ce véhicule a déjà un sabot',
+    not_clamped          = "Ce véhicule n'a pas de sabot",
+    vehicle_occupied     = "Quelqu'un est au volant",
+    vehicle_incompatible = 'Ce véhicule ne peut pas recevoir de sabot',
+    placing              = 'Pose du sabot...',
+    removing             = 'Retrait du sabot...',
+    cutting              = 'Découpe du sabot...',
+    placed               = 'Sabot posé : véhicule immobilisé',
+    removed              = 'Sabot retiré',
+    cut                  = 'Sabot découpé',
+    clamped_driver       = 'Ce véhicule a un sabot',
+    target_remove        = 'Retirer le sabot',
+    target_cut           = 'Découper le sabot',
+    police_alert         = "Quelqu'un découpe un sabot de roue",
+    police_blip          = 'Découpe de sabot',
+}

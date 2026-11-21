@@ -82,7 +82,9 @@ Les valeurs de retour multiples sont transmises.
 | `Bridge.HasItem(src, item, count?)` | bool | count par défaut 1 |
 | `Bridge.CanCarry(src, item, count?)` | bool | |
 | `Bridge.AddItem(src, item, count?, metadata?)` | bool | vérifie CanCarry avant |
-| `Bridge.RemoveItem(src, item, count?, metadata?)` | bool | vérifie la quantité avant |
+| `Bridge.RemoveItem(src, item, count?, metadata?, slot?)` | bool | vérifie la quantité avant ; `slot` : retire ce slot précis (vérifié via `GetItems`), ignoré si `SupportsMetadata()` est false |
+| `Bridge.GetItems(src, item?)` | `{ { name, count, slot, metadata }, ... }` | toutes les piles, ou celles de `item` ; `metadata` jamais nil (`{}`) ; `slot` nil avec l'inventaire ESX de base ; `{}` si rien |
+| `Bridge.SupportsMetadata()` | bool | true : pop_inventory, ox_inventory, qs/qb/ps-inventory, inventaire QBCore/Qbox ; false : inventaire ESX de base, standalone, `none` |
 | `Bridge.RegisterUsableItem(item, cb(src, item, metadata))` | bool | |
 | `Bridge.Notify(src, msg, type?, duration?)` | | type : info, success, error, warning |
 | `Bridge.IsAdmin(src)` | bool | ACE `pop.admin` ou groupe admin/superadmin/god |
@@ -144,10 +146,22 @@ Tout est nettoyé à l'arrêt de la ressource (targets, prompt, animation, focus
 Au chargement, le kit récupère langue, sens (RTL) et couleur via le callback `pop:ready` du bridge.
 Messages HUD gérés par le kit : `pop:prompt`, `pop:progress`, `pop:notify`, `pop:locale`.
 
-## Contrat attendu de pop_inventory
+## Contrat de pop_inventory
 
-Exports serveur : `GetItemCount(src, item)`, `AddItem(src, item, count, metadata)`, `RemoveItem(src, item, count, metadata)`,
-`CanCarryItem(src, item, count)`, `RegisterUsableItem(item, cb(src, item, metadata))`.
+Exports serveur appelés par le bridge (noms et signatures d'ox_inventory, arguments en plus facultatifs) :
+
+| Export | Retour |
+|---|---|
+| `GetItemCount(inv, item, metadata?, strict?)` | number (filtre metadata : toutes les clés du filtre égales ; `strict` : égalité complète) |
+| `AddItem(inv, item, count, metadata?, slot?)` | `true` \| `false, reason` |
+| `RemoveItem(inv, item, count, metadata?, slot?)` | `true` \| `false, reason` (tout ou rien) |
+| `CanCarryItem(inv, item, count, metadata?)` | bool |
+| `Search(inv, 'slots', item)` | liste `{ name, count, slot, metadata }` (utilisé par `Bridge.GetItems`) |
+| `GetInventoryItems(inv)` | liste d'items (`Bridge.GetItems` sans filtre) |
+| `RegisterUsableItem(item, cb(src, item, metadata, slot))` | true |
+
+`inv` = source du joueur pour le bridge. Ordre de démarrage : `ensure pop_inventory` **avant** `ensure [pop]`,
+sinon les autres scripts ne le détectent pas (détection au démarrage du bridge).
 
 ## Vérifier
 

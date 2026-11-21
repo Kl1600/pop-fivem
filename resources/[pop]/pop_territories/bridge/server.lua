@@ -21,6 +21,29 @@ local function validAmount(n)
     return math.floor(n)
 end
 
+-- Pile au format commun { name, count, slot, metadata } (metadata jamais nil), ou nil si vide.
+local function toStack(name, count, slot, metadata)
+    count = tonumber(count)
+    if type(name) ~= 'string' or not count or count <= 0 then return nil end
+    return { name = name, count = math.floor(count), slot = tonumber(slot), metadata = type(metadata) == 'table' and metadata or {} }
+end
+
+-- Liste d'items bruts (format ox : count/metadata, ou QB : amount/info, éventuellement indexée par slot)
+-- → liste de piles au format commun, filtrée par nom si item est donné, triée par slot.
+local function toStacks(list, item)
+    local out = {}
+    if type(list) ~= 'table' then return out end
+    for k, it in pairs(list) do
+        if type(it) == 'table' and (item == nil or it.name == item) then
+            local slot = it.slot or (type(k) == 'number' and k or nil)
+            local s = toStack(it.name, it.count or it.amount, slot, it.metadata or it.info)
+            if s then out[#out + 1] = s end
+        end
+    end
+    table.sort(out, function(a, b) return (a.slot or 0) < (b.slot or 0) end)
+    return out
+end
+
 ------------------------------------------------------------------------
 -- Détection
 ------------------------------------------------------------------------
@@ -144,11 +167,30 @@ if Bridge.Framework == 'esx' then
                 p.addInventoryItem(item, count, metadata)
                 return true
             end,
+            -- Slot ignoré : l'inventaire ESX de base n'a ni slots ni metadata.
             remove = function(src, item, count, metadata)
                 local p = xp(src)
                 if not p then return false end
                 p.removeInventoryItem(item, count, metadata)
                 return true
+            end,
+            -- Une seule pile par item : { slot = nil, count = n, metadata = {} }.
+            list = function(src, item)
+                local p = xp(src)
+                if not p then return {} end
+                if item then
+                    local it = p.getInventoryItem(item)
+                    local s = it and toStack(item, it.count or it.amount)
+                    return s and { s } or {}
+                end
+                -- NOTE: getInventory() existe dans ESX Legacy et l'ancien ESX ; repli sur le champ inventory.
+                local inv = p.getInventory and p.getInventory() or p.inventory
+                local out = {}
+                for _, it in pairs(inv or {}) do
+                    local s = type(it) == 'table' and toStack(it.name, it.count or it.amount)
+                    if s then out[#out + 1] = s end
+                end
+                return out
             end,
             canCarry = function(src, item, count)
                 local p = xp(src)
@@ -255,9 +297,13 @@ elseif Bridge.Framework == 'qbcore' or Bridge.Framework == 'qbox' then
                 local p = qp(src)
                 return p ~= nil and p.Functions.AddItem(item, count, nil, metadata) == true
             end,
-            remove = function(src, item, count)
+            remove = function(src, item, count, _, slot)
                 local p = qp(src)
-                return p ~= nil and p.Functions.RemoveItem(item, count) == true
+                return p ~= nil and p.Functions.RemoveItem(item, count, slot) == true
+            end,
+            list = function(src, item)
+                local p = qp(src)
+                return p and toStacks(p.PlayerData.items, item) or {}
             end,
             -- NOTE: l'inventaire QBCore historique n'expose pas de test de poids ; AddItem renvoie false si plein.
             canCarry = function() return true end,
@@ -293,13 +339,15 @@ else
             add = function() return false end,
             remove = function() return false end,
             canCarry = function() return false end,
+            list = function() return {} end,
         },
     }
 end
 
 ------------------------------------------------------------------------
 -- Inventaires externes (sinon FW.items)
--- Chaque adaptateur : count, add, remove, canCarry, et usable (optionnel).
+-- Chaque adaptateur : count, add, remove(src, item, count, metadata, slot), canCarry,
+-- list(src, item?) (piles au format commun) et usable (optionnel).
 ------------------------------------------------------------------------
 
 -- Appelle fn protégé ; renvoie (true, résultat) ou (false).
@@ -310,20 +358,33 @@ local function try(fn, ...)
 end
 
 local INVENTORIES = {
-    -- NOTE: API attendue de pop_inventory (à aligner quand il sera écrit) : mêmes noms qu'ox_inventory
-    -- + RegisterUsableItem(item, cb(source, item, metadata)).
+    -- API de pop_inventory (SPEC §1.2 et §7.1) : mêmes noms et signatures qu'ox_inventory
+    -- + RegisterUsableItem(item, cb(source, item, metadata, slot)).
+    -- NOTE: pop_inventory doit exposer Search(src, 'slots', item) comme ox_inventory.
     pop_inventory = {
         count = function(src, item) return exports.pop_inventory:GetItemCount(src, item) or 0 end,
         add = function(src, item, count, metadata) return exports.pop_inventory:AddItem(src, item, count, metadata) == true end,
-        remove = function(src, item, count, metadata) return exports.pop_inventory:RemoveItem(src, item, count, metadata) == true end,
+        remove = function(src, item, count, metadata, slot)
+            return exports.pop_inventory:RemoveItem(src, item, count, metadata, slot) == true
+        end,
         canCarry = function(src, item, count) return exports.pop_inventory:CanCarryItem(src, item, count) == true end,
+        list = function(src, item)
+            if item then return toStacks(exports.pop_inventory:Search(src, 'slots', item), item) end
+            return toStacks(exports.pop_inventory:GetInventoryItems(src))
+        end,
         usable = function(item, cb) exports.pop_inventory:RegisterUsableItem(item, cb) return true end,
     },
     ox_inventory = {
         count = function(src, item, metadata) return exports.ox_inventory:GetItemCount(src, item, metadata) or 0 end,
         add = function(src, item, count, metadata) return exports.ox_inventory:AddItem(src, item, count, metadata) == true end,
-        remove = function(src, item, count, metadata) return exports.ox_inventory:RemoveItem(src, item, count, metadata) == true end,
+        remove = function(src, item, count, metadata, slot)
+            return exports.ox_inventory:RemoveItem(src, item, count, metadata, slot) == true
+        end,
         canCarry = function(src, item, count) return exports.ox_inventory:CanCarryItem(src, item, count) == true end,
+        list = function(src, item)
+            if item then return toStacks(exports.ox_inventory:Search(src, 'slots', item), item) end
+            return toStacks(exports.ox_inventory:GetInventoryItems(src))
+        end,
         -- Avec ESX/QBCore/Qbox, ox_inventory reprend les items utilisables du framework (voir FW.usable).
         -- NOTE: en standalone, l'item doit être déclaré dans ox_inventory avec
         -- server = { export = '<ressource>.<item>' } pour que cet export soit appelé.
@@ -340,8 +401,16 @@ local INVENTORIES = {
     ['qs-inventory'] = {
         count = function(src, item) return exports['qs-inventory']:GetItemTotalAmount(src, item) or 0 end,
         add = function(src, item, count, metadata) return exports['qs-inventory']:AddItem(src, item, count, nil, metadata) == true end,
-        remove = function(src, item, count) return exports['qs-inventory']:RemoveItem(src, item, count) == true end,
+        remove = function(src, item, count, _, slot)
+            return exports['qs-inventory']:RemoveItem(src, item, count, slot) == true
+        end,
         canCarry = function(src, item, count) return exports['qs-inventory']:CanCarryItem(src, item, count) == true end,
+        -- NOTE: GetInventory(src) renvoie les items indexés par slot (amount, info) selon la doc qs ; repli sur le framework.
+        list = function(src, item)
+            local ok, inv = try(function() return exports['qs-inventory']:GetInventory(src) end)
+            if ok and type(inv) == 'table' then return toStacks(inv, item) end
+            return FW.items.list(src, item)
+        end,
         usable = function(item, cb)
             exports['qs-inventory']:CreateUsableItem(item, function(src, data)
                 cb(src, item, type(data) == 'table' and data.info or nil)
@@ -361,16 +430,18 @@ local INVENTORIES = {
             if ok then return res == true end
             return FW.items.add(src, item, count, metadata)
         end,
-        remove = function(src, item, count)
-            local ok, res = try(function() return exports['qb-inventory']:RemoveItem(src, item, count, false, RES) end)
+        remove = function(src, item, count, metadata, slot)
+            local ok, res = try(function() return exports['qb-inventory']:RemoveItem(src, item, count, slot or false, RES) end)
             if ok then return res == true end
-            return FW.items.remove(src, item, count)
+            return FW.items.remove(src, item, count, metadata, slot)
         end,
         canCarry = function(src, item, count)
             local ok, res = try(function() return exports['qb-inventory']:CanAddItem(src, item, count) end)
             if ok then return res == true end
             return FW.items.canCarry(src, item, count)
         end,
+        -- PlayerData.items est tenu à jour par qb-inventory (v1 et v2).
+        list = function(src, item) return FW.items.list(src, item) end,
     },
     -- NOTE: ps-inventory (fork de l'ancien qb-inventory) est piloté par les fonctions du joueur QBCore.
     ['ps-inventory'] = 'framework',
@@ -380,6 +451,7 @@ local INVENTORIES = {
         add = function() return false end,
         remove = function() return false end,
         canCarry = function() return false end,
+        list = function() return {} end,
     },
 }
 
@@ -389,6 +461,10 @@ if Inv == nil then
     Inv = 'framework'
 end
 if Inv == 'framework' then Inv = FW.items end
+
+-- Metadata et slots : tout inventaire sauf 'none' et l'inventaire de base d'ESX (ou standalone).
+local SUPPORTS_METADATA = Bridge.Inventory ~= 'none'
+    and not (Inv == FW.items and (Bridge.Framework == 'esx' or Bridge.Framework == 'standalone'))
 
 debug('framework=%s inventory=%s', Bridge.Framework, Bridge.Inventory)
 
@@ -488,13 +564,42 @@ function Bridge.AddItem(src, item, count, metadata)
     return ok and res == true
 end
 
+--- Vrai si l'inventaire détecté gère metadata et slots (false : 'none', inventaire ESX de base, standalone sans inventaire).
+function Bridge.SupportsMetadata()
+    return SUPPORTS_METADATA
+end
+
+--- Piles du joueur { { name, count, slot, metadata }, ... } (toutes, ou seulement celles de item).
+--- slot vaut nil sans gestion des slots (ESX de base) ; metadata vaut {} si absente ; liste vide si rien.
+function Bridge.GetItems(src, item)
+    local ok, list = try(Inv.list, tonumber(src), item)
+    if not ok or type(list) ~= 'table' then return {} end
+    if item == nil then return list end
+    local out = {}
+    for _, s in ipairs(list) do
+        if s.name == item then out[#out + 1] = s end
+    end
+    return out
+end
+
 --- Retire l'item seulement si le joueur en possède assez. Renvoie true si retiré.
-function Bridge.RemoveItem(src, item, count, metadata)
+--- slot (optionnel) : retire de ce slot précis, après avoir vérifié qu'il contient l'item en quantité suffisante.
+--- Ignoré si l'inventaire ne gère pas les slots (Bridge.SupportsMetadata() == false).
+function Bridge.RemoveItem(src, item, count, metadata, slot)
     count = count == nil and 1 or validAmount(count)
     if not count then return false end
     src = tonumber(src)
-    if Bridge.GetItemCount(src, item) < count then return false end
-    local ok, res = try(Inv.remove, src, item, count, metadata)
+    slot = SUPPORTS_METADATA and tonumber(slot) or nil
+    if slot then
+        local found = false
+        for _, s in ipairs(Bridge.GetItems(src, item)) do
+            if s.slot == slot and s.count >= count then found = true break end
+        end
+        if not found then return false end
+    elseif Bridge.GetItemCount(src, item) < count then
+        return false
+    end
+    local ok, res = try(Inv.remove, src, item, count, metadata, slot)
     if ok and res then debug('RemoveItem %s %s x%d', src, item, count) end
     return ok and res == true
 end

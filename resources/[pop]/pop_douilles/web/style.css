@@ -1,0 +1,53 @@
+/* pop_douilles : carte rapport balistique. Petite, côté droit, fond uni. */
+
+#casing-report {
+  position: fixed;
+  top: 30%;
+  right: 24px;
+  width: 240px;
+  box-sizing: border-box;
+  background: var(--pop-bg);
+  font-size: var(--pop-size-sm);
+}
+
+/* En arabe, la carte passe à gauche comme le HUD du kit. */
+[dir="rtl"] #casing-report { right: auto; left: 24px; }
+
+.cr-title {
+  font-size: var(--pop-size);
+  font-weight: 600;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+.cr-rows { margin: 0; }
+
+.cr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.cr-row dt {
+  color: var(--pop-muted);
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cr-row dd {
+  margin: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
+  unicode-bidi: isolate; /* rue, date et nombres restent lisibles en RTL */
+}
+
+#cr-signature {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  color: var(--pop-accent);
+  letter-spacing: 0.05em;
+}

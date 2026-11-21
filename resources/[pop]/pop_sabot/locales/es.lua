@@ -1,0 +1,38 @@
+-- Español
+Locales['es'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancelar',
+    confirm            = 'Confirmar',
+    close              = 'Cerrar',
+    interact           = 'Interactuar',
+    progress_cancelled = 'Acción cancelada',
+    no_permission      = 'No tienes permiso',
+    wrong_job          = 'No tienes el trabajo necesario',
+    too_far            = 'Estás demasiado lejos',
+    not_enough_money   = 'No tienes suficiente dinero',
+    missing_item       = 'Necesitas: %s',
+    inventory_full     = 'Tu inventario está lleno',
+    cooldown           = 'Espera %s s',
+    busy               = 'Ya estás ocupado',
+    error              = 'Algo salió mal',
+
+    -- Textes propres au script :
+    item_clamp           = 'Cepo de rueda',
+    item_cutter          = 'Amoladora',
+    no_vehicle           = 'No hay ningún vehículo cerca',
+    already_clamped      = 'Este vehículo ya tiene un cepo',
+    not_clamped          = 'Este vehículo no tiene cepo',
+    vehicle_occupied     = 'Hay alguien al volante',
+    vehicle_incompatible = 'No se puede poner un cepo a este vehículo',
+    placing              = 'Colocando el cepo...',
+    removing             = 'Quitando el cepo...',
+    cutting              = 'Cortando el cepo...',
+    placed               = 'Cepo colocado: vehículo inmovilizado',
+    removed              = 'Cepo retirado',
+    cut                  = 'Cepo cortado',
+    clamped_driver       = 'Este vehículo tiene un cepo',
+    target_remove        = 'Quitar el cepo',
+    target_cut           = 'Cortar el cepo',
+    police_alert         = 'Alguien está cortando un cepo de rueda',
+    police_blip          = 'Corte de cepo',
+}

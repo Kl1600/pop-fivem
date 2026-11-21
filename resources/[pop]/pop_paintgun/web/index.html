@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <title>POP</title>
+  <link rel="stylesheet" href="kit/pop.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Interface propre au script (masquée par défaut). Le HUD du kit est ajouté automatiquement. -->
+  <div id="app">
+    <div id="paint" class="pop-panel pop-fade">
+      <div class="paint-title" data-locale="title"></div>
+
+      <div class="paint-targets">
+        <button type="button" class="pop-button pop-small" data-target="primary" data-locale="target_primary"></button>
+        <button type="button" class="pop-button pop-small" data-target="secondary" data-locale="target_secondary"></button>
+        <button type="button" class="pop-button pop-small" data-target="both" data-locale="target_both"></button>
+      </div>
+
+      <div id="paint-grid"></div>
+
+      <div class="paint-actions">
+        <button type="button" class="pop-button paint-apply" id="paint-apply" data-locale="apply" disabled></button>
+        <button type="button" class="pop-button" id="paint-cancel" data-locale="cancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="kit/pop.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

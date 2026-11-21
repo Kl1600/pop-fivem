@@ -1,0 +1,37 @@
+-- Français
+Locales['fr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuler',
+    confirm            = 'Confirmer',
+    close              = 'Fermer',
+    interact           = 'Interagir',
+    progress_cancelled = 'Action annulée',
+    no_permission      = "Vous n'avez pas la permission",
+    wrong_job          = "Vous n'avez pas le métier requis",
+    too_far            = 'Vous êtes trop loin',
+    not_enough_money   = "Pas assez d'argent",
+    missing_item       = 'Il vous faut : %s',
+    inventory_full     = 'Votre inventaire est plein',
+    cooldown           = 'Patientez encore %s s',
+    busy               = 'Vous êtes déjà occupé',
+    error              = 'Une erreur est survenue',
+
+    -- Textes propres au script :
+    keymap_lock      = 'Véhicule : verrouiller / déverrouiller',
+    locked           = 'Véhicule verrouillé',
+    unlocked         = 'Véhicule déverrouillé',
+    no_vehicle       = 'Aucun véhicule à proximité',
+    no_key           = "Vous n'avez pas les clés de ce véhicule",
+    no_key_engine    = 'Pas de clé : le moteur ne démarre pas',
+    key_description  = 'Plaque : %s',
+    key_invalid      = "Cette clé n'est liée à aucun véhicule",
+    key_received     = 'Vous avez reçu la clé de %s',
+    key_removed      = 'La clé de %s vous a été retirée',
+    vehicle_not_here = "Le véhicule %s n'est pas à proximité",
+    locksmith_blip   = 'Serrurier',
+    locksmith_target = 'Faire un double',
+    locksmith_hint   = 'Utilisez la clé à copier depuis votre inventaire',
+    duplicating      = 'Fabrication du double (%s $)...',
+    duplicated       = 'Double fabriqué pour %s',
+    not_supported    = 'Votre inventaire ne gère pas les clés de véhicule',
+}

@@ -1,0 +1,38 @@
+-- English (default and fallback)
+Locales['en'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancel',
+    confirm            = 'Confirm',
+    close              = 'Close',
+    interact           = 'Interact',
+    progress_cancelled = 'Action cancelled',
+    no_permission      = "You don't have permission",
+    wrong_job          = "You don't have the required job",
+    too_far            = 'You are too far away',
+    not_enough_money   = 'Not enough money',
+    missing_item       = 'You need: %s',
+    inventory_full     = 'Your inventory is full',
+    cooldown           = 'Please wait %ss',
+    busy               = 'You are already busy',
+    error              = 'Something went wrong',
+
+    -- Textes propres au script :
+    keymap_search      = 'Search the ground for casings',
+    searching          = 'Searching the area...',
+    found_casings      = '%s casing spot(s) found',
+    nothing_found      = 'Nothing found here',
+    target_pickup      = 'Bag the casing',
+    picking_up         = 'Bagging evidence...',
+    picked_up          = 'Casing bagged as evidence',
+    casing_not_found   = 'This casing is gone',
+    casing_description = '%s casing - %s',
+    caliber_unknown    = 'Unknown caliber',
+    street_unknown     = 'Unknown location',
+    time_format        = '%m/%d/%Y %H:%M',
+    report_title       = 'Ballistic report',
+    report_caliber     = 'Caliber',
+    report_signature   = 'Signature',
+    report_time        = 'Fired',
+    report_street      = 'Location',
+    report_count       = 'Casings',
+}

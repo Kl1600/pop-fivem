@@ -1,0 +1,37 @@
+-- English (default and fallback)
+Locales['en'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancel',
+    confirm            = 'Confirm',
+    close              = 'Close',
+    interact           = 'Interact',
+    progress_cancelled = 'Action cancelled',
+    no_permission      = "You don't have permission",
+    wrong_job          = "You don't have the required job",
+    too_far            = 'You are too far away',
+    not_enough_money   = 'Not enough money',
+    missing_item       = 'You need: %s',
+    inventory_full     = 'Your inventory is full',
+    cooldown           = 'Please wait %ss',
+    busy               = 'You are already busy',
+    error              = 'Something went wrong',
+
+    -- Textes propres au script :
+    keymap_lock      = 'Vehicle: lock / unlock',
+    locked           = 'Vehicle locked',
+    unlocked         = 'Vehicle unlocked',
+    no_vehicle       = 'No vehicle nearby',
+    no_key           = "You don't have the keys to this vehicle",
+    no_key_engine    = "No key: the engine won't start",
+    key_description  = 'Plate: %s',
+    key_invalid      = "This key isn't linked to a vehicle",
+    key_received     = 'You received the key for %s',
+    key_removed      = 'The key for %s was taken back',
+    vehicle_not_here = "Vehicle %s isn't nearby",
+    locksmith_blip   = 'Locksmith',
+    locksmith_target = 'Duplicate a key',
+    locksmith_hint   = 'Use the key to copy from your inventory',
+    duplicating      = 'Cutting a duplicate ($%s)...',
+    duplicated       = 'Duplicate made for %s',
+    not_supported    = "Your inventory doesn't support vehicle keys",
+}

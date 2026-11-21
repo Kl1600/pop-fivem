@@ -1,0 +1,38 @@
+-- Türkçe
+Locales['tr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'İptal',
+    confirm            = 'Onayla',
+    close              = 'Kapat',
+    interact           = 'Etkileşim',
+    progress_cancelled = 'İşlem iptal edildi',
+    no_permission      = 'Bunun için yetkin yok',
+    wrong_job          = 'Gerekli mesleğe sahip değilsin',
+    too_far            = 'Çok uzaktasın',
+    not_enough_money   = 'Yeterli paran yok',
+    missing_item       = 'Gerekli: %s',
+    inventory_full     = 'Envanterin dolu',
+    cooldown           = 'Lütfen %s sn bekle',
+    busy               = 'Zaten meşgulsün',
+    error              = 'Bir şeyler ters gitti',
+
+    -- Textes propres au script :
+    keymap_search      = 'Yerde kovan ara',
+    searching          = 'Bölge aranıyor...',
+    found_casings      = '%s kovan noktası bulundu',
+    nothing_found      = 'Burada bir şey yok',
+    target_pickup      = 'Kovanı torbala',
+    picking_up         = 'Delil torbalanıyor...',
+    picked_up          = 'Kovan delil olarak alındı',
+    casing_not_found   = 'Bu kovan artık yok',
+    casing_description = '%s kovan - %s',
+    caliber_unknown    = 'Bilinmeyen kalibre',
+    street_unknown     = 'Bilinmeyen konum',
+    time_format        = '%d.%m.%Y %H:%M',
+    report_title       = 'Balistik rapor',
+    report_caliber     = 'Kalibre',
+    report_signature   = 'İmza',
+    report_time        = 'Atış',
+    report_street      = 'Konum',
+    report_count       = 'Kovanlar',
+}

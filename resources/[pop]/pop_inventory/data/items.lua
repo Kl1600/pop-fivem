@@ -1,0 +1,30 @@
+-- Définitions des items de pop_inventory.
+-- Champs : label (anglais, repli), weight (g), stack (true), close (true), description, image (fichier sans extension),
+-- consume (0 : quantité retirée après une utilisation réussie par un cb RegisterUsableItem),
+-- weapon (false), ammo (nom de l'item munitions), clip (taille du chargeur), degrade (durabilité perdue par tir).
+-- Libellé traduit : clé de locale item_<nom> (description : desc_<nom>) si elle existe, sinon label.
+ItemList = {
+    ['money']            = { label = 'Cash', weight = 0 },
+    ['water_bottle']     = { label = 'Water bottle', weight = 500 },
+    ['bread']            = { label = 'Bread', weight = 200 },
+    ['bandage']          = { label = 'Bandage', weight = 100 },
+    ['lockpick']         = { label = 'Lockpick', weight = 150 },
+    ['door_key']         = { label = 'Door key', weight = 50, stack = false },
+    ['weed_pot']         = { label = 'Pot', weight = 800 },
+    ['weed_seed']        = { label = 'Cannabis seed', weight = 10 },
+    ['weed_fertilizer']  = { label = 'Fertilizer', weight = 500 },
+    ['weed']             = { label = 'Weed', weight = 50 },
+    ['ammo_pistol']      = { label = 'Pistol ammo', weight = 10 },
+    ['ammo_smg']         = { label = 'SMG ammo', weight = 10 },
+    ['ammo_rifle']       = { label = 'Rifle ammo', weight = 15 },
+    ['ammo_shotgun']     = { label = 'Shotgun shells', weight = 30 },
+    ['weapon_pistol']        = { label = 'Pistol', weight = 1000, weapon = true, ammo = 'ammo_pistol', clip = 12, degrade = 0.05 },
+    ['weapon_combatpistol']  = { label = 'Combat pistol', weight = 1000, weapon = true, ammo = 'ammo_pistol', clip = 12, degrade = 0.05 },
+    ['weapon_smg']           = { label = 'SMG', weight = 2500, weapon = true, ammo = 'ammo_smg', clip = 30, degrade = 0.03 },
+    ['weapon_carbinerifle']  = { label = 'Carbine rifle', weight = 3500, weapon = true, ammo = 'ammo_rifle', clip = 30, degrade = 0.03 },
+    ['weapon_pumpshotgun']   = { label = 'Pump shotgun', weight = 3500, weapon = true, ammo = 'ammo_shotgun', clip = 8, degrade = 0.1 },
+    ['weapon_stungun']       = { label = 'Taser', weight = 500, weapon = true },
+    ['weapon_knife']         = { label = 'Knife', weight = 300, weapon = true },
+    ['weapon_bat']           = { label = 'Baseball bat', weight = 1000, weapon = true },
+    ['weapon_flashlight']    = { label = 'Flashlight', weight = 300, weapon = true },
+}

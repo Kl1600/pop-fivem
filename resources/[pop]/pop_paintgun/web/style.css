@@ -1,0 +1,101 @@
+/* pop_paintgun : sélecteur de couleur. Surcharge légère du kit, aucun dégradé ni ombre. */
+
+#paint {
+  position: fixed;
+  top: 40%; /* au-dessus du centre : ne chevauche pas les notifications du kit */
+  right: 24px;
+  transform: translateY(-50%);
+  width: 260px;
+  box-sizing: border-box;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* En arabe, le panneau passe à gauche. */
+[dir="rtl"] #paint { right: auto; left: 24px; }
+
+.paint-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Zones : 3 boutons qui se partagent la largeur, textes longs repliés. */
+.paint-targets {
+  display: flex;
+  gap: 6px;
+}
+.paint-targets .pop-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 6px;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--pop-muted);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+.paint-targets .pop-button:hover { background: transparent; color: var(--pop-text); }
+.paint-targets .pop-button.is-active {
+  border-color: var(--pop-accent);
+  color: var(--pop-text);
+}
+
+/* Pastilles : 28 px, 6 par ligne. */
+#paint-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 28px);
+  justify-content: space-between;
+  row-gap: 8px;
+}
+
+.paint-swatch {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  cursor: pointer;
+  outline: none;
+}
+.paint-swatch.is-selected {
+  box-shadow: 0 0 0 2px var(--pop-bg), 0 0 0 4px var(--pop-accent);
+}
+
+/* Couleur actuelle de la zone : petit point central. */
+.paint-swatch.is-current::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
+}
+
+.paint-actions {
+  display: flex;
+  gap: 6px;
+}
+.paint-actions .pop-button {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.paint-apply {
+  background: var(--pop-accent);
+}
+.paint-apply:disabled {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--pop-muted);
+  cursor: default;
+}
+#paint-cancel { border-color: rgba(255, 255, 255, 0.15); }
+#paint-cancel:hover { background: transparent; border-color: var(--pop-accent); }

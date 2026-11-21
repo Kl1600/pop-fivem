@@ -1,0 +1,38 @@
+-- Deutsch
+Locales['de'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Abbrechen',
+    confirm            = 'Bestätigen',
+    close              = 'Schließen',
+    interact           = 'Interagieren',
+    progress_cancelled = 'Aktion abgebrochen',
+    no_permission      = 'Dazu hast du keine Berechtigung',
+    wrong_job          = 'Du hast nicht den erforderlichen Job',
+    too_far            = 'Du bist zu weit entfernt',
+    not_enough_money   = 'Nicht genug Geld',
+    missing_item       = 'Du brauchst: %s',
+    inventory_full     = 'Dein Inventar ist voll',
+    cooldown           = 'Bitte warte noch %s s',
+    busy               = 'Du bist bereits beschäftigt',
+    error              = 'Etwas ist schiefgelaufen',
+
+    -- Textes propres au script :
+    item_clamp           = 'Parkkralle',
+    item_cutter          = 'Winkelschleifer',
+    no_vehicle           = 'Kein Fahrzeug in der Nähe',
+    already_clamped      = 'Dieses Fahrzeug hat bereits eine Parkkralle',
+    not_clamped          = 'Dieses Fahrzeug hat keine Parkkralle',
+    vehicle_occupied     = 'Jemand sitzt am Steuer',
+    vehicle_incompatible = 'An diesem Fahrzeug kann keine Parkkralle angebracht werden',
+    placing              = 'Parkkralle wird angebracht...',
+    removing             = 'Parkkralle wird entfernt...',
+    cutting              = 'Parkkralle wird aufgeschnitten...',
+    placed               = 'Parkkralle angebracht: Fahrzeug blockiert',
+    removed              = 'Parkkralle entfernt',
+    cut                  = 'Parkkralle aufgeschnitten',
+    clamped_driver       = 'Dieses Fahrzeug hat eine Parkkralle',
+    target_remove        = 'Parkkralle entfernen',
+    target_cut           = 'Parkkralle aufschneiden',
+    police_alert         = 'Jemand schneidet eine Parkkralle auf',
+    police_blip          = 'Parkkralle wird aufgeschnitten',
+}

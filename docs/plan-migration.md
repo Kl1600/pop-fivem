@@ -28,7 +28,7 @@ pop_hud, pop_chat, pop_emotes, pop_affiche, pop_boards, pop_charcreator, pop_clo
 |---|---|
 | 0 | terminée |
 | 1 | terminée |
-| 2 | en cours |
-| 3 | à faire |
+| 2 | terminée |
+| 3 | en cours |
 | 4 | à faire |
 | 5 | à faire |
