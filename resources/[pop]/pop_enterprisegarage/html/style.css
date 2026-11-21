@@ -1,7 +1,7 @@
 :root {
     --text:   #ffffff;
     --muted:  rgba(255,255,255,0.45);
-    --accent: #ff2e88;
+    --accent: #3c8cff;
     --speed:  0.3s;
 }
 
@@ -141,7 +141,7 @@ body {
     text-transform: uppercase;
     transition: background var(--speed);
 }
-.store-btn { background: rgba(255,46,136,0.15); color: var(--accent); border: 1px solid rgba(255,46,136,0.3); }
-.store-btn:hover { background: rgba(255,46,136,0.25); }
+.store-btn { background: rgba(60,140,255,0.15); color: var(--accent); border: 1px solid rgba(60,140,255,0.3); }
+.store-btn:hover { background: rgba(60,140,255,0.25); }
 .cancel-btn { background: rgba(255,255,255,0.04); color: var(--muted); }
 .cancel-btn:hover { background: rgba(255,255,255,0.08); }

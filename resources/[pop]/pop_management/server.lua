@@ -309,7 +309,7 @@ local function generateBotOrder(ignoreStaffCheck)
             notifyYouToolStaff({
                 image   = "nui://pop_management/html/gopostal.png",
                 title   = "Livraisons GoPostal",
-                message = "Nouvelle commande PNJ : <span style='color:#ff2e88; font-weight:bold;'>" .. item.label .. "</span> à livrer.",
+                message = "Nouvelle commande PNJ : <span style='color:#e67e22; font-weight:bold;'>" .. item.label .. "</span> à livrer.",
                 duration = 8000
             })
         end
@@ -609,7 +609,7 @@ AddEventHandler('pop_management:validateYouToolOrder', function(orderType, order
                     TriggerClientEvent('cr-laptop:notifyLogo', xCust.source, {
                         image = "nui://pop_management/html/a68217-7.png",
                         title = "GoPostal",
-                        message = "Votre commande (<span style='color:#ff2e88; font-weight:bold;'>" .. order.item_label .. "</span>) est <span style='color:#2ecc71; font-weight:bold;'>en cours de livraison</span>.",
+                        message = "Votre commande (<span style='color:#e67e22; font-weight:bold;'>" .. order.item_label .. "</span>) est <span style='color:#2ecc71; font-weight:bold;'>en cours de livraison</span>.",
                         duration = 8000
                     })
                     TriggerClientEvent('pop_management:client:refreshMyOrders', xCust.source)
@@ -658,7 +658,7 @@ AddEventHandler('pop_management:completeDelivery', function(orderId)
                 TriggerClientEvent('cr-laptop:notifyLogo', xCust.source, {
                     image = "nui://pop_management/html/gopostal.png",
                     title = "GoPostal",
-                    message = "Votre commande (<span style='color:#ff2e88; font-weight:bold;'>" .. order.item_label .. "</span>) vous a été <span style='color:#2ecc71; font-weight:bold;'>remise en main propre</span> !",
+                    message = "Votre commande (<span style='color:#e67e22; font-weight:bold;'>" .. order.item_label .. "</span>) vous a été <span style='color:#2ecc71; font-weight:bold;'>remise en main propre</span> !",
                     duration = 8000
                 })
             end
@@ -2000,7 +2000,7 @@ end)
 RegisterServerEvent('pop_management:pauseCouncil')
 AddEventHandler('pop_management:pauseCouncil', function()
     local _source = source
-    TriggerClientEvent('cr-laptop:notify', _source, 'Le conseil est <span style="color:#ff2e88; font-weight:bold;">en pause</span>.')
+    TriggerClientEvent('cr-laptop:notify', _source, 'Le conseil est <span style="color:#e67e22; font-weight:bold;">en pause</span>.')
 end)
 
 RegisterServerEvent('pop_management:endCouncil')
@@ -2084,7 +2084,7 @@ AddEventHandler('pop_management:buyYouToolItem', function(model, label, quantity
                 TriggerClientEvent('cr-laptop:notifyLogo', _source, {
                     image = "nui://pop_management/html/a68217-7.png",
                     title = "YouTool",
-                    message = "Votre commande <span style='color:#ff2e88; font-weight:bold;'>".. quantity .."x ".. label .."</span> est <span style='color:#f39c12;'>en attente de validation</span>. Récupération au Port.",
+                    message = "Votre commande <span style='color:#e67e22; font-weight:bold;'>".. quantity .."x ".. label .."</span> est <span style='color:#f39c12;'>en attente de validation</span>. Récupération au Port.",
                     duration = 6000
                 })
             else
@@ -2093,7 +2093,7 @@ AddEventHandler('pop_management:buyYouToolItem', function(model, label, quantity
                 TriggerClientEvent('cr-laptop:notifyLogo', _source, {
                     image = "nui://pop_management/html/a68217-7.png",
                     title = "YouTool B2B",
-                    message = "Votre commande de <span style='color:#ff2e88; font-weight:bold;'>".. quantity .."x ".. label .."</span> est enregistrée ! Livraison sous " .. deliveryText .. ".",
+                    message = "Votre commande de <span style='color:#e67e22; font-weight:bold;'>".. quantity .."x ".. label .."</span> est enregistrée ! Livraison sous " .. deliveryText .. ".",
                     duration = 6000
                 })
             end
@@ -2102,7 +2102,7 @@ AddEventHandler('pop_management:buyYouToolItem', function(model, label, quantity
             notifyYouToolStaff({
                 image = "nui://pop_management/html/ex2s5794f1uah14nfiwu38w42ht1.png",
                 title = "Livraisons YouTool",
-                message = "Nouvelle commande colis : <span style='color:#ff2e88; font-weight:bold;'>".. quantity .."x ".. label .."</span> pour " .. xPlayer.getName() .. ".",
+                message = "Nouvelle commande colis : <span style='color:#e67e22; font-weight:bold;'>".. quantity .."x ".. label .."</span> pour " .. xPlayer.getName() .. ".",
                 duration = 8000
             })
 
@@ -2269,7 +2269,7 @@ AddEventHandler('pop_management:buyYouToolCart', function(items, coords)
                     TriggerClientEvent('cr-laptop:notifyLogo', _source, {
                         image   = "nui://pop_management/html/a68217-7.png",
                         title   = "GoPostal B2B",
-                        message = "Votre panier (<span style='color:#ff2e88; font-weight:bold;'>" .. #items .. " article(s)</span>) est <span style='color:#f39c12;'>en attente de validation</span>. Récupération au Port.",
+                        message = "Votre panier (<span style='color:#e67e22; font-weight:bold;'>" .. #items .. " article(s)</span>) est <span style='color:#f39c12;'>en attente de validation</span>. Récupération au Port.",
                         duration = 7000
                     })
                 else
@@ -2278,7 +2278,7 @@ AddEventHandler('pop_management:buyYouToolCart', function(items, coords)
                     TriggerClientEvent('cr-laptop:notifyLogo', _source, {
                         image   = "nui://pop_management/html/a68217-7.png",
                         title   = "GoPostal B2B",
-                        message = "Panier commandé ! <span style='color:#ff2e88; font-weight:bold;'>" .. #items .. " article(s)</span> — livraison sous " .. deliveryText .. ".",
+                        message = "Panier commandé ! <span style='color:#e67e22; font-weight:bold;'>" .. #items .. " article(s)</span> — livraison sous " .. deliveryText .. ".",
                         duration = 7000
                     })
                 end
@@ -2287,7 +2287,7 @@ AddEventHandler('pop_management:buyYouToolCart', function(items, coords)
                 notifyYouToolStaff({
                     image   = "nui://pop_management/html/ex2s5794f1uah14nfiwu38w42ht1.png",
                     title = "Livraisons GoPostal",
-                    message = "Nouveau panier de <span style='color:#ff2e88; font-weight:bold;'>" .. #items .. " article(s)</span> commandé par " .. xPlayer.getName() .. ".",
+                    message = "Nouveau panier de <span style='color:#e67e22; font-weight:bold;'>" .. #items .. " article(s)</span> commandé par " .. xPlayer.getName() .. ".",
                     duration = 8000
                 })
 

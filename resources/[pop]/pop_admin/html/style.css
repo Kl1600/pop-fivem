@@ -1,12 +1,13 @@
 /* pop_admin : menu liste en haut à droite, DA et couleurs de pop_inventory
-   (tuiles claires translucides, angles 2px, titres Segoe UI Black, séparateurs fins, accent rose pâle). */
+   (tuiles claires translucides, angles 2px, titres Segoe UI Black, séparateurs fins, sans couleur d'accent : sélection en blanc). */
 :root {
     --tile: rgba(245, 245, 245, 0.15);
     --tile-soft: rgba(245, 245, 245, 0.10);
     --line: rgba(245, 245, 245, 0.15);
-    --accent: #f2b4d9;
-    --accent-bg: rgba(242, 180, 217, 0.15);
-    --accent-strong: #ff2e88;
+    --accent: rgba(255, 255, 255, 0.75);
+    --accent-bg: rgba(255, 255, 255, 0.30);
+    --accent-strong: #ffffff;
+    --danger: #ef5b6a;
     --text: #ffffff;
     --muted: #f5f5f599;
 }
@@ -119,7 +120,7 @@ body {
 
 .m-row.disabled { color: rgba(255, 255, 255, 0.35); background: var(--tile-soft); }
 
-.m-row.danger.sel .m-label { color: var(--accent); }
+.m-row.danger.sel .m-label { color: var(--danger); }
 
 .m-row.sep {
     height: auto;
@@ -146,8 +147,9 @@ body {
 }
 
 .m-check.on {
-    background: var(--accent-strong);
-    border-color: var(--accent);
+    background: #ffffff;
+    border-color: #ffffff;
+    box-shadow: inset 0 0 0 0.2rem rgba(40, 40, 40, 0.55);
 }
 
 .m-more {

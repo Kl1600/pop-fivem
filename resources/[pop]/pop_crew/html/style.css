@@ -138,7 +138,7 @@ body {
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.4);
 }
-.row .rank.owner { color: #ff2e88; }
+.row .rank.owner { color: #f0c674; }
 
 .hint {
     font-size: 11px;

@@ -59,7 +59,7 @@ RegisterNetEvent('vehicle_keys:server:toggleLock', function(netId, plate)
     else
         TriggerClientEvent('vehicle_keys:client:ShowNotify', _source, {
             icon = "fas fa-info",
-            message = "Vous n'avez pas les clés de ce véhicule <br> <span style='color:#ff2e88; font-weight:bold;'>" .. plate .. "</span>",
+            message = "Vous n'avez pas les clés de ce véhicule <br> <span style='color:#ECA95D; font-weight:bold;'>" .. plate .. "</span>",
             duration = 5000
         })
     end

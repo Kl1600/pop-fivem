@@ -427,7 +427,7 @@ function rightHtml(it, isSel) {
             return `<span>${v ? esc(v) : (isSel ? 'Saisir…' : '—')}</span>`;
         }
         default:
-            if (confirmKey && isSel && it.confirm) return `<span style="color:var(--accent)">Confirmer ?</span>`;
+            if (confirmKey && isSel && it.confirm) return `<span style="color:var(--danger)">Confirmer ?</span>`;
             return it.right ? `<span>${esc(it.right)}</span>` : '';
     }
 }

@@ -147,7 +147,7 @@
             border-radius: 3px; overflow: hidden;
         }
 
-        .buy-bg { width: 100%; height: 100%; background: #ff2e88; transition: filter 0.2s; }
+        .buy-bg { width: 100%; height: 100%; background: #5695C8; transition: filter 0.2s; }
         .buy-btn:hover .buy-bg { filter: brightness(1.2); }
 
         .buy-text {
@@ -206,7 +206,7 @@
         }
         .currency-option.active {
             color: white;
-            background: #ff2e88;
+            background: #5695C8;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
     </style>
@@ -358,13 +358,13 @@
             if (info.type === 'tattoo') {
                 let svgIcon = '';
                 if (cat === 'Head') {
-                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#ff2e88" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5zM6 15v1a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-1M12 19v3"></path></svg>`;
+                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#5695C8" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5zM6 15v1a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-1M12 19v3"></path></svg>`;
                 } else if (cat === 'Torso') {
-                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#ff2e88" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M12 22v-9M5 3h14M5 3l2 7h10l2-7M7 10v7a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-7"></path></svg>`;
+                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#5695C8" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M12 22v-9M5 3h14M5 3l2 7h10l2-7M7 10v7a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-7"></path></svg>`;
                 } else if (cat === 'LeftArm' || cat === 'RightArm') {
-                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#ff2e88" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M6 3h12l-1 9a4 4 0 0 1-4 4h-2a4 4 0 0 1-4-4L6 3zM12 16v6"></path></svg>`;
+                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#5695C8" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M6 3h12l-1 9a4 4 0 0 1-4 4h-2a4 4 0 0 1-4-4L6 3zM12 16v6"></path></svg>`;
                 } else {
-                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#ff2e88" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M7 3h10v10l-2 5-1 4H10l-1-4-2-5V3z"></path></svg>`;
+                    svgIcon = `<svg viewBox="0 0 24 24" width="40" height="40" stroke="#5695C8" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.65"><path d="M7 3h10v10l-2 5-1 4H10l-1-4-2-5V3z"></path></svg>`;
                 }
 
                 const prices = { 'Head': 150, 'Torso': 300, 'LeftArm': 200, 'RightArm': 200, 'LeftLeg': 180, 'RightLeg': 180 };

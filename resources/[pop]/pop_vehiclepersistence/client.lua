@@ -726,9 +726,9 @@ local function DrawPersistenceHUD()
     -- Bandeau d'en-tête (un ton plus clair)
     DrawRect(x + w*0.5, y + headerH*0.5, w, headerH, 16, 22, 30, 240)
     -- Accent vertical à gauche
-    DrawRect(x + 0.0025, y + h*0.5, 0.005, h, 255, 46, 136, 255)
+    DrawRect(x + 0.0025, y + h*0.5, 0.005, h, 80, 200, 130, 255)
     -- Séparateur sous le titre
-    DrawRect(x + w*0.5, y + headerH, w, 0.0015, 255, 46, 136, 200)
+    DrawRect(x + w*0.5, y + headerH, w, 0.0015, 80, 200, 130, 200)
     -- Pulse "live" : petit point qui clignote dans le header
     local pulse = (math.floor(GetGameTimer() / 600) % 2) == 0
     if pulse then
@@ -792,7 +792,7 @@ local function DrawPersistenceHUD()
 
     -- Séparateur
     rowY = rowY + 0.006
-    DrawRect(x + w*0.5, rowY, w - 0.014, 0.0015, 255, 46, 136, 160)
+    DrawRect(x + w*0.5, rowY, w - 0.014, 0.0015, 80, 200, 130, 160)
     rowY = rowY + 0.010
 
     -- Titre + badge d'économie (vert = positif) à droite

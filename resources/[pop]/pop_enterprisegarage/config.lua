@@ -7,7 +7,7 @@ Config.Command = 'entreprisegarage'
 Config.OpenKey = 38
 
 -- Distance d'affichage du marker / texte d'aide.
-Config.MarkerColor   = { 255, 46, 136 }
+Config.MarkerColor   = { 60, 140, 255 }
 Config.DrawDistance  = 15.0
 
 -- ─────────────────────────────────────────────────────────────────────────────
