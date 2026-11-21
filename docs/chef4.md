@@ -11,6 +11,9 @@
 - pop_bennys : prix recalculé côté serveur (items), distance au Benny's vérifiée, `/bennys` réservé aux admins (ACE `pop.admin`), texte de plaque non modifiable (style seulement), `lua54`.
 
 
+## Gabarit POP (restructuration)
+- pop_v3dui : gabarit (config.lua, client/main.lua, README), exports Create/Remove/Update/UpdateCoords/ClearAll inchangés.
+
 ## Bugs connus / risques
 - Persistance : véhicules non réseau (sans netId) plus sauvegardés. Comparaison du modèle modulo 2^32 à confirmer en jeu.
 - pop_boards : les anciens tableaux n'ont pas de propriétaire (seuls les admins peuvent les déplacer). Peindre reste ouvert à tous (d'origine).

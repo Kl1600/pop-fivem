@@ -5,9 +5,9 @@ local activeElements = {}
 local renderedElements = {}
 local offScreenSince = {}
 local lastPos = {}
-local POS_EPSILON = 0.0005
+local POS_EPSILON = Config.PosEpsilon
 local elementIdCounter = 0
-local OFFSCREEN_GRACE_MS = 250
+local OFFSCREEN_GRACE_MS = Config.OffscreenGrace
 
 -- Create a new 3D UI element
 -- @param options table: {
@@ -23,7 +23,7 @@ function Create3DUI(options)
     assert(options.coords, "coords required")
     assert(options.type, "type required (text, box, prompt, icon-text)")
     assert(options.content, "content required")
-    
+
     -- Robust coords handling (exports can turn vectors into tables)
     local coords = options.coords
     if type(coords) == 'table' then
@@ -37,17 +37,17 @@ function Create3DUI(options)
 
     elementIdCounter = elementIdCounter + 1
     local id = elementIdCounter
-    
+
     activeElements[id] = {
         resource = GetInvokingResource() or GetCurrentResourceName(),
         coords = coords,
         type = options.type,
         content = options.content,
-        drawDistance = options.drawDistance or 15.0,
+        drawDistance = options.drawDistance or Config.DefaultDrawDistance,
         offset = offset,
         style = options.style or {}
     }
-    
+
     return id
 end
 
@@ -189,9 +189,9 @@ Citizen.CreateThread(function()
 
         -- Élément à portée : mise à jour toutes les ~30 ms (lissée en CSS), sinon 500 ms
         if hasElements then
-            Wait(30)
+            Wait(Config.RefreshNear)
         else
-            Wait(500)
+            Wait(Config.RefreshIdle)
         end
     end
 end)
