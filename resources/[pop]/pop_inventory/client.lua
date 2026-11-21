@@ -21,75 +21,105 @@ local function sendNui(action, payload)
 end
 
 -- =====================================================================
---  APERÇU DU PERSO : caméra placée devant le joueur, qui le cadre à droite
---  de l'écran (zone Vêtements). C'est le vrai perso, toujours face à nous,
---  avec sa vraie tenue. Il devient transparent quand on glisse un vêtement dessus.
+--  APERÇU DU PERSO
+--  Une copie du perso (même tenue) est posée en hauteur au-dessus du joueur,
+--  dans le vide, et une caméra la cadre à droite de l'écran (zone Vêtements).
+--  Marche partout : à pied, en voiture, en emote, en activité. Rien ne peut
+--  passer devant, et elle devient transparente quand on glisse un vêtement dessus.
 -- =====================================================================
-local previewCam = nil
+local previewCam, previewPed = nil, nil
 local previewActive = false
 local CAM_FOV = 40.0
-local CAM_DIST = 5.0          -- distance caméra → perso (taille à l'écran)
-local CAM_SIDE_ANGLE = 19.5   -- décalage pour placer le perso sur la droite
+local CAM_DIST = 5.0
+local CAM_SIDE_ANGLE = 19.5
+local IDLE_DICT, IDLE_ANIM = 'mp_character_creation@customise@male_a', 'loop'
+
+local function appearanceSignature(ped)
+  local parts = {}
+  for comp = 0, 11 do
+    parts[#parts + 1] = GetPedDrawableVariation(ped, comp) .. ':' .. GetPedTextureVariation(ped, comp)
+  end
+  for prop = 0, 7 do
+    parts[#parts + 1] = GetPedPropIndex(ped, prop) .. ':' .. GetPedPropTextureIndex(ped, prop)
+  end
+  return table.concat(parts, ',')
+end
 
 local function stopInvPedPreview()
   if not previewActive then return end
   previewActive = false
-  ResetEntityAlpha(PlayerPedId())
   if previewCam then
     RenderScriptCams(false, true, 300, true, false)
     DestroyCam(previewCam, false)
     previewCam = nil
   end
+  if previewPed and DoesEntityExist(previewPed) then DeleteEntity(previewPed) end
+  previewPed = nil
 end
 
-local function placePreviewCam()
-  local ped = PlayerPedId()
-  local pc = GetEntityCoords(ped)
-  local fwd = GetEntityForwardVector(ped)
-  local right = vector3(fwd.y, -fwd.x, 0.0)
-  local wanted = pc + fwd * CAM_DIST + vector3(0.0, 0.0, 0.25)
-  -- Si un mur est entre le perso et la caméra, on rapproche la caméra
-  local ray = StartShapeTestRay(pc.x, pc.y, pc.z + 0.3, wanted.x, wanted.y, wanted.z, 1 + 16, ped, 0)
-  local _, hit, hitPos = GetShapeTestResult(ray)
-  local dist = CAM_DIST
-  if hit == 1 then
-    dist = math.max(1.6, #(hitPos - pc) - 0.4)
-    wanted = pc + fwd * dist + vector3(0.0, 0.0, 0.25)
+local function findPreviewSpot()
+  local pc = GetEntityCoords(PlayerPedId())
+  for _, h in ipairs({ 60.0, 120.0, 250.0 }) do
+    local spot = vector3(pc.x, pc.y, pc.z + h)
+    local ray = StartShapeTestRay(spot.x, spot.y, spot.z + 1.0, spot.x + 6.0, spot.y + 6.0, spot.z + 1.0, 1 + 16, 0, 0)
+    local _, hit = GetShapeTestResult(ray)
+    if hit ~= 1 then return spot end
   end
-  local lateral = dist * math.tan(math.rad(CAM_SIDE_ANGLE))
-  local aim = pc + right * lateral + vector3(0.0, 0.0, 0.05)
-  SetCamCoord(previewCam, wanted.x, wanted.y, wanted.z)
-  PointCamAtCoord(previewCam, aim.x, aim.y, aim.z)
-end
-
--- L'aperçu n'est utilisé que si le perso est debout, libre et immobile.
--- En voiture, en emote, en scénario/activité, à terre ou dans l'eau : vue normale.
-local function canUsePreview()
-  local ped = PlayerPedId()
-  if IsPedInAnyVehicle(ped, true) or not IsPedOnFoot(ped) then return false end
-  if IsEntityDead(ped) or IsPedRagdoll(ped) or IsPedFalling(ped) or IsPedSwimming(ped) then return false end
-  if IsPedUsingAnyScenario(ped) or IsPedCuffed(ped) or IsPedClimbing(ped) then return false end
-  local emote = LocalPlayer.state.currentEmote
-  if emote and emote ~= '' then return false end
-  if GetEntitySpeed(ped) > 0.5 then return false end
-  if IsEntityAttached(ped) then return false end
-  return true
+  return vector3(pc.x, pc.y, pc.z + 250.0)
 end
 
 local function startInvPedPreview()
   if previewActive then return end
-  if not canUsePreview() then return end
   previewActive = true
-  previewCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
-  SetCamFov(previewCam, CAM_FOV)
-  placePreviewCam()
-  SetCamActive(previewCam, true)
-  RenderScriptCams(true, true, 300, true, false)
   CreateThread(function()
-    while previewActive and isOpen do
-      if not canUsePreview() then break end -- monte en voiture, lance une emote…
-      placePreviewCam()
-      Wait(250)
+    local playerPed = PlayerPedId()
+    local spot = findPreviewSpot()
+    local heading = GetGameplayCamRot(2).z + 180.0
+
+    previewPed = ClonePed(playerPed, false, false, true)
+    if not previewPed or previewPed == 0 then previewActive = false return end
+    SetEntityCoordsNoOffset(previewPed, spot.x, spot.y, spot.z, false, false, false)
+    SetEntityHeading(previewPed, heading)
+    FreezeEntityPosition(previewPed, true)
+    SetEntityInvincible(previewPed, true)
+    SetEntityCollision(previewPed, false, false)
+    SetPedCanRagdoll(previewPed, false)
+    SetBlockingOfNonTemporaryEvents(previewPed, true)
+    RequestAnimDict(IDLE_DICT)
+    local t = GetGameTimer()
+    while not HasAnimDictLoaded(IDLE_DICT) and GetGameTimer() - t < 2000 do Wait(0) end
+    TaskPlayAnim(previewPed, IDLE_DICT, IDLE_ANIM, 8.0, -8.0, -1, 1, 0.0, false, false, false)
+
+    -- Caméra devant la copie, décalée pour la placer à droite de l'écran
+    local fwd = GetEntityForwardVector(previewPed)
+    local right = vector3(fwd.y, -fwd.x, 0.0)
+    local camPos = spot + fwd * CAM_DIST + vector3(0.0, 0.0, 0.25)
+    local aim = spot + right * (CAM_DIST * math.tan(math.rad(CAM_SIDE_ANGLE))) + vector3(0.0, 0.0, 0.05)
+    previewCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+    SetCamFov(previewCam, CAM_FOV)
+    SetCamCoord(previewCam, camPos.x, camPos.y, camPos.z)
+    PointCamAtCoord(previewCam, aim.x, aim.y, aim.z)
+    SetCamActive(previewCam, true)
+    RenderScriptCams(true, true, 300, true, false)
+
+    local lastSig, lastCheck = appearanceSignature(playerPed), GetGameTimer()
+    local lightPos = spot + fwd * 2.0 + vector3(0.0, 0.0, 1.2)
+    while previewActive and isOpen and DoesEntityExist(previewPed) do
+      -- Éclairage doux pour que le perso soit visible même la nuit
+      DrawLightWithRange(lightPos.x, lightPos.y, lightPos.z, 255, 255, 255, 6.0, 1.6)
+      if GetGameTimer() - lastCheck > 600 then
+        lastCheck = GetGameTimer()
+        local sig = appearanceSignature(PlayerPedId())
+        if sig ~= lastSig then
+          lastSig = sig
+          ClonePedToTarget(PlayerPedId(), previewPed)
+          TaskPlayAnim(previewPed, IDLE_DICT, IDLE_ANIM, 8.0, -8.0, -1, 1, 0.0, false, false, false)
+        end
+        if not IsEntityPlayingAnim(previewPed, IDLE_DICT, IDLE_ANIM, 3) then
+          TaskPlayAnim(previewPed, IDLE_DICT, IDLE_ANIM, 8.0, -8.0, -1, 1, 0.0, false, false, false)
+        end
+      end
+      Wait(0)
     end
     stopInvPedPreview()
   end)
@@ -100,11 +130,13 @@ RegisterNUICallback('pedRect', function(_, cb)
 end)
 
 RegisterNUICallback('pedHover', function(data, cb)
-  -- Transparent mais garde la forme du perso (seulement si l'aperçu est affiché)
-  if data and data.hover and previewActive then
-    SetEntityAlpha(PlayerPedId(), 120, false)
-  else
-    ResetEntityAlpha(PlayerPedId())
+  -- Transparent mais garde la forme du perso
+  if previewPed and DoesEntityExist(previewPed) then
+    if data and data.hover then
+      SetEntityAlpha(previewPed, 120, false)
+    else
+      ResetEntityAlpha(previewPed)
+    end
   end
   cb('ok')
 end)
