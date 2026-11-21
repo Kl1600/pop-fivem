@@ -1,0 +1,47 @@
+# Base de serveur de test POP. Copier en server.cfg et adapter.
+# Les secrets (licence, clé Steam, mot de passe base) ne sont JAMAIS commités.
+
+endpoint_add_tcp "0.0.0.0:30120"
+endpoint_add_udp "0.0.0.0:30120"
+
+sv_hostname "POP test"
+sets sv_projectName "POP test"
+sets sv_projectDesc "Serveur de test des scripts POP"
+sets locale "fr-FR"
+sv_maxclients 10
+set onesync on
+
+# Licence (portal.cfx.re) et base de données : à renseigner sur le serveur uniquement.
+# sv_licenseKey "CHANGE_ME"
+# set mysql_connection_string "mysql://user:password@localhost/pop?charset=utf8mb4"
+
+# --- Ressources de base CFX ---
+ensure mapmanager
+ensure chat
+ensure spawnmanager
+ensure sessionmanager
+ensure basic-gamemode
+ensure hardcap
+ensure baseevents
+
+# --- Librairies ---
+ensure oxmysql
+# ensure ox_lib          # optionnel : les scripts POP n'en ont pas besoin
+
+# --- Framework : en choisir UN (ou aucun pour tester le mode standalone) ---
+# ensure es_extended     # ESX Legacy
+# ensure qb-core         # QBCore
+# ensure qbx_core        # Qbox (nécessite ox_lib et ox_inventory)
+
+# --- Interaction et inventaire ---
+ensure ox_target
+ensure ox_inventory      # ou : ensure pop_inventory
+ensure pma-voice
+
+# --- Scripts POP (toujours en dernier) ---
+ensure [pop]
+
+# --- Permissions ---
+add_ace group.admin command allow
+add_ace group.admin pop.admin allow
+# add_principal identifier.license:CHANGE_ME group.admin
