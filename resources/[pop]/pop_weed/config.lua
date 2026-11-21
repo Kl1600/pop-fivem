@@ -1,5 +1,26 @@
 Config = {}
 
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' }, -- touche de récolte (prompt pop_v3dui)
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_weed
+------------------------------------------------------------------------
+
 Config.TotalDuration = 1800         -- 30 minutes pour la récolte
 Config.HarvestAmount = 5           -- weed donnés à la récolte
 Config.WaterDuration = 1 * 3600    -- eau vide en 1h
@@ -18,3 +39,28 @@ Config.Stages = {
 }
 
 Config.ZOffset = 0.0 -- Offset vertical pour le spawn (ajuster si les plantes flottent ou s'enfoncent)
+
+-- Objets pop_inventory utilisés
+Config.Items = {
+    Pot     = 'pot',
+    Seed    = 'grainecana',
+    Water   = 'bouteille',
+    Harvest = 'weed',
+}
+
+-- Distances (m)
+Config.ActionDistance     = 5.0  -- serveur : arroser / récolter une plante
+Config.PlantDistance      = 15.0 -- serveur : point de plantation
+Config.WaterBottleRange   = 3.0  -- client : plante la plus proche quand on utilise la bouteille
+Config.HarvestKeyDistance = 2.0  -- client : récolte à la touche E
+
+Config.HarvestDuration  = 5000 -- ms, barre de récolte
+Config.WaterLossPerStage = 0.5 -- part d'eau gardée à chaque stade franchi (0.5 = -50 %)
+Config.TickInterval     = 5000 -- ms, vérification de la croissance côté serveur
+
+-- Durée d'affichage des notifications (ms)
+Config.NotifyDuration = {
+    Short  = 2000,
+    Normal = 3000,
+    Long   = 4000,
+}
