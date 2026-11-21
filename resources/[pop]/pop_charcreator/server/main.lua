@@ -61,7 +61,7 @@ local function cleanText(value, maxLen)
     return value:sub(1, maxLen)
 end
 
-RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname, dateofbirth, spawnLocation, chosenClothes)
+RegisterNetEvent('pop_charcreator:save', function(skin, firstname, lastname, dateofbirth, spawnLocation, chosenClothes)
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer or saving[src] then return end
@@ -70,7 +70,7 @@ RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname
     if not isValidSkin(src, skin) or not isValidClothes(chosenClothes) then
         -- Skin refusé : le joueur revient dans le créateur pour recommencer
         TriggerClientEvent('notification:client:ShowNotify', src, { icon = 'fas fa-user', message = 'Apparence invalide, recommencez la création.', duration = 5000 })
-        TriggerClientEvent('vanguard_charcreator:open', src)
+        TriggerClientEvent('pop_charcreator:open', src)
         return
     end
 
@@ -120,7 +120,7 @@ RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname
     if isReedit then
         saving[src] = nil
         inCreatorInstance[src] = nil
-        TriggerClientEvent('vanguard_charcreator:client:finishSuccess', src)
+        TriggerClientEvent('pop_charcreator:client:finishSuccess', src)
         SetPlayerRoutingBucket(src, 0)
         return
     end
@@ -197,7 +197,7 @@ RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname
     exports['pop_inventory']:GiveItem(src, 'hotdog', 1)
     exports['pop_inventory']:GiveItem(src, 'bouteille', 1)
 
-    TriggerClientEvent('vanguard_charcreator:client:finishSuccess', src)
+    TriggerClientEvent('pop_charcreator:client:finishSuccess', src)
     -- Notification via pop_notify (esx_notify absent du serveur)
     TriggerClientEvent('notification:client:ShowNotify', src, { icon = 'fas fa-user', message = 'Apparence validée ! Heureux de vous revoir '..fn..' !', duration = 5000 })
     
@@ -207,7 +207,7 @@ RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname
     SetPlayerRoutingBucket(src, 0)
 end)
 
-RegisterNetEvent('vanguard_charcreator:server:enterInstance', function()
+RegisterNetEvent('pop_charcreator:server:enterInstance', function()
     local src = source
     -- Uniquement depuis le monde normal (évite de sortir d'une autre instance : prison, etc.)
     if GetPlayerRoutingBucket(src) ~= 0 then return end
@@ -228,7 +228,7 @@ RegisterNetEvent('vanguard_charcreator:server:enterInstance', function()
     end)
 end)
 
-RegisterNetEvent('vanguard_charcreator:server:exitInstance', function()
+RegisterNetEvent('pop_charcreator:server:exitInstance', function()
     local src = source
     if not inCreatorInstance[src] then return end
     inCreatorInstance[src] = nil
@@ -255,5 +255,5 @@ end)
 -- Commande admin : ouvrir le créateur (autorise une réédition du personnage)
 ESX.RegisterCommand('charcreator', 'admin', function(xPlayer, args, showError)
     adminReopen[xPlayer.source] = true
-    xPlayer.triggerEvent('vanguard_charcreator:open')
+    xPlayer.triggerEvent('pop_charcreator:open')
 end, false, {help = 'Ouvrir le créateur de personnage'})

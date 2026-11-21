@@ -58,10 +58,10 @@ AddEventHandler('pop_inventory:client:toggleUVLight', function()
   if lightOn then
     SetCurrentPedWeapon(ped, WEAPON_HASH, true)
     applyUVComponent()
-    TriggerEvent('tab_uvlight:toggled', true)  -- notifie douilles_client
+    TriggerEvent('pop_uvlight:toggled', true)  -- notifie douilles_client
     notify('Lampe UV allumée.')
   else
-    TriggerEvent('tab_uvlight:toggled', false) -- notifie douilles_client
+    TriggerEvent('pop_uvlight:toggled', false) -- notifie douilles_client
     notify('Lampe UV éteinte.', 'off')
   end
 end)
@@ -78,7 +78,7 @@ CreateThread(function()
       if not lightOn then
         lightOn = true
         applyUVComponent()
-        TriggerEvent('tab_uvlight:toggled', true)
+        TriggerEvent('pop_uvlight:toggled', true)
       end
 
       -- Position de la main droite via GetPedBoneIndex + GetEntityBoneCoords
@@ -106,7 +106,7 @@ CreateThread(function()
       -- Si l'arme n'est pas en main ou si on ne vise pas, on s'assure de l'éteindre
       if lightOn then
         lightOn = false
-        TriggerEvent('tab_uvlight:toggled', false)
+        TriggerEvent('pop_uvlight:toggled', false)
       end
       -- Arme en main : réactivité au clic droit ; sinon pas besoin de vérifier souvent
       Wait(GetSelectedPedWeapon(ped) == WEAPON_HASH and 0 or 500)

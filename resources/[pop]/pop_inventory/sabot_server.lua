@@ -37,7 +37,7 @@ local function notify(target, message, ntype)
 end
 
 -- POSE : nécessite l'item sabot
-RegisterNetEvent('tab_sabot:server:place', function(vehNetId)
+RegisterNetEvent('pop_sabot:server:place', function(vehNetId)
     local src = source
     vehNetId = tonumber(vehNetId)
     if not vehNetId then return end
@@ -51,13 +51,13 @@ RegisterNetEvent('tab_sabot:server:place', function(vehNetId)
     if not exports.pop_inventory:RemoveItem(src, SabotConfig.SabotItem, 1) then return end
 
     clamped[vehNetId] = true
-    TriggerClientEvent('tab_sabot:client:sync', -1, vehNetId, true)
+    TriggerClientEvent('pop_sabot:client:sync', -1, vehNetId, true)
 
     notify(src, 'Sabot posé : véhicule immobilisé.', 'success')
 end)
 
 -- RETRAIT : nécessite la clé, rend le sabot
-RegisterNetEvent('tab_sabot:server:remove', function(vehNetId)
+RegisterNetEvent('pop_sabot:server:remove', function(vehNetId)
     local src = source
     vehNetId = tonumber(vehNetId)
     if not vehNetId then return end
@@ -72,18 +72,18 @@ RegisterNetEvent('tab_sabot:server:remove', function(vehNetId)
     end
 
     clamped[vehNetId] = nil
-    TriggerClientEvent('tab_sabot:client:sync', -1, vehNetId, false)
+    TriggerClientEvent('pop_sabot:client:sync', -1, vehNetId, false)
 
     exports.pop_inventory:GiveItem(src, SabotConfig.SabotItem, 1)
     notify(src, 'Sabot retiré.', 'success')
 end)
 
 -- Synchronisation complète demandée par un client (connexion / restart ressource)
-RegisterNetEvent('tab_sabot:server:requestSync', function()
+RegisterNetEvent('pop_sabot:server:requestSync', function()
     local src = source
     local list = {}
     for netId in pairs(clamped) do
         list[#list + 1] = netId
     end
-    TriggerClientEvent('tab_sabot:client:fullSync', src, list)
+    TriggerClientEvent('pop_sabot:client:fullSync', src, list)
 end)

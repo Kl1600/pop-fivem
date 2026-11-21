@@ -20,7 +20,7 @@ local lastResync    = 0
 -- Renvoie le nombre de balles, ou -1 si l'arme n'est pas gérée. ESX callback (sync via promise).
 local function fetchRounds(hash)
     local p = promise.new()
-    ESX.TriggerServerCallback('tab_chargeurs:getRounds', function(rounds)
+    ESX.TriggerServerCallback('pop_chargeurs:getRounds', function(rounds)
         p:resolve(rounds)
     end, hash)
     local rounds = Citizen.Await(p)
@@ -73,7 +73,7 @@ CreateThread(function()
                 if cur < lastAmmo then
                     local delta = lastAmmo - cur
                     lastAmmo = cur
-                    TriggerServerEvent('tab_chargeurs:server:consumed', managed, delta)
+                    TriggerServerEvent('pop_chargeurs:server:consumed', managed, delta)
                 elseif cur > lastAmmo then
                     lastAmmo = cur
                 end

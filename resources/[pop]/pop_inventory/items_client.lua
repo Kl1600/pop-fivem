@@ -172,7 +172,7 @@ RegisterNetEvent('pop_inventory:client:useRepakit', function()
 
     if veh ~= 0 then
         -- On déclenche la réparation globale (partagée avec le target)
-        TriggerEvent('tab_interacts:client:repairVehicle', veh)
+        TriggerEvent('pop_interacts:client:repairVehicle', veh)
     else
         exports['pop_notify']:ShowNotify({ message = 'Aucun véhicule à proximité.', type = 'error' })
     end

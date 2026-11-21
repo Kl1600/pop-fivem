@@ -88,7 +88,7 @@ local function getRounds(src, magId, mag, wdata)
     return rounds
 end
 
-ESX.RegisterServerCallback('tab_chargeurs:getRounds', function(src, cb, hash)
+ESX.RegisterServerCallback('pop_chargeurs:getRounds', function(src, cb, hash)
     hash = tonumber(hash)
     if not hash then return cb(-1) end
     local magId, mag, wdata, hasContainer = findMagazineForHash(src, hash)
@@ -97,7 +97,7 @@ ESX.RegisterServerCallback('tab_chargeurs:getRounds', function(src, cb, hash)
     cb(getRounds(src, magId, mag, wdata))
 end)
 
-RegisterNetEvent('tab_chargeurs:server:consumed', function(hash, count)
+RegisterNetEvent('pop_chargeurs:server:consumed', function(hash, count)
     local src = source
     hash = tonumber(hash)
     count = tonumber(count)

@@ -84,7 +84,7 @@ end
 local function removeCasing(id)
     if not casings[id] then return end
     casings[id] = nil
-    TriggerClientEvent('tab_douilles:client:removeCasing', -1, id)
+    TriggerClientEvent('pop_douilles:client:removeCasing', -1, id)
 end
 
 local function countCasings()
@@ -111,7 +111,7 @@ end
 local lastShotBySrc = {}
 AddEventHandler('playerDropped', function() lastShotBySrc[source] = nil end)
 
-RegisterNetEvent('tab_douilles:server:shotFired', function(weapon, x, y, z)
+RegisterNetEvent('pop_douilles:server:shotFired', function(weapon, x, y, z)
     local src = source
     -- Anti-spam : borne le nombre de douilles par tireur (meme cadence que le client)
     local nowMs = GetGameTimer()
@@ -149,12 +149,12 @@ RegisterNetEvent('tab_douilles:server:shotFired', function(weapon, x, y, z)
 
     -- Diffuse la douille a tous les clients pour qu'elle soit visible au sol
     -- (le visuel est public ; les metadonnees balistiques restent serveur-only).
-    TriggerClientEvent('tab_douilles:client:revealCasing', -1, { id = id, x = x, y = y, z = z })
+    TriggerClientEvent('pop_douilles:client:revealCasing', -1, { id = id, x = x, y = y, z = z })
 end)
 
 -- ---------- CHERCHER : renvoie les douilles proches ----------
 
-ESX.RegisterServerCallback('tab_douilles:search', function(src, cb, x, y, z)
+ESX.RegisterServerCallback('pop_douilles:search', function(src, cb, x, y, z)
     if not hasJob(src, DouillesConfig.Search.Jobs) then return cb({}) end
     x, y, z = tonumber(x), tonumber(y), tonumber(z)
     if not x or not y or not z then return cb({}) end
@@ -179,30 +179,30 @@ end)
 
 -- ---------- SYNC : envoie les douilles existantes au joueur (connexion / restart resource) ----------
 
-RegisterNetEvent('tab_douilles:server:requestExisting', function()
+RegisterNetEvent('pop_douilles:server:requestExisting', function()
     local src = source
     local out = {}
     for id, c in pairs(casings) do
         out[#out + 1] = { id = id, x = c.coords.x, y = c.coords.y, z = c.coords.z }
     end
-    TriggerClientEvent('tab_douilles:client:syncExisting', src, out)
+    TriggerClientEvent('pop_douilles:client:syncExisting', src, out)
 end)
 
 -- ---------- ADMIN SHOW CASINGS ----------
 
-RegisterNetEvent('tab_douilles:server:requestAllCasings', function()
+RegisterNetEvent('pop_douilles:server:requestAllCasings', function()
     local src = source
     if not (isAdminAllowed and isAdminAllowed(src)) then return end
     local out = {}
     for id, c in pairs(casings) do
         out[#out + 1] = { id = id, x = c.coords.x, y = c.coords.y, z = c.coords.z }
     end
-    TriggerClientEvent('tab_douilles:client:receiveAllCasings', src, out)
+    TriggerClientEvent('pop_douilles:client:receiveAllCasings', src, out)
 end)
 
 -- ---------- RAMASSER : douille -> item ----------
 
-RegisterNetEvent('tab_douilles:server:pickup', function(id)
+RegisterNetEvent('pop_douilles:server:pickup', function(id)
     local src = source
     local c = casings[id]
     if not c then return end
@@ -256,7 +256,7 @@ local function nearLab(src)
 end
 
 -- Appele par pop_inventory quand le joueur "utilise" l'item douille
--- (champ `export = 'tab_douilles:onUseDouille'` dans la def de l'item).
+-- (champ `export = 'pop_douilles:onUseDouille'` dans la def de l'item).
 -- Signature : (self, src, item, def). On renvoie false pour NE PAS consommer la douille.
 exports('onUseDouille', function(_, src, item, def)
     local meta = (item and item.meta) or {}
@@ -272,16 +272,16 @@ exports('onUseDouille', function(_, src, item, def)
 
     -- Deja analysee : on reaffiche directement le rapport.
     if meta.analyzed then
-        TriggerClientEvent('tab_douilles:client:showReport', src, meta)
+        TriggerClientEvent('pop_douilles:client:showReport', src, meta)
         return false
     end
 
     -- Sinon on lance la barre d'analyse cote client, qui finalisera ensuite.
-    TriggerClientEvent('tab_douilles:client:startAnalyze', src, item and item.id)
+    TriggerClientEvent('pop_douilles:client:startAnalyze', src, item and item.id)
     return false
 end)
 
-RegisterNetEvent('tab_douilles:server:finalizeAnalyze', function(itemId)
+RegisterNetEvent('pop_douilles:server:finalizeAnalyze', function(itemId)
     local src = source
     if not itemId then return end
     if not hasJob(src, DouillesConfig.Analyze.Jobs) then return end
@@ -297,7 +297,7 @@ RegisterNetEvent('tab_douilles:server:finalizeAnalyze', function(itemId)
         exports.pop_inventory:UpdateItemMetadata(src, itemId, meta)
     end
 
-    TriggerClientEvent('tab_douilles:client:showReport', src, meta)
+    TriggerClientEvent('pop_douilles:client:showReport', src, meta)
 end)
 
 -- ---------- Nettoyage periodique (duree de vie) ----------

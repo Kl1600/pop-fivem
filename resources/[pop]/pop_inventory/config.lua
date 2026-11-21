@@ -602,7 +602,7 @@ Config.Items = {
     tags = { 'police', 'tools' },
     gradientColor = 'rgba(90, 90, 90, 0.4)',
     onUse = function(source, itemData, itemDef)
-        TriggerClientEvent('tab_sabot:client:useSabot', source)
+        TriggerClientEvent('pop_sabot:client:useSabot', source)
         return false -- la pose/consommation est geree par tab_sabot
     end,
   },
@@ -615,7 +615,7 @@ Config.Items = {
     tags = { 'police', 'tools' },
     gradientColor = 'rgba(200, 180, 50, 0.4)',
     onUse = function(source, itemData, itemDef)
-        TriggerClientEvent('tab_sabot:client:useCle', source)
+        TriggerClientEvent('pop_sabot:client:useCle', source)
         return false
     end,
   },
@@ -1616,7 +1616,7 @@ Config.Items = {
     onUse = function(source, item, def)
       print('^3[PAINTGUN][SV]^7 onUse pistolet_peinture src=' .. tostring(source) .. ' itemId=' .. tostring(item and item.id))
       -- Ouvre l'interface NUI de selection de couleur (resource pressurewashermodels).
-      TriggerClientEvent('vg_paint:client:openConfig', source, item.id, item.meta or {})
+      TriggerClientEvent('pop_paint:client:openConfig', source, item.id, item.meta or {})
       return false -- ne consomme jamais le pistolet
     end,
   },

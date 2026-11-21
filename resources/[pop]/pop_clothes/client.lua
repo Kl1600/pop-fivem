@@ -626,7 +626,7 @@ RegisterNUICallback('close', function(data, cb)
     if openedFromCreator then
         openedFromCreator = false
         TriggerServerEvent('pop_clothes:server:setCreatorMode', false)
-        TriggerEvent('vanguard_charcreator:reopen')
+        TriggerEvent('pop_charcreator:reopen')
     end
     purchaseCompleted = false
     cb('ok')

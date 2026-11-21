@@ -14,7 +14,7 @@ local lastSearch = 0
 
 -- Etat de la lampe UV (mis à jour via event local depuis uvpocketlight_client.lua)
 local uvLightOn = false
-AddEventHandler('tab_uvlight:toggled', function(state) uvLightOn = state end)
+AddEventHandler('pop_uvlight:toggled', function(state) uvLightOn = state end)
 
 -- Ensemble des armes ignorees (resolu par hash au demarrage)
 local IgnoredHash = {}
@@ -78,7 +78,7 @@ CreateThread(function()
                     local found, gz = GetGroundZFor_3dCoord(gx, gy, c.z + 1.0, false)
                     local z = (found and (c.z - gz) < 3.0) and gz or (c.z - 0.95)
                     z = z + DouillesConfig.Spawn.GroundOffset
-                    TriggerServerEvent('tab_douilles:server:shotFired', weapon, gx, gy, z)
+                    TriggerServerEvent('pop_douilles:server:shotFired', weapon, gx, gy, z)
                 end
             end
             Wait(0)
@@ -148,7 +148,7 @@ local function pickupCasing(id)
     })
     ClearPedTasks(ped)
     if ok then
-        TriggerServerEvent('tab_douilles:server:pickup', id)
+        TriggerServerEvent('pop_douilles:server:pickup', id)
     end
 end
 
@@ -206,12 +206,12 @@ local function revealCasing(data)
 end
 
 -- Suppression diffusee par le serveur (ramassage / expiration)
-RegisterNetEvent('tab_douilles:client:removeCasing', function(id)
+RegisterNetEvent('pop_douilles:client:removeCasing', function(id)
     clearRevealed(id)
 end)
 
 -- Apparition diffusee par le serveur (tir) : douille visible immediatement au sol
-RegisterNetEvent('tab_douilles:client:revealCasing', function(data)
+RegisterNetEvent('pop_douilles:client:revealCasing', function(data)
     if not data or not data.id then return end
     revealCasing(data)
 end)
@@ -221,10 +221,10 @@ end)
 CreateThread(function()
     while not NetworkIsSessionStarted() do Wait(500) end
     Wait(2000)
-    TriggerServerEvent('tab_douilles:server:requestExisting')
+    TriggerServerEvent('pop_douilles:server:requestExisting')
 end)
 
-RegisterNetEvent('tab_douilles:client:syncExisting', function(list)
+RegisterNetEvent('pop_douilles:client:syncExisting', function(list)
     if not list then return end
     for _, data in ipairs(list) do
         revealCasing(data)
@@ -298,7 +298,7 @@ end)
 showAllCasingsActive = false
 allCasingsCache = {}
 
-RegisterNetEvent('tab_douilles:client:receiveAllCasings', function(list)
+RegisterNetEvent('pop_douilles:client:receiveAllCasings', function(list)
     allCasingsCache = list or {}
     if showAllCasingsActive then
         notify(("Vision Admin : %d douille(s) chargee(s)"):format(#allCasingsCache), 'info')
@@ -308,7 +308,7 @@ end)
 RegisterCommand('showcasings', function()
     showAllCasingsActive = not showAllCasingsActive
     if showAllCasingsActive then
-        TriggerServerEvent('tab_douilles:server:requestAllCasings')
+        TriggerServerEvent('pop_douilles:server:requestAllCasings')
         notify("Vision des douilles (Admin) : ACTIVE", 'success')
     else
         allCasingsCache = {}
@@ -320,7 +320,7 @@ CreateThread(function()
     while true do
         Wait(5000)
         if showAllCasingsActive then
-            TriggerServerEvent('tab_douilles:server:requestAllCasings')
+            TriggerServerEvent('pop_douilles:server:requestAllCasings')
         end
     end
 end)
@@ -351,7 +351,7 @@ local function doSearch()
 
     local c = GetEntityCoords(PlayerPedId())
     local p = promise.new()
-    ESX.TriggerServerCallback('tab_douilles:search', function(res) p:resolve(res) end, c.x, c.y, c.z)
+    ESX.TriggerServerCallback('pop_douilles:search', function(res) p:resolve(res) end, c.x, c.y, c.z)
     local list = Citizen.Await(p)
     if not list or #list == 0 then
         notify("Aucune douille trouvee dans les environs.", 'info')
@@ -371,7 +371,7 @@ RegisterKeyMapping(DouillesConfig.Search.Command, 'Fouiller le sol (douilles)', 
 
 -- ---------- ANALYSER (barre cote client puis finalisation serveur) ----------
 
-RegisterNetEvent('tab_douilles:client:startAnalyze', function(itemId)
+RegisterNetEvent('pop_douilles:client:startAnalyze', function(itemId)
     if analyzing or not itemId then return end
     analyzing = true
 
@@ -391,13 +391,13 @@ RegisterNetEvent('tab_douilles:client:startAnalyze', function(itemId)
     ClearPedTasks(ped)
     analyzing = false
     if ok then
-        TriggerServerEvent('tab_douilles:server:finalizeAnalyze', itemId)
+        TriggerServerEvent('pop_douilles:server:finalizeAnalyze', itemId)
     end
 end)
 
 -- ---------- Rapport balistique ----------
 
-RegisterNetEvent('tab_douilles:client:showReport', function(meta)
+RegisterNetEvent('pop_douilles:client:showReport', function(meta)
     if not meta then return end
 
     local lieu = 'Inconnu'

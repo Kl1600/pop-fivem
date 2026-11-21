@@ -93,11 +93,11 @@ local function pushState(src)
   if not src or src == 0 or src == '' then return end
   local itemId, item = getEquippedGunId(src)
   if not itemId then
-    TriggerClientEvent('vg_paint:client:syncState', src, nil)
+    TriggerClientEvent('pop_paint:client:syncState', src, nil)
     return
   end
   local meta = item.meta or {}
-  TriggerClientEvent('vg_paint:client:syncState', src, {
+  TriggerClientEvent('pop_paint:client:syncState', src, {
     itemId    = itemId,
     color     = meta.paintIndex,
     r         = meta.paintR or 255,
@@ -108,13 +108,13 @@ local function pushState(src)
 end
 
 -- Le client demande l'etat (ex: au moment d'equiper l'arme).
-RegisterNetEvent('vg_paint:server:requestState', function()
+RegisterNetEvent('pop_paint:server:requestState', function()
   pushState(source)
 end)
 
 -- Selection d'une couleur dans le menu : consomme les pots et remplit
 -- le reservoir si le joueur a assez de pigment.
-RegisterNetEvent('vg_paint:server:selectColor', function(itemId, paintIndex)
+RegisterNetEvent('pop_paint:server:selectColor', function(itemId, paintIndex)
   local src = source
   if not src or src == 0 or src == '' then return end
   if not itemId then
@@ -185,7 +185,7 @@ RegisterNetEvent('vg_paint:server:selectColor', function(itemId, paintIndex)
   end
 
   -- Pousse l'état DIRECTEMENT (réservoir plein) sans dépendre de getEquippedGunId.
-  TriggerClientEvent('vg_paint:client:syncState', src, {
+  TriggerClientEvent('pop_paint:client:syncState', src, {
     itemId    = itemId,
     color     = color.index,
     r         = color.r,
@@ -196,7 +196,7 @@ RegisterNetEvent('vg_paint:server:selectColor', function(itemId, paintIndex)
 end)
 
 -- Drain du reservoir pendant le spray (le client envoie la conso ecoulee).
-RegisterNetEvent('vg_paint:server:drain', function(itemId, amount)
+RegisterNetEvent('pop_paint:server:drain', function(itemId, amount)
   local src = source
   if not src or src == 0 or src == '' then return end
   if not itemId then return end

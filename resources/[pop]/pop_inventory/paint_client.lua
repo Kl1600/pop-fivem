@@ -80,7 +80,7 @@ local jetTries = {
 -- ------------------------------------------------------------------
 --  Selecteur de couleur (overlay NUI : paint_picker.js)
 -- ------------------------------------------------------------------
-RegisterNetEvent('vg_paint:client:openConfig', function(itemId, meta)
+RegisterNetEvent('pop_paint:client:openConfig', function(itemId, meta)
   configItemId = itemId
 
   local colors = {}
@@ -117,7 +117,7 @@ end
 -- La NUI renvoie la couleur choisie
 RegisterNUICallback('paintSelect', function(data, cb)
   if data and data.index ~= nil and configItemId ~= nil then
-    TriggerServerEvent('vg_paint:server:selectColor', configItemId, data.index)
+    TriggerServerEvent('pop_paint:server:selectColor', configItemId, data.index)
   else
   end
   closeIfPaintOpened()
@@ -133,7 +133,7 @@ end)
 -- ------------------------------------------------------------------
 --  Synchro de l'etat du pistolet equipe
 -- ------------------------------------------------------------------
-RegisterNetEvent('vg_paint:client:syncState', function(state)
+RegisterNetEvent('pop_paint:client:syncState', function(state)
   gun = state
 end)
 
@@ -160,7 +160,7 @@ CreateThread(function()
           SetAmmoInClip(p, weaponHash, 100)
         end
       end)
-      TriggerServerEvent('vg_paint:server:requestState')
+      TriggerServerEvent('pop_paint:server:requestState')
     elseif not equipped and wasEquipped then
       gun = nil
     end
@@ -309,7 +309,7 @@ CreateThread(function()
 
         -- Synchro periodique du drain vers le serveur.
         if pendingDrain > 0 and (GetGameTimer() - lastDrainSync) > 800 then
-          TriggerServerEvent('vg_paint:server:drain', gun.itemId, pendingDrain)
+          TriggerServerEvent('pop_paint:server:drain', gun.itemId, pendingDrain)
           pendingDrain = 0.0
           lastDrainSync = GetGameTimer()
         end
@@ -317,7 +317,7 @@ CreateThread(function()
         stopJet()
         -- Flush du drain restant quand on arrete de pulveriser.
         if pendingDrain > 0 then
-          TriggerServerEvent('vg_paint:server:drain', gun.itemId, pendingDrain)
+          TriggerServerEvent('pop_paint:server:drain', gun.itemId, pendingDrain)
           pendingDrain = 0.0
           lastDrainSync = GetGameTimer()
         end

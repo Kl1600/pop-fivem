@@ -92,7 +92,7 @@ local function OpenCreator()
     DisplayRadar(false)
 
     -- Entrer dans l'instance
-    TriggerServerEvent('vanguard_charcreator:server:enterInstance')
+    TriggerServerEvent('pop_charcreator:server:enterInstance')
 
     -- Frozen idle pose during creation
     ApplyCreatorPose(playerPed)
@@ -191,8 +191,8 @@ RegisterNUICallback('openTattoos', function(data, cb)
     end)
 end)
 
-RegisterNetEvent('vanguard_charcreator:reopen')
-AddEventHandler('vanguard_charcreator:reopen', function()
+RegisterNetEvent('pop_charcreator:reopen')
+AddEventHandler('pop_charcreator:reopen', function()
     if isCreatorOpen then
         SetNuiFocus(true, true)
         SendNUIMessage({
@@ -395,7 +395,7 @@ RegisterNUICallback('finish', function(data, cb)
         local skinCopy = {}
         for k, v in pairs(skin) do skinCopy[k] = v end
 
-        TriggerServerEvent('vanguard_charcreator:save', skinCopy, data.firstname, data.lastname, data.dateofbirth, data.spawn, chosenClothes)
+        TriggerServerEvent('pop_charcreator:save', skinCopy, data.firstname, data.lastname, data.dateofbirth, data.spawn, chosenClothes)
 
         TriggerEvent('skinchanger:loadSkin', skin)
     end)
@@ -437,7 +437,7 @@ RegisterNUICallback('finish', function(data, cb)
     ClearPedTasks(playerPed)
     
     -- Sortir de l'instance
-    TriggerServerEvent('vanguard_charcreator:server:exitInstance')
+    TriggerServerEvent('pop_charcreator:server:exitInstance')
     
     cb('ok')
 end)
@@ -447,13 +447,13 @@ RegisterNUICallback('randomize', function(data, cb)
     cb('ok')
 end)
 
-RegisterNetEvent('vanguard_charcreator:client:finishSuccess', function()
+RegisterNetEvent('pop_charcreator:client:finishSuccess', function()
     -- Nothing to do here visually, animation moved to the creator phase
 end)
 
 -- Event to trigger from join/spawn system
-RegisterNetEvent('vanguard_charcreator:open')
-AddEventHandler('vanguard_charcreator:open', function()
+RegisterNetEvent('pop_charcreator:open')
+AddEventHandler('pop_charcreator:open', function()
     OpenCreator()
 end)
 

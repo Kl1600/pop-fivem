@@ -79,7 +79,7 @@ end
 
 -- ---------- Synchronisation réseau ----------
 
-RegisterNetEvent('tab_sabot:client:sync', function(netId, state)
+RegisterNetEvent('pop_sabot:client:sync', function(netId, state)
     if state then
         clampedNetIds[netId] = true
     else
@@ -91,7 +91,7 @@ RegisterNetEvent('tab_sabot:client:sync', function(netId, state)
     end
 end)
 
-RegisterNetEvent('tab_sabot:client:fullSync', function(list)
+RegisterNetEvent('pop_sabot:client:fullSync', function(list)
     clampedNetIds = {}
     for _, netId in ipairs(list) do
         clampedNetIds[netId] = true
@@ -101,7 +101,7 @@ end)
 -- Demande l'état courant au démarrage
 CreateThread(function()
     Wait(1500)
-    TriggerServerEvent('tab_sabot:server:requestSync')
+    TriggerServerEvent('pop_sabot:server:requestSync')
 end)
 
 -- Boucle de maintenance : applique l'état aux véhicules streamés
@@ -257,7 +257,7 @@ local function placeOnVehicle(veh)
 
     busy = true
     if doAction('Pose du sabot...', SabotConfig.PlaceDuration) then
-        TriggerServerEvent('tab_sabot:server:place', NetworkGetNetworkIdFromEntity(veh))
+        TriggerServerEvent('pop_sabot:server:place', NetworkGetNetworkIdFromEntity(veh))
     end
     busy = false
 end
@@ -275,7 +275,7 @@ local function removeFromVehicle(veh)
 
     busy = true
     if doAction('Retrait du sabot...', SabotConfig.RemoveDuration) then
-        TriggerServerEvent('tab_sabot:server:remove', NetworkGetNetworkIdFromEntity(veh))
+        TriggerServerEvent('pop_sabot:server:remove', NetworkGetNetworkIdFromEntity(veh))
     end
     busy = false
 end
@@ -289,7 +289,7 @@ end
 
 -- ---------- Utilisation des items ----------
 
-RegisterNetEvent('tab_sabot:client:useSabot', function()
+RegisterNetEvent('pop_sabot:client:useSabot', function()
     local veh = getClosestVehicle()
     if not veh then
         exports['pop_notify']:ShowNotify({ message = 'Aucun véhicule à proximité.', type = 'error' })
@@ -298,7 +298,7 @@ RegisterNetEvent('tab_sabot:client:useSabot', function()
     placeOnVehicle(veh)
 end)
 
-RegisterNetEvent('tab_sabot:client:useCle', function()
+RegisterNetEvent('pop_sabot:client:useCle', function()
     local veh = getClosestVehicle()
     if not veh then
         exports['pop_notify']:ShowNotify({ message = 'Aucun véhicule à proximité.', type = 'error' })
