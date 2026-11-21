@@ -38,13 +38,16 @@ Scripts : pop_inventory, checksystem, pop_charcreator, pop_clothes, pop_loading,
 
 **checksystem** : réessais limités (5) si la base est en erreur.
 
-### Reste (Basse, non demandé)
-- pop_inventory : restes de pesos, ped iFruit dupliqué au restart, recette « safe », double `playerDropped`, exports en double.
-- pop_clothes : deux magasins aux coordonnées fausses (`config.lua:30, 39`).
-- pop_charcreator : modèle de ped et taille du skin non contrôlés côté serveur.
-- pop_idcard / pop_passport : boucle Échap, photo du lecteur, commandes console.
+### Points Basse (22/11/2026) — faits
+- **pop_inventory** : paiement en pesos retiré (serveur, client, config, interface boutique ; l'objet « pesos » reste défini pour que les anciens restent visibles et jetables) ; PNJ iFruit supprimé à l'arrêt de la ressource ; recette « safe » = 8 hotdogs sur une ligne, quantités additionnées par objet côté serveur ; un seul `playerDropped` (sv_exports.lua) ; exports `GiveItem` et `getItemCount` en double retirés (ceux réellement utilisés sont gardés).
+- **pop_clothes** : Binco Vespucci (Y -10517 → -1073) et Discount Store Route 68 (Z 189 → 18) corrigés.
+- **pop_idcard / pop_passport** : boucle Échap active seulement carte ouverte (fermeture Échap, clic droit ou Retour arrière) ; photo du titulaire (sa propre carte, ou le titulaire s'il est à moins de 15 m, sinon fond gris) ; `giveidcard` / `givepassport` ne plantent plus depuis la console.
+- **pop_charcreator** : sauvegarde refusée si le ped n'est pas `mp_m_freemode_01` / `mp_f_freemode_01` ou si une valeur du skin ou de la tenue sort des limites (nombres de -1 à 1000, taille 80 à 120) ; le joueur revient alors dans le créateur. Onglet « PEDS » retiré.
 
 ### À vérifier en jeu
+- Les deux magasins de vêtements corrigés (Binco Vespucci, Discount Store Route 68).
+- Carte d'identité / passeport : photo du titulaire, fermeture par Échap.
+- Création de perso complète (la nouvelle vérification du skin ne doit rien refuser à tort).
 - Tenue au spawn, après le coiffeur et après un restart de pop_inventory.
 - T-shirt homme et femme (haut 0 par défaut).
 - Coffre de véhicule à deux joueurs (le second doit être refusé).

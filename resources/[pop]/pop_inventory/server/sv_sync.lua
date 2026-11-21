@@ -409,7 +409,4 @@ CreateThread(function()
   end
 end)
 
-AddEventHandler('playerDropped', function()
-  releaseSharedLocks(source)
-end)
 

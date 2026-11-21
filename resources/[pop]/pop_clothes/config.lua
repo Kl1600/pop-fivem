@@ -27,7 +27,7 @@ Config.Shops = {
     { coords = vector3(-703.776, -152.258, 36.415),    name = "Ponsonbys",      type = "clothing" },
     { coords = vector3(-167.863, -298.969, 38.51517),  name = "Ponsonbys",      type = "clothing" },
     { coords = vector3(428.694, -800.106, 28.491),     name = "Binco",          type = "clothing" },
-    { coords = vector3(-829.413, -10517.710, 10.328),  name = "Binco",          type = "clothing" },
+    { coords = vector3(-829.413, -1073.710, 10.328),   name = "Binco",          type = "clothing" }, -- Binco Vespucci (Y corrigé)
     { coords = vector3(-1193.136, -772.262, 16.324),   name = "Suburban",       type = "clothing" },
     { coords = vector3(-1450.71, -238.16, 48.81),      name = "Ponsonbys",      type = "clothing" },
     { coords = vector3(4.25, 6512.81, 30.87),          name = "Discount Store", type = "clothing" },
@@ -36,7 +36,7 @@ Config.Shops = {
     { coords = vector3(614.20, 2762.79, 41.08),        name = "Discount Store", type = "clothing" },
     { coords = vector3(1196.78, 2709.55, 37.22),       name = "Suburban",       type = "clothing" },
     { coords = vector3(-3171.49, 1043.85, 19.86),      name = "Suburban",       type = "clothing" },
-    { coords = vector3(-1100.95, 2710.21, 189.10),     name = "Discount Store", type = "clothing" },
+    { coords = vector3(-1100.95, 2710.21, 18.10),      name = "Discount Store", type = "clothing" }, -- Route 68 (Z corrigé)
 
     -- Barbiers
     { coords = vector3(-814.308, -183.823, 37.568),    name = "Barbier", type = "barber" },

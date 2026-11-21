@@ -744,6 +744,8 @@ Config.Items = {
     tags = { 'cash' },
     gradientColor = 'rgba(70, 146, 81, 0.59)',
   },
+  -- Objet gardé seulement pour que les anciens pesos restent visibles (et jetables) :
+  -- plus aucune boutique ne les vend ni ne les accepte.
   pesos = {
     label = 'Pesos',
     weight = 0.001,
@@ -2409,15 +2411,6 @@ Config.Shops = {
   }
 }
 
--- ===== MODE ANNÉES 80 : PAIEMENT EN PESOS =====
--- Permet de payer dans certaines boutiques avec l'item 'pesos' en plus du cash (dollar).
-Config.ShopCurrency = {
-  -- Boutiques (shopId) qui acceptent le paiement en Pesos
-  PesosShops = {}, -- plus de pesos sur le serveur
-  -- Taux de change : combien de Pesos pour 1 dollar (les prix des items sont en $)
-  -- Ex : 20 => un article à 40$ coûte 800 Pesos
-  PesosPerDollar = 20,
-}
 
 Config.ShopZones = {
     -- 24/7 Stores
@@ -2672,9 +2665,7 @@ Config.Recipes = {
         id = 'safe',
         output = { defId = 'safe', qty = 1 },
         ingredients = {
-            { defId = 'hotdog', qty = 6 },
-            { defId = 'hotdog', qty = 1 },
-            { defId = 'hotdog', qty = 1 },
+            { defId = 'hotdog', qty = 8 }, -- avant : 6 + 1 + 1 sur trois lignes, mal compté
         },
     },
     {

@@ -55,11 +55,12 @@ function getIdentifier(source)
   return identifiers and identifiers[1]
 end
 
--- Le cache est vidé un peu après la déconnexion, une fois les sauvegardes faites.
-AddEventHandler('playerDropped', function()
-  local src = tonumber(source) or source
+-- Le cache est vidé un peu après la déconnexion, une fois les sauvegardes faites
+-- (appelé par l'unique playerDropped de sv_exports.lua).
+function forgetSourceIdentifier(src)
+  src = tonumber(src) or src
   SetTimeout(10000, function() SourceIdentifier[src] = nil end)
-end)
+end
 
 function toVector3(coords)
   if not coords then

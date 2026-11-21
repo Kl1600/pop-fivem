@@ -74,8 +74,34 @@ AddEventHandler('pop_idcard:server:issueCardInternal', function(targetId, contai
     issueCard(targetId, containerId, customData)
 end)
 
+-- Photo : renvoie le server id du titulaire de la carte (identifiant ESX stocké dans l'item)
+-- uniquement s'il est connecté et proche du lecteur, sinon 0.
+RegisterNetEvent('pop_idcard:server:holder', function(reqId, identifier)
+    local src = source
+    local holderId = 0
+    if type(identifier) == 'string' and identifier ~= '' and #identifier <= 80 then
+        local xHolder = ESX.GetPlayerFromIdentifier(identifier)
+        if xHolder then
+            local target = xHolder.source
+            if target == src then
+                holderId = target
+            else
+                local pa, pb = GetPlayerPed(src), GetPlayerPed(target)
+                if pa ~= 0 and pb ~= 0 and #(GetEntityCoords(pa) - GetEntityCoords(pb)) <= 20.0 then
+                    holderId = target
+                end
+            end
+        end
+    end
+    TriggerClientEvent('pop_idcard:client:holder', src, tonumber(reqId) or 0, holderId)
+end)
+
 ESX.RegisterCommand('giveidcard', 'admin', function(xPlayer, args, showError)
-    local target = args.id or xPlayer.source
+    -- Depuis la console, xPlayer est nil : l'ID du joueur est alors obligatoire
+    local target = args.id or (xPlayer and xPlayer.source)
+    if not target or not GetPlayerName(target) then
+        return print('[pop_idcard] Usage : giveidcard <id du joueur connecté>')
+    end
     issueCard(target)
 end, true, {
     help = 'Donner une carte d\'identité',

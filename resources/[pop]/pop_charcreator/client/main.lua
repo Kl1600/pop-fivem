@@ -300,6 +300,10 @@ RegisterNUICallback('updateGender', function(data, cb)
 end)
 
 RegisterNUICallback('updateModel', function(data, cb)
+    -- Seuls les modèles freemode sont acceptés (le serveur refuse les autres à la sauvegarde)
+    if data.model ~= 'mp_m_freemode_01' and data.model ~= 'mp_f_freemode_01' then
+        return cb('error')
+    end
     local model = GetHashKey(data.model)
     
     if not IsModelInCdimage(model) or not IsModelValid(model) then

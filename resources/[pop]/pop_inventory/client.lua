@@ -964,13 +964,7 @@ end)
 
 RegisterNetEvent('pop_inventory:client:openShop', function(shopId, items)
     openUi()
-    local currency = nil
-    local cfg = Config and Config.ShopCurrency
-    local is80s = (GlobalState.style80s == true)
-    if is80s and cfg and cfg.PesosShops and cfg.PesosShops[shopId] then
-        currency = { pesos = true, rate = cfg.PesosPerDollar or 1 }
-    end
-    SendNUIMessage({ action = 'shop_mode', shopId = shopId, items = items, currency = currency })
+    SendNUIMessage({ action = 'shop_mode', shopId = shopId, items = items })
 end)
 
 exports('getItemCount', function(itemDefId)
@@ -1584,16 +1578,10 @@ local function openShopMode(shopId, shopItems)
         })
     end
     
-    local currency = nil
-    local cfg = Config and Config.ShopCurrency
-    if cfg and cfg.PesosShops and cfg.PesosShops[shopId] then
-        currency = { pesos = true, rate = cfg.PesosPerDollar or 1 }
-    end
-
     if not isOpen then
         openUi()
     end
-    SendNUIMessage({ action = 'shop_mode', shopId = shopId, items = enrichedItems, currency = currency })
+    SendNUIMessage({ action = 'shop_mode', shopId = shopId, items = enrichedItems })
 end
 
 CreateThread(function()
@@ -1676,6 +1664,13 @@ CreateThread(function()
     FreezeEntityPosition(shopPed, true)
     
     TaskStartScenarioInPlace(shopPed, "WORLD_HUMAN_STAND_MOBILE", 0, true)
+    SetModelAsNoLongerNeeded(pedModel)
+
+    -- Supprimé à l'arrêt de la ressource : sinon un restart en recréait un de plus.
+    AddEventHandler('onResourceStop', function(resourceName)
+      if resourceName ~= GetCurrentResourceName() then return end
+      if DoesEntityExist(shopPed) then DeleteEntity(shopPed) end
+    end)
 end)
 
 RegisterNUICallback('craft', function(data, cb)

@@ -6,6 +6,54 @@ local adminReopen = {}
 local saving = {}
 local inCreatorInstance = {}
 
+-- Contrôle du skin envoyé par le client : modèle freemode seulement et valeurs
+-- dans les limites normales de skinchanger. Renvoie false si quelque chose cloche.
+local FREEMODE = { [0] = GetHashKey('mp_m_freemode_01'), [1] = GetHashKey('mp_f_freemode_01') }
+local FREEMODE_NAMES = { mp_m_freemode_01 = 0, mp_f_freemode_01 = 1 }
+
+local function isValidSkin(src, skin)
+    local sex = tonumber(skin.sex)
+    if sex ~= 0 and sex ~= 1 then return false end
+
+    -- Champ « model » éventuel : seulement les deux modèles freemode, cohérent avec sex
+    if skin.model ~= nil and FREEMODE_NAMES[skin.model] ~= sex then return false end
+
+    -- Ped réel du joueur (vu par le serveur) : doit être le freemode du bon sexe
+    local ped = GetPlayerPed(src)
+    if ped and ped ~= 0 then
+        local model = GetEntityModel(ped)
+        if model ~= FREEMODE[0] and model ~= FREEMODE[1] then return false end
+    end
+
+    local count = 0
+    for k, v in pairs(skin) do
+        count = count + 1
+        if count > 150 or type(k) ~= 'string' or #k > 32 then return false end
+        if k ~= 'model' then
+            local n = tonumber(v)
+            if not n or n ~= n then return false end -- nombre obligatoire (pas de table, pas de NaN)
+            if k == 'height' then
+                if n < 80 or n > 120 then return false end
+            elseif n < -1 or n > 1000 then
+                return false
+            end
+        end
+    end
+    return true
+end
+
+-- Tenue choisie (numéros de vêtements) : mêmes limites que le skin.
+local function isValidClothes(clothes)
+    if clothes == nil then return true end
+    local count = 0
+    for k, v in pairs(clothes) do
+        count = count + 1
+        local n = tonumber(v)
+        if count > 60 or type(k) ~= 'string' or not n or n ~= n or n < -1 or n > 1000 then return false end
+    end
+    return true
+end
+
 local function cleanText(value, maxLen)
     if type(value) ~= 'string' then return nil end
     value = value:gsub('[%c<>]', ''):match('^%s*(.-)%s*$')
@@ -19,6 +67,12 @@ RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname
     if not xPlayer or saving[src] then return end
     if type(skin) ~= 'table' then return end
     if chosenClothes ~= nil and type(chosenClothes) ~= 'table' then return end
+    if not isValidSkin(src, skin) or not isValidClothes(chosenClothes) then
+        -- Skin refusé : le joueur revient dans le créateur pour recommencer
+        TriggerClientEvent('notification:client:ShowNotify', src, { icon = 'fas fa-user', message = 'Apparence invalide, recommencez la création.', duration = 5000 })
+        TriggerClientEvent('vanguard_charcreator:open', src)
+        return
+    end
 
     saving[src] = true
     local row = MySQL.single.await('SELECT firstname FROM users WHERE identifier = ?', { xPlayer.identifier })

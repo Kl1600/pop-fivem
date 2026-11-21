@@ -1997,7 +1997,7 @@
     } else if (data.action === 'craft_mode') {
       openCraftPanel(data.recipes || []);
     } else if (data.action === 'shop_mode') {
-      openShopPanel(data.shopId, data.items || [], data.currency || null);
+      openShopPanel(data.shopId, data.items || []);
     } else if (data.action === 'setAdminItems') {
       adminItemsData = Array.isArray(data.items) ? data.items : [];
       renderAdminItems(adminItemsData);
@@ -3040,7 +3040,6 @@
   let shopItems = [];
   let selectedShopItem = null;
   let shopCategory = "LTD";
-  let shopCurrency = null; // { pesos: bool, rate: number } — mode années 80
 
   const shopSideEl = document.getElementById('shop-side');
   const btnBackShop = document.getElementById('btn-back-shop');
@@ -3059,14 +3058,8 @@
     if (!selectedShopItem) return;
     const qty = parseInt(shopQtyInput.value, 10) || 1;
     const totalDollars = qty * selectedShopItem.price;
-    const method = shopPaymentMethod ? shopPaymentMethod.value : 'cash';
-    if (method === 'pesos' && shopCurrency && shopCurrency.pesos) {
-      shopTotalPriceEl.textContent = totalDollars * (shopCurrency.rate || 1);
-      if (shopTotalUnitEl) shopTotalUnitEl.textContent = ' Pesos';
-    } else {
-      shopTotalPriceEl.textContent = totalDollars;
-      if (shopTotalUnitEl) shopTotalUnitEl.textContent = '$';
-    }
+    shopTotalPriceEl.textContent = totalDollars;
+    if (shopTotalUnitEl) shopTotalUnitEl.textContent = '$';
   };
 
   const renderShop = () => {
@@ -3104,39 +3097,14 @@
     });
   };
 
-  const openShopPanel = (category, items, currency) => {
+  const openShopPanel = (category, items) => {
     shopCategory = category || "Boutique";
     shopItems = items || [];
-    shopCurrency = currency || null;
     selectedShopItem = null;
     shopQtyInput.value = 1;
 
-    // Mode années 80 : afficher l'option Pesos uniquement si la boutique l'accepte, et cacher Banque
+    // Paiement : cash ou banque (plus de pesos sur le serveur)
     if (shopPaymentMethod) {
-      let pesosOpt = shopPaymentMethod.querySelector('option[value="pesos"]');
-      let bankOpt = shopPaymentMethod.querySelector('option[value="bank"]');
-      
-      if (shopCurrency && shopCurrency.pesos) {
-        if (!pesosOpt) {
-          pesosOpt = document.createElement('option');
-          pesosOpt.value = 'pesos';
-          pesosOpt.textContent = 'Pesos';
-          shopPaymentMethod.appendChild(pesosOpt);
-        }
-        if (bankOpt) {
-          bankOpt.remove();
-        }
-      } else {
-        if (pesosOpt) {
-          pesosOpt.remove();
-        }
-        if (!bankOpt) {
-          bankOpt = document.createElement('option');
-          bankOpt.value = 'bank';
-          bankOpt.textContent = 'Banque';
-          shopPaymentMethod.appendChild(bankOpt);
-        }
-      }
       shopPaymentMethod.value = 'cash';
     }
 

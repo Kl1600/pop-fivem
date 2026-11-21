@@ -19,7 +19,7 @@ const Config = {
         { id: "clothes", label: "VÊTEMENTS", icon: "fa-solid fa-shirt", type: "action" },
         { id: "tattoos", label: "TATOUAGES", icon: "fa-solid fa-paintbrush", type: "action" },
         { id: "arms", label: "BRAS", icon: "fa-solid fa-hand", type: "sliders" },
-        { id: "peds", label: "PEDS", icon: "fa-solid fa-person-circle-check", type: "peds", vip: true },
+        // Onglet PEDS retiré : seuls les modèles freemode sont acceptés par le serveur
         { id: "size", label: "TAILLE", icon: "fa-solid fa-ruler-vertical", type: "sliders" },
         { id: "region", label: "RÉGION", icon: "fa-solid fa-earth-americas", type: "region" },
         { id: "save", label: "SAUVEGARDER", icon: "fa-solid fa-check", type: "action" }

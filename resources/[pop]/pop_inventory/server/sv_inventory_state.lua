@@ -119,7 +119,7 @@ end
 -- Allume/éteint la radio selon l'occupation du slot 'radio'. Événement DÉTERMINISTE
 -- (pas un toggle) -> idempotent, on peut l'appeler après chaque action d'équipement.
 local lastRadioPower = {}
-AddEventHandler('playerDropped', function() lastRadioPower[source] = nil end)
+function clearRadioPower(src) lastRadioPower[src] = nil end -- appelé à la déconnexion
 
 function updateRadioPower(src, store)
   local hasRadio = false

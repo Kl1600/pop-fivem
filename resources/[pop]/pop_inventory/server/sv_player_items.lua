@@ -509,22 +509,6 @@ exports('GiveItem', function(source, itemDefId, qty, meta)
   return GiveItem(source, itemDefId, qty, meta)
 end)
 
-exports('getItemCount', function(source, itemDefId)
-  local identifier = getIdentifier(source)
-  if not identifier then return 0 end
-
-  local store = ensureStore(identifier)
-  local count = 0
-  
-  for _, item in pairs(store.items) do
-    if item.defId == itemDefId and not item._isTemporary then
-      count = count + (item.qty or 1)
-    end
-  end
-  
-  return count
-end)
-
 exports('removeItem', function(source, itemDefId, qty)
   local identifier = getIdentifier(source)
   if not identifier then return false end
@@ -654,11 +638,16 @@ RegisterNetEvent('pop_inventory:server:craft', function(recipeId)
 
   local store = ensureStore(identifier)
 
-  -- Vérification des ingrédients
+  -- Vérification des ingrédients : quantités additionnées par objet (un même objet
+  -- listé sur plusieurs lignes était vérifié ligne par ligne, donc mal compté).
+  local needed = {}
   for _, ing in ipairs(recipe.ingredients) do
-    if countItemInStore(store, ing.defId) < ing.qty then
-      local def = getItemDef(ing.defId)
-      notify(src, 'Ingrédients manquants : ' .. (def and def.label or ing.defId))
+    needed[ing.defId] = (needed[ing.defId] or 0) + ing.qty
+  end
+  for defId, qty in pairs(needed) do
+    if countItemInStore(store, defId) < qty then
+      local def = getItemDef(defId)
+      notify(src, 'Ingrédients manquants : ' .. (def and def.label or defId))
       return
     end
   end
@@ -1002,7 +991,6 @@ RegisterNetEvent('pop_inventory:server:shopBuy', function(data)
     local taxAmount = math.floor(totalPrice * (tvaRate / 100))
     local finalPrice = totalPrice + taxAmount
     local success = false
-    local pesosTaxAmt = 0
     
     if method == 'cash' then
         -- Cash is stored as an inventory item on this server (incl. inside the wallet container),
@@ -1015,14 +1003,6 @@ RegisterNetEvent('pop_inventory:server:shopBuy', function(data)
             success = true
         end
     elseif method == 'bank' then
-        local is80s = (GlobalState.style80s == true)
-        local cfg = Config.ShopCurrency
-        if is80s and cfg and cfg.PesosShops and cfg.PesosShops[shopId] then
-            print(string.format("^1[Shop-Error]^7 Paiement en banque bloque en mode 80s pour la boutique: %s", tostring(shopId)))
-            TriggerClientEvent('pop_inventory:client:notify', src, "Le paiement en banque est indisponible dans cette boutique en mode 80s.")
-            return
-        end
-
         if ESX then
             if xPlayer.getAccount('bank').money >= finalPrice then
                 xPlayer.removeAccountMoney('bank', finalPrice)
@@ -1033,25 +1013,6 @@ RegisterNetEvent('pop_inventory:server:shopBuy', function(data)
                 xPlayer.Functions.RemoveMoney('bank', finalPrice)
                 success = true
             end
-        end
-    elseif method == 'pesos' then
-        -- Mode années 80 : paiement avec l'item 'pesos' (devise séparée du cash/dollar)
-        local cfg = Config.ShopCurrency
-        if cfg and cfg.PesosShops and cfg.PesosShops[shopId] then
-            local rate = cfg.PesosPerDollar or 1
-            local pesosTotal = totalPrice * rate
-            local pesosTax = math.floor(pesosTotal * (tvaRate / 100))
-            pesosTaxAmt = pesosTax
-            local finalPesos = pesosTotal + pesosTax
-            local identifier = getIdentifier(src)
-            local store = identifier and Stores[identifier]
-            if store and countItemInStore(store, 'pesos') >= finalPesos then
-                consumeItemInStore(store, 'pesos', finalPesos)
-                markDirty(identifier)
-                success = true
-            end
-        else
-            print("^1[Shop-Error]^7 Paiement Pesos non autorisé pour la boutique:", tostring(shopId))
         end
     end
 
@@ -1079,15 +1040,6 @@ RegisterNetEvent('pop_inventory:server:shopBuy', function(data)
                     gouvAccount.addMoney(taxAmount)
                 else
                     exports.oxmysql:execute('UPDATE addon_account_data SET money = money + ? WHERE account_name = ?', {taxAmount, accountUsName})
-                end
-            end)
-        elseif method == 'pesos' and pesosTaxAmt > 0 then
-            local accountMxName = Config.GouvMXAccount or 'society_gouv2'
-            TriggerEvent('esx_addonaccount:getSharedAccount', accountMxName, function(gouvAccount)
-                if gouvAccount then
-                    gouvAccount.addMoney(pesosTaxAmt)
-                else
-                    exports.oxmysql:execute('UPDATE addon_account_data SET money = money + ? WHERE account_name = ?', {pesosTaxAmt, accountMxName})
                 end
             end)
         end
@@ -1118,14 +1070,4 @@ AddEventHandler('esx:playerLoaded', function(playerId, _, isNew)
     GiveItem(playerId, 'bouteille', 1)
 end)
 
--- Sauvegarde forcée lors de la déconnexion
-AddEventHandler('playerDropped', function()
-    local src = source
-    local identifier = getIdentifier(src)
-    if identifier and Stores[identifier] then
-        saveStore(identifier, Stores[identifier])
-        -- Nettoyage mémoire
-        Stores[identifier] = nil
-    end
-end)
 

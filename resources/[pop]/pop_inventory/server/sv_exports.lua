@@ -1,67 +1,5 @@
-exports('GiveItem', function(target, defId, qty, meta)
-  local identifier = getIdentifier(target)
-  if not identifier then
-    return false, 'identifiant introuvable'
-  end
-  defId = normalizeSection(defId)
-  local store = ensureStore(identifier)
-  local def = getItemDef(defId)
-  if not def then
-    return false, 'item inconnu'
-  end
-
-  local function cleanupOrphan(store, itemId)
-    local item = store.items[itemId]
-    if item and item.containerId then
-      store.containers[item.containerId] = nil
-      store.containerOwners[item.containerId] = nil
-    end
-    store.items[itemId] = nil
-  end
-
-  -- Résultat calculé ici, puis synchro UNIQUE en bas (markDirty + sendState).
-  -- (Avant : chaque branche faisait return -> sendState jamais appelé pour les items
-  --  normaux, l'item n'apparaissait pas côté client. Corrigé.)
-  local ok, err
-  if def.equipSlot and def.container then
-    if not store.equipment[def.equipSlot] then
-      local itemId = createItem(store, defId, 1, meta)
-      if itemId then
-        local equipped = equipItem(store, itemId)
-        if equipped then
-          ok = true
-        else
-          cleanupOrphan(store, itemId)
-          ok, err = autoInsertItem(store, defId, 1, meta)
-        end
-      else
-        ok, err = autoInsertItem(store, defId, 1, meta)
-      end
-    else
-      ok, err = autoInsertItem(store, defId, 1, meta)
-    end
-  elseif def.equipSlot and not store.equipment[def.equipSlot] then
-    local itemId = createItem(store, defId, 1, meta)
-    if not itemId then return false, 'erreur creation' end
-    local equipped = equipItem(store, itemId)
-    if not equipped then
-      cleanupOrphan(store, itemId)
-      return false, err or 'impossible d\'equiper'
-    end
-    ok = true
-  else
-    ok, err = autoInsertItem(store, defId, qty or 1, meta)
-  end
-
-  if not ok then
-    return false, err
-  end
-
-  markDirty(identifier)
-  sendState(target)
-  TriggerClientEvent('pop_inventory:client:applyEquipment', target, buildEquipmentDefs(store))
-  return true
-end)
+-- (export GiveItem en double retiré : celui de sv_player_items.lua, chargé après,
+--  était le seul réellement utilisé)
 
 exports('GiveAndEquip', function(target, defId, qty, meta)
   local identifier = getIdentifier(target)
@@ -152,14 +90,20 @@ exports('addItemToContainer', function(source, containerId, defId, qty, meta)
   return false, 'Erreur lors du placement de l\'item'
 end)
 
+-- Déconnexion : un seul handler pour tout le serveur de l'inventaire.
 AddEventHandler('playerDropped', function()
-  local identifier = getIdentifier(source)
-  PlayerCoords[source] = nil
-  StateSeq[source] = nil
-  PlayerGroundFocus[source] = nil
+  local src = source
+  local identifier = getIdentifier(src)
+  PlayerCoords[src] = nil
+  StateSeq[src] = nil
+  PlayerGroundFocus[src] = nil
+  releaseSharedLocks(src)
+  clearRadioPower(src)
   if identifier and Stores[identifier] then
     saveStore(identifier, Stores[identifier])
+    Stores[identifier] = nil -- nettoyage mémoire
   end
+  forgetSourceIdentifier(src)
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)
