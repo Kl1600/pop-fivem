@@ -75,3 +75,8 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 - Blocage ESX « Cleaning stale player entry » (diagnostic dans `pop_admin`), et touche Échap qui ne marche pas chez le client.
 - `MapZones` et `vehicle_keys` absents : ce sont des dépendances de `pop_territories` et `pop_bikerental`.
 - Mission `pop_grandtheftauto` à valider en jeu.
+
+## Gabarit POP (restructuration)
+- Mode d'emploi : `docs/gabarit-pop.md`. Exemple : `pop_bank`.
+- `bridge/` et `shared/` sont des copies exactes de `templates/pop_base` : ne jamais les modifier dans un script. Un bug dedans → le noter dans `docs/en-cours.md` pour le Chef 1, qui corrige le modèle et recopie partout.
+- Avec pop_inventory, `Bridge.GetMoney/AddMoney/RemoveMoney(src, 'cash')` utilise l'objet `cash` ; `'bank'` reste le compte ESX.

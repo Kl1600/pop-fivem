@@ -26,13 +26,14 @@ Ordre de chargement : `config.lua` → `shared/*.lua` → `locales/*.lua` → `b
 
 | Clé | Défaut | Valeurs |
 |---|---|---|
-| `Config.Locale` | `'en'` | en, fr, es, de, it, pt, nl, pl, tr, ar |
+| `Config.Locale` | `'fr'` | en, fr, es, de, it, pt, nl, pl, tr, ar |
 | `Config.Debug` | `false` | logs console |
 | `Config.Framework` | `'auto'` | esx, qbcore, qbox, standalone |
 | `Config.Inventory` | `'auto'` | pop_inventory, ox_inventory, qs-inventory, qb-inventory, ps-inventory, framework, none |
 | `Config.Target` | `'auto'` | ox_target, qb-target, prompt |
 | `Config.Notify` | `'auto'` | framework, ox_lib, pop (toast du kit), native |
-| `Config.AccentColor` | `'#ff2e88'` | rose néon ; cyan `'#22d3ee'` |
+| `Config.AccentColor` | `'#ffffff'` | accent du kit web (pas de rose) |
+| `Config.CashItem` | `'cash'` | objet argent liquide quand pop_inventory est lancé |
 | `Config.Keys` | E / X | touches du prompt natif et d'annulation |
 | `Config.CallbackRateLimit` | `10` | appels/s par joueur et par callback (0 = illimité) |
 

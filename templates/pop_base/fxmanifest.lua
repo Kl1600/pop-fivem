@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 name 'pop_base'            -- à remplacer par pop_<nom>
-author 'POP'
+author 'KL'
 version '1.0.0'
 description 'POP script template'
 

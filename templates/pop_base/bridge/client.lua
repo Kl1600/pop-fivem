@@ -199,16 +199,20 @@ local function nativeNotify(msg)
     EndTextCommandThefeedPostTicker(false, true)
 end
 
+--- msg : texte, ou table pop_notify { title, message, image, logo, duration } pour garder le style d'origine.
 function Bridge.Notify(msg, notifyType, duration)
-    msg = tostring(msg)
-    notifyType = notifyType or 'info'
-    duration = tonumber(duration) or 5000
+    local data = type(msg) == 'table' and msg or nil
+    msg = tostring(data and (data.message or '') or msg)
+    notifyType = notifyType or (data and data.type) or 'info'
+    duration = tonumber(duration) or (data and tonumber(data.duration)) or 5000
     local mode = Bridge.NotifySystem
 
-    -- Notifications POP (ancien style « notification ») : prioritaires si la ressource tourne.
+    -- Notifications POP : prioritaires si la ressource tourne.
     if (Config.Notify == 'auto' or Config.Notify == 'pop_notify') and RES ~= 'pop_notify'
         and GetResourceState('pop_notify') == 'started' then
-        local ok = pcall(function() exports.pop_notify:Notify(msg, notifyType, duration) end)
+        local payload = data or { message = msg }
+        payload.duration, payload.type = duration, notifyType
+        local ok = pcall(function() exports.pop_notify:ShowNotify(payload) end)
         if ok then return end
     end
 

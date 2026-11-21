@@ -34,26 +34,14 @@ But : rendre chaque script plus simple à corriger et à améliorer, sans change
 ### 6. Rien n'explique comment marche chaque script
 - Pas de README par script : commandes, touches, exports, évènements et réglages sont à chercher dans le code.
 
-## Le gabarit POP (cible pour chaque script)
+## Le gabarit POP
 
-```
-pop_<nom>/
-  fxmanifest.lua      author 'KL', lua54 'yes', version
-  config.lua          tous les réglages (positions, prix, touches, Config.Debug)
-  locales/fr.lua      tous les textes affichés (prépare les langues)
-  shared/bridge.lua   fichier identique dans chaque script : ESX, notification (pop_notify),
-                      callbacks, Debug(), L('clé') pour les textes
-  client/*.lua        découpé par fonction (menu.lua, zones.lua…), < 600 lignes par fichier
-  server/*.lua        idem ; tout le SQL passe par MySQL.* (oxmysql)
-  html/               NUI
-  README.md           à quoi sert le script, commandes, touches, exports, évènements, réglages
-```
-
-Pourquoi un `bridge.lua` copié dans chaque script plutôt qu'une ressource commune : chaque script reste vendable seul (compatible tous serveurs), et le jour du multi-framework, on ne change que ce fichier.
+Détail complet : **`docs/gabarit-pop.md`** (modèle `templates/pop_base`, exemple `pop_bank`).
+Le bridge commun est `bridge/client.lua` + `bridge/server.lua` + `shared/locale.lua` + `shared/callback.lua`, copiés tels quels de `templates/pop_base` (il n'y a pas de fichier `templates/bridge.lua`).
 
 ## Plan proposé
 
-Étape 1 — Chef 1 : écrit le gabarit (`docs/gabarit-pop.md`, `templates/bridge.lua`, exemple de README) et le teste sur pop_notify et pop_bank. Les autres Chefs attendent cette publication.
+Étape 1 — Chef 1 : gabarit publié (`docs/gabarit-pop.md`, `templates/pop_base` corrigé), testé sur pop_bank et pop_notify. ✅ Les autres Chefs attendent cette publication.
 
 Étape 2 — chaque Chef applique le gabarit à son lot (mêmes lots que l'audit), script par script, un push par script, en testant qu'il démarre :
 - Lot 1 Chef 1 : pop_admin, pop_management (découpage), pop_interim, pop_duiengine, pop_computer.
