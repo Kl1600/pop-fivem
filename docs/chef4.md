@@ -50,4 +50,4 @@ Fichiers les plus lourds :
 | Vision/divined@dances@new.ycd | 2,0 Mo | 13 emotes |
 | PataMods/pata_cake.ydr | 2,0 Mo | 2 emotes |
 
-**Fait (accord du client) : les deux .dds (16 Mo) sont supprimés.** Reste à décider : Gros gain : groupd (4 Mo, 1 emote), christmasfood6 et gremlin_plush (3 Mo chacun, 1 emote).
+**Fait (accord du client) : les deux .dds (16 Mo) sont supprimés, ainsi que 3 emotes lourdes (≈10 Mo) : `danceclubj` (Dance Club 10, groupd), `xmascc` (cupcake, pata_christmasfood6), `teddy2` (peluche Gremlin).** Total gagné ≈ 26 Mo.

@@ -3202,14 +3202,6 @@ EmotesList.Dances = {
             EmoteLoop = true
         }
     },
-    ["danceclubj"] = {
-        "anim@amb@nightclub_island@dancers@crowddance_groups@groupd@",
-        "mi_dance_crowd_13_v2_male^1",
-        "Dance Club 10 ",
-        AnimationOptions = {
-            EmoteLoop = true
-        }
-    },
     ["danceclubk"] = {
         "anim@amb@nightclub_island@dancers@crowddance_facedj@",
         "mi_dance_facedj_15_v2_male^4",
@@ -8351,19 +8343,6 @@ EmotesList.PropEmotes = {
             EmoteMoving = true
         }
     },
-    ["xmascc"] = { --- Custom Prop by PataMods
-        "mp_player_inteat@burger",
-        "mp_player_int_eat_burger",
-        "Manger un cupcake",
-        AnimationOptions = {
-            Prop = 'pata_christmasfood6',
-            PropBone = 60309,
-            PropPlacement = {
-                0.0100, 0.0200, -0.0100, -170.1788, 87.6716, 30.0540
-            },
-            EmoteMoving = true
-        }
-    },
     ["xmascc2"] = { --- Custom Prop by PataMods
         "mp_player_inteat@burger",
         "mp_player_int_eat_burger",
@@ -10281,25 +10260,6 @@ EmotesList.PropEmotes = {
                 -180.0,
                 -90.0,
                 0.0
-            },
-            EmoteMoving = true,
-            EmoteLoop = true
-        }
-    },
-    ["teddy2"] = {
-        "impexp_int-0",
-        "mp_m_waremech_01_dual-0",
-        "Tenir un Teddybear - Gremlin",
-        AnimationOptions = {
-            Prop = 'gremlin_plush',
-            PropBone = 57005,
-            PropPlacement = {
-                0.2610,
-               -0.1220,
-               -0.0290,
-              -96.2588,
-              62.8313,
-               9.2446
             },
             EmoteMoving = true,
             EmoteLoop = true
