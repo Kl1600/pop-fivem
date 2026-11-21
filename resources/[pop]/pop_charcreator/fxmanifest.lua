@@ -1,15 +1,19 @@
 fx_version 'cerulean'
 game 'gta5'
+lua54 'yes'
+
+name 'pop_charcreator'
+author 'KL'
+version '1.1.0'
+description 'POP Character Creator - Premium & Modern'
+
+dependency 'skinchanger'
 
 exports {
     'CreateCamera',
     'DestroyCamera',
     'FocusOn'
 }
-
-description 'POP Character Creator - Premium & Modern'
-author 'KL'
-version '1.0.0'
 
 ui_page 'html/index.html'
 
@@ -20,18 +24,29 @@ files {
 }
 
 shared_scripts {
-    '@es_extended/imports.lua',
-    'config.lua'
+    '@es_extended/imports.lua', -- ESX direct : globale ESX utilisée côté serveur (xPlayer, commande admin)
+    'config.lua',
+    'shared/*.lua',
+    'locales/*.lua',
 }
 
 client_scripts {
-    'client/main.lua',
-    'client/camera.lua'
+    'bridge/client.lua',
+    'client/camera.lua',
+    'client/creator.lua',
+    'client/appearance.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/main.lua'
+    'bridge/server.lua',
+    'server/common.lua',
+    'server/save.lua',
+    'server/instance.lua',
 }
 
-dependency 'skinchanger'
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
+}

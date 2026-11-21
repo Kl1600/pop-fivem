@@ -1,4 +1,7 @@
-local SkinData = {}
+-- Ouverture / fermeture du créateur, pose figée, ouverture auto après le chargement.
+
+CharCreator = {}
+
 local isCreatorOpen = false
 
 local POSE_DICT = "anim@mp_corona_idles@female_b@idle_a"
@@ -12,6 +15,7 @@ local function ApplyCreatorPose(ped)
     SetEntityAnimSpeed(ped, POSE_DICT, POSE_NAME, 0.0)
     RemoveAnimDict(POSE_DICT)
 end
+CharCreator.ApplyCreatorPose = ApplyCreatorPose
 
 exports('ApplyCreatorPose', function()
     ApplyCreatorPose(PlayerPedId())
@@ -25,7 +29,7 @@ local function OpenCreator()
     local model = GetHashKey('mp_m_freemode_01')
     RequestModel(model)
     while not HasModelLoaded(model) do Wait(0) end
-    
+
     -- Ensure interior is loaded at the destination
     local coords = vector3(-578.3015, 44.7212, 92.2444)
     local interior = GetInteriorAtCoords(coords.x, coords.y, coords.z)
@@ -36,10 +40,10 @@ local function OpenCreator()
 
     SetPlayerModel(PlayerId(), model)
     SetModelAsNoLongerNeeded(model)
-    
+
     -- IMPORTANT: Wait for the ped to be created/switched and collision to load
     Wait(1000)
-    
+
     local defaultSkin = {
         sex = 0,
         tshirt_1 = 15, tshirt_2 = 0,
@@ -59,17 +63,17 @@ local function OpenCreator()
     Wait(500)
 
     local playerPed = PlayerPedId()
-    
+
     -- Teleport and ensure they are on the correct floor Z
     local destCoords = vector3(-578.3015, 44.7212, 92.2444)
 
     RequestCollisionAtCoord(destCoords.x, destCoords.y, destCoords.z)
     SetEntityCoordsNoOffset(playerPed, destCoords.x, destCoords.y, destCoords.z, false, false, false)
     SetEntityHeading(playerPed, 245.8544)
-    
+
     -- Freeze instantly BEFORE the next tick so gravity doesn't pull them down
     FreezeEntityPosition(playerPed, true)
-    
+
     ClearPedBloodDamage(playerPed)
     ClearPedWetness(playerPed)
     SetEntityAlpha(playerPed, 255, false)
@@ -82,7 +86,7 @@ local function OpenCreator()
     LocalPlayer.state:set('charcreatorOpen', true, false)
     SetNuiFocus(true, true)
 
-    
+
     SendNUIMessage({
         action = 'openCreator',
         mode80s = Config and Config.Mode80s or false,
@@ -96,13 +100,13 @@ local function OpenCreator()
 
     -- Frozen idle pose during creation
     ApplyCreatorPose(playerPed)
-    
+
     CreateCamera()
     -- Give a bit more time for the camera to settle
     Citizen.SetTimeout(500, function()
         FocusOn('gender')
     end)
-    
+
     -- Loop for rotation/zoom via keys
     Citizen.CreateThread(function()
         while true do
@@ -111,7 +115,7 @@ local function OpenCreator()
             -- Hide minimap (one-shot DisplayRadar(false) gets overridden by HUD scripts)
             DisplayRadar(false)
             local ped = PlayerPedId()
-            
+
             -- Rotation (Q/E)
             if IsControlPressed(0, 44) then -- Q
                 local heading = GetEntityHeading(ped)
@@ -120,7 +124,7 @@ local function OpenCreator()
                 local heading = GetEntityHeading(ped)
                 SetEntityHeading(ped, heading - 2.0)
             end
-            
+
             -- Zoom (W/S)
             if IsControlPressed(0, 32) then -- W
                 camRadius = camRadius - 0.05
@@ -131,65 +135,13 @@ local function OpenCreator()
                 if camRadius > 4.0 then camRadius = 4.0 end
                 UpdateCamera()
             end
-            
+
             -- Fin de boucle à la fermeture du créateur (et non plus à la perte du focus :
             -- passer par les vêtements/tatouages coupait définitivement les commandes caméra).
             if not isCreatorOpen then break end
         end
     end)
 end
-
-RegisterNUICallback('switchCategory', function(data, cb)
-    FocusOn(data.category)
-    
-    local components = {
-        hair = { 'hair_1', 'hair_color_1', 'hair_color_2', 'eyebrows_1', 'eyebrows_2' },
-        beard = { 'beard_1', 'beard_2', 'beard_3', 'eyebrows_3' },
-        arms = { 'arms', 'arms_2' }
-    }
-    
-    local list = components[data.category]
-    if list then
-        for _, id in ipairs(list) do
-            TriggerEvent('skinchanger:getData', function(all, max)
-                local m = max[id]
-                if m then
-                    SendNUIMessage({ action = 'updateMax', id = id, max = m })
-                end
-            end)
-        end
-    end
-    cb('ok')
-end)
-
-RegisterNUICallback('requestTextures', function(data, cb)
-    -- Deprecated with grid removal
-    cb({ count = 1 })
-end)
-
-RegisterNUICallback('openClothes', function(data, cb)
-    SetNuiFocus(false, false)
-    SendNUIMessage({ action = 'closeCreator' })
-
-    cb('ok')
-
-    Citizen.CreateThread(function()
-        Citizen.Wait(100)
-        TriggerEvent('clothes:openFromCreator')
-    end)
-end)
-
-RegisterNUICallback('openTattoos', function(data, cb)
-    SetNuiFocus(false, false)
-    SendNUIMessage({ action = 'closeCreator' })
-
-    cb('ok')
-
-    Citizen.CreateThread(function()
-        Citizen.Wait(100)
-        TriggerEvent('tattoos:openFromCreator')
-    end)
-end)
 
 RegisterNetEvent('pop_charcreator:reopen')
 AddEventHandler('pop_charcreator:reopen', function()
@@ -201,7 +153,7 @@ AddEventHandler('pop_charcreator:reopen', function()
             birthDate = Config and Config.BirthDate or nil,
             enableHeight = Config and (Config.EnableHeight ~= false) or false,
         })
-        
+
         -- Restore Camera
         if Cam and DoesCamExist(Cam) then
             SetCamActive(Cam, true)
@@ -211,125 +163,6 @@ AddEventHandler('pop_charcreator:reopen', function()
     end
 end)
 
-RegisterNUICallback('updateAppearance', function(data, cb)
-    local val = tonumber(data.value)
-    if val == nil then val = data.value end
-
-    SkinData[data.id] = val
-    
-    if data.id == 'height' then
-        local h = val or 2
-        local heightVal = 100
-
-        if h == 1 then
-            heightVal = 90
-        elseif h == 3 then
-            heightVal = 110
-        else
-            heightVal = 100
-        end
-
-        SkinData['height'] = heightVal
-        TriggerEvent('skinchanger:change', 'height', heightVal)
-        cb('ok')
-        return
-    end
-
-    TriggerEvent('skinchanger:change', data.id, val)
-
-    if data.texture then
-        local texVal = tonumber(data.texture)
-        if texVal == nil then texVal = data.texture end
-
-        local texKey = data.id:gsub('_1', '_2')
-        SkinData[texKey] = texVal
-        TriggerEvent('skinchanger:change', texKey, texVal)
-    end
-    cb('ok')
-end)
-
-RegisterNUICallback('updateGender', function(data, cb)
-    local isMale = (data.gender == 'male')
-    local model = isMale and GetHashKey('mp_m_freemode_01') or GetHashKey('mp_f_freemode_01')
-    
-    RequestModel(model)
-    while not HasModelLoaded(model) do Citizen.Wait(10) end
-    
-    SetPlayerModel(PlayerId(), model)
-    local newPed = PlayerPedId()
-    SetPedDefaultComponentVariation(newPed)
-    
-    -- Re-apply coordinates and freezing just in case changing model dropped us
-    local destCoords = vector3(-578.3015, 44.7212, 92.2444)
-    SetEntityCoordsNoOffset(newPed, destCoords.x, destCoords.y, destCoords.z, false, false, false)
-    SetEntityHeading(newPed, 245.8544)
-    FreezeEntityPosition(newPed, true)
-    SetEntityVisible(newPed, true, false)
-    SetEntityInvincible(newPed, true)
-    
-    local sexNum = isMale and 0 or 1
-    
-    local defaultSkin = {
-        sex = sexNum,
-        tshirt_1 = 15, tshirt_2 = 0,
-        torso_1 = 15, torso_2 = 0,
-        arms = 15, arms_2 = 0,
-        pants_1 = isMale and 61 or 17, pants_2 = 0,
-        shoes_1 = isMale and 34 or 35, shoes_2 = 0,
-        glasses_1 = 0, glasses_2 = 0,
-        helmet_1 = -1, helmet_2 = 0,
-        mask_1 = 0, mask_2 = 0,
-        bproof_1 = 0, bproof_2 = 0,
-        chain_1 = 0, chain_2 = 0,
-        decals_1 = 0, decals_2 = 0,
-        bags_1 = 0, bags_2 = 0
-    }
-    
-    TriggerEvent('skinchanger:loadSkin', defaultSkin)
-    
-    for k, v in pairs(defaultSkin) do
-        SkinData[k] = v
-    end
-
-    -- Re-apply frozen animation AFTER skin load, with a small delay to avoid being cleared
-    Citizen.SetTimeout(200, function()
-        ApplyCreatorPose(PlayerPedId())
-    end)
-
-    cb('ok')
-end)
-
-RegisterNUICallback('updateModel', function(data, cb)
-    -- Seuls les modèles freemode sont acceptés (le serveur refuse les autres à la sauvegarde)
-    if data.model ~= 'mp_m_freemode_01' and data.model ~= 'mp_f_freemode_01' then
-        return cb('error')
-    end
-    local model = GetHashKey(data.model)
-    
-    if not IsModelInCdimage(model) or not IsModelValid(model) then
-        return cb('error')
-    end
-
-    RequestModel(model)
-    while not HasModelLoaded(model) do Wait(0) end
-
-    SetPlayerModel(PlayerId(), model)
-    local newPed = PlayerPedId()
-    SetPedDefaultComponentVariation(newPed)
-
-    local destCoords = vector3(-578.3015, 44.7212, 92.2444)
-    SetEntityCoordsNoOffset(newPed, destCoords.x, destCoords.y, destCoords.z, false, false, false)
-    SetEntityHeading(newPed, 245.8544)
-    FreezeEntityPosition(newPed, true)
-    SetEntityVisible(newPed, true, false)
-    SetEntityInvincible(newPed, true)
-
-    -- Clear skin data when switching to PED
-    SkinData = { model = data.model }
-    
-    cb('ok')
-end)
-
 RegisterNUICallback('finish', function(data, cb)
     isCreatorOpen = false
     LocalPlayer.state:set('charcreatorOpen', false, false)
@@ -337,7 +170,7 @@ RegisterNUICallback('finish', function(data, cb)
     SendNUIMessage({ action = 'closeCreator' })
     DestroyCamera()
     DisplayRadar(true)
-    
+
     TriggerEvent('skinchanger:getSkin', function(skin)
         local isMale = (skin.sex == 0)
 
@@ -388,7 +221,7 @@ RegisterNUICallback('finish', function(data, cb)
         skin['decals_2'] = 0
         skin['bags_1'] = 0
         skin['bags_2'] = 0
-        
+
         -- Copie immédiate du skin AVANT tout respawn/sortie d'instance : le table
         -- 'skin' est une référence partagée vers SkinChanger.character qui peut être
         -- remis à zéro pendant le délai → on fige les valeurs et on envoie tout de suite.
@@ -399,7 +232,7 @@ RegisterNUICallback('finish', function(data, cb)
 
         TriggerEvent('skinchanger:loadSkin', skin)
     end)
-    
+
     local playerPed = PlayerPedId()
 
     -- Lieu d'apparition choisi par le joueur dans l'UI (data.spawn = 'usa'|'mexico').
@@ -427,23 +260,18 @@ RegisterNUICallback('finish', function(data, cb)
             RequestCollisionAtCoord(spawnX, spawnY, spawnZ)
             Wait(0)
         end
-        
+
         -- Safely drop them onto the ground if slightly high, then unfreeze
         FreezeEntityPosition(playerPed, false)
         SetEntityInvincible(playerPed, false)
     end)
-    
+
     -- Cancel animation when leaving the creator
     ClearPedTasks(playerPed)
-    
+
     -- Sortir de l'instance
     TriggerServerEvent('pop_charcreator:server:exitInstance')
-    
-    cb('ok')
-end)
 
-RegisterNUICallback('randomize', function(data, cb)
-    -- Implement randomization logic here if needed
     cb('ok')
 end)
 
