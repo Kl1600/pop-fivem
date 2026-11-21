@@ -12,6 +12,7 @@
 
 
 ## Gabarit POP (restructuration)
+- pop_chat : gabarit complet (bridge, config, locales, client/server, README), nom RP via Bridge.GetName.
 - pop_speedometer : gabarit (config.lua, client/main.lua, README), sans bridge comme pop_notify.
 - pop_v3dui : gabarit (config.lua, client/main.lua, README), exports Create/Remove/Update/UpdateCoords/ClearAll inchangés.
 

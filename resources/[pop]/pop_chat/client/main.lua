@@ -1,5 +1,4 @@
 local activeMessages = {}
-local DISPLAY_TIME = 6000 -- ms d'affichage au-dessus de la tête
 
 -- Dessine du texte flottant en 3D dans le monde
 local function DrawText3D(x, y, z, text)
@@ -27,7 +26,7 @@ end
 
 -- Reçoit les /me des autres joueurs (et du soi-même)
 RegisterNetEvent('pop_chat:showMe', function(netId, playerName, message)
-    local expireAt = GetGameTimer() + DISPLAY_TIME
+    local expireAt = GetGameTimer() + Config.DisplayTime
     -- Remplace si le joueur a déjà un message actif
     for i, entry in ipairs(activeMessages) do
         if entry.netId == netId then
@@ -62,12 +61,12 @@ CreateThread(function()
 end)
 
 -- Enregistrement de la commande
-RegisterCommand('me', function(source, args)
+RegisterCommand('me', function(_, args)
     if #args == 0 then return end
     local message = table.concat(args, ' ')
     TriggerServerEvent('pop_chat:me', message)
 end, false)
 
-TriggerEvent('chat:addSuggestion', '/me', 'Affiche une action roleplay au-dessus de votre tête', {
-    { name = 'action', help = 'Ex: sort son téléphone' }
+TriggerEvent('chat:addSuggestion', '/me', L('me_suggestion'), {
+    { name = L('me_suggestion_arg'), help = L('me_suggestion_help') }
 })
