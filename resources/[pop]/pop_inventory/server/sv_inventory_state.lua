@@ -949,6 +949,12 @@ function pickupFromGroundToSlot(src, store, groundSlot, toContainerId, toSlot, c
     return false, 'Slot cible invalide'
   end
 
+  -- Objet-conteneur (sac…) vers une case occupée : refus AVANT de le retirer du
+  -- sol (avant, l'objet était retiré puis la fonction sortait : objet perdu).
+  if item.containerId and (targetContainer.items[targetSlot] or targetContainer.items[tostring(targetSlot)]) then
+    return false, 'Slot occupe'
+  end
+
   removeItemFromContainer(GroundStore, pile.containerId, slotIndex)
   if groundContainer then
     groundContainer.items[slotIndex] = nil
@@ -962,11 +968,6 @@ function pickupFromGroundToSlot(src, store, groundSlot, toContainerId, toSlot, c
       moveItemTree(store, GroundStore, itemId)
       placeItemInContainer(GroundStore, pile.containerId, slotIndex, itemId)
       return false, 'Poids max'
-    end
-    
-    local targetItemId = targetContainer.items[targetSlot]
-    if targetItemId then
-      return false, 'Slot occupe'
     end
     
     placeItemInContainer(store, toContainerId, targetSlot, itemId)

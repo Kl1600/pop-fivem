@@ -67,7 +67,7 @@ function isAdminAllowed(src)
     end
   end
   -- 2) ACE permission en fallback
-  if IsPlayerAceAllowed(src, 'pop_inventory.admin') == true then return true end
+  if IsPlayerAceAllowed(src, 'pop_inventory.admin') == true or IsPlayerAceAllowed(src, 'pop.admin') == true then return true end
   -- 3) Délégation à pop_admin : tout admin du menu (groupe ESX, ACE ou identifiant
   --    listé dans pop_admin) obtient aussi l'accès au sélecteur d'items.
   if GetResourceState('pop_admin') == 'started' then
@@ -499,8 +499,8 @@ RegisterNetEvent('pop_inventory:server:adminDeleteJob', function(jobName)
     -- Chain de callbacks séquentiels
     MySQL.update("UPDATE users SET job = 'unemployed', job_grade = 0 WHERE job = ?", { jobName }, function(rR1)
         print(('[POP_INVENTORY] adminDeleteJob: UPDATE users job -> affectedRows=%s'):format(tostring(rR1)))
-        MySQL.update("UPDATE users SET job2 = 'unemployed', job2_grade = 0 WHERE job2 = ?", { jobName }, function(rR2)
-            print(('[POP_INVENTORY] adminDeleteJob: UPDATE users job2 -> affectedRows=%s'):format(tostring(rR2)))
+        -- (requête sur job2 retirée : cette colonne n'existe pas en ESX 1.16)
+        do
             MySQL.update("DELETE FROM job_grades WHERE job_name = ?", { jobName }, function(rDG)
                 print(('[POP_INVENTORY] adminDeleteJob: DELETE job_grades -> affectedRows=%s'):format(tostring(rDG)))
                 MySQL.update("DELETE FROM jobs WHERE name = ?", { jobName }, function(rDJ)
@@ -535,7 +535,7 @@ RegisterNetEvent('pop_inventory:server:adminDeleteJob', function(jobName)
                     end)
                 end)
             end)
-        end)
+        end
     end)
 end)
 

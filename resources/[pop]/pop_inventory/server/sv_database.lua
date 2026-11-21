@@ -183,30 +183,6 @@ CreateThread(function()
   end)
 end)
 
--- Backfill : s'assure que tous les jobs en DB ont au moins un grade 0 (Recrue) et un grade 4 (Boss).
--- Tourne une fois au démarrage du resource. Utilise la forme callback de MySQL.update.
-CreateThread(function()
-  Wait(3000) -- laisser MySQL/ESX se charger
-  if not MySQL then print('[POP_INVENTORY] Backfill grades : MySQL indispo'); return end
-
-  MySQL.update([[
-    INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female)
-    SELECT j.name, 0, 'recrue', 'Recrue', 100, '{}', '{}'
-    FROM jobs j
-    WHERE NOT EXISTS (SELECT 1 FROM job_grades g WHERE g.job_name = j.name AND g.grade = 0)
-  ]], {}, function(addedRecrue)
-    print(('[POP_INVENTORY] Backfill grades Recrue (grade 0) : affectedRows=%s'):format(tostring(addedRecrue)))
-
-    MySQL.update([[
-      INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female)
-      SELECT j.name, 4, 'boss', 'Patron', 1000, '{}', '{}'
-      FROM jobs j
-      WHERE NOT EXISTS (SELECT 1 FROM job_grades g WHERE g.job_name = j.name AND g.grade = 4)
-    ]], {}, function(addedBoss)
-      print(('[POP_INVENTORY] Backfill grades Boss (grade 4) : affectedRows=%s'):format(tostring(addedBoss)))
-      if type(ESX) == 'table' and type(ESX.RefreshJobs) == 'function' then
-        pcall(ESX.RefreshJobs)
-      end
-    end)
-  end)
-end)
+-- Ancien « backfill » retiré : il ajoutait un grade 0 et un grade 4 à TOUS les
+-- jobs à chaque démarrage (police, unemployed…). La création de job depuis
+-- l'admin insère déjà ses propres grades.

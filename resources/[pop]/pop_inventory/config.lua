@@ -13,18 +13,12 @@ Config.RadioSkin = '80s'
 
 -- =============================================
 --  ADMIN : Sélecteur d'items
---  Liste des licenses qui ont accès au bouton admin (rouge) dans l'inventaire.
---  Tu peux mettre license:..., steam:..., discord:..., fivem:...
---  La permission ACE 'pop_inventory.admin' fonctionne aussi en parallèle.
+--  Accès au bouton admin (rouge) de l'inventaire : plus de licences écrites ici.
+--  Ont accès : les admins de pop_admin, et les permissions ACE 'pop.admin'
+--  (group.admin dans pop.cfg) ou 'pop_inventory.admin'.
+--  Liste de secours si besoin (license:..., discord:...), à laisser vide de préférence.
 -- =============================================
-Config.AdminIdentifiers = {
-  'license:fe6e44aa749ef26aa5a611c9b0602fe392d96c0a',
-  'license:70523d550dfe265b8cecbe40acec543fb269c3cd',
-  'license:fc88a542bbd119bea5020829163bad2ad62843b8',
-  'license:caa2d6470d9a1391a46e911ff992e81ab6257193',
-  -- 'license:autre_license_ici',
-  -- 'discord:123456789012345678',
-}
+Config.AdminIdentifiers = {}
 
 Config.Inventory = {
   ContainerOrder = { 
@@ -2369,7 +2363,7 @@ Config.Notifications = {
 
 Config.Debug = {
   PrintActions = false,
-  Commands = true,
+  Commands = false,
 }
 
 Config.Shops = {

@@ -73,6 +73,22 @@ function lib.alertDialog(opts)
             duration = 12000,
         })
     end)
+
+    -- Sans bouton Annuler : simple information.
+    if not opts.cancel then return 'confirm' end
+
+    -- Avec Annuler (ex. paiement TPE) : on attend la réponse du joueur.
+    -- E = accepter, Retour arrière = refuser ; sans réponse en 15 s = refus.
+    AddTextEntry('POP_INV_ALERT', '~INPUT_CONTEXT~ Accepter   ~INPUT_FRONTEND_RRIGHT~ Refuser')
+    local limit = GetGameTimer() + 15000
+    while GetGameTimer() < limit do
+        Wait(0)
+        BeginTextCommandDisplayHelp('POP_INV_ALERT')
+        EndTextCommandDisplayHelp(0, false, false, -1)
+        if IsControlJustReleased(0, 38) then return 'confirm' end
+        if IsControlJustReleased(0, 177) then return 'cancel' end
+    end
+    return 'cancel'
 end
 
 -- Pont de notifications : plusieurs modules émettent 'notification:client:send'

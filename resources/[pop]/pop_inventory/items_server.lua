@@ -594,29 +594,66 @@ RegisterNetEvent('pop_inventory:server:useBrancard', function()
     end
 end)
 
-RegisterNetEvent('pop_inventory:server:setStretcherPlayer', function(stretcherNetId, hasPlayer)
+-- Anti-triche brancard : renvoie l'entité du brancard si elle existe et si le joueur
+-- est à côté (distance serveur), sinon nil.
+local function getNearbyStretcher(src, stretcherNetId, maxDist)
+    stretcherNetId = tonumber(stretcherNetId)
+    if not stretcherNetId then return nil end
     local ent = NetworkGetEntityFromNetworkId(stretcherNetId)
-    if DoesEntityExist(ent) then
-        Entity(ent).state:set('hasPlayer', hasPlayer, true)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return nil end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil end
+    if #(GetEntityCoords(ped) - GetEntityCoords(ent)) > (maxDist or 5.0) then return nil end
+    return ent
+end
+
+-- Cible incapable de résister : morte / inconsciente ou menottée.
+-- NOTE: esx_ambulancejob est absent ; aucun état "mort" serveur fiable n'est connu dans
+-- pop_inventory. On lit les state bags usuels s'ils existent, sinon la santé serveur
+-- (GetEntityHealth <= 101 = mort ou à terre). 'handcuffed' est posé par ce fichier.
+local function isTargetHelpless(targetId)
+    local st = Player(targetId).state
+    if st.handcuffed == true or st.isDead == true or st.dead == true or st.unconscious == true then
+        return true
+    end
+    local ped = GetPlayerPed(targetId)
+    return ped ~= 0 and GetEntityHealth(ped) <= 101
+end
+
+RegisterNetEvent('pop_inventory:server:setStretcherPlayer', function(stretcherNetId, hasPlayer)
+    local ent = getNearbyStretcher(source, stretcherNetId, 5.0)
+    if ent then
+        Entity(ent).state:set('hasPlayer', hasPlayer == true, true)
     end
 end)
 
 RegisterNetEvent('pop_inventory:server:placePlayerOnStretcher', function(targetServerId, stretcherNetId)
+    local src = source
     local targetServerIdInt = tonumber(targetServerId)
     if not targetServerIdInt or targetServerIdInt <= 0 then return end
-    
-    TriggerClientEvent('pop_inventory:client:forcedOnStretcher', targetServerIdInt, stretcherNetId)
-    
-    local ent = NetworkGetEntityFromNetworkId(stretcherNetId)
-    if DoesEntityExist(ent) then
-        Entity(ent).state:set('hasPlayer', true, true)
-        Entity(ent).state:set('attachedPlayerId', targetServerIdInt, true)
+    -- La cible doit exister, être à moins de 3 m et ne pas pouvoir résister.
+    -- NOTE: se placer soi-même reste permis (aucun risque pour autrui).
+    if not GetPlayerName(targetServerIdInt) then return end
+    if targetServerIdInt ~= src then
+        local sp, tp = GetPlayerPed(src), GetPlayerPed(targetServerIdInt)
+        if sp == 0 or tp == 0 or #(GetEntityCoords(sp) - GetEntityCoords(tp)) > 3.0 then return end
+        if not isTargetHelpless(targetServerIdInt) then return end
     end
+    local ent = getNearbyStretcher(src, stretcherNetId, 5.0)
+    if not ent then return end
+
+    TriggerClientEvent('pop_inventory:client:forcedOnStretcher', targetServerIdInt, stretcherNetId)
+
+    Entity(ent).state:set('hasPlayer', true, true)
+    Entity(ent).state:set('attachedPlayerId', targetServerIdInt, true)
 end)
 
 RegisterNetEvent('pop_inventory:server:detachPlayerFromStretcher', function(stretcherNetId)
-    local ent = NetworkGetEntityFromNetworkId(stretcherNetId)
-    if DoesEntityExist(ent) then
+    local src = source
+    local ent = NetworkGetEntityFromNetworkId(tonumber(stretcherNetId) or 0)
+    -- Seul un joueur proche du brancard (ou la personne attachée) peut détacher
+    if ent and ent ~= 0 and DoesEntityExist(ent)
+        and (Entity(ent).state.attachedPlayerId == src or getNearbyStretcher(src, stretcherNetId, 5.0)) then
         local targetServerId = Entity(ent).state.attachedPlayerId
         if targetServerId then
             TriggerClientEvent('pop_inventory:client:forcedOffStretcher', targetServerId)

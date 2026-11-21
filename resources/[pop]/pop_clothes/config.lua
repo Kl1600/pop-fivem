@@ -76,7 +76,7 @@ Config.Prices = {
     -- Clothes
     ['Hats'] = 50, ['Masks'] = 100, ['Ears'] = 25, ['Glasses'] = 30, ['Torsos'] = 40,
     ['Accessories'] = 35, ['Watches'] = 200, ['Bracelets'] = 150, ['Undershirts'] = 25,
-    ['Body Armors'] = 500, ['Tops'] = 60, ['Legs'] = 55, ['Shoes'] = 45, ['Bags'] = 120, ['Decals'] = 0,
+    ['Body Armors'] = 500, ['Tops'] = 60, ['Legs'] = 55, ['Shoes'] = 45, ['Bags'] = 120, ['Decals'] = 25,
     -- Barber
     ['Hair'] = 50, ['Beard'] = 30, ['Eyebrows'] = 20, ['ChestHair'] = 40, ['Makeup'] = 60, ['Lipstick'] = 25, ['Blush'] = 25,
     -- Tattoos

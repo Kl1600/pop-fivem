@@ -317,3 +317,99 @@ function syncStaticChestChanges(store)
   end
 end
 
+-- =====================================================
+--  VERROU "UN SEUL OUVREUR" (coffres de véhicule et coffres statiques)
+--  Deux joueurs dans le même coffre se réécrivaient mutuellement à la synchro
+--  (syncVehicleContainerChanges / syncStaticChestChanges) -> duplication ou perte.
+--  Un coffre partagé n'est donc ouvert que par un joueur à la fois.
+-- =====================================================
+SharedContainerLocks = SharedContainerLocks or {} -- [clé] = { src, plate?, coords? }
+local LOCK_MAX_DIST = 10.0 -- au-delà, le coffre est refermé d'office
+
+function vehicleLockKey(plate) return 'veh:' .. tostring(plate) end
+function staticLockKey(chestId) return 'static:' .. tostring(chestId) end
+
+-- Libère les verrous tenus par ce joueur (fermeture, déconnexion, autre ouverture).
+-- prefix optionnel ('veh:' / 'static:') : ne libère que ce type de coffre.
+function releaseSharedLocks(src, prefix)
+  for key, lock in pairs(SharedContainerLocks) do
+    if lock.src == src and (not prefix or key:sub(1, #prefix) == prefix) then
+      SharedContainerLocks[key] = nil
+    end
+  end
+end
+
+-- Prend le verrou du coffre. Retourne false si un autre joueur connecté l'a déjà.
+-- releasePrefixes : types de coffres que l'ouverture retire du store du joueur
+-- (leurs anciens verrous sont libérés, les autres restent tenus).
+function acquireSharedLock(src, key, info, releasePrefixes)
+  local lock = SharedContainerLocks[key]
+  if lock and lock.src ~= src and GetPlayerName(lock.src) then
+    return false
+  end
+  for _, prefix in ipairs(releasePrefixes or {}) do
+    releaseSharedLocks(src, prefix)
+  end
+  info = info or {}
+  info.src = src
+  SharedContainerLocks[key] = info
+  return true
+end
+
+-- Ferme côté serveur le coffre verrouillé (joueur trop loin) : synchro puis retrait
+-- des copies temporaires, comme closeStandbyContainer mais pour ce seul coffre.
+local function forceCloseSharedContainer(src, key)
+  SharedContainerLocks[key] = nil
+  local identifier = getIdentifier(src)
+  local store = identifier and Stores[identifier]
+  if not store then return end
+  syncVehicleContainerChanges(store)
+  syncStaticChestChanges(store)
+  for cId, container in pairs(store.containers) do
+    local isVeh = container.defId == '__vehicle_container__' and vehicleLockKey(container.plate) == key
+    local isStatic = container.defId == '__static_chest__' and staticLockKey(container._staticChestId) == key
+    if isVeh or isStatic then
+      for _, itemId in pairs(container.items or {}) do
+        local it = store.items[itemId]
+        -- Véhicule : seuls les items temporaires partent ; coffre statique : tout (déjà synchronisé)
+        if it and (isStatic or it._isTemporary) then
+          removeStoreItemTree(store, itemId)
+        end
+      end
+      store.containers[cId] = nil
+      if StandbyContainers[src] == cId then StandbyContainers[src] = nil end
+    end
+  end
+  markDirty(identifier)
+  notify(src, 'Vous êtes trop loin du coffre.')
+  sendState(src)
+end
+
+-- Surveillance légère : joueur parti ou trop loin -> verrou libéré.
+CreateThread(function()
+  while true do
+    Wait(3000)
+    for key, lock in pairs(SharedContainerLocks) do
+      local src = lock.src
+      if not GetPlayerName(src) then
+        SharedContainerLocks[key] = nil
+      else
+        local tooFar = false
+        if lock.plate then
+          tooFar = not isPlayerNearPlate(src, lock.plate, LOCK_MAX_DIST)
+        elseif lock.coords then
+          local ped = GetPlayerPed(src)
+          if ped and ped ~= 0 then
+            tooFar = #(GetEntityCoords(ped) - lock.coords) > LOCK_MAX_DIST
+          end
+        end
+        if tooFar then forceCloseSharedContainer(src, key) end
+      end
+    end
+  end
+end)
+
+AddEventHandler('playerDropped', function()
+  releaseSharedLocks(source)
+end)
+

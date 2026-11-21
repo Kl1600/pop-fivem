@@ -12,6 +12,9 @@ local CarryingSafe = {
   animName = 'idle',
 }
 
+-- Déclarée ici car utilisée par l'event moveCardboardBox avant sa définition plus bas
+local startMovingBox
+
 local function loadAnimDict(dict)
   if not HasAnimDictLoaded(dict) then
     RequestAnimDict(dict)
@@ -386,7 +389,7 @@ local function DrawHackControls()
 end
 
 
-local function startMovingBox(prop)
+startMovingBox = function(prop)
   if MovingBox.active then
     return
   end

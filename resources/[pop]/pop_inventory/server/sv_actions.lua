@@ -282,11 +282,19 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
       end
     end
 
-    if itemId and store.items[itemId] then
+    -- Nom nettoyé : texte seul, sans balises HTML, 30 caractères max.
+    local label = type(action.label) == 'string' and action.label or ''
+    label = label:gsub('[<>"\'`\\]', ''):gsub('%c', ''):gsub('^%s+', ''):gsub('%s+$', '')
+    if #label > 30 then label = label:sub(1, 30) end
+
+    if label == '' then
+      notify(src, 'Nom invalide')
+    elseif itemId and store.items[itemId] then
       local item = store.items[itemId]
       item.meta = item.meta or {}
-      item.meta.customLabel = action.label
-      notify(src, 'Item renommé en : ' .. action.label)
+      item.meta.customLabel = label
+      markDirty(getIdentifier(src))
+      notify(src, 'Item renommé en : ' .. label)
     else
       notify(src, 'Item introuvable')
     end

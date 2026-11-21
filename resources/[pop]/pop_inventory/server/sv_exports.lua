@@ -179,9 +179,8 @@ CreateThread(function()
   local interval = Config.Inventory.AutoSaveIntervalMs or 120000
   while true do
     Wait(interval)
-    for identifier, store in pairs(Stores) do
-      markDirty(identifier)
-    end
+    -- Les inventaires joueurs sont sauvegardés par le thread de sv_stores.lua,
+    -- seulement s'ils ont changé (avant : tous marqués « modifiés » ici = écritures inutiles).
     saveRemoteContainers()
   end
 end)

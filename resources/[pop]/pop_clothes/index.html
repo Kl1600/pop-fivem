@@ -405,7 +405,10 @@
                     } else {
                         typeStr = info.comp;
                     }
-                    img.src = `https://cfx-nui-uz_AutoShot/shots/${currentGender}/${typeStr}/${i}.png`;
+                    // Vignettes uz_AutoShot : ressource absente du serveur -> numéro affiché
+                    // directement (évite des centaines d'erreurs 404). Remettre true si installée.
+                    const USE_AUTOSHOT = false;
+                    if (USE_AUTOSHOT) img.src = `https://cfx-nui-uz_AutoShot/shots/${currentGender}/${typeStr}/${i}.png`;
                     img.onerror = function() {
                         this.style.display = 'none';
                         const fallback = document.createElement('div');
@@ -413,7 +416,14 @@
                         fallback.innerText = '#' + i;
                         this.parentNode.appendChild(fallback);
                     };
-                    div.appendChild(img);
+                    if (USE_AUTOSHOT) {
+                        div.appendChild(img);
+                    } else {
+                        const fallback = document.createElement('div');
+                        fallback.style.cssText = 'color:white;font-size:12px;text-align:center;';
+                        fallback.innerText = '#' + i;
+                        div.appendChild(fallback);
+                    }
                     
                     const priceVal = GlobalPrices[cat] || GlobalPrices['default'] || 50;
                     const displayPrice = selectedCurrency === 'pesos' ? (priceVal * pesosRate) : priceVal;

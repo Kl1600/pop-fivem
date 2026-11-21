@@ -42,6 +42,12 @@ RegisterNetEvent('pop_inventory:server:openVehicle', function(plate, class, mode
   plate = tostring(plate)
   if not isPlayerNearPlate(src, plate, 8.0) then return end
 
+  -- Un seul joueur à la fois dans ce coffre (sinon les synchros s'écrasent)
+  if not acquireSharedLock(src, vehicleLockKey(plate), { plate = plate }, { 'veh:' }) then
+    notify(src, 'Ce coffre est déjà utilisé par quelqu\'un.')
+    return
+  end
+
   local store = ensureStore(identifier)
 
   -- Cleanup: Retirer tout ancien conteneur véhicule mal fermé
@@ -976,6 +982,20 @@ RegisterNetEvent('pop_inventory:server:shopBuy', function(data)
         print("^1[Shop-Error]^7 Item non trouvé dans la boutique:", tostring(itemId))
         return 
     end
+
+    -- Le joueur doit être dans une zone de cette boutique (Config.ShopZones)
+    local ped = GetPlayerPed(src)
+    local pos = ped and ped ~= 0 and GetEntityCoords(ped) or nil
+    local nearShop = false
+    if pos then
+        for _, zone in ipairs(Config.ShopZones or {}) do
+            if zone.shopId == shopId and #(pos - zone.coords) <= (zone.radius or 3.5) + 3.0 then
+                nearShop = true
+                break
+            end
+        end
+    end
+    if not nearShop then return end
     
     local totalPrice = itemData.price * qty
     local tvaRate = GlobalState.tva or 20
@@ -1036,7 +1056,18 @@ RegisterNetEvent('pop_inventory:server:shopBuy', function(data)
     end
 
     if success then
-        GiveItem(src, itemId, qty)
+        -- Inventaire plein : on rembourse au lieu de garder l'argent
+        local given = GiveItem(src, itemId, qty)
+        if not given then
+            if method == 'cash' then
+                GiveItem(src, 'cash', finalPrice)
+            elseif method == 'bank' then
+                if ESX then xPlayer.addAccountMoney('bank', finalPrice)
+                elseif QBCore then xPlayer.Functions.AddMoney('bank', finalPrice) end
+            end
+            TriggerClientEvent('pop_inventory:client:notify', src, "Inventaire plein : achat annulé et remboursé.")
+            return
+        end
         print("^2[Shop-Success]^7 Achat validé pour " .. xPlayer.getName() .. " (Incluant " .. taxAmount .. "$ TVA)")
         TriggerClientEvent('pop_inventory:client:notify', src, "Achat réussi : " .. itemQtyTag(qty) .. " " .. (itemData.label or itemId) .. " (Incl. " .. taxAmount .. "$ TVA)")
 
@@ -1075,21 +1106,7 @@ Citizen.CreateThread(function()
     saveRemoteContainers()
     Citizen.Wait(10000) -- Délai accru pour étaler la charge
     
-    local dirtyIdentifiers = {}
-    for identifier, store in pairs(Stores) do
-      if store and store._dirty then
-        table.insert(dirtyIdentifiers, identifier)
-      end
-    end
-    
-    -- On sauvegarde un joueur à la fois avec un délai de sécurité
-    for _, identifier in ipairs(dirtyIdentifiers) do
-      if Stores[identifier] and Stores[identifier]._dirty then
-        saveStore(identifier, Stores[identifier])
-        Citizen.Wait(1000) -- 1 seconde complète entre chaque joueur pour la stabilité CPU
-      end
-    end
-    
+    -- Les inventaires joueurs modifiés sont sauvegardés par un seul thread (sv_stores.lua).
     saveGround() -- S'assure que le sol est aussi sauvegardé régulièrement
   end
 end)

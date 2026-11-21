@@ -809,6 +809,9 @@ end
 
 RegisterNetEvent('pop_inventory:server:openStandbyContainer', function(coords)
   local src = source
+  -- Désactivé : ce « stockage perso » de 30 cases n'est ouvert par aucun point du
+  -- jeu (repli du client seulement) et servait de coffre portable ouvrable partout.
+  if true then return end
   local identifier = getIdentifier(src)
   if not identifier then
     return
@@ -854,22 +857,41 @@ RegisterNetEvent('pop_inventory:server:openStaticChest', function(chestId, label
     end
   end
 
-  -- Anti-triche : coffre configuré = capacité serveur + joueur à proximité du point
+  -- Anti-triche : liste blanche + distance serveur. Avant, n'importe quel id envoyé par
+  -- le client ouvrait un coffre, sans contrôle de distance (pillage à distance).
+  local ped = GetPlayerPed(src)
+  if not ped or ped == 0 then return end
+  local pc = GetEntityCoords(ped)
+  local lockInfo = { coords = pc }
+
   if chestConfig then
+    -- Coffre configuré : capacité serveur + joueur à proximité du point (rayon + 2 m)
     reqSlots, reqMaxWeight = nil, nil
-    if chestConfig.coords then
-      local ped = GetPlayerPed(src)
-      local pc = ped ~= 0 and GetEntityCoords(ped)
-      if pc and #(pc) > 1.0 and #(pc - vector3(chestConfig.coords.x, chestConfig.coords.y, chestConfig.coords.z)) > (chestConfig.radius or 2.0) + 5.0 then
-        return
-      end
-    end
-  else
-    -- Coffre dynamique (véhicule de service, etc.) : bornes raisonnables sur la capacité demandée
+    if not chestConfig.coords then return end
+    local cc = vector3(chestConfig.coords.x, chestConfig.coords.y, chestConfig.coords.z)
+    local maxDist = chestConfig.radius and (chestConfig.radius + 2.0) or 3.0
+    if #(pc - cc) > maxDist then return end
+    lockInfo.coords = cc
+  elseif ESX and (chestId:sub(1, 14) == 'bank_personal_' or chestId:sub(1, 13) == 'bank_company_') then
+    -- NOTE: coffres pop_bank hors config, gardés hors liste blanche car leur propriétaire
+    -- est revérifié plus haut (pas de pillage possible). Capacité bornée comme avant.
     reqSlots = tonumber(reqSlots)
     reqMaxWeight = tonumber(reqMaxWeight)
     if reqSlots then reqSlots = math.max(1, math.min(math.floor(reqSlots), 200)) end
     if reqMaxWeight then reqMaxWeight = math.max(1.0, math.min(reqMaxWeight, 2000.0)) end
+  else
+    -- NOTE: coffres de véhicules spéciaux (armytanker / brickadeta, remote_container.lua),
+    -- id = '<type>_<plaque>'. Gardés pour ne pas casser ces véhicules : il faut être près
+    -- d'un véhicule portant cette plaque, et la capacité est fixée ici (valeurs du client).
+    local VEHICLE_CHESTS = {
+      tank = { slots = 40, maxWeight = 500.0 },
+      brickadeta = { slots = 2, maxWeight = 500.0 },
+    }
+    local kind, plate = chestId:match('^(%a+)_(.+)$')
+    local vcfg = kind and VEHICLE_CHESTS[kind]
+    if not vcfg or not isPlayerNearPlate(src, plate, 8.0) then return end
+    reqSlots, reqMaxWeight = vcfg.slots, vcfg.maxWeight
+    lockInfo = { plate = plate }
   end
 
   if chestConfig and (chestConfig.jobs or chestConfig.job) then
@@ -912,7 +934,13 @@ RegisterNetEvent('pop_inventory:server:openStaticChest', function(chestId, label
       return
     end
   end
-  
+
+  -- Un seul joueur à la fois dans ce coffre (sinon les synchros s'écrasent)
+  if not acquireSharedLock(src, staticLockKey(chestId), lockInfo, { 'veh:', 'static:' }) then
+    notify(src, 'Ce coffre est déjà utilisé par quelqu\'un.')
+    return
+  end
+
   local store = ensureStore(identifier)
 
   -- Cleanup: Retirer tout ancien conteneur statique/véhicule mal fermé
@@ -1044,6 +1072,8 @@ RegisterNetEvent('pop_inventory:server:closeStandbyContainer', function()
     markDirty(identifier)
   end
   StandbyContainers[src] = nil
+  -- Coffres partagés refermés : on libère leurs verrous
+  releaseSharedLocks(src)
 end)
 
 RegisterNetEvent('pop_inventory:server:standbyAction', function(action)

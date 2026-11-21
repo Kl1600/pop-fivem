@@ -572,8 +572,12 @@ end)
 RegisterNetEvent('pop_inventory:client:openClotheShop', function()
     closeUi()
     
+    -- pop_clothes n'a pas (encore) de menu admin : appel protégé, sinon message.
     if GetResourceState('pop_clothes') == 'started' then
-        exports['pop_clothes']:openAdmin()
+        local ok = pcall(function() exports['pop_clothes']:openAdmin() end)
+        if not ok then
+            TriggerEvent('pop_inventory:client:notify', "Aucun système de vêtements détecté.")
+        end
     elseif GetResourceState('fivem-appearance') == 'started' then
         TriggerEvent('fivem-appearance:client:openAppearanceMenu')
     elseif GetResourceState('illenium-appearance') == 'started' then
@@ -1432,13 +1436,21 @@ AddEventHandler('onResourceStart', function(resourceName)
   playerReady()
 end)
 
+-- Inventaire ouvert : rafraîchit le sol autour du joueur quand il s'est déplacé
+-- (plus de 1,5 m) ou toutes les 5 s. Le serveur envoie déjà l'état après chaque action.
 CreateThread(function()
+  local lastCoords, lastSent = nil, 0
   while true do
     if isOpen then
       local coords = GetEntityCoords(PlayerPedId())
-      TriggerServerEvent('pop_inventory:server:requestState', { x = coords.x, y = coords.y, z = coords.z })
+      local now = GetGameTimer()
+      if not lastCoords or #(coords - lastCoords) > 1.5 or now - lastSent > 5000 then
+        lastCoords, lastSent = coords, now
+        TriggerServerEvent('pop_inventory:server:requestState', { x = coords.x, y = coords.y, z = coords.z })
+      end
       Wait(1000)
     else
+      lastCoords = nil
       Wait(500)
     end
   end
