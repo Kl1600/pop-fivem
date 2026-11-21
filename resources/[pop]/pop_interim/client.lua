@@ -10,6 +10,7 @@ local initialCoords = nil
 local initialHeading = 0.0
 local currentDofConfig = nil
 local isTransitioning = false
+local pendingPreviewId = nil -- dernier aperçu demandé pendant une transition (rejoué à la fin)
 
 -- Index id -> entrée de config (pour retrouver la caméra côté client).
 local JOB_BY_ID = {}
@@ -128,10 +129,17 @@ local function openMenu()
     })
 end
 
+-- Attend la fin d'un fondu au noir (3 s max pour ne jamais bloquer l'état).
+local function waitFadedOut()
+    local t = GetGameTimer() + 3000
+    while not IsScreenFadedOut() and GetGameTimer() < t do Wait(0) end
+end
+
 local function closeMenu(confirmed)
     if not menuOpen then return end
     menuOpen = false
     isTransitioning = false
+    pendingPreviewId = nil
 
     SetNuiFocus(false, false)
     TriggerEvent('hud:toggleui', true) -- Restore custom HUD
@@ -142,7 +150,7 @@ local function closeMenu(confirmed)
     if previewCam then
         CreateThread(function()
             DoScreenFadeOut(500)
-            while not IsScreenFadedOut() do Wait(0) end
+            waitFadedOut()
 
             ClearPedTasks(ped)
             clearCam()
@@ -179,216 +187,264 @@ local function closeMenu(confirmed)
 end
 
 RegisterNUICallback('close', function(_, cb)
+    -- Ignoré pendant la préparation de l'aperçu (Échap pourra être réappuyé).
+    if isTransitioning then cb('ok') return end
     closeMenu(false)
     cb('ok')
 end)
 
--- Clic sur une case : déplace la caméra ET le ped sur la vue du poste (si définie).
-RegisterNUICallback('previewJob', function(data, cb)
-    if isTransitioning then cb('ok') return end
-    local entry = data and data.id and JOB_BY_ID[data.id]
-    if entry and entry.camera then
-        isTransitioning = true
+-- Construit la scène d'aperçu d'un poste (téléportation, caméra, décor).
+local function buildPreviewScene(entry)
+    local ped = PlayerPedId()
+    DoScreenFadeOut(500)
+    waitFadedOut()
+    
+    -- Nettoyage des anciennes entités de prévisualisation
+    clearPreviewEntities()
+    
+    -- 1. Téléportation physique du ped (pour charger les collisions/textures et le positionner)
+    local tpPos, tpHeading
+    if entry.pedPos then
+        tpPos = vector3(entry.pedPos.x, entry.pedPos.y, entry.pedPos.z)
+        tpHeading = entry.pedPos.w
+    else
+        if type(entry.camera) == 'vector4' then
+            tpPos = vector3(entry.camera.x, entry.camera.y, entry.camera.z)
+            tpHeading = entry.camera.w
+        else
+            tpPos = entry.camera.pos
+            tpHeading = entry.camera.rot.z
+        end
+    end
+    
+    SetEntityCoords(ped, tpPos.x, tpPos.y, tpPos.z - 0.95, false, false, false, true)
+    SetEntityHeading(ped, tpHeading)
+    ClearPedTasks(ped)
+
+    -- Jouer l'animation sur le propre ped du joueur si spécifiée
+    if entry.pedAnimDict and entry.pedAnimName then
+        RequestAnimDict(entry.pedAnimDict)
+        local animTimeout = 0
+        while not HasAnimDictLoaded(entry.pedAnimDict) and animTimeout < 2000 do
+            Wait(10)
+            animTimeout = animTimeout + 10
+        end
+        if HasAnimDictLoaded(entry.pedAnimDict) then
+            TaskPlayAnim(ped, entry.pedAnimDict, entry.pedAnimName, 8.0, -8.0, -1, 1, 0, false, false, false)
+        end
+    end
+    
+    -- 2. Activation de la caméra de prévisualisation
+    moveCamTo(entry.camera)
+
+    -- 3. Spawn des peds ambiants pour le décor de prévisualisation
+    if entry.previewPeds then
+        for _, pedData in ipairs(entry.previewPeds) do
+            local hash = GetHashKey(pedData.model)
+            RequestModel(hash)
+            local timeout = 0
+            while not HasModelLoaded(hash) and timeout < 2000 do
+                Wait(10)
+                timeout = timeout + 10
+            end
+            if HasModelLoaded(hash) then
+                local cp = pedData.coords
+                local aped = CreatePed(4, hash, cp.x, cp.y, cp.z - 0.98, cp.w, false, true)
+                SetEntityAsMissionEntity(aped, true, true)
+                SetBlockingOfNonTemporaryEvents(aped, true)
+                FreezeEntityPosition(aped, true)
+                SetEntityInvincible(aped, true)
+
+                if pedData.weapon then
+                    local wepHash = GetHashKey(pedData.weapon)
+                    GiveWeaponToPed(aped, wepHash, 1, false, true)
+                    SetCurrentPedWeapon(aped, wepHash, true)
+                end
+
+                if pedData.animDict and pedData.animName then
+                    RequestAnimDict(pedData.animDict)
+                    local animTimeout = 0
+                    while not HasAnimDictLoaded(pedData.animDict) and animTimeout < 2000 do
+                        Wait(10)
+                        animTimeout = animTimeout + 10
+                    end
+                    if HasAnimDictLoaded(pedData.animDict) then
+                        TaskPlayAnim(aped, pedData.animDict, pedData.animName, 8.0, -8.0, -1, pedData.animFlag or 1, 0, false, false, false)
+                    end
+                end
+
+                if pedData.prop then
+                    local propModel = GetHashKey(pedData.prop)
+                    RequestModel(propModel)
+                    local pTimeout = 0
+                    while not HasModelLoaded(propModel) and pTimeout < 2000 do
+                        Wait(10)
+                        pTimeout = pTimeout + 10
+                    end
+                    if HasModelLoaded(propModel) then
+                        local propObj = CreateObject(propModel, 0.0, 0.0, 0.0, false, false, false)
+                        AttachEntityToEntity(propObj, aped, GetPedBoneIndex(aped, pedData.boneIndex), pedData.propPlacement[1], pedData.propPlacement[2], pedData.propPlacement[3], pedData.propPlacement[4], pedData.propPlacement[5], pedData.propPlacement[6], true, true, false, true, 1, true)
+                        table.insert(previewEntities, propObj)
+                    end
+                    SetModelAsNoLongerNeeded(propModel)
+                end
+
+                if pedData.extraProp then
+                    local extraModel = GetHashKey(pedData.extraProp)
+                    RequestModel(extraModel)
+                    local epTimeout = 0
+                    while not HasModelLoaded(extraModel) and epTimeout < 2000 do
+                        Wait(10)
+                        epTimeout = epTimeout + 10
+                    end
+                    if HasModelLoaded(extraModel) then
+                        local extraObj = CreateObject(extraModel, 0.0, 0.0, 0.0, false, false, false)
+                        AttachEntityToEntity(extraObj, aped, GetPedBoneIndex(aped, pedData.extraBoneIndex), pedData.extraPropPlacement[1], pedData.extraPropPlacement[2], pedData.extraPropPlacement[3], pedData.extraPropPlacement[4], pedData.extraPropPlacement[5], pedData.extraPropPlacement[6], true, true, false, true, 1, true)
+                        table.insert(previewEntities, extraObj)
+                    end
+                    SetModelAsNoLongerNeeded(extraModel)
+                end
+
+                table.insert(previewEntities, aped)
+            end
+            SetModelAsNoLongerNeeded(hash)
+        end
+    end
+
+    -- 4. Spawn des véhicules ambiants pour le décor de prévisualisation (hélico, etc.)
+    if entry.previewVehicles then
+        for _, vehData in ipairs(entry.previewVehicles) do
+            local hash = GetHashKey(vehData.model)
+            RequestModel(hash)
+            local timeout = 0
+            while not HasModelLoaded(hash) and timeout < 2000 do
+                Wait(10)
+                timeout = timeout + 10
+            end
+            if HasModelLoaded(hash) then
+                local cv = vehData.coords
+                local veh = CreateVehicle(hash, cv.x, cv.y, cv.z, cv.w, false, true)
+                SetEntityAsMissionEntity(veh, true, true)
+                SetVehicleOnGroundProperly(veh)
+                FreezeEntityPosition(veh, true)
+                SetEntityInvincible(veh, true)
+
+                if vehData.colours then
+                    SetVehicleColours(veh, vehData.colours[1], vehData.colours[2])
+                end
+                if vehData.extraColours then
+                    SetVehicleExtraColours(veh, vehData.extraColours[1], vehData.extraColours[2])
+                end
+                if vehData.interiorColour then
+                    SetVehicleInteriorColour(veh, vehData.interiorColour)
+                end
+                if vehData.dashboardColour then
+                    SetVehicleDashboardColour(veh, vehData.dashboardColour)
+                end
+                if vehData.modKit then
+                    SetVehicleModKit(veh, vehData.modKit)
+                end
+                if vehData.livery then
+                    SetVehicleMod(veh, 48, vehData.livery, false)
+                    SetVehicleLivery(veh, vehData.livery)
+                end
+                if vehData.doorOpen then
+                    SetVehicleDoorOpen(veh, vehData.doorOpen, false, false)
+                elseif vehData.doorsOpen then
+                    for _, doorIdx in ipairs(vehData.doorsOpen) do
+                        SetVehicleDoorOpen(veh, doorIdx, false, false)
+                    end
+                end
+
+                table.insert(previewEntities, veh)
+            end
+            SetModelAsNoLongerNeeded(hash)
+        end
+    end
+    
+    Wait(1000)
+end
+
+local runPreview
+
+local function finishTransition()
+    isTransitioning = false
+    if menuOpen and pendingPreviewId then
+        -- Un autre poste a été cliqué entre-temps : on l'enchaîne (écran encore noir).
+        local id = pendingPreviewId
+        pendingPreviewId = nil
+        runPreview(id)
+        return
+    end
+    pendingPreviewId = nil
+    if not menuOpen then
+        -- Menu fermé pendant la préparation (arrêt forcé) : on ne laisse rien traîner.
+        clearPreviewEntities()
+    end
+    SendNUIMessage({ type = 'sceneReady' })
+    DoScreenFadeIn(500)
+end
+
+runPreview = function(id)
+    local entry = id and JOB_BY_ID[id]
+    if not entry then
+        SendNUIMessage({ type = 'sceneReady' })
+        DoScreenFadeIn(500)
+        return
+    end
+    isTransitioning = true
+    if entry.camera then
         CreateThread(function()
-            local ped = PlayerPedId()
-            DoScreenFadeOut(500)
-            while not IsScreenFadedOut() do Wait(0) end
-            
-            -- Nettoyage des anciennes entités de prévisualisation
-            clearPreviewEntities()
-            
-            -- 1. Téléportation physique du ped (pour charger les collisions/textures et le positionner)
-            local tpPos, tpHeading
-            if entry.pedPos then
-                tpPos = vector3(entry.pedPos.x, entry.pedPos.y, entry.pedPos.z)
-                tpHeading = entry.pedPos.w
-            else
-                if type(entry.camera) == 'vector4' then
-                    tpPos = vector3(entry.camera.x, entry.camera.y, entry.camera.z)
-                    tpHeading = entry.camera.w
-                else
-                    tpPos = entry.camera.pos
-                    tpHeading = entry.camera.rot.z
-                end
+            local ok, err = pcall(buildPreviewScene, entry)
+            if not ok then
+                print(('[pop_interim] Erreur aperçu "%s" : %s'):format(tostring(id), tostring(err)))
             end
-            
-            SetEntityCoords(ped, tpPos.x, tpPos.y, tpPos.z - 0.95, false, false, false, true)
-            SetEntityHeading(ped, tpHeading)
-            ClearPedTasks(ped)
-
-            -- Jouer l'animation sur le propre ped du joueur si spécifiée
-            if entry.pedAnimDict and entry.pedAnimName then
-                RequestAnimDict(entry.pedAnimDict)
-                local animTimeout = 0
-                while not HasAnimDictLoaded(entry.pedAnimDict) and animTimeout < 2000 do
-                    Wait(10)
-                    animTimeout = animTimeout + 10
-                end
-                if HasAnimDictLoaded(entry.pedAnimDict) then
-                    TaskPlayAnim(ped, entry.pedAnimDict, entry.pedAnimName, 8.0, -8.0, -1, 1, 0, false, false, false)
-                end
-            end
-            
-            -- 2. Activation de la caméra de prévisualisation
-            moveCamTo(entry.camera)
-
-            -- 3. Spawn des peds ambiants pour le décor de prévisualisation
-            if entry.previewPeds then
-                for _, pedData in ipairs(entry.previewPeds) do
-                    local hash = GetHashKey(pedData.model)
-                    RequestModel(hash)
-                    local timeout = 0
-                    while not HasModelLoaded(hash) and timeout < 2000 do
-                        Wait(10)
-                        timeout = timeout + 10
-                    end
-                    if HasModelLoaded(hash) then
-                        local cp = pedData.coords
-                        local aped = CreatePed(4, hash, cp.x, cp.y, cp.z - 0.98, cp.w, false, true)
-                        SetEntityAsMissionEntity(aped, true, true)
-                        SetBlockingOfNonTemporaryEvents(aped, true)
-                        FreezeEntityPosition(aped, true)
-                        SetEntityInvincible(aped, true)
-
-                        if pedData.weapon then
-                            local wepHash = GetHashKey(pedData.weapon)
-                            GiveWeaponToPed(aped, wepHash, 1, false, true)
-                            SetCurrentPedWeapon(aped, wepHash, true)
-                        end
-
-                        if pedData.animDict and pedData.animName then
-                            RequestAnimDict(pedData.animDict)
-                            local animTimeout = 0
-                            while not HasAnimDictLoaded(pedData.animDict) and animTimeout < 2000 do
-                                Wait(10)
-                                animTimeout = animTimeout + 10
-                            end
-                            if HasAnimDictLoaded(pedData.animDict) then
-                                TaskPlayAnim(aped, pedData.animDict, pedData.animName, 8.0, -8.0, -1, pedData.animFlag or 1, 0, false, false, false)
-                            end
-                        end
-
-                        if pedData.prop then
-                            local propModel = GetHashKey(pedData.prop)
-                            RequestModel(propModel)
-                            local pTimeout = 0
-                            while not HasModelLoaded(propModel) and pTimeout < 2000 do
-                                Wait(10)
-                                pTimeout = pTimeout + 10
-                            end
-                            if HasModelLoaded(propModel) then
-                                local propObj = CreateObject(propModel, 0.0, 0.0, 0.0, false, false, false)
-                                AttachEntityToEntity(propObj, aped, GetPedBoneIndex(aped, pedData.boneIndex), pedData.propPlacement[1], pedData.propPlacement[2], pedData.propPlacement[3], pedData.propPlacement[4], pedData.propPlacement[5], pedData.propPlacement[6], true, true, false, true, 1, true)
-                                table.insert(previewEntities, propObj)
-                            end
-                            SetModelAsNoLongerNeeded(propModel)
-                        end
-
-                        if pedData.extraProp then
-                            local extraModel = GetHashKey(pedData.extraProp)
-                            RequestModel(extraModel)
-                            local epTimeout = 0
-                            while not HasModelLoaded(extraModel) and epTimeout < 2000 do
-                                Wait(10)
-                                epTimeout = epTimeout + 10
-                            end
-                            if HasModelLoaded(extraModel) then
-                                local extraObj = CreateObject(extraModel, 0.0, 0.0, 0.0, false, false, false)
-                                AttachEntityToEntity(extraObj, aped, GetPedBoneIndex(aped, pedData.extraBoneIndex), pedData.extraPropPlacement[1], pedData.extraPropPlacement[2], pedData.extraPropPlacement[3], pedData.extraPropPlacement[4], pedData.extraPropPlacement[5], pedData.extraPropPlacement[6], true, true, false, true, 1, true)
-                                table.insert(previewEntities, extraObj)
-                            end
-                            SetModelAsNoLongerNeeded(extraModel)
-                        end
-
-                        table.insert(previewEntities, aped)
-                    end
-                    SetModelAsNoLongerNeeded(hash)
-                end
-            end
-
-            -- 4. Spawn des véhicules ambiants pour le décor de prévisualisation (hélico, etc.)
-            if entry.previewVehicles then
-                for _, vehData in ipairs(entry.previewVehicles) do
-                    local hash = GetHashKey(vehData.model)
-                    RequestModel(hash)
-                    local timeout = 0
-                    while not HasModelLoaded(hash) and timeout < 2000 do
-                        Wait(10)
-                        timeout = timeout + 10
-                    end
-                    if HasModelLoaded(hash) then
-                        local cv = vehData.coords
-                        local veh = CreateVehicle(hash, cv.x, cv.y, cv.z, cv.w, false, true)
-                        SetEntityAsMissionEntity(veh, true, true)
-                        SetVehicleOnGroundProperly(veh)
-                        FreezeEntityPosition(veh, true)
-                        SetEntityInvincible(veh, true)
-
-                        if vehData.colours then
-                            SetVehicleColours(veh, vehData.colours[1], vehData.colours[2])
-                        end
-                        if vehData.extraColours then
-                            SetVehicleExtraColours(veh, vehData.extraColours[1], vehData.extraColours[2])
-                        end
-                        if vehData.interiorColour then
-                            SetVehicleInteriorColour(veh, vehData.interiorColour)
-                        end
-                        if vehData.dashboardColour then
-                            SetVehicleDashboardColour(veh, vehData.dashboardColour)
-                        end
-                        if vehData.modKit then
-                            SetVehicleModKit(veh, vehData.modKit)
-                        end
-                        if vehData.livery then
-                            SetVehicleMod(veh, 48, vehData.livery, false)
-                            SetVehicleLivery(veh, vehData.livery)
-                        end
-                        if vehData.doorOpen then
-                            SetVehicleDoorOpen(veh, vehData.doorOpen, false, false)
-                        elseif vehData.doorsOpen then
-                            for _, doorIdx in ipairs(vehData.doorsOpen) do
-                                SetVehicleDoorOpen(veh, doorIdx, false, false)
-                            end
-                        end
-
-                        table.insert(previewEntities, veh)
-                    end
-                    SetModelAsNoLongerNeeded(hash)
-                end
-            end
-            
-            Wait(1000)
-            SendNUIMessage({ type = 'sceneReady' })
-            DoScreenFadeIn(500)
-            isTransitioning = false
+            finishTransition()
         end)
     else
         -- Poste sans coordonnées : on revient à l'agence d'intérim
-        isTransitioning = true
         clearCam()
         if initialCoords then
             CreateThread(function()
-                local ped = PlayerPedId()
-                DoScreenFadeOut(500)
-                while not IsScreenFadedOut() do Wait(0) end
-                
-                SetEntityCoords(ped, initialCoords.x, initialCoords.y, initialCoords.z, false, false, false, true)
-                SetEntityHeading(ped, initialHeading)
-                
-                Wait(500)
-                SendNUIMessage({ type = 'sceneReady' })
-                DoScreenFadeIn(500)
-                isTransitioning = false
+                local ok, err = pcall(function()
+                    local ped = PlayerPedId()
+                    DoScreenFadeOut(500)
+                    waitFadedOut()
+
+                    SetEntityCoords(ped, initialCoords.x, initialCoords.y, initialCoords.z, false, false, false, true)
+                    SetEntityHeading(ped, initialHeading)
+
+                    Wait(500)
+                end)
+                if not ok then
+                    print(('[pop_interim] Erreur retour agence : %s'):format(tostring(err)))
+                end
+                finishTransition()
             end)
         else
-            isTransitioning = false
+            finishTransition()
         end
     end
+end
+
+-- Clic sur une case : déplace la caméra ET le ped sur la vue du poste (si définie).
+RegisterNUICallback('previewJob', function(data, cb)
+    local id = data and data.id
+    if isTransitioning then
+        -- Transition en cours : on mémorise la demande, rejouée à la fin.
+        pendingPreviewId = id
+        cb('ok')
+        return
+    end
+    runPreview(id)
     cb('ok')
 end)
 
 -- Confirmation : applique le job (validé serveur), confirme la position et ferme.
 RegisterNUICallback('selectJob', function(data, cb)
+    -- Ignoré pendant la préparation de l'aperçu (le joueur pourra revalider).
+    if isTransitioning then cb('ok') return end
+
     local entry = data and data.id and JOB_BY_ID[data.id]
     if entry then
         TriggerServerEvent('pop_interim:setJob', data.id)
@@ -504,8 +560,24 @@ AddEventHandler('onResourceStop', function(res)
     end
 end)
 
+-- Chargement avec délai max (2 s) : jamais de boucle infinie sur un modèle invalide.
+local function devLoadModel(hash)
+    RequestModel(hash)
+    local t = GetGameTimer() + 2000
+    while not HasModelLoaded(hash) and GetGameTimer() < t do Wait(10) end
+    return HasModelLoaded(hash)
+end
+
+local function devLoadAnimDict(dict)
+    RequestAnimDict(dict)
+    local t = GetGameTimer() + 2000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < t do Wait(10) end
+    return HasAnimDictLoaded(dict)
+end
+
 -- Command to test/spawn all preview entities in-game without opening the menu
 -- Usage: /devpreview [all | pesticides | youtool | transport_urgence | clean]
+-- Restreinte (ACE) : add_ace group.admin command.devpreview allow
 RegisterCommand("devpreview", function(source, args)
     local target = args[1]
     
@@ -539,49 +611,48 @@ RegisterCommand("devpreview", function(source, args)
         if entry.previewPeds then
             for _, pedData in ipairs(entry.previewPeds) do
                 local hash = GetHashKey(pedData.model)
-                RequestModel(hash)
-                while not HasModelLoaded(hash) do Wait(10) end
+                if devLoadModel(hash) then
+                    local cp = pedData.coords
+                    local aped = CreatePed(4, hash, cp.x, cp.y, cp.z - 0.98, cp.w, false, true)
+                    SetEntityAsMissionEntity(aped, true, true)
+                    SetBlockingOfNonTemporaryEvents(aped, true)
+                    FreezeEntityPosition(aped, true)
+                    SetEntityInvincible(aped, true)
 
-                local cp = pedData.coords
-                local aped = CreatePed(4, hash, cp.x, cp.y, cp.z - 0.98, cp.w, false, true)
-                SetEntityAsMissionEntity(aped, true, true)
-                SetBlockingOfNonTemporaryEvents(aped, true)
-                FreezeEntityPosition(aped, true)
-                SetEntityInvincible(aped, true)
+                    if pedData.weapon then
+                        local wepHash = GetHashKey(pedData.weapon)
+                        GiveWeaponToPed(aped, wepHash, 1, false, true)
+                        SetCurrentPedWeapon(aped, wepHash, true)
+                    end
 
-                if pedData.weapon then
-                    local wepHash = GetHashKey(pedData.weapon)
-                    GiveWeaponToPed(aped, wepHash, 1, false, true)
-                    SetCurrentPedWeapon(aped, wepHash, true)
+                    if pedData.animDict and pedData.animName then
+                        if devLoadAnimDict(pedData.animDict) then
+                            TaskPlayAnim(aped, pedData.animDict, pedData.animName, 8.0, -8.0, -1, pedData.animFlag or 1, 0, false, false, false)
+                        end
+                    end
+
+                    if pedData.prop then
+                        local propModel = GetHashKey(pedData.prop)
+                        if devLoadModel(propModel) then
+                            local propObj = CreateObject(propModel, 0.0, 0.0, 0.0, false, false, false)
+                            AttachEntityToEntity(propObj, aped, GetPedBoneIndex(aped, pedData.boneIndex), pedData.propPlacement[1], pedData.propPlacement[2], pedData.propPlacement[3], pedData.propPlacement[4], pedData.propPlacement[5], pedData.propPlacement[6], true, true, false, true, 1, true)
+                            table.insert(devSpawnedEntities, propObj)
+                        end
+                        SetModelAsNoLongerNeeded(propModel)
+                    end
+
+                    if pedData.extraProp then
+                        local extraModel = GetHashKey(pedData.extraProp)
+                        if devLoadModel(extraModel) then
+                            local extraObj = CreateObject(extraModel, 0.0, 0.0, 0.0, false, false, false)
+                            AttachEntityToEntity(extraObj, aped, GetPedBoneIndex(aped, pedData.extraBoneIndex), pedData.extraPropPlacement[1], pedData.extraPropPlacement[2], pedData.extraPropPlacement[3], pedData.extraPropPlacement[4], pedData.extraPropPlacement[5], pedData.extraPropPlacement[6], true, true, false, true, 1, true)
+                            table.insert(devSpawnedEntities, extraObj)
+                        end
+                        SetModelAsNoLongerNeeded(extraModel)
+                    end
+
+                    table.insert(devSpawnedEntities, aped)
                 end
-
-                if pedData.animDict and pedData.animName then
-                    RequestAnimDict(pedData.animDict)
-                    while not HasAnimDictLoaded(pedData.animDict) do Wait(10) end
-                    TaskPlayAnim(aped, pedData.animDict, pedData.animName, 8.0, -8.0, -1, pedData.animFlag or 1, 0, false, false, false)
-                end
-
-                if pedData.prop then
-                    local propModel = GetHashKey(pedData.prop)
-                    RequestModel(propModel)
-                    while not HasModelLoaded(propModel) do Wait(10) end
-                    local propObj = CreateObject(propModel, 0.0, 0.0, 0.0, false, false, false)
-                    AttachEntityToEntity(propObj, aped, GetPedBoneIndex(aped, pedData.boneIndex), pedData.propPlacement[1], pedData.propPlacement[2], pedData.propPlacement[3], pedData.propPlacement[4], pedData.propPlacement[5], pedData.propPlacement[6], true, true, false, true, 1, true)
-                    table.insert(devSpawnedEntities, propObj)
-                    SetModelAsNoLongerNeeded(propModel)
-                end
-
-                if pedData.extraProp then
-                    local extraModel = GetHashKey(pedData.extraProp)
-                    RequestModel(extraModel)
-                    while not HasModelLoaded(extraModel) do Wait(10) end
-                    local extraObj = CreateObject(extraModel, 0.0, 0.0, 0.0, false, false, false)
-                    AttachEntityToEntity(extraObj, aped, GetPedBoneIndex(aped, pedData.extraBoneIndex), pedData.extraPropPlacement[1], pedData.extraPropPlacement[2], pedData.extraPropPlacement[3], pedData.extraPropPlacement[4], pedData.extraPropPlacement[5], pedData.extraPropPlacement[6], true, true, false, true, 1, true)
-                    table.insert(devSpawnedEntities, extraObj)
-                    SetModelAsNoLongerNeeded(extraModel)
-                end
-
-                table.insert(devSpawnedEntities, aped)
                 SetModelAsNoLongerNeeded(hash)
             end
         end
@@ -590,47 +661,46 @@ RegisterCommand("devpreview", function(source, args)
         if entry.previewVehicles then
             for _, vehData in ipairs(entry.previewVehicles) do
                 local hash = GetHashKey(vehData.model)
-                RequestModel(hash)
-                while not HasModelLoaded(hash) do Wait(10) end
+                if devLoadModel(hash) then
+                    local cv = vehData.coords
+                    local veh = CreateVehicle(hash, cv.x, cv.y, cv.z, cv.w, false, true)
+                    SetEntityAsMissionEntity(veh, true, true)
+                    SetVehicleOnGroundProperly(veh)
+                    FreezeEntityPosition(veh, true)
+                    SetEntityInvincible(veh, true)
 
-                local cv = vehData.coords
-                local veh = CreateVehicle(hash, cv.x, cv.y, cv.z, cv.w, false, true)
-                SetEntityAsMissionEntity(veh, true, true)
-                SetVehicleOnGroundProperly(veh)
-                FreezeEntityPosition(veh, true)
-                SetEntityInvincible(veh, true)
-
-                if vehData.colours then
-                    SetVehicleColours(veh, vehData.colours[1], vehData.colours[2])
-                end
-                if vehData.extraColours then
-                    SetVehicleExtraColours(veh, vehData.extraColours[1], vehData.extraColours[2])
-                end
-                if vehData.interiorColour then
-                    SetVehicleInteriorColour(veh, vehData.interiorColour)
-                end
-                if vehData.dashboardColour then
-                    SetVehicleDashboardColour(veh, vehData.dashboardColour)
-                end
-                if vehData.modKit then
-                    SetVehicleModKit(veh, vehData.modKit)
-                end
-                if vehData.livery then
-                    SetVehicleMod(veh, 48, vehData.livery, false)
-                    SetVehicleLivery(veh, vehData.livery)
-                end
-                if vehData.doorOpen then
-                    SetVehicleDoorOpen(veh, vehData.doorOpen, false, false)
-                elseif vehData.doorsOpen then
-                    for _, doorIdx in ipairs(vehData.doorsOpen) do
-                        SetVehicleDoorOpen(veh, doorIdx, false, false)
+                    if vehData.colours then
+                        SetVehicleColours(veh, vehData.colours[1], vehData.colours[2])
                     end
-                end
+                    if vehData.extraColours then
+                        SetVehicleExtraColours(veh, vehData.extraColours[1], vehData.extraColours[2])
+                    end
+                    if vehData.interiorColour then
+                        SetVehicleInteriorColour(veh, vehData.interiorColour)
+                    end
+                    if vehData.dashboardColour then
+                        SetVehicleDashboardColour(veh, vehData.dashboardColour)
+                    end
+                    if vehData.modKit then
+                        SetVehicleModKit(veh, vehData.modKit)
+                    end
+                    if vehData.livery then
+                        SetVehicleMod(veh, 48, vehData.livery, false)
+                        SetVehicleLivery(veh, vehData.livery)
+                    end
+                    if vehData.doorOpen then
+                        SetVehicleDoorOpen(veh, vehData.doorOpen, false, false)
+                    elseif vehData.doorsOpen then
+                        for _, doorIdx in ipairs(vehData.doorsOpen) do
+                            SetVehicleDoorOpen(veh, doorIdx, false, false)
+                        end
+                    end
 
-                table.insert(devSpawnedEntities, veh)
+                    table.insert(devSpawnedEntities, veh)
+                end
                 SetModelAsNoLongerNeeded(hash)
             end
         end
     end
     TriggerEvent("chat:addMessage", { args = { "^2Dev Preview^7: Entités générées pour " .. tostring(target or "tous les jobs") .. "." } })
-end, false)
+end, true)

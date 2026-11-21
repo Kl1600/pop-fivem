@@ -467,6 +467,19 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
     elseif action == 'setgroup' then
         if not xTarget then return end
         local group = tostring(data.group or 'user')
+        -- Hiérarchie : on ne peut ni donner un groupe supérieur ou égal au sien,
+        -- ni modifier quelqu'un de rang supérieur ou égal (sauf owner / console).
+        local RANK = { user = 0, mod = 1, admin = 2, superadmin = 3, owner = 4 }
+        if RANK[group] == nil then notify(src, 'Groupe inconnu', 'error'); return end
+        local myRank = (src == 0) and 99 or (RANK[xAdmin and xAdmin.getGroup() or 'user'] or 0)
+        -- Admins listés dans la config ou ayant tous les droits ACE : rang maximal
+        if src ~= 0 and (isIdentifierListed(src) or IsPlayerAceAllowed(src, 'command')) then myRank = 4 end
+        if myRank < 4 and (RANK[group] >= myRank or (RANK[xTarget.getGroup()] or 0) >= myRank) and xTarget.source ~= src then
+            notify(src, 'Vous ne pouvez pas attribuer ce groupe', 'error'); return
+        end
+        if myRank < 4 and xTarget.source == src and RANK[group] > myRank then
+            notify(src, 'Vous ne pouvez pas vous promouvoir', 'error'); return
+        end
         xTarget.setGroup(group)
         -- Enregistré tout de suite en base : ESX ne sauvegarde qu'à la déconnexion
         -- ou toutes les 10 min, donc un restart juste après faisait perdre le groupe.
@@ -477,8 +490,8 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
     elseif action == 'giveitem' then
         if not xTarget then return end
         local item = tostring(data.item or '')
-        local qty = tonumber(data.qty) or 1
-        if item == '' then return end
+        local qty = math.floor(tonumber(data.qty) or 1)
+        if item == '' or qty < 1 or qty > 1000 then return end
         if GetResourceState('pop_inventory') == 'started' then
             local ok = pcall(function()
                 return exports['pop_inventory']:GiveItem(xTarget.source, item, qty)
@@ -502,8 +515,8 @@ RegisterNetEvent('pop_admin:giveSelf', function(item, qty)
     local src = source
     if not IsAdmin(src) then return end
     item = tostring(item or '')
-    qty = tonumber(qty) or 1
-    if item == '' then return end
+    qty = math.floor(tonumber(qty) or 1)
+    if item == '' or qty < 1 or qty > 1000 then return end
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
     if GetResourceState('pop_inventory') == 'started' then
@@ -765,7 +778,6 @@ RegisterNetEvent('pop_admin:jobDelete', function(jobName)
     end
     local accountName = 'society_' .. jobName
     MySQL.update("UPDATE users SET job = 'unemployed', job_grade = 0 WHERE job = ?", { jobName }, function()
-        MySQL.update("UPDATE users SET job2 = 'unemployed', job2_grade = 0 WHERE job2 = ?", { jobName })
         MySQL.update('DELETE FROM job_grades WHERE job_name = ?', { jobName }, function()
             MySQL.update('DELETE FROM jobs WHERE name = ?', { jobName }, function()
                 MySQL.update('DELETE FROM addon_account_data WHERE account_name = ?', { accountName })
@@ -828,10 +840,8 @@ AddEventHandler('playerDropped', function(reason)
     end)
 end)
 
--- Test de la sauvegarde ESX : 60 s après le chargement d'un joueur, on rejoue la
--- requête de sauvegarde d'ESX (mêmes valeurs) et on note le résultat ou l'erreur
--- SQL dans diag_save.log. Permet de voir si les sauvegardes ESX fonctionnent.
-local SAVE_QUERY = 'UPDATE `users` SET `accounts` = ?, `job` = ?, `job_grade` = ?, `group` = ?, `position` = ?, `inventory` = ?, `loadout` = ?, `metadata` = ? WHERE `identifier` = ?'
+-- Test de la sauvegarde ESX (lecture seule) : 60 s après le chargement d'un joueur,
+-- on prépare les mêmes données qu'ESX et on vérifie les colonnes, résultat dans diag_save.log.
 AddEventHandler('esx:playerLoaded', function(playerId)
     SetTimeout(60000, function()
         local xPlayer = ESX.GetPlayerFromId(playerId)
@@ -847,8 +857,10 @@ AddEventHandler('esx:playerLoaded', function(playerId)
         if not okParams then
             line = ('ERREUR en préparant la sauvegarde : %s'):format(tostring(params))
         else
-            local ok, res = pcall(MySQL.update.await, SAVE_QUERY, params)
-            line = ok and ('requête OK (lignes modifiées : %s)'):format(tostring(res)) or ('ERREUR SQL : %s'):format(tostring(res))
+            -- Lecture seule : vérifie que toutes les colonnes de la sauvegarde ESX existent
+            -- et que les données se convertissent bien, sans rien réécrire.
+            local ok, res = pcall(MySQL.single.await, 'SELECT `accounts`, `job`, `job_grade`, `group`, `position`, `inventory`, `loadout`, `metadata` FROM `users` WHERE `identifier` = ?', { xPlayer.identifier })
+            line = ok and (res and 'colonnes OK, données convertibles' or 'joueur introuvable en base') or ('ERREUR SQL : %s'):format(tostring(res))
         end
         diagWrite({ ('[%s] Test sauvegarde ESX pour %s (groupe %s) : %s'):format(os.date('%Y-%m-%d %H:%M:%S'), xPlayer.getName(), tostring(xPlayer.group), line) })
     end)

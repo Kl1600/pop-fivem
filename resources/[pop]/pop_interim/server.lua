@@ -47,7 +47,7 @@ RegisterNetEvent('pop_interim:setJob', function(id)
         return
     end
 
-    if entry.isJob2 then
+    if entry.isJob2 and type(xPlayer.setJob2) == 'function' then
         xPlayer.setJob2(entry.job, entry.grade)
     else
         xPlayer.setJob(entry.job, entry.grade)

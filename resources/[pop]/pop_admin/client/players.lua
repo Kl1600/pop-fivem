@@ -110,12 +110,16 @@ function AdminStartSpectate(serverId)
     SetEntityVisible(myPed, false, false)
     AdminNotify('Spectate : ' .. (nameById[serverId] or GetPlayerName(target)), 'success')
 
+    local lastSpectatedPed = targetPed
     CreateThread(function()
         while Admin.spec.spectating == serverId do
             local tp = GetPlayerFromServerId(serverId)
             if tp == -1 then break end
             local ped = GetPlayerPed(tp)
-            if ped and ped ~= 0 then NetworkSetInSpectatorMode(true, ped) end
+            if ped and ped ~= 0 and ped ~= lastSpectatedPed then
+                lastSpectatedPed = ped
+                NetworkSetInSpectatorMode(true, ped)
+            end
             -- Affichage info
             SetTextFont(4); SetTextScale(0.0, 0.45); SetTextColour(255, 255, 255, 220)
             SetTextOutline(); SetTextCentre(true)
@@ -168,7 +172,9 @@ function send_spec_state(active)
     AdminSend('specMode', { active = active })
 end
 
+local lastSpecSent = nil
 function specLoop()
+    lastSpecSent = nil
     while Admin.spec.active do
         local myPed = PlayerPedId()
         local myCoords = GetEntityCoords(myPed)
@@ -197,14 +203,21 @@ function specLoop()
             else
                 Admin.spec.target.dist = best.dist
             end
-            AdminSend('specTarget', {
-                sid = best.sid,
-                name = nameById[best.sid] or ('Joueur ' .. best.sid),
-                dist = math.floor(best.dist + 0.5),
-            })
+            local d = math.floor(best.dist + 0.5)
+            if lastSpecSent ~= best.sid .. ':' .. d then
+                lastSpecSent = best.sid .. ':' .. d
+                AdminSend('specTarget', {
+                    sid = best.sid,
+                    name = nameById[best.sid] or ('Joueur ' .. best.sid),
+                    dist = d,
+                })
+            end
         else
             if Admin.spec.target then Admin.spec.target = nil end
-            AdminSend('specTarget', { sid = false })
+            if lastSpecSent ~= 'none' then
+                lastSpecSent = 'none'
+                AdminSend('specTarget', { sid = false })
+            end
         end
 
         Wait(0)

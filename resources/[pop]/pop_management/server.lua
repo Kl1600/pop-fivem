@@ -62,6 +62,53 @@ local function isBossJob(job)
     return Config.DevMode or (job and job.grade_name == 'boss')
 end
 
+-- Cash = objet 'cash' de pop_inventory (pas le compte ESX 'money')
+local function getCash(src)
+    local ok, n = pcall(function() return exports.pop_inventory:getItemCount(src, 'cash') end)
+    return ok and (tonumber(n) or 0) or 0
+end
+
+local function removeCash(src, amount)
+    local ok, res = pcall(function() return exports.pop_inventory:removeItem(src, 'cash', amount) end)
+    return ok and res == true
+end
+
+local function giveCash(src, amount)
+    local ok, res = pcall(function() return exports.pop_inventory:GiveItem(src, 'cash', amount) end)
+    return ok and res == true
+end
+
+-- Rafraîchit l'interface laptop d'un joueur (le client redemande ses données)
+local function refreshSocietyFor(src)
+    if src and src ~= '' and tonumber(src) then
+        TriggerClientEvent('cr-laptop:forceUpdate', src)
+    end
+end
+
+-- Rafraîchit l'interface laptop de tous les employés en ligne d'un job
+local function refreshSocietyJob(jobName)
+    local xPlayers = ESX.GetPlayers()
+    for i = 1, #xPlayers, 1 do
+        local xTarget = ESX.GetPlayerFromId(xPlayers[i])
+        if xTarget and xTarget.getJob().name == jobName then
+            TriggerClientEvent('cr-laptop:forceUpdate', xTarget.source)
+        end
+    end
+end
+
+-- Petit délai entre deux achats (argent société) par joueur
+local purchaseCooldowns = {}
+local PURCHASE_COOLDOWN_MS = 3000
+local function purchaseOnCooldown(src)
+    local now = GetGameTimer()
+    if purchaseCooldowns[src] and (now - purchaseCooldowns[src]) < PURCHASE_COOLDOWN_MS then
+        TriggerClientEvent('cr-laptop:notify', src, 'Veuillez patienter avant un nouvel achat.')
+        return true
+    end
+    purchaseCooldowns[src] = now
+    return false
+end
+
 local function scalarAwait(query, params)
     local p = promise.new()
     exports.oxmysql:scalar(query, params, function(v) p:resolve(v or false) end)
@@ -181,16 +228,12 @@ CreateThread(function()
     end)
 end)
 
--- Un joueur est staff YouTool s'il a le job EN PRINCIPAL ou EN JOB2 (les
--- intérimaires GoPostal passent par xPlayer.setJob2(), voir pop_interim).
+-- Un joueur est staff YouTool s'il a le job (ESX 1.16 n'a pas de job2).
 local function isYouToolStaff(xPlayer)
     if not xPlayer then return false end
     local jobName = Config.YouToolJob or 'youtool'
     local job = xPlayer.getJob()
-    if job and job.name == jobName then return true end
-    local ok, job2 = pcall(function() return xPlayer.getJob2() end)
-    if ok and job2 and job2.name == jobName then return true end
-    return false
+    return job ~= nil and job.name == jobName
 end
 
 -- Notifie tous les employés du job YouTool (nouvelle commande, etc.)
@@ -228,12 +271,12 @@ end
 -- Periodic thread to transition pending orders to ready
 CreateThread(function()
     while true do
-        Wait(5000) -- Check every 5 seconds
+        Wait(30000) -- Check every 30 seconds
         local success, result = pcall(function()
             -- Timer de SECOURS : si aucun employé YouTool n'a validé la commande, elle
             -- passe quand même en 'ready' après Config.YouToolDeliveryTime pour que le
             -- client puisse la récupérer au Port. (La validation, elle, est instantanée.)
-            exports.oxmysql:execute("SELECT * FROM youtool_orders WHERE status = ? AND delivery_time <= NOW() AND is_bot = 0", {'pending'}, function(pendingOrders)
+            exports.oxmysql:execute("SELECT id, quantity, item_label, user_identifier FROM youtool_orders WHERE status = ? AND delivery_time <= NOW() AND is_bot = 0", {'pending'}, function(pendingOrders)
                 if pendingOrders and #pendingOrders > 0 then
                     for _, order in ipairs(pendingOrders) do
                         exports.oxmysql:execute('UPDATE youtool_orders SET status = ? WHERE id = ?', {'ready', order.id}, function(rowsChanged)
@@ -269,7 +312,7 @@ end)
 -- si au moins un livreur est en ligne, génère une commande PNJ (carton sur
 -- l'étagère + livraison vers un PNJ éphémère sur un des spots configurés).
 -- ignoreStaffCheck = true : utilisé par la commande dev /ytbot pour tester
--- seul, sans avoir besoin d'un 2e joueur en job/job2 youtool connecté.
+-- seul, sans avoir besoin d'un 2e joueur en job youtool connecté.
 local function generateBotOrder(ignoreStaffCheck)
     if not (Config.YouToolBotSpots and #Config.YouToolBotSpots > 0) then
         print('[YouTool][bot] aucun spot configuré (Config.YouToolBotSpots).')
@@ -280,7 +323,7 @@ local function generateBotOrder(ignoreStaffCheck)
         return
     end
     if not ignoreStaffCheck and countYouToolStaffOnline() <= 0 then
-        print('[YouTool][bot] aucun livreur (job/job2 youtool) en ligne, commande non générée.')
+        print('[YouTool][bot] aucun livreur (job youtool) en ligne, commande non générée.')
         return
     end
 
@@ -442,7 +485,7 @@ end)
 ESX.RegisterServerCallback('pop_management:getYouToolJobOrders', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not isYouToolStaff(xPlayer) then
-        print(('[YouTool][jobOrders] accès refusé pour src=%s (job/job2 attendu=%s).'):format(tostring(source), tostring(Config.YouToolJob or 'youtool')))
+        print(('[YouTool][jobOrders] accès refusé pour src=%s (job attendu=%s).'):format(tostring(source), tostring(Config.YouToolJob or 'youtool')))
         return cb({})
     end
 
@@ -500,11 +543,9 @@ AddEventHandler('pop_management:validateYouToolOrder', function(orderType, order
     if not xPlayer then return end
     if not isYouToolStaff(xPlayer) then
         local job = xPlayer.getJob()
-        local ok2, job2 = pcall(function() return xPlayer.getJob2() end)
-        print(('[YouTool][validate] refusé src=%s job=%s job2=%s (attendu=%s)'):format(
+        print(('[YouTool][validate] refusé src=%s job=%s (attendu=%s)'):format(
             tostring(_source),
             tostring(job and job.name),
-            tostring(ok2 and job2 and job2.name),
             tostring(Config.YouToolJob or 'youtool')
         ))
         TriggerClientEvent('cr-laptop:notify', _source, "Tu n'es pas employé GoPostal (job/intérim youtool).")
@@ -649,8 +690,14 @@ AddEventHandler('pop_management:completeDelivery', function(orderId)
         if not (affected and affected > 0) then return end
 
         local bonus = Config.YouToolDeliveryBonus or 75
-        xPlayer.addMoney(bonus)
-        TriggerClientEvent('cr-laptop:notify', _source, 'Livraison terminée — prime de ' .. bonus .. '$ reçue.')
+        if giveCash(_source, bonus) then
+            TriggerClientEvent('cr-laptop:notify', _source, 'Livraison terminée — prime de ' .. bonus .. '$ reçue.')
+        else
+            -- Inventaire plein : on remet la commande en 'delivered' pour pouvoir réessayer
+            exports.oxmysql:execute("UPDATE youtool_orders SET status = 'delivered' WHERE id = ? AND status = 'completed'", {orderId})
+            TriggerClientEvent('cr-laptop:notify', _source, 'Impossible de recevoir la prime (inventaire plein ?).')
+            return
+        end
 
         if not (tonumber(order.is_bot) == 1) and order.user_identifier then
             local xCust = ESX.GetPlayerFromIdentifier(order.user_identifier)
@@ -854,10 +901,13 @@ AddEventHandler('cr-laptop:depositMoney', function(societyName, amount)
         return
     end
 
-    if xPlayer.getMoney() >= amount then
-        xPlayer.removeMoney(amount)
-        
+    if getCash(_source) >= amount and removeCash(_source, amount) then
         TriggerEvent('esx_addonaccount:getSharedAccount', 'society_'..societyName, function(account)
+            if not account then
+                giveCash(_source, amount) -- compte société introuvable : on rend le cash
+                TriggerClientEvent('cr-laptop:notify', _source, 'Compte de l\'entreprise introuvable.')
+                return
+            end
             if account then
                 account.addMoney(amount)
                 
@@ -870,7 +920,7 @@ AddEventHandler('cr-laptop:depositMoney', function(societyName, amount)
                 })
                 
                 TriggerClientEvent('cr-laptop:notify', _source, 'Vous avez déposé <span style="color:#2ecc71; font-weight:bold;">'..amount..'$</span> sur le compte.')
-                TriggerEvent('cr-laptop:getSocietyData', societyName)
+                refreshSocietyFor(_source)
             end
         end)
     else
@@ -906,7 +956,11 @@ AddEventHandler('cr-laptop:withdrawMoney', function(societyName, amount)
     TriggerEvent('esx_addonaccount:getSharedAccount', 'society_'..societyName, function(account)
         if account and account.money >= amount then
             account.removeMoney(amount)
-            xPlayer.addMoney(amount)
+            if not giveCash(_source, amount) then
+                account.addMoney(amount) -- inventaire plein : on rembourse la société
+                TriggerClientEvent('cr-laptop:notify', _source, 'Impossible de recevoir le cash (inventaire plein ?).')
+                return
+            end
             
             -- Enregistrer la transaction
             exports.oxmysql:execute('INSERT INTO society_transactions (society, player_name, action, amount, date) VALUES (?, ?, ?, ?, NOW())', {
@@ -917,7 +971,7 @@ AddEventHandler('cr-laptop:withdrawMoney', function(societyName, amount)
             })
             
             TriggerClientEvent('cr-laptop:notify', _source, 'Vous avez retiré <span style="color:#e74c3c; font-weight:bold;">'..amount..'$</span> du compte.')
-            TriggerEvent('cr-laptop:getSocietyData', societyName)
+            refreshSocietyFor(_source)
         else
             TriggerClientEvent('cr-laptop:notify', _source, 'Le compte de l\'entreprise est <span style="color:#C52622; font-weight:bold;">insuffisant</span>.')
         end
@@ -978,7 +1032,7 @@ AddEventHandler('pop_management:orderCompanyCheckbook', function(societyName)
         end
 
         TriggerClientEvent('cr-laptop:notify', _source, 'Chéquier d\'entreprise commandé pour <span style="color:#e74c3c; font-weight:bold;">'..price..'$</span>. Allez le récupérer au compte de l\'entreprise à la banque.')
-        TriggerEvent('cr-laptop:getSocietyData', societyName)
+        refreshSocietyFor(_source)
     end)
 end)
 
@@ -1015,17 +1069,15 @@ AddEventHandler('cr-laptop:paySalary', function(societyName, targetIdentifier, a
     end
 
     TriggerEvent('esx_addonaccount:getSharedAccount', 'society_'..societyName, function(account)
-        if account and account.money >= amount then
+        if not (account and account.money >= amount) then
+            TriggerClientEvent('cr-laptop:notify', _source, 'Le compte de l\'entreprise est <span style="color:#C52622; font-weight:bold;">insuffisant</span>.')
+            return
+        end
+
+        -- Débit de la société UNIQUEMENT une fois le crédit de l'employé réussi
+        local function finish()
             account.removeMoney(amount)
 
-            if xTarget then
-                xTarget.addAccountMoney('bank', amount)
-                TriggerClientEvent('cr-laptop:notify', xTarget.source, 'Vous avez reçu un virement de <span style="color:#2ecc71; font-weight:bold;">'..amount..'$</span>.')
-            else
-                -- Si le joueur est hors ligne, ajouter directement à la base de données
-                exports.oxmysql:execute('UPDATE users SET bank = bank + ? WHERE identifier = ?', {amount, targetIdentifier})
-            end
-            
             -- Enregistrer la transaction
             exports.oxmysql:execute('INSERT INTO society_transactions (society, player_name, action, amount, date) VALUES (?, ?, ?, ?, NOW())', {
                 'society_'..societyName,
@@ -1033,11 +1085,30 @@ AddEventHandler('cr-laptop:paySalary', function(societyName, targetIdentifier, a
                 'Salaire',
                 -amount
             })
-            
+
             TriggerClientEvent('cr-laptop:notify', _source, 'Vous avez versé un salaire de <span style="color:#2ecc71; font-weight:bold;">'..amount..'$</span>.')
-            TriggerEvent('cr-laptop:getSocietyData', societyName)
+            refreshSocietyFor(_source)
+        end
+
+        local function fail()
+            TriggerClientEvent('cr-laptop:notify', _source, 'Le virement a <span style="color:#C52622; font-weight:bold;">échoué</span>.')
+        end
+
+        if xTarget then
+            local ok = pcall(function() xTarget.addAccountMoney('bank', amount) end)
+            if not ok then return fail() end
+            TriggerClientEvent('cr-laptop:notify', xTarget.source, 'Vous avez reçu un virement de <span style="color:#2ecc71; font-weight:bold;">'..amount..'$</span>.')
+            finish()
         else
-            TriggerClientEvent('cr-laptop:notify', _source, 'Le compte de l\'entreprise est <span style="color:#C52622; font-weight:bold;">insuffisant</span>.')
+            -- Joueur hors ligne (ESX 1.16) : les comptes sont un JSON dans users.accounts
+            exports.oxmysql:scalar('SELECT accounts FROM users WHERE identifier = ?', {targetIdentifier}, function(raw)
+                local ok, accounts = pcall(json.decode, raw or '')
+                if not ok or type(accounts) ~= 'table' then return fail() end
+                accounts.bank = (tonumber(accounts.bank) or 0) + amount
+                exports.oxmysql:update('UPDATE users SET accounts = ? WHERE identifier = ?', {json.encode(accounts), targetIdentifier}, function(affected)
+                    if (tonumber(affected) or 0) > 0 then finish() else fail() end
+                end)
+            end)
         end
     end)
 end)
@@ -1232,9 +1303,16 @@ AddEventHandler('pop_management:buyVehicle', function(data)
     if not xPlayer then return end
 
     local job = xPlayer.getJob()
+
+    -- Achat avec l'argent de la société : réservé au patron
+    if not isBossJob(job) then
+        TriggerClientEvent('cr-laptop:notify', _source, 'Seul le <span style="color:#C52622; font-weight:bold;">patron</span> peut effectuer cette action.')
+        return
+    end
     
     -- Prix et job cible lus dans le catalogue serveur (jamais ceux du client)
     if type(data) ~= 'table' or type(data.model) ~= 'string' then return end
+    if purchaseOnCooldown(_source) then return end
     local carDef = CarCatalog[data.model:lower()]
     if not carDef then
         TriggerClientEvent('cr-laptop:notify', _source, 'Véhicule introuvable dans le catalogue.')
@@ -1313,7 +1391,7 @@ AddEventHandler('pop_management:buyVehicle', function(data)
                     end)
                 end
 
-                TriggerEvent('cr-laptop:getSocietyData', job.name)
+                refreshSocietyFor(_source)
             end
         end)
     end
@@ -1346,7 +1424,31 @@ AddEventHandler('playerDropped', function()
     PendingVehicleRegister[source] = nil
     RegisteredPlates[source] = nil
     playerCooldowns[source] = nil
+    purchaseCooldowns[source] = nil
 end)
+
+-- Plaque générée côté serveur (8 caractères, unique dans owned_vehicles)
+local PLATE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+local function generateUniquePlate()
+    for _ = 1, 20 do
+        local plate = ''
+        for _ = 1, 8 do
+            local r = math.random(1, #PLATE_CHARSET)
+            plate = plate .. PLATE_CHARSET:sub(r, r)
+        end
+        if not scalarAwait('SELECT 1 FROM owned_vehicles WHERE plate = ?', {plate}) then
+            return plate
+        end
+    end
+    return nil
+end
+
+-- Hash de modèle normalisé (signé/non signé selon la source)
+local function normHash(h)
+    h = tonumber(h)
+    if not h then return nil end
+    return math.floor(h) % 4294967296
+end
 
 RegisterServerEvent('pop_management:registerVehicle')
 AddEventHandler('pop_management:registerVehicle', function(plate, model, society, vehicleProps)
@@ -1356,9 +1458,22 @@ AddEventHandler('pop_management:registerVehicle', function(plate, model, society
 
     -- Uniquement pour un véhicule réellement retiré au Port par ce joueur
     local pending = PendingVehicleRegister[_source]
-    if not pending or pending.society ~= society or type(plate) ~= 'string' or #plate > 12 then return end
+    if not pending or pending.society ~= society or type(plate) ~= 'string' or type(vehicleProps) ~= 'table' then return end
+
+    -- Le modèle doit être celui commandé, la plaque celle générée par le serveur
+    if normHash(vehicleProps.model) ~= normHash(GetHashKey(pending.model)) then
+        print(('[POP_MANAGEMENT] registerVehicle refusé src=%s : modèle %s ~= %s'):format(tostring(_source), tostring(vehicleProps.model), tostring(pending.model)))
+        return
+    end
+    local cleanPlate = plate:upper():gsub('^%s+', ''):gsub('%s+$', '')
+    if not pending.plate or cleanPlate ~= pending.plate then
+        print(('[POP_MANAGEMENT] registerVehicle refusé src=%s : plaque %s ~= %s'):format(tostring(_source), tostring(cleanPlate), tostring(pending.plate)))
+        return
+    end
     PendingVehicleRegister[_source] = nil
-    RegisteredPlates[_source] = plate:upper()
+    plate = pending.plate
+    vehicleProps.plate = plate
+    RegisteredPlates[_source] = plate
 
     -- On définit le propriétaire : society_police, society_ambulance etc.
     local owner = 'society_' .. society
@@ -1444,9 +1559,17 @@ AddEventHandler('pop_management:claimVehicle', function(orderId)
             exports.oxmysql:execute('UPDATE dealership_orders SET status = ? WHERE id = ? AND status = ?', {'delivered', orderId, 'ready'}, function(rc)
                 local affected = type(rc) == 'table' and rc.affectedRows or rc
                 if not (affected and affected > 0) then return end
-                PendingVehicleRegister[_source] = { model = tostring(order.vehicle_model):lower(), society = order.society }
-                TriggerClientEvent('pop_management:spawnClaimedVehicle', _source, order.vehicle_model, order.vehicle_color, order.society)
-                TriggerClientEvent('cr-laptop:notify', _source, 'Votre véhicule est sorti.')
+                CreateThread(function()
+                    local plate = generateUniquePlate()
+                    if not plate then
+                        exports.oxmysql:execute('UPDATE dealership_orders SET status = ? WHERE id = ? AND status = ?', {'ready', orderId, 'delivered'})
+                        TriggerClientEvent('cr-laptop:notify', _source, 'Erreur: impossible de générer une plaque, réessayez.')
+                        return
+                    end
+                    PendingVehicleRegister[_source] = { model = tostring(order.vehicle_model):lower(), society = order.society, plate = plate }
+                    TriggerClientEvent('pop_management:spawnClaimedVehicle', _source, order.vehicle_model, order.vehicle_color, order.society, plate)
+                    TriggerClientEvent('cr-laptop:notify', _source, 'Votre véhicule est sorti.')
+                end)
             end)
         else
             TriggerClientEvent('cr-laptop:notify', _source, 'Erreur: Commande introuvable ou pas prête.')
@@ -1509,6 +1632,8 @@ end)
 
 -- Recherche de joueurs pour suggestions (Dynasty 8)
 ESX.RegisterServerCallback('pop_management:getPlayersForSuggestion', function(source, cb, search)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or xPlayer.getJob().name ~= 'dynasty8' then return cb({}) end
     local query = "SELECT identifier, firstname, lastname FROM users WHERE LOWER(CONCAT(firstname, ' ', lastname)) LIKE LOWER(?) LIMIT 10"
     local pattern = '%' .. tostring(search or ''):sub(1, 50) .. '%'
     
@@ -1762,7 +1887,7 @@ AddEventHandler('pop_management:grantSubsidy', function(requestId)
             end
         end
 
-        TriggerEvent('cr-laptop:getSocietyData', targetJob)
+        refreshSocietyJob(targetJob)
         TriggerClientEvent('cr-laptop:forceUpdate', _source)
     end
 
@@ -1896,7 +2021,7 @@ AddEventHandler('pop_management:createAndGrantSubsidy', function(data)
             end
         end
 
-        TriggerEvent('cr-laptop:getSocietyData', targetJob)
+        refreshSocietyJob(targetJob)
         TriggerClientEvent('cr-laptop:forceUpdate', _source)
     end
 
@@ -1977,7 +2102,7 @@ AddEventHandler('pop_management:publishGouvNews', function(data)
 
     -- Announce to the server
     TriggerClientEvent('cr-laptop:notifyLogo', -1, {
-        logo = "https://cdn.discordapp.com/attachments/809480057579241533/1473808036819763332/images_7.jfif?ex=69978e32&is=69963cb2&hm=f8d62350f084b7bd76975e967097a4046ae8c01e525057df05acc409a78d19f6&",
+        logo = "gouv.png",
         title = "GOUVERNEMENT BC - " .. escapeHtml(data and data.type),
         message = escapeHtml(data and data.title) .. "<br><br>" .. escapeHtml(data and data.content),
         duration = 15000
@@ -2027,8 +2152,11 @@ AddEventHandler('pop_management:buyYouToolItem', function(model, label, quantity
     price = def.price * quantity
 
     local deliveryCoords = nil
-    if type(coords) == 'table' and coords.x and coords.y and coords.z then
-        deliveryCoords = ('%.2f,%.2f,%.2f'):format(coords.x, coords.y, coords.z)
+    if type(coords) == 'table' then
+        local cx, cy, cz = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
+        if cx and cy and cz then
+            deliveryCoords = ('%.2f,%.2f,%.2f'):format(cx, cy, cz)
+        end
     end
 
     if quantity < 1 or price < 0 then return end
@@ -2039,6 +2167,13 @@ AddEventHandler('pop_management:buyYouToolItem', function(model, label, quantity
 
     local isUnemployed = (job.name == 'unemployed')
     local accountName = 'society_' .. job.name
+
+    -- Achat avec l'argent de la société : réservé au patron
+    if not isUnemployed and not isBossJob(job) then
+        TriggerClientEvent('cr-laptop:notify', _source, 'Seul le <span style="color:#C52622; font-weight:bold;">patron</span> peut effectuer cette action.')
+        return
+    end
+    if purchaseOnCooldown(_source) then return end
 
     -- Helper to finalize the purchase
     local function completeYouToolPurchase()
@@ -2168,8 +2303,11 @@ AddEventHandler('pop_management:buyYouToolCart', function(items, coords)
     if not xPlayer then return end
 
     local deliveryCoords = nil
-    if type(coords) == 'table' and coords.x and coords.y and coords.z then
-        deliveryCoords = ('%.2f,%.2f,%.2f'):format(coords.x, coords.y, coords.z)
+    if type(coords) == 'table' then
+        local cx, cy, cz = tonumber(coords.x), tonumber(coords.y), tonumber(coords.z)
+        if cx and cy and cz then
+            deliveryCoords = ('%.2f,%.2f,%.2f'):format(cx, cy, cz)
+        end
     end
 
     if type(items) ~= 'table' or #items == 0 then return end
@@ -2177,6 +2315,13 @@ AddEventHandler('pop_management:buyYouToolCart', function(items, coords)
     local job          = xPlayer.getJob()
     local isUnemployed = (job.name == 'unemployed')
     local accountName  = 'society_' .. job.name
+
+    -- Achat avec l'argent de la société : réservé au patron
+    if not isUnemployed and not isBossJob(job) then
+        TriggerClientEvent('cr-laptop:notify', _source, 'Seul le <span style="color:#C52622; font-weight:bold;">patron</span> peut effectuer cette action.')
+        return
+    end
+    if purchaseOnCooldown(_source) then return end
 
     -- Calcul du total global (prix déjà multiplié par quantité côté JS)
     -- Prix recalculés depuis le catalogue serveur (prix client ignoré)
@@ -2461,10 +2606,12 @@ AddEventHandler('pop_management:d8OpenChest', function(propertyId)
     end
     if isAgent then openIt() return end
     local hasKey = false
-    local inventory = xPlayer.inventory or {}
-    for _, item in ipairs(inventory) do
-        if item.name == 'key_d8' and item.count > 0 then
-            local meta = item.metadata or {}
+    local okCount, keyCount = pcall(function() return exports.pop_inventory:getItemCount(_source, 'key_d8') end)
+    if okCount and (tonumber(keyCount) or 0) > 0 then
+        -- La clé doit correspondre à CETTE propriété (meta.property_id posé par d8GenerateKey)
+        local okItems, keys = pcall(function() return exports.pop_inventory:GetPlayerItems(_source, 'key_d8') end)
+        for _, item in ipairs(okItems and type(keys) == 'table' and keys or {}) do
+            local meta = item.meta or item.metadata or {}
             if tonumber(meta.property_id) == propertyId then hasKey = true break end
         end
     end

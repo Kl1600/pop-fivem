@@ -201,6 +201,16 @@ RegisterKeyMapping('pop_admin_noclip', 'Admin : noclip', 'keyboard', Config.Nocl
 -- =====================================================================
 --  CALLBACKS NUI GÉNÉRAUX
 -- =====================================================================
+-- Sécurité Échap : si la NUI a caché le menu, le Lua arrête de bloquer les touches.
+RegisterNUICallback('menuHidden', function(_, cb)
+    if Admin.open and not Admin.spec.active then
+        Admin.open = false
+        inputFocused = false
+        AdminRefreshFocus()
+    end
+    cb({})
+end)
+
 RegisterNUICallback('close', function(_, cb)
     AdminClose(); cb({})
 end)

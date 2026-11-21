@@ -8,7 +8,7 @@ version '1.0'
 client_scripts {
 	'client/main.lua',
 	'client/classes/TimerBarBase.lua',
-	'example.lua'
+	-- 'example.lua' : exemple d'utilisation, non chargé en production
 }
 
 

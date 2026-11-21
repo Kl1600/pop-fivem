@@ -488,7 +488,7 @@ function back() {
     if (root && root.spec) {
         // Retour au viseur du mode spec
         stack = [];
-        hideMenu();
+        hideMenu(false);
         post('specResume');
         return;
     }
@@ -593,7 +593,8 @@ function showMenu(reset) {
     render();
 }
 
-function hideMenu() {
+function hideMenu(notify) {
+    if (S.open && notify !== false) post('menuHidden');
     S.open = false;
     if (input) { input = null; $('#m-input').classList.add('hidden'); }
     $('#menu').classList.add('hidden');
@@ -621,7 +622,7 @@ window.addEventListener('message', (ev) => {
             $('#sp-hint').innerHTML = `Visez un joueur · <b>[${esc(S.cfg.keys.spec || 'F')}]</b> Options · <b>[${esc(S.cfg.keys.open || 'F6')}]</b> Quitter`;
             break;
         case 'open': showMenu(m.reset === true); break;
-        case 'close': hideMenu(); $('#spec').classList.add('hidden'); break;
+        case 'close': hideMenu(false); $('#spec').classList.add('hidden'); break;
         case 'nav': nav(m.key); break;
         case 'players': S.players = m.list || []; render(); break;
         case 'items': S.items = m.list || []; render(); break;
@@ -636,7 +637,7 @@ window.addEventListener('message', (ev) => {
         case 'selfState': S.self = m; render(); break;
         case 'specMode':
             if (m.active) {
-                hideMenu();
+                hideMenu(false);
                 $('#spec').classList.remove('hidden');
                 $('#sp-target').classList.add('hidden');
             } else {
