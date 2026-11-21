@@ -2,10 +2,10 @@ fx_version 'cerulean'
 
 game 'gta5'
 lua54 'yes'
-name 'Tab Inventory'
-author 'Tabernac Softwares'
+name 'POP Inventory'
+author 'KL'
 
-description 'Advanced Tab Inventory NUI resource'
+description 'Advanced POP Inventory NUI resource'
 
 version '0.2.0'
 

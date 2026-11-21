@@ -1,7 +1,7 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'Antigravity'
+author 'KL'
 description 'Custom Voice Activity UI'
 
 ui_page 'ui/index.html'

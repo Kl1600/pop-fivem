@@ -1,4 +1,5 @@
 fx_version 'cerulean'
+author 'KL'
 game 'gta5'
 
 ui_page 'index.html'

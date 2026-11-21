@@ -4,7 +4,7 @@ fx_version 'cerulean'
 
 game 'gta5'
 
-author 'LielXD + Tab'
+author 'KL'
 description 'TAB Doorlock - doorlock + doorbuilder (clé item) pour ESX'
 version '1.0.0'
 

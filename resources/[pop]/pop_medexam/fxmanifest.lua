@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
-description 'Tabernac Medical Examination - examen des blessures par zone du corps'
+author 'KL'
+description 'POP Medical Examination - examen des blessures par zone du corps'
 version '1.0.0'
 
 dependencies {

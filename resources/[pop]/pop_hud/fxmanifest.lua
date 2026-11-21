@@ -2,7 +2,7 @@ fx_version 'bodacious'
 games { 'gta5' }
 
 description "Vision v1 Map"
-author "DarKy"
+author 'KL'
 version "1.0"
 
 client_script {

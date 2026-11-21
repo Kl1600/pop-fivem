@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Vanguard'
+author 'KL'
 description 'Guerre de territoires : parts de zone par crew + multiplicateurs sur la vente de drogue'
 version '1.0.0'
 

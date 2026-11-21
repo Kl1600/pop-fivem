@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
+author 'KL'
 description 'Suivi et sauvegarde du kilometrage des vehicules'
 version '1.0.0'
 

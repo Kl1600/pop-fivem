@@ -1,8 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
-description 'Vanguard Passport (US / MX)'
-author 'Antigravity'
+description 'POP Passport (US / MX)'
+author 'KL'
 
 ui_page 'html/index.html'
 

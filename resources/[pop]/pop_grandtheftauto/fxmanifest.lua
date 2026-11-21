@@ -15,7 +15,7 @@ dependencies {
 -- kq_lasers : facultatif (lasers de sécurité), la mission marche sans.
 
 name 'Grand Vol de Voitures'
-author 'Tabernac'
+author 'KL'
 description 'Casse de la concession Benefactor, west Vinewood'
 version 'beta'
 

@@ -1,7 +1,7 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'Antigravity'
+author 'KL'
 description 'Bureau de change - Echange Dollars/Pesos via PNJ et UI'
 version '1.0.0'
 lua54 'yes'

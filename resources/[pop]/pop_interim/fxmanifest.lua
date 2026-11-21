@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
+author 'KL'
 description "Agence d'intérim — menu NUI (style pop_emotes) au blip Intérim"
 version '1.0.0'
 

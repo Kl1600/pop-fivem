@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
+author 'KL'
 description 'Garage entreprise (flotte persistante, collabore avec pop_vehiclepersistence)'
 version '1.0.0'
 

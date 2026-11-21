@@ -1,8 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
-description 'Tab Affiche - Posez des affiches avec un lien Discord'
-author 'Vanguard'
+description 'POP Affiche - Posez des affiches avec un lien Discord'
+author 'KL'
 ui_page 'html/nui.html'
 
 shared_script '@ox_lib/init.lua'

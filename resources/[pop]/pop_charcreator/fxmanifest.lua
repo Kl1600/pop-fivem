@@ -7,8 +7,8 @@ exports {
     'FocusOn'
 }
 
-description 'Vanguard Character Creator - Premium & Modern'
-author 'Antigravity'
+description 'POP Character Creator - Premium & Modern'
+author 'KL'
 version '1.0.0'
 
 ui_page 'html/index.html'

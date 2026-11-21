@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Vanguard'
+author 'KL'
 description 'Système de crew minimal (base pour la guerre de territoires)'
 version '1.0.0'
 

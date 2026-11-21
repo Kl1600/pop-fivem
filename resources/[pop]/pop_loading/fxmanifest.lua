@@ -1,4 +1,5 @@
 fx_version "adamant"
+author 'KL'
 
 game "gta5"
 

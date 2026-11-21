@@ -1,7 +1,7 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'TAB'
+author 'KL'
 description 'Chat roleplay - commande /me'
 version '1.0.0'
 

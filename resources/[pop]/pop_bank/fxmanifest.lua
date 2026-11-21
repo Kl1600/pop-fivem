@@ -2,8 +2,8 @@ fx_version 'cerulean'
 
 game 'gta5'
 lua54 'yes'
-name 'Tab Bank'
-author 'Tabernac Softwares'
+name 'POP Bank'
+author 'KL'
 description 'Agences bancaires : consultation de compte et dépôt de chèques'
 version '1.0.0'
 

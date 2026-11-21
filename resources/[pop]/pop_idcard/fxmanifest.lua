@@ -1,8 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
-description 'Vanguard ID Card'
-author 'Antigravity'
+description 'POP ID Card'
+author 'KL'
 
 ui_page 'html/index.html'
 

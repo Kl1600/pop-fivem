@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 use_experimental_fxv2_oal 'yes'
 
-author 'Vanguard'
+author 'KL'
 description 'Drug dealing system (Schedule 1 inspired)'
 version '1.0.0'
 

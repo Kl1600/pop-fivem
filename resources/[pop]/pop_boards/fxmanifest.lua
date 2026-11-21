@@ -1,8 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
-description 'Tab Boards'
-author 'Vanguard'
+description 'POP Boards'
+author 'KL'
 ui_page 'html/nui.html'
 
 shared_script '@ox_lib/init.lua'

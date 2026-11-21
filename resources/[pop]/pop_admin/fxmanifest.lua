@@ -2,7 +2,7 @@ fx_version 'cerulean'
 games { 'gta5' }
 lua54 'yes'
 
-author 'Tabernac'
+author 'KL'
 name 'pop_admin'
 description 'Menu admin liste façon GTA (haut à droite, clavier) : joueurs, items, jobs, véhicules, temps & météo, mode spec.'
 
