@@ -4,7 +4,7 @@ lua54 'yes'
 
 author 'Tabernac'
 name 'pop_admin'
-description 'Menu admin fenêtré (style MapZones) : menu rapide + menu complet, mode spec, gestion joueurs/items/jobs/véhicules persistants/temps & météo.'
+description 'Menu admin liste façon GTA (haut à droite, clavier) : joueurs, items, jobs, véhicules, temps & météo, mode spec.'
 
 ui_page 'html/index.html'
 

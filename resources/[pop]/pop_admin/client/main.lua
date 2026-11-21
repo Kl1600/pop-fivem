@@ -20,42 +20,76 @@ local function send(action, data)
 end
 AdminSend = send
 
-local cursorThreadRunning = false
+local navThreadRunning = false
 local inputFocused = false
+local ignoreNavUntil = 0
 
--- Bloque uniquement la caméra/tir pour libérer la souris (curseur NUI),
--- tout en laissant les déplacements (WASD, course, saut) actifs.
-local DISABLED_WHILE_FOCUSED = {
-    1, 2,            -- regard gauche/droite & haut/bas (souris)
-    24, 25, 257,     -- attaque / visée / attaque 2
-    140, 141, 142, 263, 264, -- mêlée
-    106,             -- override souris véhicule
-    245,             -- chat (T)
-    37,              -- molette d'armes
+-- Touches bloquées tant que le menu est affiché (flèches, entrée, retour, téléphone,
+-- pause, roue d'armes, radio). Les déplacements restent libres.
+local NAV_BLOCK = {
+    172, 173, 174, 175, 176, 177, 191, 194, 201, 202,
+    27, 199, 200,
+    14, 15, 16, 17, 37, 99, 100,
+    81, 82, 83, 84, 85, 241, 242, 261, 262,
 }
+local HOLD_CONTROL = { up = 172, down = 173, left = 174, right = 175 }
+local SOUNDS = { up = 'NAV_UP_DOWN', down = 'NAV_UP_DOWN', left = 'NAV_LEFT_RIGHT', right = 'NAV_LEFT_RIGHT', enter = 'SELECT', back = 'BACK' }
 
+local function readNavKey()
+    if IsDisabledControlJustPressed(0, 172) then return 'up' end
+    if IsDisabledControlJustPressed(0, 173) then return 'down' end
+    if IsDisabledControlJustPressed(0, 174) then return 'left' end
+    if IsDisabledControlJustPressed(0, 175) then return 'right' end
+    if IsDisabledControlJustPressed(0, 191) or IsDisabledControlJustPressed(0, 201) then return 'enter' end
+    if IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 202) then return 'back' end
+    return nil
+end
+
+-- Menu clavier façon GTA : pas de curseur, le joueur peut bouger.
+-- La NUI ne prend le focus clavier que pendant une saisie de texte.
 function AdminRefreshFocus()
-    local focused = Admin.open and not Admin.minimized and not Admin.spec.active
-    SetNuiFocus(focused, focused)
-    if focused and inputFocused then
+    local visible = Admin.open and not Admin.spec.active
+    if visible and inputFocused then
+        SetNuiFocus(true, false)
         SetNuiFocusKeepInput(false)
     else
-        SetNuiFocusKeepInput(focused)  -- garde les contrôles jeu actifs (déplacement) malgré le curseur
+        SetNuiFocus(false, false)
+        SetNuiFocusKeepInput(false)
     end
-    if focused and not cursorThreadRunning then
-        cursorThreadRunning = true
+    if visible and not navThreadRunning then
+        navThreadRunning = true
         CreateThread(function()
-            while Admin.open and not Admin.minimized and not Admin.spec.active do
+            local held, nextRepeat = nil, 0
+            while Admin.open and not Admin.spec.active do
                 if inputFocused then
                     DisableAllControlActions(0)
                 else
-                    for i = 1, #DISABLED_WHILE_FOCUSED do
-                        DisableControlAction(0, DISABLED_WHILE_FOCUSED[i], true)
+                    for i = 1, #NAV_BLOCK do
+                        DisableControlAction(0, NAV_BLOCK[i], true)
+                    end
+                    local now = GetGameTimer()
+                    local key = readNavKey()
+                    if key then
+                        held = HOLD_CONTROL[key] and key or nil
+                        nextRepeat = now + 380
+                    elseif held then
+                        if IsDisabledControlPressed(0, HOLD_CONTROL[held]) then
+                            if now >= nextRepeat then
+                                key = held
+                                nextRepeat = now + 75
+                            end
+                        else
+                            held = nil
+                        end
+                    end
+                    if key and now >= ignoreNavUntil then
+                        send('nav', { key = key })
+                        PlaySoundFrontend(-1, SOUNDS[key], 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
                     end
                 end
                 Wait(0)
             end
-            cursorThreadRunning = false
+            navThreadRunning = false
         end)
     end
 end
@@ -105,7 +139,7 @@ local function openMenu()
     Admin.open = true
     Admin.minimized = false
     send('config', {
-        keys = { open = Config.OpenKey, reveal = Config.RevealKey, spec = Config.SpecKey },
+        keys = { open = Config.OpenKey, spec = Config.SpecKey, noclip = Config.NoclipKey },
         weathers = Config.Weathers,
         pedModels = Config.PedModels,
         quickVehicles = Config.QuickVehicles,
@@ -145,15 +179,6 @@ end
 RegisterCommand('tab_admin_open', toggleMenu, false)
 RegisterKeyMapping('tab_admin_open', 'Admin : ouvrir / fermer le menu', 'keyboard', Config.OpenKey or 'F6')
 
-RegisterCommand('tab_admin_reveal', function()
-    if Admin.open and Admin.minimized then
-        Admin.minimized = false
-        send('restore')
-        AdminRefreshFocus()
-    end
-end, false)
-RegisterKeyMapping('tab_admin_reveal', 'Admin : révéler la fenêtre minimisée', 'keyboard', Config.RevealKey or 'G')
-
 RegisterCommand('tab_admin_noclip', function()
     if not Admin.isAdmin then return end
     AdminToggleNoclip()
@@ -176,17 +201,7 @@ end)
 
 RegisterNUICallback('inputFocus', function(data, cb)
     inputFocused = data.focus == true
-    AdminRefreshFocus()
-    cb({})
-end)
-
-RegisterNUICallback('switchView', function(data, cb)
-    Admin.view = data.view or 'quick'
-    cb({})
-end)
-
-RegisterNUICallback('minimize', function(_, cb)
-    Admin.minimized = true
+    if not inputFocused then ignoreNavUntil = GetGameTimer() + 250 end
     AdminRefreshFocus()
     cb({})
 end)

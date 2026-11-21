@@ -1,19 +1,20 @@
 # pop_admin
 
-Menu admin fenêtré (style MapZones) pour ESX Legacy.
+Menu admin en liste façon GTA pour ESX Legacy : en haut à droite de l'écran, piloté au clavier, sans curseur (on peut continuer à se déplacer).
 
-## Ouverture
-- **F6** : ouvrir / fermer (configurable `Config.OpenKey`)
-- **TAB** : basculer menu rapide ⇄ menu complet
-- **G** : révéler la fenêtre minimisée (`Config.RevealKey`)
-- **F** (en mode spec) : ouvrir les options sur le joueur visé (`Config.SpecKey`)
-- La fenêtre se déplace en glissant la barre de titre ; bouton **—** pour minimiser.
+## Touches
+- **F6** : ouvrir / fermer (`Config.OpenKey`)
+- **↑ ↓** : naviguer (maintenir pour défiler) · **← →** : changer une option
+- **Entrée** : valider · **Retour arrière / Échap** : revenir en arrière
+- Les champs texte (raison, montant, recherche…) s'ouvrent avec **Entrée** et se valident avec **Entrée**.
+- Les actions dangereuses (tuer, kick, ban, suppressions) demandent un second appui sur **Entrée**.
+- **F7** : noclip (`Config.NoclipKey`) · **F** (en mode spec) : options sur le joueur visé (`Config.SpecKey`)
 
-## Menu rapide
+## Personnel
 Noclip, godmode, invisible, soin, réanimation, réparation, TP GPS, nettoyage,
 spawn véhicule et **Mode Spec** (point central ; viser un joueur affiche ses options).
 
-## Menu complet (TAB)
+## Sous-menus
 - **Joueurs** : aller/amener/spectate/geler/soigner/réanimer/tuer/kick/ban, argent, job, groupe, give item.
 - **Zones map** : ouvre l'éditeur **MapZones**.
 - **Items** : catalogue (fourni par `pop_inventory`), give à soi ou à un joueur.

@@ -1,6 +1,7 @@
+/* pop_admin : menu liste façon GTA, piloté au clavier depuis Lua (messages "nav"). */
 const RES = 'pop_admin';
-const $ = (s, r = document) => r.querySelector(s);
-const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const $ = (s) => document.querySelector(s);
+const MAX_ROWS = 10;
 
 function post(name, data = {}) {
     return fetch(`https://${RES}/${name}`, {
@@ -10,734 +11,652 @@ function post(name, data = {}) {
     }).then(r => r.json()).catch(() => ({}));
 }
 
-const state = {
+const S = {
+    open: false,
     cfg: { keys: {}, weathers: [], pedModels: [], quickVehicles: [] },
-    players: [],
-    items: [],
-    jobs: [],
-    vehicles: [],
-    selPlayer: null,
-    selItem: null,
-    selJob: null,
+    players: [], items: [], jobs: [], vehicles: [], chars: [], logs: [],
     tw: { hour: 12, minute: 0, frozen: false, weather: 'EXTRASUNNY', blackout: false },
+    self: {},
 };
 
-const win = $('#window');
-const pill = $('#pill');
-const spec = $('#spec');
+const sel = {};    // index des listes ←→, par clé
+const vals = {};   // valeurs saisies, par clé
+let stack = [];    // pile de menus : { id, args, index }
+let confirmKey = null;
+let input = null;  // saisie en cours
 
-/* ============== AFFICHAGE GÉNÉRAL ============== */
-function showWindow(view) {
-    document.body.classList.remove('hidden');
-    pill.classList.add('hidden');
-    spec.classList.add('hidden');
-    win.classList.remove('hidden');
-    setView(view || (win.classList.contains('full') ? 'full' : 'quick'));
+const pad = (n) => String(n).padStart(2, '0');
+const money = (n) => `${n > 0 ? '+' : ''}${n} $`;
+
+/* ============== PERSONAS (positions sauvegardées, locales) ============== */
+function loadPersonas() { try { return JSON.parse(localStorage.getItem('tab_admin_personas') || '[]'); } catch (e) { return []; } }
+function savePersonas(a) { try { localStorage.setItem('tab_admin_personas', JSON.stringify(a)); } catch (e) {} }
+
+/* ============== HELPERS D'ITEMS ============== */
+const btn = (label, action, o = {}) => Object.assign({ type: 'button', label, action }, o);
+const sub = (label, to, args, o = {}) => Object.assign({ type: 'sub', label, to, args }, o);
+const sep = (label) => ({ type: 'sep', label });
+const toggle = (label, checked, action, o = {}) => Object.assign({ type: 'toggle', label, checked: !!checked, action }, o);
+const list = (label, key, options, o = {}) => Object.assign({ type: 'list', label, key, options }, o);
+const field = (label, key, o = {}) => Object.assign({ type: 'input', label, key }, o);
+
+function listIndex(key, options, def = 0) {
+    if (!options.length) return 0;
+    let i = sel[key];
+    if (i === undefined) i = def;
+    return Math.max(0, Math.min(options.length - 1, i));
+}
+function listValue(key, options, def = 0) {
+    const o = options[listIndex(key, options, def)];
+    return o === undefined ? undefined : (Array.isArray(o) ? o[1] : o);
+}
+const optLabel = (o) => (Array.isArray(o) ? o[0] : String(o));
+
+const QTY = [1, 5, 10, 25, 50, 100];
+const ACCOUNTS = [['Cash', 'money'], ['Banque', 'bank'], ['Argent sale', 'black_money']];
+const GROUPS = ['user', 'mod', 'admin', 'superadmin'];
+const DURATIONS = [['Permanent', 0], ['1 heure', 60], ['1 jour', 1440], ['1 semaine', 10080], ['1 mois', 43200]];
+
+const findPlayer = (id) => S.players.find(p => p.id === id);
+const findJob = (name) => S.jobs.find(j => j.name === name);
+
+/* ============== DÉFINITION DES MENUS ============== */
+const MENUS = {
+    root: () => ({
+        title: 'Administration', sub: 'Menu principal',
+        items: [
+            sub('Personnel', 'self', null, { desc: 'Noclip, godmode, soins, téléportation.' }),
+            sub('Joueurs', 'players', null, { right: String(S.players.length), desc: 'Joueurs connectés et actions.', onEnter: () => post('requestPlayers') }),
+            sub('Véhicules', 'vehicles', null, { desc: 'Apparition, réparation, véhicules persistants.' }),
+            sub('Items', 'items', null, { desc: 'Donner un item à soi ou à un joueur.', onEnter: () => post('requestItems') }),
+            sub('Jobs', 'jobs', null, { desc: 'Jobs, grades et argent des sociétés.', onEnter: () => post('requestJobs') }),
+            sub('Monde', 'world', null, { desc: 'Heure, météo et blackout.' }),
+            sub('Personnages', 'chars', null, { desc: 'Apparences staff, positions et modèles.', onEnter: () => post('charRequest') }),
+            sub('Outils', 'tools', null, { desc: 'Éditeurs et logs de déconnexion.' }),
+        ],
+    }),
+
+    self: () => {
+        const q = (id) => () => post('quickAction', { id });
+        return {
+            title: 'Personnel', sub: 'Actions sur soi',
+            items: [
+                toggle('Noclip', S.self.noclip, q('noclip'), { desc: `Raccourci : [${S.cfg.keys.noclip || 'F7'}]. Shift rapide, Alt lent.` }),
+                toggle('Godmode', S.self.godmode, q('godmode')),
+                toggle('Invisible', S.self.invisible, q('invisible')),
+                toggle('Afficher les noms', S.self.shownames, q('shownames')),
+                btn('Mode spec', q('spec'), { desc: `Visez un joueur puis [${S.cfg.keys.spec || 'F'}] pour ses options.` }),
+                sep('Soins'),
+                btn('Se soigner', q('heal')),
+                btn('Se réanimer', q('revive')),
+                sep('Déplacement'),
+                btn('Téléport au point GPS', q('tpm')),
+                btn('Copier mes coordonnées', q('copycoords'), { desc: 'Copie un vector4 dans le presse-papiers.' }),
+                btn('Nettoyer la zone (50 m)', q('cleararea')),
+            ],
+        };
+    },
+
+    players: () => {
+        const items = [btn('Actualiser la liste', () => post('requestPlayers'))];
+        const sorted = [...S.players].sort((a, b) => a.id - b.id);
+        if (!sorted.length) items.push({ type: 'button', label: 'Aucun joueur', disabled: true });
+        sorted.forEach(p => items.push(sub(`[${p.id}] ${p.name}`, 'player', { id: p.id, name: p.name }, {
+            right: p.jobLabel || p.job || '',
+            desc: `${p.jobLabel || p.job || ''} ${p.grade ? '· ' + p.grade : ''} · groupe ${p.group || 'user'}`,
+        })));
+        return { title: 'Joueurs', sub: `${S.players.length} connecté(s)`, items };
+    },
+
+    player: (a) => {
+        const p = findPlayer(a.id) || { id: a.id, name: a.name || `Joueur ${a.id}` };
+        const act = (action, extra = {}) => () => post('playerAction', Object.assign({ action, target: p.id }, extra));
+        return {
+            title: p.name, sub: `ID ${p.id}${p.jobLabel ? ' · ' + p.jobLabel : ''}`,
+            items: [
+                btn('Aller à', act('goto')),
+                btn('Amener', act('bring')),
+                btn('Spectate', act('spectate'), { desc: 'Suivre le joueur. [RETOUR] pour quitter.' }),
+                btn('Geler', act('freeze')),
+                btn('Dégeler', act('unfreeze')),
+                btn('Soigner', act('heal')),
+                btn('Réanimer', act('revive')),
+                btn('Tuer', act('kill'), { confirm: true, danger: true }),
+                btn('Expulser', act('kick', { reason: 'Expulsé par un admin' }), { confirm: true, danger: true }),
+                sub('Bannir', 'ban', { id: p.id, name: p.name }, { danger: true }),
+                sep('Gestion'),
+                sub('Argent', 'money', { id: p.id, name: p.name }),
+                sub('Job', 'pjob', { id: p.id, name: p.name }, { right: p.jobLabel || '' }),
+                list('Groupe', `grp_${p.id}`, GROUPS, {
+                    def: Math.max(0, GROUPS.indexOf(p.group || 'user')),
+                    desc: '←→ pour choisir, [ENTRÉE] pour appliquer.',
+                    action: () => post('playerAction', { action: 'setgroup', target: p.id, group: listValue(`grp_${p.id}`, GROUPS, Math.max(0, GROUPS.indexOf(p.group || 'user'))) }),
+                }),
+                sub('Donner un item', 'items', { target: p.id, name: p.name }, { onEnter: () => post('requestItems') }),
+            ],
+        };
+    },
+
+    ban: (a) => ({
+        title: 'Bannir', sub: a.name,
+        items: [
+            field('Raison', 'ban_reason', { placeholder: 'Banni' }),
+            list('Durée', 'ban_dur', DURATIONS),
+            btn('Confirmer le bannissement', () => post('playerAction', {
+                action: 'ban', target: a.id,
+                reason: vals.ban_reason || 'Banni', minutes: listValue('ban_dur', DURATIONS),
+            }), { confirm: true, danger: true }),
+        ],
+    }),
+
+    money: (a) => ({
+        title: 'Argent', sub: a.name,
+        items: [
+            list('Compte', 'mn_acc', ACCOUNTS),
+            field('Montant', 'mn_amount', { numeric: true, desc: 'Négatif pour retirer.' }),
+            btn('Valider', () => {
+                const amount = parseInt(vals.mn_amount, 10) || 0;
+                if (!amount) return;
+                post('playerAction', { action: 'money', target: a.id, account: listValue('mn_acc', ACCOUNTS), amount });
+            }, { right: vals.mn_amount ? money(parseInt(vals.mn_amount, 10) || 0) : '' }),
+        ],
+    }),
+
+    pjob: (a) => {
+        const jobs = S.jobs.map(j => [j.label, j.name]);
+        const jobName = listValue(`pj_job`, jobs);
+        const grades = ((findJob(jobName) || {}).grades || []).map(g => [`${g.grade} · ${g.label}`, g.grade]);
+        return {
+            title: 'Job', sub: a.name,
+            items: [
+                list('Job', 'pj_job', jobs, { onChange: () => { sel.pj_grade = 0; } }),
+                list('Grade', 'pj_grade', grades.length ? grades : [['0', 0]]),
+                btn('Définir', () => post('playerAction', {
+                    action: 'setjob', target: a.id, job: jobName, grade: listValue('pj_grade', grades.length ? grades : [['0', 0]]),
+                })),
+            ],
+        };
+    },
+
+    items: (a) => {
+        a = a || {};
+        const q = (vals.it_q || '').toLowerCase();
+        const targets = [['Moi', null], ...S.players.map(p => [`[${p.id}] ${p.name}`, p.id])];
+        const items = [field('Rechercher', 'it_q', { live: true })];
+        items.push(list('Quantité', 'it_qty', QTY));
+        if (!a.target) items.push(list('Cible', 'it_target', targets));
+        items.push(sep(`Items${q ? ' · « ' + vals.it_q + ' »' : ''}`));
+        const filtered = S.items.filter(it => !q || (it.label || '').toLowerCase().includes(q) || (it.id || '').toLowerCase().includes(q));
+        if (!S.items.length) items.push({ type: 'button', label: 'Chargement / pop_inventory absent', disabled: true });
+        filtered.forEach(it => items.push(btn(it.label || it.id, () => post('giveItem', {
+            item: it.id, qty: listValue('it_qty', QTY),
+            target: a.target || listValue('it_target', targets),
+        }), { right: it.id })));
+        return { title: 'Items', sub: a.target ? `Pour ${a.name}` : `${filtered.length} item(s)`, items };
+    },
+
+    vehicles: () => ({
+        title: 'Véhicules', sub: 'Gestion',
+        items: [
+            field('Modèle', 'veh_model', { placeholder: 'adder' }),
+            btn('Faire apparaître', () => post('quickAction', { id: 'spawnveh', model: (vals.veh_model || '').trim() || 'adder' })),
+            btn('Réparer mon véhicule', () => post('quickAction', { id: 'fix' })),
+            btn('Supprimer mon véhicule', () => post('quickAction', { id: 'dv' })),
+            sub('Véhicules persistants', 'persist', null, { onEnter: () => post('requestVehicles') }),
+            sep('Apparition rapide'),
+            ...S.cfg.quickVehicles.map(m => btn(m, () => post('quickAction', { id: 'spawnveh', model: m }))),
+        ],
+    }),
+
+    persist: () => {
+        const items = [btn('Actualiser', () => post('requestVehicles'))];
+        if (!S.vehicles.length) items.push({ type: 'button', label: 'Aucun véhicule persistant', disabled: true });
+        S.vehicles.forEach(v => items.push(sub(v.plate, 'persistveh', { plate: v.plate }, { right: v.model || '', desc: v.owner ? `Propriétaire : ${v.owner}` : '' })));
+        return { title: 'Persistants', sub: `${S.vehicles.length} véhicule(s)`, items };
+    },
+
+    persistveh: (a) => {
+        const v = S.vehicles.find(x => x.plate === a.plate) || { plate: a.plate };
+        return {
+            title: v.plate, sub: v.model || 'Véhicule',
+            items: [
+                btn('Aller au véhicule', () => post('vehicleAction', { do_: 'goto', plate: v.plate, x: v.x, y: v.y, z: v.z })),
+                btn('Supprimer', () => { post('vehicleAction', { do_: 'delete', plate: v.plate }); back(); }, { confirm: true, danger: true }),
+            ],
+        };
+    },
+
+    jobs: () => {
+        const items = [sub('Créer un job', 'jobcreate')];
+        items.push(sep(`${S.jobs.length} job(s)`));
+        S.jobs.forEach(j => items.push(sub(j.label, 'job', { name: j.name }, { right: j.name })));
+        return { title: 'Jobs', sub: 'Gestion des jobs', items };
+    },
+
+    jobcreate: () => ({
+        title: 'Créer un job', sub: 'Nouveau job',
+        items: [
+            field('Nom technique', 'jc_name', { placeholder: 'mecano' }),
+            field('Libellé', 'jc_label', { placeholder: 'Mécano' }),
+            btn('Créer', () => {
+                if (!vals.jc_name) return;
+                post('jobAction', { do_: 'create', name: vals.jc_name.trim(), label: (vals.jc_label || vals.jc_name).trim() });
+            }),
+        ],
+    }),
+
+    job: (a) => {
+        const j = findJob(a.name) || { name: a.name, label: a.name, grades: [] };
+        const grades = (j.grades || []).map(g => [`${g.grade} · ${g.label}`, g.grade]);
+        const gopts = grades.length ? grades : [['0', 0]];
+        return {
+            title: j.label, sub: j.name,
+            items: [
+                list('Grade', `jg_${j.name}`, gopts),
+                btn('Me mettre ce job', () => post('jobAction', { do_: 'setself', job: j.name, grade: listValue(`jg_${j.name}`, gopts) })),
+                sub('Ajouter un grade', 'jobgrade', { name: j.name, label: j.label }),
+                field('Argent société', 'js_amount', { numeric: true, desc: 'Montant à ajouter (négatif pour retirer).' }),
+                btn('Appliquer à la société', () => {
+                    const amount = parseInt(vals.js_amount, 10) || 0;
+                    if (amount) post('jobAction', { do_: 'society', job: j.name, amount });
+                }),
+                btn('Supprimer le job', () => { post('jobAction', { do_: 'delete', job: j.name }); back(); }, { confirm: true, danger: true }),
+            ],
+        };
+    },
+
+    jobgrade: (a) => ({
+        title: 'Nouveau grade', sub: a.label,
+        items: [
+            field('Niveau', 'jg_level', { numeric: true, placeholder: '0' }),
+            field('Nom technique', 'jg_name', { placeholder: 'recrue' }),
+            field('Libellé', 'jg_label', { placeholder: 'Recrue' }),
+            field('Salaire', 'jg_salary', { numeric: true, placeholder: '0' }),
+            btn('Ajouter', () => {
+                if (!vals.jg_name) return;
+                post('jobAction', {
+                    do_: 'addgrade', job: a.name, level: parseInt(vals.jg_level, 10) || 0,
+                    gname: vals.jg_name.trim(), glabel: (vals.jg_label || vals.jg_name).trim(),
+                    salary: parseInt(vals.jg_salary, 10) || 0,
+                });
+            }),
+        ],
+    }),
+
+    world: () => {
+        const hours = Array.from({ length: 24 }, (_, h) => [`${pad(h)} h`, h]);
+        const minutes = [0, 15, 30, 45].map(m => [pad(m), m]);
+        const weathers = S.cfg.weathers.length ? S.cfg.weathers : ['EXTRASUNNY'];
+        return {
+            title: 'Monde', sub: `${pad(S.tw.hour)}:${pad(S.tw.minute)} · ${S.tw.weather}`,
+            items: [
+                list('Heure', 'tw_h', hours, { def: S.tw.hour }),
+                list('Minutes', 'tw_m', minutes, { def: Math.floor(S.tw.minute / 15) }),
+                btn("Appliquer l'heure", () => post('setTime', {
+                    hour: listValue('tw_h', hours, S.tw.hour), minute: listValue('tw_m', minutes, Math.floor(S.tw.minute / 15)), frozen: S.tw.frozen,
+                })),
+                toggle("Geler l'heure", S.tw.frozen, () => post('freezeTime', { frozen: !S.tw.frozen })),
+                list('Météo', 'tw_w', weathers, {
+                    def: Math.max(0, weathers.indexOf(S.tw.weather)),
+                    desc: '←→ pour choisir, [ENTRÉE] pour appliquer.',
+                    action: () => post('setWeather', { weather: listValue('tw_w', weathers, Math.max(0, weathers.indexOf(S.tw.weather))) }),
+                }),
+                toggle('Blackout', S.tw.blackout, () => post('setBlackout', { state: !S.tw.blackout })),
+            ],
+        };
+    },
+
+    chars: () => {
+        const items = [
+            field('Sauvegarder mon apparence', 'ch_label', {
+                placeholder: 'Nom du personnage',
+                desc: 'Saisissez un nom pour enregistrer votre apparence actuelle.',
+                onSubmit: (v) => { if (v) { post('charSave', { label: v }); setTimeout(() => post('charRequest'), 600); } vals.ch_label = ''; },
+            }),
+            sub('Positions sauvegardées', 'positions'),
+            sub('Modèles de ped', 'peds'),
+            sep(`Apparences staff (${S.chars.length})`),
+        ];
+        S.chars.forEach(c => items.push(sub(c.label || c.name || `#${c.id}`, 'char', { id: c.id, label: c.label || c.name })));
+        return { title: 'Personnages', sub: 'Staff', items };
+    },
+
+    char: (a) => ({
+        title: a.label || 'Personnage', sub: 'Apparence staff',
+        items: [
+            btn('Incarner', () => post('charLoad', { id: a.id })),
+            btn('Supprimer', () => { post('charDelete', { id: a.id }); back(); }, { confirm: true, danger: true }),
+        ],
+    }),
+
+    positions: () => {
+        const ps = loadPersonas();
+        const items = [field('Sauvegarder ma position', 'pos_label', {
+            placeholder: 'Nom de la position',
+            onSubmit: (v) => {
+                if (!v) return;
+                post('persona', { do_: 'save' }).then(c => {
+                    if (c && c.x !== undefined) {
+                        const arr = loadPersonas();
+                        arr.push({ label: v, x: c.x, y: c.y, z: c.z, h: c.h });
+                        savePersonas(arr);
+                        render();
+                    }
+                });
+                vals.pos_label = '';
+            },
+        })];
+        items.push(sep(`${ps.length} position(s)`));
+        ps.forEach((p, i) => items.push(sub(p.label, 'position', { i })));
+        return { title: 'Positions', sub: 'Téléportation rapide', items };
+    },
+
+    position: (a) => {
+        const p = loadPersonas()[a.i] || {};
+        return {
+            title: p.label || 'Position', sub: p.x !== undefined ? `${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}` : '',
+            items: [
+                btn('Aller', () => post('persona', { do_: 'goto', x: p.x, y: p.y, z: p.z, h: p.h, label: p.label })),
+                btn('Supprimer', () => { const arr = loadPersonas(); arr.splice(a.i, 1); savePersonas(arr); back(); }, { confirm: true, danger: true }),
+            ],
+        };
+    },
+
+    peds: () => ({
+        title: 'Modèles', sub: 'Incarner un ped',
+        items: S.cfg.pedModels.map(p => btn(p.label, () => post('persona', { do_: 'model', model: p.model, label: p.label }), { right: p.model })),
+    }),
+
+    tools: () => ({
+        title: 'Outils', sub: 'Éditeurs',
+        items: [
+            btn('Éditeur de zones (MapZones)', () => post('openMapZones')),
+            btn('Éditeur de portes', () => post('openDoorbuilder')),
+            sub('Logs de déconnexion', 'logs', null, { onEnter: () => post('requestLogs') }),
+        ],
+    }),
+
+    logs: () => {
+        const items = [
+            btn('Actualiser', () => post('requestLogs')),
+            btn('Vider les logs', () => post('clearLogs'), { confirm: true, danger: true }),
+            sep(`${S.logs.length} entrée(s)`),
+        ];
+        S.logs.forEach(l => items.push(btn(l.name || l.ident || '?', () => {
+            if (l.x !== undefined) post('logGoto', { x: l.x, y: l.y, z: l.z });
+        }, { right: l.category || '', desc: `${l.reason || ''}${l.x !== undefined ? ' · [ENTRÉE] pour aller au point' : ''}` })));
+        return { title: 'Logs', sub: 'Déconnexions', items };
+    },
+};
+
+/* ============== MOTEUR DU MENU ============== */
+function current() { return stack[stack.length - 1]; }
+
+function build() {
+    const c = current();
+    if (!c) return null;
+    const fn = MENUS[c.id];
+    const m = fn ? fn(c.args) : { title: '?', sub: '', items: [] };
+    m.items = m.items || [];
+    return m;
 }
 
-function setView(view) {
-    if (view === 'full') {
-        win.classList.add('full');
-        $('#quick-view').classList.add('hidden');
-        $('#full-view').classList.remove('hidden');
-        $('#mode-badge').textContent = 'COMPLET';
-    } else {
-        win.classList.remove('full');
-        $('#full-view').classList.add('hidden');
-        $('#quick-view').classList.remove('hidden');
-        $('#mode-badge').textContent = 'RAPIDE';
+const selectable = (it) => it && it.type !== 'sep' && !it.disabled;
+
+function fixIndex(m, c, dir = 1) {
+    const n = m.items.length;
+    if (!n) { c.index = 0; return; }
+    if (c.index >= n) c.index = n - 1;
+    if (c.index < 0) c.index = 0;
+    for (let k = 0; k < n && !selectable(m.items[c.index]); k++) {
+        c.index = (c.index + dir + n) % n;
     }
-    post('switchView', { view });
 }
 
-function toggleView() {
-    setView(win.classList.contains('full') ? 'quick' : 'full');
+function rightHtml(it, isSel) {
+    switch (it.type) {
+        case 'sub': return `${it.right ? `<span>${esc(it.right)}</span>` : ''}<span class="m-arrow">›</span>`;
+        case 'toggle': return `<span class="m-check ${it.checked ? 'on' : ''}"></span>`;
+        case 'list': {
+            const opts = it.options || [];
+            const label = opts.length ? optLabel(opts[listIndex(it.key, opts, it.def || 0)]) : '—';
+            return `<span class="m-arrow lr">‹</span><span>${esc(label)}</span><span class="m-arrow lr">›</span>`;
+        }
+        case 'input': {
+            const v = vals[it.key];
+            return `<span>${v ? esc(v) : (isSel ? 'Saisir…' : '—')}</span>`;
+        }
+        default:
+            if (confirmKey && isSel && it.confirm) return `<span style="color:var(--accent)">Confirmer ?</span>`;
+            return it.right ? `<span>${esc(it.right)}</span>` : '';
+    }
 }
 
-function closeAll() {
-    document.body.classList.add('hidden');
-    win.classList.add('hidden');
-    pill.classList.add('hidden');
-    spec.classList.add('hidden');
-    $('#spec-panel').classList.add('hidden');
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-function minimize() {
-    win.classList.add('hidden');
-    pill.classList.remove('hidden');
-    document.body.classList.remove('hidden');
-    post('minimize');
+function render() {
+    if (!S.open) return;
+    const c = current();
+    const m = build();
+    if (!m) return;
+    fixIndex(m, c);
+    $('#m-title').textContent = m.title;
+    $('#m-sub').textContent = m.sub || '';
+
+    const n = m.items.length;
+    const selCount = m.items.filter(selectable).length;
+    const pos = m.items.slice(0, c.index + 1).filter(selectable).length;
+    $('#m-count').textContent = selCount ? `${pos}/${selCount}` : '0/0';
+
+    let start = 0;
+    if (n > MAX_ROWS) start = Math.min(Math.max(0, c.index - Math.floor(MAX_ROWS / 2)), n - MAX_ROWS);
+    const rows = [];
+    for (let i = start; i < Math.min(n, start + MAX_ROWS); i++) {
+        const it = m.items[i];
+        const isSel = i === c.index;
+        const cls = ['m-row'];
+        if (it.type === 'sep') cls.push('sep');
+        if (isSel) cls.push('sel');
+        if (it.disabled) cls.push('disabled');
+        if (it.danger) cls.push('danger');
+        rows.push(`<div class="${cls.join(' ')}"><span class="m-label">${esc(it.label)}</span><span class="m-right">${it.type === 'sep' ? '' : rightHtml(it, isSel)}</span></div>`);
+    }
+    $('#m-list').innerHTML = rows.join('');
+    $('#m-more').classList.toggle('hidden', n <= MAX_ROWS);
+
+    const it = m.items[c.index];
+    let desc = (it && it.desc) || '';
+    if (it && it.confirm && confirmKey) desc = 'Appuyez encore sur [ENTRÉE] pour confirmer.';
+    $('#m-desc').textContent = desc;
+}
+
+function push(id, args) {
+    stack.push({ id, args, index: 0 });
+    confirmKey = null;
+    render();
+}
+
+function back() {
+    confirmKey = null;
+    if (stack.length > 1) {
+        stack.pop();
+        render();
+        return;
+    }
+    const root = stack[0];
+    if (root && root.spec) {
+        // Retour au viseur du mode spec
+        stack = [];
+        hideMenu();
+        post('specResume');
+        return;
+    }
+    post('close');
+}
+
+function nav(key) {
+    if (!S.open || input) return;
+    const c = current();
+    const m = build();
+    if (!c || !m) return;
+    fixIndex(m, c);
+    const it = m.items[c.index];
+    const n = m.items.length;
+
+    if (key === 'up' || key === 'down') {
+        const dir = key === 'up' ? -1 : 1;
+        if (n) {
+            c.index = (c.index + dir + n) % n;
+            fixIndex(m, c, dir);
+        }
+        confirmKey = null;
+        render();
+    } else if ((key === 'left' || key === 'right') && it && it.type === 'list') {
+        const opts = it.options || [];
+        if (opts.length) {
+            const i = listIndex(it.key, opts, it.def || 0);
+            sel[it.key] = (i + (key === 'left' ? -1 : 1) + opts.length) % opts.length;
+            if (it.onChange) it.onChange(sel[it.key]);
+        }
+        render();
+    } else if (key === 'enter' && selectable(it)) {
+        activate(it, c);
+    } else if (key === 'back') {
+        back();
+    }
+}
+
+function activate(it, c) {
+    if (it.confirm) {
+        const k = `${c.id}:${c.index}`;
+        if (confirmKey !== k) { confirmKey = k; render(); return; }
+        confirmKey = null;
+    }
+    switch (it.type) {
+        case 'sub':
+            if (it.onEnter) it.onEnter();
+            push(it.to, it.args);
+            break;
+        case 'input':
+            openInput(it);
+            break;
+        default:
+            if (it.action) it.action();
+            render();
+    }
+}
+
+/* ============== SAISIE TEXTE ============== */
+function openInput(it) {
+    input = it;
+    const box = $('#m-input');
+    const f = $('#m-input-field');
+    $('#m-input-label').textContent = it.label;
+    f.type = 'text';
+    f.inputMode = it.numeric ? 'numeric' : 'text';
+    f.placeholder = it.placeholder || '';
+    f.value = vals[it.key] || '';
+    box.classList.remove('hidden');
+    post('inputFocus', { focus: true });
+    setTimeout(() => { f.focus(); f.select(); }, 30);
+}
+
+function closeInput(submit) {
+    if (!input) return;
+    const it = input;
+    const f = $('#m-input-field');
+    let v = f.value.trim();
+    if (submit) {
+        if (it.numeric && v !== '' && isNaN(parseInt(v, 10))) v = '';
+        vals[it.key] = v;
+        if (it.onSubmit) it.onSubmit(v);
+    }
+    input = null;
+    f.blur();
+    $('#m-input').classList.add('hidden');
+    post('inputFocus', { focus: false });
+    render();
+}
+
+$('#m-input-field').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); closeInput(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeInput(false); }
+});
+
+/* ============== AFFICHAGE ============== */
+function showMenu(reset) {
+    S.open = true;
+    if (reset || !stack.length || (stack[0] && stack[0].spec)) stack = [{ id: 'root', index: 0 }];
+    $('#spec').classList.add('hidden');
+    $('#menu').classList.remove('hidden');
+    render();
+}
+
+function hideMenu() {
+    S.open = false;
+    if (input) { input = null; $('#m-input').classList.add('hidden'); }
+    $('#menu').classList.add('hidden');
+}
+
+function copyText(text) {
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    } catch (e) {}
 }
 
 /* ============== MESSAGES DEPUIS LUA ============== */
 window.addEventListener('message', (ev) => {
     const m = ev.data || {};
     switch (m.action) {
-        case 'config': applyConfig(m); break;
-        case 'open': showWindow(m.view); break;
-        case 'close': closeAll(); break;
-        case 'restore': showWindow(); break;
-        case 'players': renderPlayers(m.list || []); break;
-        case 'items': renderItems(m.list || []); break;
-        case 'jobs': renderJobs(m.list || []); break;
-        case 'vehicles': renderVehicles(m.list || []); break;
-        case 'staffChars': renderStaffChars(m.list || []); break;
-        case 'logs': renderLogs(m.list || []); break;
-        case 'timeWeather': applyTimeWeather(m); break;
-        case 'selfState': applySelfState(m); break;
-        case 'specMode': specMode(m.active); break;
-        case 'specTarget': specTarget(m); break;
-        case 'specOpen': specOpen(m); break;
-        case 'copyText': copyText(m.text, m.label); break;
-    }
-});
-
-let toastTimer = null;
-function toast(title, sub) {
-    let t = $('#toast');
-    if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
-    t.innerHTML = `<b>${esc(title)}</b>${sub ? `<div class="muted small">${esc(sub)}</div>` : ''}`;
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { if (t) t.remove(); }, 2600);
-}
-
-function copyText(text, label) {
-    const fallback = () => {
-        try {
-            const ta = document.createElement('textarea');
-            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-            document.body.appendChild(ta); ta.focus(); ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-        } catch (e) {}
-    };
-    try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).catch(fallback);
-        } else { fallback(); }
-    } catch (e) { fallback(); }
-    toast(label || 'Copié', text);
-}
-
-function applyConfig(c) {
-    state.cfg = {
-        keys: c.keys || {},
-        weathers: c.weathers || [],
-        pedModels: c.pedModels || [],
-        quickVehicles: c.quickVehicles || [],
-    };
-    $('#pill-key').textContent = state.cfg.keys.reveal || 'G';
-    $('#spec-key-hint').textContent = state.cfg.keys.spec || 'F';
-    // chips véhicules rapides
-    const chips = $('#q-veh-chips');
-    chips.innerHTML = '';
-    (state.cfg.quickVehicles || []).forEach(v => {
-        const c2 = document.createElement('div');
-        c2.className = 'chip';
-        c2.textContent = v;
-        c2.onclick = () => { $('#q-veh').value = v; post('quickAction', { id: 'spawnveh', model: v }); };
-        chips.appendChild(c2);
-    });
-    // modèles persona
-    const sel = $('#pe-model');
-    sel.innerHTML = '<option value="">— aucun —</option>';
-    (state.cfg.pedModels || []).forEach(p => {
-        const o = document.createElement('option');
-        o.value = p.model; o.textContent = p.label;
-        sel.appendChild(o);
-    });
-    // météos
-    const wc = $('#tw-weathers');
-    wc.innerHTML = '';
-    (state.cfg.weathers || []).forEach(w => {
-        const c3 = document.createElement('div');
-        c3.className = 'chip';
-        c3.dataset.w = w;
-        c3.textContent = w;
-        c3.onclick = () => post('setWeather', { weather: w });
-        wc.appendChild(c3);
-    });
-    highlightWeather();
-    renderPersonas();
-}
-
-/* ============== VUE RAPIDE ============== */
-$$('.q-btn').forEach(b => {
-    b.onclick = () => {
-        post('quickAction', { id: b.dataset.q }).then(r => {
-            if (r) applySelfState({ noclip: r.noclip, godmode: r.godmode, invisible: r.invisible }, true);
-        });
-    };
-});
-$('#q-veh-go').onclick = () => {
-    const m = $('#q-veh').value.trim() || 'adder';
-    post('quickAction', { id: 'spawnveh', model: m });
-};
-$('#q-veh').addEventListener('keydown', e => { if (e.key === 'Enter') $('#q-veh-go').click(); });
-
-function applySelfState(s, partial) {
-    const map = { noclip: 'noclip', godmode: 'godmode', invisible: 'invisible', spec: 'spec', shownames: 'shownames' };
-    Object.keys(map).forEach(k => {
-        if (s[k] === undefined) return;
-        const btn = $(`.q-btn[data-q="${k}"]`);
-        if (btn) btn.classList.toggle('active', !!s[k]);
-    });
-}
-
-/* ============== TITLEBAR ============== */
-$('#btn-close').onclick = () => { closeAll(); post('close'); };
-$('#btn-min').onclick = minimize;
-$('#btn-tab').onclick = toggleView;
-
-/* drag */
-(function dragWindow() {
-    const bar = $('#titlebar');
-    let dragging = false, ox = 0, oy = 0;
-    bar.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button')) return;
-        dragging = true;
-        const r = win.getBoundingClientRect();
-        ox = e.clientX - r.left; oy = e.clientY - r.top;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        let x = e.clientX - ox, y = e.clientY - oy;
-        x = Math.max(0, Math.min(window.innerWidth - 80, x));
-        y = Math.max(0, Math.min(window.innerHeight - 40, y));
-        win.style.left = x + 'px'; win.style.top = y + 'px';
-        pill.style.left = x + 'px'; pill.style.top = y + 'px';
-    });
-    window.addEventListener('mouseup', () => {
-        if (!dragging) return;
-        dragging = false;
-        try { localStorage.setItem('tab_admin_pos', JSON.stringify({ x: win.style.left, y: win.style.top })); } catch (e) {}
-    });
-    try {
-        const p = JSON.parse(localStorage.getItem('tab_admin_pos') || 'null');
-        if (p && p.x) { win.style.left = p.x; win.style.top = p.y; pill.style.left = p.x; pill.style.top = p.y; }
-    } catch (e) {}
-})();
-
-/* ============== NAVIGATION ONGLETS ============== */
-$$('.nav-item').forEach(n => {
-    n.onclick = () => {
-        $$('.nav-item').forEach(x => x.classList.remove('active'));
-        n.classList.add('active');
-        const tab = n.dataset.tab;
-        $$('.panel').forEach(p => p.classList.toggle('hidden', p.dataset.panel !== tab));
-        if (tab === 'players') post('requestPlayers');
-        else if (tab === 'items') post('requestItems');
-        else if (tab === 'jobs') post('requestJobs');
-        else if (tab === 'vehicles') post('requestVehicles');
-        else if (tab === 'personas') post('charRequest');
-        else if (tab === 'logs') post('requestLogs');
-    };
-});
-
-/* ============== CLAVIER ============== */
-document.addEventListener('keydown', (e) => {
-    const tag = (document.activeElement && document.activeElement.tagName) || '';
-    const inField = tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
-    const revealKey = (state.cfg.keys.reveal || 'G').toLowerCase();
-
-    if (e.key === 'Escape') {
-        if (!$('#spec-panel').classList.contains('hidden')) { specBack(); return; }
-        closeAll(); post('close');
-    } else if (e.key === 'Tab') {
-        if (inField) return;
-        e.preventDefault();
-        if (!win.classList.contains('hidden')) toggleView();
-    } else if (e.key.toLowerCase() === revealKey) {
-        // Même touche que le "—" : réduit la fenêtre quand elle est visible.
-        if (inField) return;
-        if (!win.classList.contains('hidden') && spec.classList.contains('hidden')) {
-            e.preventDefault();
-            minimize();
-        }
-    }
-});
-
-/* ============== JOUEURS ============== */
-$('#pl-refresh').onclick = () => post('requestPlayers');
-$('#pl-search').addEventListener('input', () => renderPlayers(state.players));
-
-function renderPlayers(list) {
-    state.players = list;
-    $('#pl-count').textContent = `(${list.length})`;
-    const q = $('#pl-search').value.toLowerCase();
-    const ul = $('#pl-list');
-    ul.innerHTML = '';
-    list.filter(p => !q || p.name.toLowerCase().includes(q) || String(p.id).includes(q))
-        .forEach(p => {
-            const li = document.createElement('li');
-            li.dataset.id = p.id;
-            if (state.selPlayer === p.id) li.classList.add('active');
-            const adm = ['owner', 'superadmin', 'admin', 'mod'].includes(p.group);
-            li.innerHTML = `
-                <span class="li-id">${p.id}</span>
-                <div class="li-meta">
-                    <div class="li-name">${esc(p.name)}</div>
-                    <div class="li-sub">${esc(p.jobLabel || p.job || '')} · ${p.ping}ms</div>
-                </div>
-                <span class="li-tag ${adm ? 'adm' : ''}">${esc(p.group)}</span>`;
-            li.onclick = () => { state.selPlayer = p.id; renderPlayers(state.players); renderPlayerDetail(p); };
-            ul.appendChild(li);
-        });
-    // remplit aussi le select destinataire items
-    const tg = $('#it-target');
-    const cur = tg.value;
-    tg.innerHTML = '<option value="">Moi-même</option>';
-    list.forEach(p => {
-        const o = document.createElement('option');
-        o.value = p.id; o.textContent = `[${p.id}] ${p.name}`;
-        tg.appendChild(o);
-    });
-    tg.value = cur;
-    const sel = state.players.find(p => p.id === state.selPlayer);
-    if (sel) renderPlayerDetail(sel);
-}
-
-function renderPlayerDetail(p) {
-    const acts = [
-        ['goto', 'Aller à'], ['bring', 'Amener'], ['spectate', 'Spectate'],
-        ['freeze', 'Geler'], ['unfreeze', 'Dégeler'], ['heal', 'Soigner'],
-        ['revive', 'Réanimer'], ['kill', 'Tuer'], ['kick', 'Kick'],
-    ];
-    const groups = ['user', 'mod', 'admin', 'superadmin'];
-    const accounts = [['money', 'Cash'], ['bank', 'Banque'], ['black_money', 'Sale']];
-    const jobOpts = state.jobs.map(j => `<option value="${esc(j.name)}">${esc(j.label)}</option>`).join('');
-    const d = $('#pl-detail');
-    d.innerHTML = `
-        <div class="dt-name">${esc(p.name)}</div>
-        <div class="dt-sub">ID ${p.id} · ${esc(p.jobLabel || p.job)} (${esc(p.grade || '')}) · groupe ${esc(p.group)}</div>
-        <div class="act-grid">
-            ${acts.map(a => `<button class="mini" data-act="${a[0]}">${a[1]}</button>`).join('')}
-        </div>
-        <div class="form-block">
-            <h3>Bannir</h3>
-            <div class="row gap wrap">
-                <input id="pd-ban-reason" type="text" placeholder="raison">
-                <input id="pd-ban-min" type="number" placeholder="minutes (0 = perm)" min="0" style="max-width:140px">
-                <button class="danger" id="pd-ban" style="width:auto">Bannir</button>
-            </div>
-        </div>
-        <div class="form-block">
-            <h3>Argent</h3>
-            <div class="row gap">
-                <select id="pd-acc">${accounts.map(a => `<option value="${a[0]}">${a[1]}</option>`).join('')}</select>
-                <input id="pd-amount" type="number" placeholder="montant (+/-)">
-                <button id="pd-money">OK</button>
-            </div>
-        </div>
-        <div class="form-block">
-            <h3>Job</h3>
-            <div class="row gap">
-                <select id="pd-job">${jobOpts}</select>
-                <input id="pd-grade" type="number" value="0" min="0" style="max-width:80px">
-                <button id="pd-setjob">Définir</button>
-            </div>
-        </div>
-        <div class="form-block">
-            <h3>Groupe</h3>
-            <div class="row gap">
-                <select id="pd-group">${groups.map(g => `<option value="${g}" ${g === p.group ? 'selected' : ''}>${g}</option>`).join('')}</select>
-                <button id="pd-setgroup">Définir</button>
-            </div>
-        </div>
-        <div class="form-block">
-            <h3>Donner un item</h3>
-            <div class="row gap">
-                <input id="pd-item" type="text" placeholder="id item">
-                <input id="pd-item-qty" type="number" value="1" min="1" style="max-width:80px">
-                <button id="pd-give">Donner</button>
-            </div>
-        </div>`;
-    d.querySelectorAll('button[data-act]').forEach(b => {
-        b.onclick = () => {
-            const a = b.dataset.act;
-            if (a === 'kick') {
-                post('playerAction', { action: 'kick', target: p.id, reason: 'Expulsé par un admin' });
-            } else {
-                post('playerAction', { action: a, target: p.id });
-            }
-        };
-    });
-    $('#pd-ban').onclick = () => post('playerAction', {
-        action: 'ban', target: p.id,
-        reason: $('#pd-ban-reason').value || 'Banni', minutes: parseInt($('#pd-ban-min').value) || 0,
-    });
-    $('#pd-money').onclick = () => post('playerAction', {
-        action: 'money', target: p.id, account: $('#pd-acc').value, amount: parseInt($('#pd-amount').value) || 0,
-    });
-    $('#pd-setjob').onclick = () => post('playerAction', {
-        action: 'setjob', target: p.id, job: $('#pd-job').value, grade: parseInt($('#pd-grade').value) || 0,
-    });
-    $('#pd-setgroup').onclick = () => post('playerAction', {
-        action: 'setgroup', target: p.id, group: $('#pd-group').value,
-    });
-    $('#pd-give').onclick = () => post('giveItem', {
-        item: $('#pd-item').value.trim(), qty: parseInt($('#pd-item-qty').value) || 1, target: p.id,
-    });
-}
-
-/* ============== ITEMS ============== */
-$('#it-search').addEventListener('input', () => renderItems(state.items));
-$('#it-give').onclick = () => {
-    if (!state.selItem) return;
-    post('giveItem', {
-        item: state.selItem, qty: parseInt($('#it-qty').value) || 1,
-        target: $('#it-target').value || null,
-    });
-};
-
-function renderItems(list) {
-    state.items = list;
-    const q = $('#it-search').value.toLowerCase();
-    const g = $('#it-grid');
-    g.innerHTML = '';
-    list.filter(it => !q || (it.label || '').toLowerCase().includes(q) || (it.id || '').toLowerCase().includes(q))
-        .forEach(it => {
-            const c = document.createElement('div');
-            c.className = 'cell' + (state.selItem === it.id ? ' active' : '');
-            c.innerHTML = `<div class="c-label">${esc(it.label || it.id)}</div><div class="c-id">${esc(it.id)}</div>`;
-            c.onclick = () => {
-                state.selItem = it.id;
-                $('#it-selected').value = it.label || it.id;
-                renderItems(state.items);
+        case 'config':
+            S.cfg = {
+                keys: m.keys || {}, weathers: m.weathers || [],
+                pedModels: m.pedModels || [], quickVehicles: m.quickVehicles || [],
             };
-            g.appendChild(c);
-        });
-}
-
-/* ============== PERSONAS ============== */
-function loadPersonas() { try { return JSON.parse(localStorage.getItem('tab_admin_personas') || '[]'); } catch (e) { return []; } }
-function savePersonas(a) { try { localStorage.setItem('tab_admin_personas', JSON.stringify(a)); } catch (e) {} }
-
-$('#pe-save').onclick = () => {
-    const name = $('#pe-name').value.trim();
-    if (!name) return;
-    const model = $('#pe-model').value;
-    post('persona', { do_: 'save' }).then(r => {
-        if (!r || r.x === undefined) return;
-        const arr = loadPersonas();
-        arr.push({ label: name, x: r.x, y: r.y, z: r.z, h: r.h, model });
-        savePersonas(arr);
-        $('#pe-name').value = '';
-        renderPersonas();
-    });
-};
-
-function renderPersonas() {
-    const arr = loadPersonas();
-    const ul = $('#pe-list');
-    ul.innerHTML = '';
-    if (!arr.length) { ul.innerHTML = '<div class="detail-empty">Aucun perso enregistré.</div>'; return; }
-    arr.forEach((p, i) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <div class="li-meta">
-                <div class="li-name">${esc(p.label)}</div>
-                <div class="li-sub">${p.model ? esc(p.model) : 'position seule'} · ${Math.round(p.x)}, ${Math.round(p.y)}</div>
-            </div>
-            <div class="li-actions">
-                <button class="mini" data-go>Aller</button>
-                ${p.model ? '<button class="mini" data-model>Incarner</button>' : ''}
-                <button class="mini danger" data-del style="width:auto">✕</button>
-            </div>`;
-        li.querySelector('[data-go]').onclick = () => post('persona', { do_: 'goto', x: p.x, y: p.y, z: p.z, h: p.h, label: p.label });
-        const mb = li.querySelector('[data-model]');
-        if (mb) mb.onclick = () => post('persona', { do_: 'model', model: p.model, label: p.label });
-        li.querySelector('[data-del]').onclick = () => { const a = loadPersonas(); a.splice(i, 1); savePersonas(a); renderPersonas(); };
-        ul.appendChild(li);
-    });
-}
-
-/* ============== DOUBLE PERSONNAGE (STAFF) ============== */
-state.staffChars = [];
-
-$('#sc-refresh').onclick = () => post('charRequest');
-$('#sc-save').onclick = () => {
-    const label = $('#sc-name').value.trim();
-    post('charSave', { label }).then(r => {
-        if (r && r.ok) { $('#sc-name').value = ''; }
-    });
-};
-
-function fmtDate(epoch) {
-    if (!epoch) return '';
-    const d = new Date(epoch * 1000);
-    const p = n => String(n).padStart(2, '0');
-    return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
-function renderStaffChars(list) {
-    state.staffChars = list;
-    const ul = $('#sc-list');
-    ul.innerHTML = '';
-    if (!list.length) {
-        ul.innerHTML = '<div class="detail-empty">Aucun personnage sauvegardé.</div>';
-        return;
-    }
-    list.forEach(c => {
-        const li = document.createElement('li');
-        const sex = c.sex === 1 ? 'Femme' : 'Homme';
-        li.innerHTML = `
-            <div class="li-meta">
-                <div class="li-name">${esc(c.label)}</div>
-                <div class="li-sub">${sex}${c.name ? ' · ' + esc(c.name) : ''} · ${esc(fmtDate(c.savedAt))}</div>
-            </div>
-            <div class="li-actions">
-                <button class="mini" data-load>Incarner</button>
-                <button class="mini danger" data-del style="width:auto">✕</button>
-            </div>`;
-        li.querySelector('[data-load]').onclick = () => post('charLoad', { id: c.id });
-        li.querySelector('[data-del]').onclick = () => post('charDelete', { id: c.id });
-        ul.appendChild(li);
-    });
-}
-
-/* ============== LOGS DÉCONNEXION ============== */
-state.logs = [];
-state.logCat = '';
-
-const LOG_CATS = {
-    quit:    { label: 'Quitté / Alt+F4', color: '154, 167, 255' },
-    timeout: { label: 'Timeout', color: '224, 162, 59' },
-    crash:   { label: 'Crash', color: '239, 91, 106' },
-    kick:    { label: 'Kick', color: '224, 123, 59' },
-    ban:     { label: 'Ban', color: '239, 91, 106' },
-    other:   { label: 'Autre', color: '138, 143, 153' },
-};
-function logBadgeStyle(rgb) {
-    return `color:rgb(${rgb});background:rgba(${rgb},0.16);border:1px solid rgba(${rgb},0.45)`;
-}
-
-$('#lg-refresh').onclick = () => post('requestLogs');
-$('#lg-clear').onclick = () => {
-    if (confirm('Vider tous les logs de déconnexion ?')) post('clearLogs');
-};
-$('#lg-search').addEventListener('input', () => renderLogs(state.logs));
-
-function logTime(epoch) {
-    if (!epoch) return '';
-    const d = new Date(epoch * 1000);
-    const p = n => String(n).padStart(2, '0');
-    return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-
-function renderLogFilters() {
-    const wrap = $('#lg-filters');
-    wrap.innerHTML = '';
-    const mk = (key, label) => {
-        const c = document.createElement('div');
-        c.className = 'chip' + (state.logCat === key ? ' active' : '');
-        c.textContent = label;
-        c.onclick = () => { state.logCat = state.logCat === key ? '' : key; renderLogs(state.logs); };
-        wrap.appendChild(c);
-    };
-    mk('', 'Tous');
-    Object.keys(LOG_CATS).forEach(k => mk(k, LOG_CATS[k].label));
-}
-
-function renderLogs(list) {
-    state.logs = list;
-    $('#lg-count').textContent = `(${list.length})`;
-    renderLogFilters();
-    const q = $('#lg-search').value.toLowerCase();
-    const ul = $('#lg-list');
-    ul.innerHTML = '';
-    const filtered = list.filter(l => {
-        if (state.logCat && l.category !== state.logCat) return false;
-        if (!q) return true;
-        return (l.name || '').toLowerCase().includes(q)
-            || (l.reason || '').toLowerCase().includes(q)
-            || (l.ident || '').toLowerCase().includes(q)
-            || String(l.id || '').includes(q);
-    });
-    if (!filtered.length) {
-        ul.innerHTML = '<div class="detail-empty">Aucune déconnexion enregistrée.</div>';
-        return;
-    }
-    filtered.forEach(l => {
-        const cat = LOG_CATS[l.category] || LOG_CATS.other;
-        const hasPos = l.x !== undefined && l.x !== null;
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span class="log-badge" style="${logBadgeStyle(cat.color)}">${esc(l.catLabel || cat.label)}</span>
-            <div class="li-meta">
-                <div class="li-name">${esc(l.name || '?')} <span class="muted small">[${l.id || '?'}]</span></div>
-                <div class="li-sub">${esc(logTime(l.time))}${l.by ? ' · par ' + esc(l.by) : ''}${l.ident ? ' · ' + esc(l.ident) : ''}</div>
-                <div class="li-sub log-reason">${esc(l.reason || '')}</div>
-            </div>
-            <div class="li-actions">
-                ${hasPos ? '<button class="mini" data-go>Aller</button>' : ''}
-            </div>`;
-        const gb = li.querySelector('[data-go]');
-        if (gb) gb.onclick = () => post('logGoto', { x: l.x, y: l.y, z: l.z });
-        ul.appendChild(li);
-    });
-}
-
-/* ============== VÉHICULES ============== */
-$('#ve-refresh').onclick = () => post('requestVehicles');
-$('#ve-search').addEventListener('input', () => renderVehicles(state.vehicles));
-
-function renderVehicles(list) {
-    state.vehicles = list;
-    $('#ve-count').textContent = `(${list.length})`;
-    const q = $('#ve-search').value.toLowerCase();
-    const ul = $('#ve-list');
-    ul.innerHTML = '';
-    list.filter(v => !q || (v.plate || '').toLowerCase().includes(q) || (v.model || '').toLowerCase().includes(q))
-        .forEach(v => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <div class="li-meta">
-                    <div class="li-name">${esc(v.plate)} <span class="muted small">${esc(String(v.model || ''))}</span></div>
-                    <div class="li-sub">${esc(v.owner || '?')} · ${Math.round(v.x)}, ${Math.round(v.y)}</div>
-                </div>
-                <div class="li-actions">
-                    <button class="mini" data-go>Aller</button>
-                    <button class="mini danger" data-del style="width:auto">Suppr</button>
-                </div>`;
-            li.querySelector('[data-go]').onclick = () => post('vehicleAction', { do_: 'goto', plate: v.plate, x: v.x, y: v.y, z: v.z });
-            li.querySelector('[data-del]').onclick = () => post('vehicleAction', { do_: 'delete', plate: v.plate });
-            ul.appendChild(li);
-        });
-}
-
-/* ============== TEMPS & MÉTÉO ============== */
-$('#tw-hour').addEventListener('input', updateClockPreview);
-$('#tw-min').addEventListener('input', updateClockPreview);
-$('#tw-apply').onclick = () => post('setTime', {
-    hour: parseInt($('#tw-hour').value), minute: parseInt($('#tw-min').value), frozen: $('#tw-freeze').checked,
-});
-$('#tw-freeze').addEventListener('change', () => post('freezeTime', { frozen: $('#tw-freeze').checked }));
-$('#tw-blackout').addEventListener('change', () => post('setBlackout', { state: $('#tw-blackout').checked }));
-
-function updateClockPreview() {
-    const h = parseInt($('#tw-hour').value), m = parseInt($('#tw-min').value);
-    $('#tw-h-val').textContent = h;
-    $('#tw-m-val').textContent = String(m).padStart(2, '0');
-    $('#tw-clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-function applyTimeWeather(m) {
-    state.tw = { hour: m.hour, minute: m.minute, frozen: m.frozen, weather: m.weather, blackout: m.blackout };
-    $('#tw-hour').value = m.hour;
-    $('#tw-min').value = m.minute;
-    $('#tw-freeze').checked = !!m.frozen;
-    $('#tw-blackout').checked = !!m.blackout;
-    updateClockPreview();
-    highlightWeather();
-}
-
-function highlightWeather() {
-    $$('#tw-weathers .chip').forEach(c => c.classList.toggle('active', c.dataset.w === state.tw.weather));
-}
-
-/* ============== JOBS ============== */
-$('#jb-refresh').onclick = () => post('requestJobs');
-$('#jb-self').onclick = () => { if (state.selJob) post('jobAction', { do_: 'setself', job: state.selJob, grade: parseInt($('#jb-self-grade').value) || 0 }); };
-$('#jb-create').onclick = () => post('jobAction', { do_: 'create', name: $('#jb-new-name').value.trim(), label: $('#jb-new-label').value.trim() });
-$('#jb-addgrade').onclick = () => { if (state.selJob) post('jobAction', { do_: 'addgrade', job: state.selJob, level: parseInt($('#jb-g-level').value) || 0, gname: $('#jb-g-name').value.trim(), glabel: $('#jb-g-label').value.trim(), salary: parseInt($('#jb-g-salary').value) || 0 }); };
-$('#jb-society').onclick = () => { if (state.selJob) post('jobAction', { do_: 'society', job: state.selJob, amount: parseInt($('#jb-soc-amount').value) || 0 }); };
-$('#jb-delete').onclick = () => { if (state.selJob) post('jobAction', { do_: 'delete', job: state.selJob }); };
-
-function renderJobs(list) {
-    state.jobs = list;
-    $('#jb-count').textContent = `(${list.length})`;
-    const ul = $('#jb-list');
-    ul.innerHTML = '';
-    list.forEach(j => {
-        const li = document.createElement('li');
-        if (state.selJob === j.name) li.classList.add('active');
-        li.innerHTML = `<div class="li-meta"><div class="li-name">${esc(j.label)}</div><div class="li-sub">${esc(j.name)} · ${(j.grades || []).length} grades</div></div>`;
-        li.onclick = () => { state.selJob = j.name; $('#jb-selected-label').textContent = `Job sélectionné : ${j.label} (${j.name})`; renderJobs(state.jobs); };
-        ul.appendChild(li);
-    });
-}
-
-/* ============== MAPZONES ============== */
-$('#open-mapzones').onclick = () => post('openMapZones');
-
-/* ============== DOORBUILDER ============== */
-$('#open-doorbuilder').onclick = () => post('openDoorbuilder');
-
-/* ============== MODE SPEC ============== */
-function specMode(active) {
-    if (active) {
-        document.body.classList.remove('hidden');
-        win.classList.add('hidden');
-        pill.classList.add('hidden');
-        spec.classList.remove('hidden');
-        $('#spec-panel').classList.add('hidden');
-        $('#spec-target').classList.add('hidden');
-    } else {
-        spec.classList.add('hidden');
-        $('#spec-panel').classList.add('hidden');
-    }
-}
-
-function specTarget(m) {
-    const t = $('#spec-target');
-    if (!m.sid) { t.classList.add('hidden'); return; }
-    t.classList.remove('hidden');
-    t.querySelector('.st-name').textContent = m.name;
-    t.querySelector('.st-dist').textContent = `${m.dist}m`;
-}
-
-function specOpen(m) {
-    const acts = [
-        ['spectate', 'Spectate'], ['goto', 'Aller à'], ['bring', 'Amener'],
-        ['freeze', 'Geler'], ['unfreeze', 'Dégeler'], ['heal', 'Soigner'],
-        ['revive', 'Réanimer'], ['kill', 'Tuer'], ['kick', 'Kick'],
-    ];
-    $('#sp-name').textContent = m.name;
-    const g = $('#sp-actions');
-    g.innerHTML = '';
-    acts.forEach(a => {
-        const b = document.createElement('button');
-        b.className = 'mini';
-        b.textContent = a[1];
-        b.onclick = () => {
-            post('playerAction', { action: a[0], target: m.sid, reason: 'Expulsé par un admin' });
-            specBack();
-        };
-        g.appendChild(b);
-    });
-    $('#spec-target').classList.add('hidden');
-    $('#spec-panel').classList.remove('hidden');
-}
-
-function specBack() {
-    $('#spec-panel').classList.add('hidden');
-    post('specResume');
-}
-$('#sp-back').onclick = specBack;
-
-/* ============== UTIL ============== */
-function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-/* ============== INPUT FOCUS HANDLERS ============== */
-document.addEventListener('focusin', (e) => {
-    const tag = e.target.tagName;
-    const type = e.target.type;
-    const isInput = tag === 'INPUT' && (type === 'text' || type === 'number' || type === 'password' || type === 'search');
-    if (isInput || tag === 'TEXTAREA') {
-        post('inputFocus', { focus: true });
+            $('#sp-hint').innerHTML = `Visez un joueur · <b>[${esc(S.cfg.keys.spec || 'F')}]</b> Options · <b>[${esc(S.cfg.keys.open || 'F6')}]</b> Quitter`;
+            break;
+        case 'open': showMenu(m.reset === true); break;
+        case 'close': hideMenu(); $('#spec').classList.add('hidden'); break;
+        case 'nav': nav(m.key); break;
+        case 'players': S.players = m.list || []; render(); break;
+        case 'items': S.items = m.list || []; render(); break;
+        case 'jobs': S.jobs = m.list || []; render(); break;
+        case 'vehicles': S.vehicles = m.list || []; render(); break;
+        case 'staffChars': S.chars = m.list || []; render(); break;
+        case 'logs': S.logs = m.list || []; render(); break;
+        case 'timeWeather':
+            S.tw = { hour: m.hour, minute: m.minute, frozen: m.frozen, weather: m.weather, blackout: m.blackout };
+            render();
+            break;
+        case 'selfState': S.self = m; render(); break;
+        case 'specMode':
+            if (m.active) {
+                hideMenu();
+                $('#spec').classList.remove('hidden');
+                $('#sp-target').classList.add('hidden');
+            } else {
+                $('#spec').classList.add('hidden');
+            }
+            break;
+        case 'specTarget':
+            if (!m.sid) { $('#sp-target').classList.add('hidden'); break; }
+            $('#sp-target').classList.remove('hidden');
+            $('#sp-name').textContent = `[${m.sid}] ${m.name}`;
+            $('#sp-dist').textContent = `${m.dist} m`;
+            break;
+        case 'specOpen':
+            $('#spec').classList.add('hidden');
+            stack = [{ id: 'player', args: { id: m.sid, name: m.name }, index: 0, spec: true }];
+            S.open = true;
+            $('#menu').classList.remove('hidden');
+            render();
+            break;
+        case 'copyText': copyText(m.text); break;
     }
 });
-
-document.addEventListener('focusout', (e) => {
-    const tag = e.target.tagName;
-    const type = e.target.type;
-    const isInput = tag === 'INPUT' && (type === 'text' || type === 'number' || type === 'password' || type === 'search');
-    if (isInput || tag === 'TEXTAREA') {
-        post('inputFocus', { focus: false });
-    }
-});
-

@@ -220,7 +220,8 @@ RegisterCommand('tab_admin_speckey', function()
             sid = t.sid,
             name = nameById[t.sid] or ('Joueur ' .. t.sid),
         })
-        SetNuiFocus(true, true)
+        Admin.open = true
+        AdminRefreshFocus()
     end
 end, false)
 RegisterKeyMapping('tab_admin_speckey', 'Admin : options sur la cible (mode spec)', 'keyboard', Config.SpecKey or 'F')
@@ -231,7 +232,7 @@ RegisterNUICallback('specResume', function(_, cb)
     if not Admin.spec.spectating then
         Admin.spec.active = true
         send_spec_state(true)
-        SetNuiFocus(false, false)
+        AdminRefreshFocus()
         CreateThread(specLoop)
     end
     cb({})

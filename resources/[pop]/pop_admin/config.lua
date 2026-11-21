@@ -27,14 +27,13 @@ Config.AdminIdentifiers = {
 --  TOUCHES
 -- =====================================================================
 Config.OpenKey    = 'F6'   -- ouvre / ferme le menu
-Config.RevealKey  = 'G'    -- révèle la fenêtre quand elle est minimisée
 Config.SpecKey    = 'F'    -- (en mode spec) déclenche les options sur la cible visée
 Config.NoclipKey  = 'F7'   -- active / désactive le noclip (admin uniquement)
 
 -- =====================================================================
 --  GÉNÉRAL
 -- =====================================================================
-Config.DefaultView   = 'quick'  -- 'quick' ou 'full' à l'ouverture
+Config.DefaultView   = 'quick'  -- (conservé pour compatibilité, non utilisé par le menu liste)
 Config.NoclipSpeed    = 1.0
 Config.SpecMaxDist    = 80.0     -- portée du raycast du mode spec (m)
 
