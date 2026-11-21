@@ -3,7 +3,7 @@
 Journal court. À relire au début de chaque session, avec `feature_list.json` et `SPEC.md`.
 
 ## État
-- Fonctions validées : 1 / 120
+- Fonctions validées : 6 / 120
 - Prochaine fonction : socle-02
 - Plafond de tours : 20 par session (par domaine : socle serveur, socle client, socle interface, puis applis)
 
@@ -28,3 +28,14 @@ Journal court. À relire au début de chaque session, avec `feature_list.json` e
 
 ### socle-01 — OK
 - Preuve : diff bridge/shared/kit vide ; luacheck 0/0 sur 35 fichiers ; `luac -p` sur 17 fichiers sans erreur. Manifeste : oxmysql, `server/apps/*.lua`, `ui_page web/dist/index.html` (placeholder remplacé par le build de l'interface).
+
+### Socle serveur : code écrit (server/*.lua, sql/install.sql, tests/) — commit groupé
+Preuve commune : `lua tests/run.lua` = 134 réussis / 0 échec ; luacheck pop_tablet + templates = 0/0 sur 44 fichiers ; `luac -p` 26 fichiers sans erreur.
+- **socle-02 : reste false.** `python -I tests/check_sql.py` : 17 tables, 23 index, FK et cascade OK, mais sous SQLite (conversion de dialecte). Aucun MariaDB/MySQL ni Docker sur le poste : l'exécution réelle de `install.sql` reste à faire. `server/db.lua` l'exécute au démarrage (`CREATE TABLE IF NOT EXISTS`).
+- **socle-03 OK** : SHA-256 (vide, abc, 448 bits, 1 million de « a ») et HMAC RFC 4231 n°1, 2, 6 (clé > 64 octets) identiques ; 2000 itérations = 76 ms.
+- **socle-04 OK** : 10 000 séries sans doublon, format `PT-[A-Z2-9]{10}`, collision forcée tirée à nouveau, numéros `###-####` avec 5 essais puis nil.
+- **socle-07 OK** : `Tablet.Guard` refuse joueur inconnu, sans session, serial forgé, tablette verrouillée, session expirée, charge trop grande, objet perdu (+ `forceClose` poussé), joueur mort.
+- **socle-12 OK** : charge/décharge sur durées simulées, plafond 100, plancher 0, batterie désactivée.
+- **socle-13 OK** : chaque champ de la section 7.4 accepte N et rejette N+1 (ASCII et UTF-8), types, contrôle, enums, charges 16 Ko et 128 Ko, profondeur.
+- **Restent false (partie « en jeu » non prouvable ici)** : socle-05 (conversion : logique prouvée avec faux inventaire, y compris retour arrière), socle-06 (mode repli codé, `D.Mode()`, message console), socle-08 (drop/arrêt prouvés avec faux Bridge ; commande `pop_tablet_sessions` sous `Config.Debug`), socle-09 (setup prouvé avec faux DB : haché, seconde config refusée ; reste le test sur vraie base), socle-10 (blocage 60 s puis x2 prouvé ; reste le message en jeu), socle-11 (idem), socle-14 (paquets < 1 Ko prouvés ; relevé en jeu à faire), socle-15 (scheduler prouvé avec faux `SetTimeout` ; minuteur 10 s en jeu), socle-16 (give prouvé avec faux Bridge ; ACE en jeu), socle-17 (`DB.Purge` écrit ; suppression réelle à voir sur base).
+- **Décisions** : l'objet `pop_tablet` n'est pas ajouté à `pop_inventory` (la SPEC demande seulement de le documenter dans le README). Série du mode repli = dérivée de l'identifiant (SHA-256), sans stockage.

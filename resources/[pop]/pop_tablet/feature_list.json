@@ -17,13 +17,13 @@
       "id": "socle-03",
       "description": "server/hash.lua : SHA-256 + HMAC pur Lua, itérations configurables",
       "verification": "tests/run.lua : vecteurs SHA-256 et HMAC connus identiques",
-      "passes": false
+      "passes": true
     },
     {
       "id": "socle-04",
       "description": "Numéro de série unique et numéro de téléphone unique par tablette (génération, collision, format)",
       "verification": "tests/run.lua : 10 000 générations sans doublon, format respecté ; collision forcée gérée",
-      "passes": false
+      "passes": true
     },
     {
       "id": "socle-05",
@@ -41,7 +41,7 @@
       "id": "socle-07",
       "description": "Tablet.Guard : objet porté, session, déverrouillage, tailles, propriété, à chaque appel",
       "verification": "tests/run.lua : appels sans objet, session expirée, serial forgé, charge trop grande tous refusés",
-      "passes": false
+      "passes": true
     },
     {
       "id": "socle-08",
@@ -71,13 +71,13 @@
       "id": "socle-12",
       "description": "Batterie paresseuse par horodatage (ouverture refusée sous le minimum)",
       "verification": "tests/run.lua : calcul de décharge/recharge sur durées simulées",
-      "passes": false
+      "passes": true
     },
     {
       "id": "socle-13",
       "description": "server/limits.lua : tailles max et validation des types/énumérations",
       "verification": "tests/run.lua : chaque limite de la section 7.4 rejette à N+1",
-      "passes": false
+      "passes": true
     },
     {
       "id": "socle-14",
