@@ -63,8 +63,10 @@ local function startInvPedPreview()
   previewActive = true
   previewAlpha = 255
   CreateThread(function()
+    -- Fond du menu rendu transparent AVANT l'ouverture (sinon fond noir)
+    ReplaceHudColourWithRgba(117, 0, 0, 0, 0)
     SetFrontendActive(true)
-    ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY_NO_BACKGROUND'), true, -1)
+    ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY'), false, -1)
     -- Attend que le menu (invisible) soit vraiment actif avant d'y mettre le ped
     local tries = 0
     while not IsPauseMenuActive() and tries < 20 do
@@ -72,7 +74,7 @@ local function startInvPedPreview()
       tries = tries + 1
       if tries == 10 then
         SetFrontendActive(true)
-        ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY_NO_BACKGROUND'), true, -1)
+        ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY'), false, -1)
       end
     end
     Wait(150)
