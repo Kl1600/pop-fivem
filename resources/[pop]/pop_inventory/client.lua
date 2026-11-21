@@ -225,7 +225,19 @@ local tabHeld, tabDownAt = false, 0
 RegisterCommand('+pop_inventory_key', function()
   if isOpen or IsNuiFocused() then return end
   tabHeld = true
-  tabDownAt = GetGameTimer()
+  local t = GetGameTimer()
+  tabDownAt = t
+  -- Maintenu : on s'assure que la roue native de GTA s'affiche
+  CreateThread(function()
+    while tabHeld and tabDownAt == t do
+      if GetGameTimer() - t >= TAP_MAX_MS then
+        EnableControlAction(0, 37, true)
+        HudForceWeaponWheel(true)
+      end
+      Wait(0)
+    end
+    HudForceWeaponWheel(false)
+  end)
 end, false)
 
 RegisterCommand('-pop_inventory_key', function()
