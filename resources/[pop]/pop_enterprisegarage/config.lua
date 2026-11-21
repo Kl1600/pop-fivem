@@ -1,14 +1,38 @@
 Config = {}
 
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_enterprisegarage
+------------------------------------------------------------------------
 -- Commande debug/admin pour ouvrir le garage le plus proche.
 Config.Command = 'entreprisegarage'
 
 -- Touche d'ouverture quand on est dans la zone (38 = E).
 Config.OpenKey = 38
 
--- Distance d'affichage du marker / texte d'aide.
+-- Couleur du marker et distance d'affichage du marker / texte d'aide.
 Config.MarkerColor   = { 60, 140, 255 }
 Config.DrawDistance  = 15.0
+
+-- Distances de contrôle côté serveur.
+Config.UseDistance   = 40.0 -- joueur au point d'interaction ou à la zone de sortie
+Config.StoreDistance = 8.0  -- joueur à côté du véhicule à ranger
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- GARAGES ENTREPRISE

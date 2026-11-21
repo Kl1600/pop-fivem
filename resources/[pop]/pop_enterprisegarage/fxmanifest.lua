@@ -2,9 +2,16 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
+name 'pop_enterprisegarage'
 author 'KL'
+version '1.1.0'
 description 'Garage entreprise (flotte persistante, collabore avec pop_vehiclepersistence)'
-version '1.0.0'
+
+dependencies {
+    'es_extended',
+    'oxmysql',
+    'pop_vehiclepersistence',
+}
 
 ui_page 'html/index.html'
 
@@ -14,19 +21,28 @@ files {
     'html/app.js',
 }
 
-shared_script 'config.lua'
+shared_scripts {
+    'config.lua',
+    'shared/*.lua',
+    'locales/*.lua',
+}
 
 client_scripts {
-    '@es_extended/imports.lua',
-    'client.lua',
+    'bridge/client.lua',
+    'client/main.lua',
+    'client/zones.lua',
 }
 
 server_scripts {
-    'server.lua',
+    '@oxmysql/lib/MySQL.lua',
+    'bridge/server.lua',
+    'server/common.lua',
+    'server/fleet.lua',
+    'server/garage.lua',
 }
 
-dependencies {
-    'es_extended',
-    'oxmysql',
-    'pop_vehiclepersistence',
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
 }
