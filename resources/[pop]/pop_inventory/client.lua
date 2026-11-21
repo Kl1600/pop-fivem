@@ -21,16 +21,39 @@ local function sendNui(action, payload)
 end
 
 -- =====================================================================
---  PED DE PRÉVISUALISATION (clone du joueur affiché dans la zone Vêtements)
---  La NUI envoie la zone écran à occuper (pedRect). Le clone devient
---  transparent quand on glisse un vêtement dessus (pedHover).
+--  PED DE PRÉVISUALISATION (rendu « menu pause »)
+--  Le ped est dessiné par le jeu par-dessus le monde : toujours face à l'écran
+--  et jamais caché par les murs. Il apparaît à droite (zone Vêtements).
 -- =====================================================================
 local previewPed = nil
-local previewRect = { cx = 0.764, top = 0.22, height = 0.47 }
 local previewActive = false
+local previewAlpha = 255
+
+local function appearanceSignature(ped)
+  local parts = {}
+  for comp = 0, 11 do
+    parts[#parts + 1] = GetPedDrawableVariation(ped, comp) .. ':' .. GetPedTextureVariation(ped, comp)
+  end
+  for prop = 0, 7 do
+    parts[#parts + 1] = GetPedPropIndex(ped, prop) .. ':' .. GetPedPropTextureIndex(ped, prop)
+  end
+  return table.concat(parts, ',')
+end
+
+local function givePreviewToMenu()
+  if not previewPed or not DoesEntityExist(previewPed) then return end
+  ClearPedInPauseMenu()
+  SetEntityAlpha(previewPed, previewAlpha, false)
+  GivePedToPauseMenu(previewPed, 1)
+  SetPauseMenuPedLighting(true)
+  SetPauseMenuPedSleepState(true)
+end
 
 local function stopInvPedPreview()
+  if not previewActive then return end
   previewActive = false
+  ClearPedInPauseMenu()
+  SetFrontendActive(false)
   if previewPed and DoesEntityExist(previewPed) then DeleteEntity(previewPed) end
   previewPed = nil
 end
@@ -38,60 +61,54 @@ end
 local function startInvPedPreview()
   if previewActive then return end
   previewActive = true
+  previewAlpha = 255
   CreateThread(function()
+    SetFrontendActive(true)
+    ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY_NO_BACKGROUND'), false, -1)
+    ReplaceHudColourWithRgba(117, 0, 0, 0, 0) -- fond du menu transparent
+    Wait(100)
+    if not previewActive then return end
+    SetMouseCursorVisibleInMenus(false)
+
     local playerPed = PlayerPedId()
-    local model = GetEntityModel(playerPed)
-    RequestModel(model)
-    local t = GetGameTimer()
-    while not HasModelLoaded(model) and GetGameTimer() - t < 3000 do Wait(0) end
-    -- ClonePed copie directement tenue, accessoires et visage du joueur
     previewPed = ClonePed(playerPed, false, false, true)
-    if not previewPed or previewPed == 0 then previewActive = false return end
+    if not previewPed or previewPed == 0 then stopInvPedPreview() return end
     local c = GetEntityCoords(playerPed) - vector3(0.0, 0.0, 15.0)
     SetEntityCoordsNoOffset(previewPed, c.x, c.y, c.z, false, false, false)
+    FreezeEntityPosition(previewPed, true)
     SetEntityInvincible(previewPed, true)
     SetEntityCollision(previewPed, false, false)
-    SetEntityCanBeDamaged(previewPed, false)
-    SetBlockingOfNonTemporaryEvents(previewPed, true)
-    SetPedCanBeTargetted(previewPed, false)
-    FreezeEntityPosition(previewPed, true)
-    SetEntityAlpha(previewPed, 255, false)
-    local lastClone = GetGameTimer()
+    SetEntityVisible(previewPed, false, false)
+    Wait(150)
+    givePreviewToMenu()
 
-    while previewActive and isOpen and DoesEntityExist(previewPed) do
-      -- Taille à l'écran : distance calculée pour que le ped (~1,85 m) occupe la zone.
-      local fov = GetGameplayCamFov()
-      -- Ped un peu plus petit que la zone pour tenir entre les deux colonnes de cases
-      local depth = 1.85 / (previewRect.height * 0.68 * 2.0 * math.tan(math.rad(fov) / 2.0))
-      local world, normal = GetWorldCoordFromScreenCoord(previewRect.cx, previewRect.top + previewRect.height * 0.5)
-      local pos = world + normal * depth
-      local camRot = GetGameplayCamRot(2)
-      SetEntityCoordsNoOffset(previewPed, pos.x, pos.y, pos.z, false, false, false)
-      SetEntityRotation(previewPed, 0.0, 0.0, camRot.z + 180.0, 2, false)
+    local lastSig = appearanceSignature(playerPed)
+    while previewActive and isOpen do
+      Wait(500)
       -- Suit les changements de vêtements du joueur
-      if GetGameTimer() - lastClone > 1000 then
-        lastClone = GetGameTimer()
-        ClonePedToTarget(PlayerPedId(), previewPed)
+      local ped = PlayerPedId()
+      local sig = appearanceSignature(ped)
+      if sig ~= lastSig and previewPed and DoesEntityExist(previewPed) then
+        lastSig = sig
+        ClonePedToTarget(ped, previewPed)
+        Wait(100)
+        givePreviewToMenu()
       end
-      Wait(0)
     end
     stopInvPedPreview()
   end)
 end
 
-RegisterNUICallback('pedRect', function(data, cb)
-  if type(data) == 'table' and tonumber(data.cx) and tonumber(data.top) and tonumber(data.height) then
-    previewRect.cx = tonumber(data.cx)
-    previewRect.top = tonumber(data.top)
-    previewRect.height = math.max(0.1, tonumber(data.height))
-  end
-  cb('ok')
+RegisterNUICallback('pedRect', function(_, cb)
+  cb('ok') -- position gérée par le rendu menu pause
 end)
 
 RegisterNUICallback('pedHover', function(data, cb)
-  if previewPed and DoesEntityExist(previewPed) then
-    -- Transparent mais garde la forme du ped
-    SetEntityAlpha(previewPed, (data and data.hover) and 110 or 255, false)
+  -- Transparent mais garde la forme du ped
+  local alpha = (data and data.hover) and 110 or 255
+  if alpha ~= previewAlpha then
+    previewAlpha = alpha
+    givePreviewToMenu()
   end
   cb('ok')
 end)
