@@ -12,6 +12,8 @@ sv_maxclients 10
 set onesync on
 
 # Licence (portal.cfx.re) et base de données : à renseigner sur le serveur uniquement.
+# >>> CLÉ DE LICENCE ICI : enlève le # et remplace CHANGE_ME par ta clé cfxk_...
+#     Chez OuiHeberg, mets plutôt la clé dans OuiPanel (variable FIVEM_LICENSE) et laisse cette ligne commentée.
 # sv_licenseKey "CHANGE_ME"
 # set mysql_connection_string "mysql://user:password@localhost/pop?charset=utf8mb4"
 
