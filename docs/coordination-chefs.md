@@ -31,7 +31,7 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 
 ## 3. Règles de travail entre Chefs (anti-conflit)
 
-1. **C'est le client qui donne les tâches** à chaque Chef. Pas de domaine fixe.
+1. **Le Chef 1 coordonne** : il répartit les tâches du client entre les Chefs (voir `docs/en-cours.md`) et garde les fichiers communs. Le client peut aussi donner une tâche directement à un Chef : celui-ci l'inscrit dans `docs/en-cours.md` avant de commencer.
 2. **Avant de toucher un script**, lire `docs/en-cours.md`. Si un autre Chef y travaille déjà, ne pas y toucher : prévenir le client.
    Sinon, ajouter une ligne `pop_xxx : Chef N (tâche)` dans ce fichier, la pousser tout de suite, et la retirer à la fin.
 3. Travailler sur sa branche (`chefN/...`), puis publier ainsi :
@@ -59,7 +59,9 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 ## 5. Leçons déjà apprises
 
 - **Raccourcis FiveM** : une touche liée à une commande reste mémorisée sur le PC du joueur. Changer une touche ou renommer une commande peut laisser l'ancien raccourci actif.
-  - Touches déjà prises : F3 laptop, F5 emotes, F6 admin, F7 noclip, F10 police, TAB inventaire et roue, I inventaire, P radio, X mains levées, 1 à 4 armes.
+  - Touches déjà prises : F3 laptop, F5 emotes, F6 admin, F7 noclip, F10 police, TAB inventaire (appui) et roue façon GTA (maintenu), I inventaire, P radio, X mains levées, 1 à 4 armes.
+- La roue native de GTA est désactivée : `pop_inventory/html/wheel.js` la remplace (armes équipées + objets utilisables).
+- Le client a refusé : un ped dans l'inventaire (toutes les variantes testées), le rose, une DA « GTA 6 » qui change les couleurs.
 - **Cash** = objet `cash` de `pop_inventory`, pas le compte ESX `money`. **Banque** = compte ESX `bank`. Les boutiques doivent accepter le cash puis la banque.
 - **Plus de pesos** sur le serveur.
 - Le client aime : réponses courtes en français, pas de jargon, aperçus visuels avant le jeu (capture Playwright de la NUI).
