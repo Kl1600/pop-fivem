@@ -1373,7 +1373,7 @@ AddEventHandler('pop_management:registerVehicle', function(plate, model, society
         0 -- Stored 0 car le véhicule est sorti (spawned)
     }, function(id)
         if id then
-            print('[TAB_MANAGEMENT] Véhicule enregistré: ' .. plate .. ' pour ' .. owner)
+            print('[POP_MANAGEMENT] Véhicule enregistré: ' .. plate .. ' pour ' .. owner)
         end
     end)
 
@@ -1385,7 +1385,7 @@ AddEventHandler('pop_management:registerVehicle', function(plate, model, society
         json.encode(vehicleProps)
     }, function(id)
         -- Pas forcément d'ID retourné sur MyISAM sans AI, mais on log
-        print('[TAB_MANAGEMENT] Véhicule enregistré dans persistent_vehicles: ' .. plate)
+        print('[POP_MANAGEMENT] Véhicule enregistré dans persistent_vehicles: ' .. plate)
     end)
 end)
 

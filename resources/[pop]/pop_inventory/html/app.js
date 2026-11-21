@@ -606,7 +606,7 @@
                  item.defId === 'pistolet_peinture' || 
                  item.defId === 'smg' || 
                  item.defId === 'carabine');
-    console.log('[TAB_INVENTORY] isLongWeaponItem item=' + item.defId + ' result=' + res);
+    console.log('[POP_INVENTORY] isLongWeaponItem item=' + item.defId + ' result=' + res);
     return res;
   };
 
@@ -2009,7 +2009,7 @@
     } else if (data.action === 'setAdminJobs') {
       const raw = data.jobs;
       adminJobsData = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
-      console.log('[TAB_INVENTORY][NUI] setAdminJobs raw type:', typeof raw, 'isArray:', Array.isArray(raw), '→ normalized to', adminJobsData.length, 'jobs');
+      console.log('[POP_INVENTORY][NUI] setAdminJobs raw type:', typeof raw, 'isArray:', Array.isArray(raw), '→ normalized to', adminJobsData.length, 'jobs');
       const searchInput = document.getElementById('admin-jobs-search');
       if (searchInput) searchInput.value = '';
       renderAdminJobs(adminJobsData);
@@ -2413,7 +2413,7 @@
     if (!list) return;
     list.innerHTML = '';
     const arr = toArray(jobs);
-    console.log('[TAB_INVENTORY][NUI] renderAdminJobs:', arr.length, 'jobs, raw:', JSON.stringify(jobs).slice(0, 200));
+    console.log('[POP_INVENTORY][NUI] renderAdminJobs:', arr.length, 'jobs, raw:', JSON.stringify(jobs).slice(0, 200));
     if (arr.length === 0) {
       list.innerHTML = '<div style="color:rgba(255,255,255,0.5); padding:10px; font-style:italic; text-align:center;">Aucun job (liste vide)</div>';
       return;
@@ -2474,7 +2474,7 @@
       list.appendChild(jobDiv);
     });
     } catch (e) {
-      console.error('[TAB_INVENTORY][NUI] renderAdminJobs error:', e);
+      console.error('[POP_INVENTORY][NUI] renderAdminJobs error:', e);
       list.innerHTML = '<div style="color:#ff7070; padding:10px;">Erreur rendu : ' + (e && e.message || e) + '</div>';
       return;
     }

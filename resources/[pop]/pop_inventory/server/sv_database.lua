@@ -4,7 +4,7 @@ function mysqlFetch(query, params)
   end
   local ok, result = pcall(MySQL.query.await, query, params)
   if not ok then
-    print('[TAB_INVENTORY] ^1MySQL fetch error:^7', result)
+    print('[POP_INVENTORY] ^1MySQL fetch error:^7', result)
     return 'ERROR'
   end
   return result
@@ -42,7 +42,7 @@ function checkRequiredTables(cb)
     end)
     hasJobGradesTable = ok4
 
-    print(('[TAB_INVENTORY] Verification base de donnees: addon_account=%s, addon_account_data=%s, jobs=%s, job_grades=%s'):format(
+    print(('[POP_INVENTORY] Verification base de donnees: addon_account=%s, addon_account_data=%s, jobs=%s, job_grades=%s'):format(
       tostring(hasAddonAccountTable),
       tostring(hasAddonAccountDataTable),
       tostring(hasJobsTable),
@@ -84,13 +84,13 @@ function autoRepairMissingJobGrades(cb)
       end
       
       if #missingGradesJobs > 0 then
-        print(('[TAB_INVENTORY] Reparation de %d jobs sans grades...'):format(#missingGradesJobs))
+        print(('[POP_INVENTORY] Reparation de %d jobs sans grades...'):format(#missingGradesJobs))
         local completed = 0
         for _, jName in ipairs(missingGradesJobs) do
           mysqlUpdate("INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female) VALUES (?, 0, 'recrue', 'Recrue', 100, '{}', '{}') ON DUPLICATE KEY UPDATE name = name", {jName}, function()
             completed = completed + 1
             if completed == #missingGradesJobs then
-              print('[TAB_INVENTORY] Reparation des grades terminee !')
+              print('[POP_INVENTORY] Reparation des grades terminee !')
               if type(ESX.RefreshJobs) == 'function' then
                 pcall(ESX.RefreshJobs)
               end
@@ -113,7 +113,7 @@ function mysqlSingle(query, params)
   end
   local ok, result = pcall(MySQL.single.await, query, params)
   if not ok then
-    print('[TAB_INVENTORY] ^1MySQL single error:^7', result)
+    print('[POP_INVENTORY] ^1MySQL single error:^7', result)
     return 'ERROR'
   end
   return result
@@ -152,7 +152,7 @@ function loadRemoteContainers()
     local data = json.decode(results[1].data)
     if data then 
       RemoteContainers = data 
-      print('[TAB_INVENTORY] ' .. tableCount(RemoteContainers) .. ' conteneurs distants chargés.')
+      print('[POP_INVENTORY] ' .. tableCount(RemoteContainers) .. ' conteneurs distants chargés.')
     end
   end
 end
@@ -170,10 +170,10 @@ CreateThread(function()
   if not MySQL then return end
   MySQL.query("SHOW COLUMNS FROM job_grades", {}, function(cols)
     if type(cols) ~= 'table' then
-      print('[TAB_INVENTORY][SCHEMA] job_grades: impossible de lire les colonnes (' .. tostring(cols) .. ')')
+      print('[POP_INVENTORY][SCHEMA] job_grades: impossible de lire les colonnes (' .. tostring(cols) .. ')')
       return
     end
-    print('[TAB_INVENTORY][SCHEMA] job_grades has ' .. #cols .. ' colonnes :')
+    print('[POP_INVENTORY][SCHEMA] job_grades has ' .. #cols .. ' colonnes :')
     for i = 1, #cols do
       local c = cols[i]
       print(('  - %s | type=%s | null=%s | default=%s | extra=%s'):format(
@@ -187,7 +187,7 @@ end)
 -- Tourne une fois au démarrage du resource. Utilise la forme callback de MySQL.update.
 CreateThread(function()
   Wait(3000) -- laisser MySQL/ESX se charger
-  if not MySQL then print('[TAB_INVENTORY] Backfill grades : MySQL indispo'); return end
+  if not MySQL then print('[POP_INVENTORY] Backfill grades : MySQL indispo'); return end
 
   MySQL.update([[
     INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female)
@@ -195,7 +195,7 @@ CreateThread(function()
     FROM jobs j
     WHERE NOT EXISTS (SELECT 1 FROM job_grades g WHERE g.job_name = j.name AND g.grade = 0)
   ]], {}, function(addedRecrue)
-    print(('[TAB_INVENTORY] Backfill grades Recrue (grade 0) : affectedRows=%s'):format(tostring(addedRecrue)))
+    print(('[POP_INVENTORY] Backfill grades Recrue (grade 0) : affectedRows=%s'):format(tostring(addedRecrue)))
 
     MySQL.update([[
       INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female)
@@ -203,7 +203,7 @@ CreateThread(function()
       FROM jobs j
       WHERE NOT EXISTS (SELECT 1 FROM job_grades g WHERE g.job_name = j.name AND g.grade = 4)
     ]], {}, function(addedBoss)
-      print(('[TAB_INVENTORY] Backfill grades Boss (grade 4) : affectedRows=%s'):format(tostring(addedBoss)))
+      print(('[POP_INVENTORY] Backfill grades Boss (grade 4) : affectedRows=%s'):format(tostring(addedBoss)))
       if type(ESX) == 'table' and type(ESX.RefreshJobs) == 'function' then
         pcall(ESX.RefreshJobs)
       end

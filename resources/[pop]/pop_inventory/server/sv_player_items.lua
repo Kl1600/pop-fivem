@@ -165,7 +165,7 @@ AddEventHandler('pop_inventory:server:giveItemBankui', function(source, itemDefI
 
   local def = getItemDef(itemDefId)
   if not def then
-    print('[TAB_INVENTORY] Impossible de trouver la def de l\'item:', itemDefId)
+    print('[POP_INVENTORY] Impossible de trouver la def de l\'item:', itemDefId)
     return
   end
   
@@ -229,7 +229,7 @@ AddEventHandler('pop_inventory:server:giveItemBankui', function(source, itemDefI
       if not placedRemaining then
           -- Cleanup orphan item if no space found
           store.items[itemId] = nil
-          print('[TAB_INVENTORY] Inventaire plein pour:', itemDefId)
+          print('[POP_INVENTORY] Inventaire plein pour:', itemDefId)
           notify(source, 'Inventaire plein !')
       end
     end
@@ -267,7 +267,7 @@ AddEventHandler('pop_inventory:server:removeItem', function(source, itemDefId, q
   end
   
   if foundQty < qty then
-      print('[TAB_INVENTORY] Pas assez d items pour retirer:', itemDefId)
+      print('[POP_INVENTORY] Pas assez d items pour retirer:', itemDefId)
       return
   end
   

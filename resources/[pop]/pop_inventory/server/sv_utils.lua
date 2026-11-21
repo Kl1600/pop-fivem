@@ -1,6 +1,6 @@
 function debugPrint(...)
   if Config.Debug and Config.Debug.PrintActions then
-    print('[TAB_INVENTORY]', ...)
+    print('[POP_INVENTORY]', ...)
   end
 end
 

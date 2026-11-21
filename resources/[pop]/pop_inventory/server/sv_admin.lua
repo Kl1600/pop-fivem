@@ -113,7 +113,7 @@ end)
 RegisterNetEvent('pop_inventory:server:adminGiveItem', function(itemId, qty, meta)
   local src = source
   if not isAdminAllowed(src) then
-    print(('[TAB_INVENTORY] adminGiveItem refusé: src=%s id=%s'):format(tostring(src), tostring(itemId)))
+    print(('[POP_INVENTORY] adminGiveItem refusé: src=%s id=%s'):format(tostring(src), tostring(itemId)))
     return
   end
   if type(itemId) ~= 'string' or itemId == '' then return end
@@ -123,14 +123,14 @@ RegisterNetEvent('pop_inventory:server:adminGiveItem', function(itemId, qty, met
   if type(meta) ~= 'table' then meta = nil end
 
   local ok, err = GiveItem(src, itemId, qty, meta)
-  print(('[TAB_INVENTORY] adminGiveItem src=%s id=%s qty=%d meta=%s ok=%s err=%s')
+  print(('[POP_INVENTORY] adminGiveItem src=%s id=%s qty=%d meta=%s ok=%s err=%s')
     :format(tostring(src), tostring(itemId), qty, meta and json.encode(meta) or 'nil', tostring(ok), tostring(err)))
 end)
 
 function sendUpdatedJobsList(src)
 
   if not MySQL then
-    print('[TAB_INVENTORY] MySQL nil, envoi liste vide')
+    print('[POP_INVENTORY] MySQL nil, envoi liste vide')
     TriggerClientEvent('pop_inventory:client:setAdminJobs', src, {})
     return
   end
@@ -244,7 +244,7 @@ RegisterNetEvent('pop_inventory:server:adminDumpSchema', function()
     if not isAdminAllowed(src) then return end
     if not MySQL then return end
     local function send(msg)
-        print('[TAB_INVENTORY][SCHEMA] ' .. msg)
+        print('[POP_INVENTORY][SCHEMA] ' .. msg)
         TriggerClientEvent('pop_inventory:client:debugPrint', src, 'SCHEMA ' .. msg)
     end
     MySQL.query("SHOW COLUMNS FROM job_grades", {}, function(cols)
@@ -286,7 +286,7 @@ RegisterNetEvent('pop_inventory:server:adminCreateJob', function(jobName, jobLab
     end
 
     local function dbg(msg)
-        print('[TAB_INVENTORY] ' .. msg)
+        print('[POP_INVENTORY] ' .. msg)
         TriggerClientEvent('pop_inventory:client:debugPrint', src, msg)
     end
     dbg(('adminCreateJob START name=%s label=%s'):format(jobName, jobLabel))
@@ -362,7 +362,7 @@ RegisterNetEvent('pop_inventory:server:adminAddGrade', function(jobName, gradeLe
     end
 
     local function dbg(msg)
-        print('[TAB_INVENTORY] ' .. msg)
+        print('[POP_INVENTORY] ' .. msg)
         TriggerClientEvent('pop_inventory:client:debugPrint', src, msg)
     end
     dbg(('adminAddGrade START job=%s lvl=%s name=%s label=%s salary=%s'):format(jobName, tostring(gradeLevel), gradeName, gradeLabel, tostring(salary)))
@@ -466,7 +466,7 @@ RegisterNetEvent('pop_inventory:server:adminAddSocietyMoney', function(jobName, 
             else
                 notify(src, "Montant de " .. tostring(amount) .. "$ ajouté au compte " .. accountName)
             end
-            print('[TAB_INVENTORY] Dynamic Society Account Funded: ' .. accountName .. ' | Amount: ' .. tostring(amount))
+            print('[POP_INVENTORY] Dynamic Society Account Funded: ' .. accountName .. ' | Amount: ' .. tostring(amount))
         end)
     else
         notify(src, "Incompatible avec ce framework")
@@ -493,22 +493,22 @@ RegisterNetEvent('pop_inventory:server:adminDeleteJob', function(jobName)
         return
     end
 
-    print(('[TAB_INVENTORY] adminDeleteJob START job=%s src=%s'):format(jobName, tostring(src)))
+    print(('[POP_INVENTORY] adminDeleteJob START job=%s src=%s'):format(jobName, tostring(src)))
     local accountName = 'society_' .. jobName
 
     -- Chain de callbacks séquentiels
     MySQL.update("UPDATE users SET job = 'unemployed', job_grade = 0 WHERE job = ?", { jobName }, function(rR1)
-        print(('[TAB_INVENTORY] adminDeleteJob: UPDATE users job -> affectedRows=%s'):format(tostring(rR1)))
+        print(('[POP_INVENTORY] adminDeleteJob: UPDATE users job -> affectedRows=%s'):format(tostring(rR1)))
         MySQL.update("UPDATE users SET job2 = 'unemployed', job2_grade = 0 WHERE job2 = ?", { jobName }, function(rR2)
-            print(('[TAB_INVENTORY] adminDeleteJob: UPDATE users job2 -> affectedRows=%s'):format(tostring(rR2)))
+            print(('[POP_INVENTORY] adminDeleteJob: UPDATE users job2 -> affectedRows=%s'):format(tostring(rR2)))
             MySQL.update("DELETE FROM job_grades WHERE job_name = ?", { jobName }, function(rDG)
-                print(('[TAB_INVENTORY] adminDeleteJob: DELETE job_grades -> affectedRows=%s'):format(tostring(rDG)))
+                print(('[POP_INVENTORY] adminDeleteJob: DELETE job_grades -> affectedRows=%s'):format(tostring(rDG)))
                 MySQL.update("DELETE FROM jobs WHERE name = ?", { jobName }, function(rDJ)
-                    print(('[TAB_INVENTORY] adminDeleteJob: DELETE jobs -> affectedRows=%s'):format(tostring(rDJ)))
+                    print(('[POP_INVENTORY] adminDeleteJob: DELETE jobs -> affectedRows=%s'):format(tostring(rDJ)))
                     MySQL.update("DELETE FROM addon_account_data WHERE account_name = ?", { accountName }, function(rDAD)
-                        print(('[TAB_INVENTORY] adminDeleteJob: DELETE addon_account_data -> affectedRows=%s'):format(tostring(rDAD)))
+                        print(('[POP_INVENTORY] adminDeleteJob: DELETE addon_account_data -> affectedRows=%s'):format(tostring(rDAD)))
                         MySQL.update("DELETE FROM addon_account WHERE name = ?", { accountName }, function(rDA)
-                            print(('[TAB_INVENTORY] adminDeleteJob: DELETE addon_account -> affectedRows=%s'):format(tostring(rDA)))
+                            print(('[POP_INVENTORY] adminDeleteJob: DELETE addon_account -> affectedRows=%s'):format(tostring(rDA)))
 
                             if ESX.Jobs then ESX.Jobs[jobName] = nil end
 
@@ -529,7 +529,7 @@ RegisterNetEvent('pop_inventory:server:adminDeleteJob', function(jobName)
                             end
 
                             notify(src, "Job supprime : " .. jobName)
-                            print('[TAB_INVENTORY] adminDeleteJob DONE: ' .. jobName)
+                            print('[POP_INVENTORY] adminDeleteJob DONE: ' .. jobName)
                             sendUpdatedJobsList(src)
                         end)
                     end)

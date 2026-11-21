@@ -10,7 +10,7 @@ RegisterNetEvent('pop_inventory:server:playerReady', function(coords)
   if not store then
     -- Erreur critique de chargement, on kick pour éviter de corrompre les données ?
     -- Ou au moins on n'active pas le store
-    DropPlayer(src, "[TAB_INVENTORY] Erreur critique lors du chargement de l'inventaire. Reconnectez-vous.")
+    DropPlayer(src, "[POP_INVENTORY] Erreur critique lors du chargement de l'inventaire. Reconnectez-vous.")
     return
   end
 

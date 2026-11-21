@@ -212,7 +212,7 @@ function specLoop()
 end
 
 -- Touche d'options du mode spec (ouvre le panneau d'actions sur la cible visée).
-RegisterCommand('tab_admin_speckey', function()
+RegisterCommand('pop_admin_speckey', function()
     if Admin.spec.active and Admin.spec.target then
         local t = Admin.spec.target
         Admin.spec.active = false  -- fige la visée pendant le choix
@@ -224,7 +224,7 @@ RegisterCommand('tab_admin_speckey', function()
         AdminRefreshFocus()
     end
 end, false)
-RegisterKeyMapping('tab_admin_speckey', 'Admin : options sur la cible (mode spec)', 'keyboard', Config.SpecKey or 'F')
+RegisterKeyMapping('pop_admin_speckey', 'Admin : options sur la cible (mode spec)', 'keyboard', Config.SpecKey or 'F')
 
 -- Reprise / fermeture du panneau d'options spec depuis la NUI.
 RegisterNUICallback('specResume', function(_, cb)

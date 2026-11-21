@@ -182,10 +182,10 @@ local function toggleMenu()
     end
 end
 
-RegisterCommand('tab_admin_open', toggleMenu, false)
-RegisterKeyMapping('tab_admin_open', 'Admin : ouvrir / fermer le menu', 'keyboard', Config.OpenKey or 'F6')
+RegisterCommand('pop_admin_open', toggleMenu, false)
+RegisterKeyMapping('pop_admin_open', 'Admin : ouvrir / fermer le menu', 'keyboard', Config.OpenKey or 'F6')
 
-RegisterCommand('tab_admin_noclip', function()
+RegisterCommand('pop_admin_noclip', function()
     if not Admin.isAdmin then return end
     AdminToggleNoclip()
     if Admin.open and not Admin.minimized then
@@ -196,7 +196,7 @@ RegisterCommand('tab_admin_noclip', function()
         })
     end
 end, false)
-RegisterKeyMapping('tab_admin_noclip', 'Admin : noclip', 'keyboard', Config.NoclipKey or 'F7')
+RegisterKeyMapping('pop_admin_noclip', 'Admin : noclip', 'keyboard', Config.NoclipKey or 'F7')
 
 -- =====================================================================
 --  CALLBACKS NUI GÉNÉRAUX

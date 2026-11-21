@@ -22,12 +22,12 @@ for i = 1, #serverModules do
   local path = serverModules[i]
   local moduleSource = LoadResourceFile(TabInventory.resourceName, path)
   if not moduleSource then
-    error(('[TAB_INVENTORY] Module serveur introuvable: %s'):format(path))
+    error(('[POP_INVENTORY] Module serveur introuvable: %s'):format(path))
   end
 
   local chunk, err = load(moduleSource, ('@%s/%s'):format(TabInventory.resourceName, path), 't', _ENV)
   if not chunk then
-    error(('[TAB_INVENTORY] Erreur de chargement module %s: %s'):format(path, err))
+    error(('[POP_INVENTORY] Erreur de chargement module %s: %s'):format(path, err))
   end
 
   chunk()

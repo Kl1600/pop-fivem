@@ -437,23 +437,23 @@ RegisterCommand('pop_inventory-give', function(source, args)
   local defId = normalizeSection(args[defIndex] or '')
   local qty = tonumber(args[defIndex + 1] or 1) or 1
   if not defId or defId == '' then
-    print('[TAB_INVENTORY] pop_inventory-give: defId vide')
+    print('[POP_INVENTORY] pop_inventory-give: defId vide')
     return
   end
   local identifier = getIdentifier(target)
   if not identifier then
-    print('[TAB_INVENTORY] pop_inventory-give: identifier introuvable pour source', target)
+    print('[POP_INVENTORY] pop_inventory-give: identifier introuvable pour source', target)
     return
   end
   local store = ensureStore(identifier)
   local def = getItemDef(defId)
   if not def then
-    print('[TAB_INVENTORY] pop_inventory-give: Item inconnu:', defId)
+    print('[POP_INVENTORY] pop_inventory-give: Item inconnu:', defId)
     notify(target, 'Item inconnu: ' .. defId)
     return
   end
 
-  print('[TAB_INVENTORY] pop_inventory-give: Tentative de donner', qty, 'x', defId, 'à', target)
+  print('[POP_INVENTORY] pop_inventory-give: Tentative de donner', qty, 'x', defId, 'à', target)
 
   local function cleanupOrphan(store, itemId)
     local item = store.items[itemId]
@@ -530,7 +530,7 @@ RegisterCommand('pop_inventory-cleardrops', function(source)
   end
   clearAllGroundDrops()
   if source == 0 then
-    print('[TAB_INVENTORY] Tous les drops ont été supprimés.')
+    print('[POP_INVENTORY] Tous les drops ont été supprimés.')
   else
     notify(source, 'Tous les drops ont été supprimés.')
   end
