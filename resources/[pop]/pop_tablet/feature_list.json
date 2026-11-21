@@ -5,7 +5,7 @@
       "id": "socle-01",
       "description": "Copie de pop_base renommée pop_tablet (bridge, shared, web/kit identiques à la base), fxmanifest avec server/apps/*.lua, oxmysql, ui_page web/dist",
       "verification": "diff -r avec templates/pop_base sur bridge shared web/kit vide ; luacheck resources templates 0/0",
-      "passes": false
+      "passes": true
     },
     {
       "id": "socle-02",
