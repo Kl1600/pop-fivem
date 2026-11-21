@@ -64,6 +64,7 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 - Le client a refusé : un ped dans l'inventaire (toutes les variantes testées), le rose, une DA « GTA 6 » qui change les couleurs.
 - **Cash** = objet `cash` de `pop_inventory`, pas le compte ESX `money`. **Banque** = compte ESX `bank`. Les boutiques doivent accepter le cash puis la banque.
 - **Plus de pesos** sur le serveur.
+- **Chèques** : un chèque encaissé arrive sur le compte bancaire (`bank`), pas en cash (décision du client).
 - Le client aime : réponses courtes en français, pas de jargon, aperçus visuels avant le jeu (capture Playwright de la NUI).
 - Le client teste vite : prévenir quand un déploiement est fini et quelle ressource relancer.
 
