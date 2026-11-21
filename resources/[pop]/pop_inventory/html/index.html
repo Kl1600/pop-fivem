@@ -297,7 +297,7 @@
     text-align: center;
     letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 18px rgba(255, 46, 154, 0.30);
+    text-shadow: 0 0 18px rgba(255, 255, 255, 0.30);
   }
 
   /* Slider moderne : piste fine arrondie remplie en rose jusqu'au pouce. */
@@ -308,7 +308,7 @@
     height: 6px;
     border-radius: 999px;
     background: linear-gradient(to right,
-      #ff2e9a 0%, #ff6ec0 var(--p, 50%),
+      #ffffff 0%, #d9d9d9 var(--p, 50%),
       rgba(255, 255, 255, 0.13) var(--p, 50%), rgba(255, 255, 255, 0.13) 100%);
     outline: none;
     cursor: pointer;
@@ -320,12 +320,12 @@
     border-radius: 50%;
     background: #fff;
     border: 0;
-    box-shadow: 0 0 0 4px rgba(255, 46, 154, 0.28), 0 2px 6px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.45);
     transition: transform 0.12s, box-shadow 0.12s;
   }
   .et-slider::-webkit-slider-thumb:hover {
     transform: scale(1.15);
-    box-shadow: 0 0 0 6px rgba(255, 46, 154, 0.34), 0 2px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.34), 0 2px 8px rgba(0, 0, 0, 0.5);
   }
   .et-sub {
     display: flex;
@@ -361,8 +361,8 @@
     color: #fff;
   }
   .et-preset.active {
-    background: rgba(255, 46, 154, 0.18);
-    border-color: rgba(255, 46, 154, 0.55);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.55);
     color: #fff;
   }
 
@@ -392,9 +392,9 @@
     color: #fff;
   }
   .et-seg-btn.active {
-    background: #ff2e9a;
-    color: #fff;
-    box-shadow: 0 2px 10px rgba(255, 46, 154, 0.35);
+    background: #ffffff;
+    color: #1c1f24;
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.35);
   }
   .et-seg-btn.active.run {
     background: #58a03c;
@@ -478,8 +478,8 @@
   }
 
   .paint-item-slot.selected {
-    border-color: #f2b4d9;
-    background: rgba(242, 180, 217, 0.15) !important;
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.15) !important;
   }
 
   .paint-item-slot .color-bubble {
@@ -495,7 +495,7 @@
   }
 
   #paint-btn-apply:hover {
-    background: #e2a0ca !important;
+    background: #d9d9d9 !important;
   }
 </style>
 
@@ -688,7 +688,7 @@
     style="width: 9px; height: 441px; left: 272px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 5px">
   </div>
   <div id="ground-scroll-thumb"
-    style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(242, 180, 217, 0.35); border-radius: 5px">
+    style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(255, 255, 255, 0.35); border-radius: 5px">
   </div>
   <div id="clothes-side">
     <div
@@ -992,7 +992,7 @@
       style="width: 9px; height: 441px; left: 272px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 5px">
     </div>
     <div id="paint-scroll-thumb"
-      style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(242, 180, 217, 0.35); border-radius: 5px">
+      style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(255, 255, 255, 0.35); border-radius: 5px">
     </div>
 
     <!-- Panel de détails de peinture en bas -->
@@ -1660,11 +1660,11 @@
       }
 
       /* Soulignement (onglet) de la categorie active : pose par-dessus la ligne.
-         Couleur d'accent rose/magenta (cf. maquette). */
+         Couleur d'accent blanche (cf. maquette). */
       .inv-icon-underline {
         width: 0;
         height: 2px;
-        background: #ff2e9a;
+        background: #ffffff;
         border-radius: 1px;
         opacity: 0;
         pointer-events: none;

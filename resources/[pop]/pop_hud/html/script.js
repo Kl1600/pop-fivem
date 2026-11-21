@@ -100,7 +100,7 @@ window.closeChecklist = () => {
 
 const grades = {
 	1: { name: "Game Master",   color: "#15803d" },
-	2: { name: "Modérateur",    color: "#C40155" },
+	2: { name: "Modérateur",    color: "#3498db" },
 	3: { name: "Support",       color: "#d97706" },
 	4: { name: "Développeur",   color: "#3b82f6" },
 	5: { name: "Staff",         color: "#fb7185" },

@@ -22,8 +22,8 @@
    (texte, panneaux, bordures) reste identique au design de base.
    ========================================================= */
 body.theme-80s {
-    --primary: #ff3cac;
-    --primary-glow: rgba(255, 60, 172, 0.45);
+    --primary: #00c8ff;
+    --primary-glow: rgba(0, 200, 255, 0.4);
 }
 
 /* Date de naissance invalide (année incohérente avec l'époque) */
@@ -310,10 +310,10 @@ html {
 
 /* Female Active State */
 .gender-btn[data-gender="female"].active {
-    background: #e91e63; /* Pink */
+    background: #8e44ad;
     color: white;
     border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 25px rgba(233, 30, 99, 0.4);
+    box-shadow: 0 0 25px rgba(142, 68, 173, 0.4);
 }
 
 /* Other Active State */

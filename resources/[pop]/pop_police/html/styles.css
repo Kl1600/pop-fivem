@@ -595,7 +595,7 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
   width: 100vw !important; height: 100vh !important;
   background: #000 !important;
   border: 3px solid #c88000 !important; border-radius: 0 !important;
-  box-shadow: 0 0 40px rgba(216,27,110,0.6), inset 0 0 120px rgba(216,27,110,0.06) !important;
+  box-shadow: 0 0 40px rgba(200,120,0,0.6), inset 0 0 120px rgba(180,100,0,0.06) !important;
   display: flex !important; flex-direction: column !important; gap: 0 !important;
   overflow: hidden !important;
   transform: none !important; /* thème plein-écran déjà fluide (vw/vh) */
@@ -639,7 +639,7 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 .retro80 .retro-dept-sub {
   display: flex !important; gap: 14px !important; margin-top: 5px !important; align-items: center !important;
 }
-.retro80 .retro-dept-sub .r-cs    { color: #ff7ab3 !important; font-size: 11px !important; font-weight: 700 !important; letter-spacing: 2px !important; }
+.retro80 .retro-dept-sub .r-cs    { color: #ffe060 !important; font-size: 11px !important; font-weight: 700 !important; letter-spacing: 2px !important; }
 .retro80 .retro-dept-sub .r-sit   { color: #ffc000 !important; font-size: 11px !important; background: rgba(255,192,0,0.13) !important; padding: 1px 6px !important; }
 .retro80 .retro-dept-sub .r-units { color: #cc8800 !important; font-size: 11px !important; letter-spacing: 1px !important; }
 /* — Colonne centre — */
@@ -697,7 +697,7 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
   order: 1 !important; flex: 1 !important; height: 0 !important;
   overflow-y: auto !important; background: #000 !important;
   scrollbar-width: thin !important; scrollbar-color: #b87000 #000 !important;
-  border-bottom: 1px solid rgba(216,27,110,0.4) !important;
+  border-bottom: 1px solid rgba(180,100,0,0.4) !important;
 }
 
 /* ── Onglets → bas, style touches fonction F1–F4 ── */
@@ -720,11 +720,11 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 .retro80 .tab.active {
   background: #c88000 !important; color: #000 !important; font-weight: 700 !important;
 }
-.retro80 .tab:hover:not(.active) { background: rgba(216,27,110,0.18) !important; }
+.retro80 .tab:hover:not(.active) { background: rgba(200,120,0,0.18) !important; }
 
 /* ── Zone patrouille ── */
 .retro80 .patrol-empty, .retro80 .patrol-active, .retro80 .patrol-form {
-  background: #000 !important; border: 1px solid rgba(216,27,110,0.35) !important;
+  background: #000 !important; border: 1px solid rgba(180,100,0,0.35) !important;
   border-radius: 0 !important; margin: 8px !important; padding: 10px !important;
 }
 .retro80 .duty-btn {
@@ -756,13 +756,13 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 }
 .retro80 #patrol-meta, .retro80 .who { color: #c88000 !important; font-size: 10px !important; }
 .retro80 .radio-label-btn { color: #c88000 !important; }
-.retro80 .unit-row { border-bottom: 1px solid rgba(216,27,110,0.2) !important; }
+.retro80 .unit-row { border-bottom: 1px solid rgba(180,100,0,0.2) !important; }
 
 /* ── Accordéon ── */
 .retro80 .acc-head {
   background: #080500 !important;
-  border-top: 1px solid rgba(216,27,110,0.5) !important;
-  border-bottom: 1px solid rgba(216,27,110,0.5) !important;
+  border-top: 1px solid rgba(180,100,0,0.5) !important;
+  border-bottom: 1px solid rgba(180,100,0,0.5) !important;
   border-left: 3px solid #c88000 !important;
   margin: 0 !important;
 }
@@ -772,16 +772,16 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 .retro80 .acc-body { background: #000 !important; }
 
 /* ── Agents ── */
-.retro80 .agent-row { border-bottom: 1px solid rgba(216,27,110,0.22) !important; }
-.retro80 .agent-row:hover { background: rgba(216,27,110,0.08) !important; }
+.retro80 .agent-row { border-bottom: 1px solid rgba(180,100,0,0.22) !important; }
+.retro80 .agent-row:hover { background: rgba(200,120,0,0.08) !important; }
 .retro80 .agent-name { color: #ffc000 !important; font-size: 13px !important; text-shadow: 0 0 6px rgba(255,192,0,0.5) !important; }
 .retro80 .agent-sub { color: #cc8800 !important; }
-.retro80 .agent-sub .mat { color: #ff7ab3 !important; }
+.retro80 .agent-sub .mat { color: #ffe060 !important; }
 .retro80 .agent-sub .grade { color: #ffc000 !important; }
 .retro80 .agent-sub .patrol-tag { color: #ffaa00 !important; background: rgba(200,120,0,0.2) !important; border-radius: 0 !important; }
 .retro80 .agent-group-sep {
   color: #c88000 !important; letter-spacing: 2px !important; text-transform: uppercase !important;
-  border-bottom: 1px solid rgba(216,27,110,0.3) !important; background: #060400 !important;
+  border-bottom: 1px solid rgba(180,100,0,0.3) !important; background: #060400 !important;
 }
 .retro80 .agent-edit-panel { background: #040200 !important; border: 1px solid #b87000 !important; border-radius: 0 !important; }
 .retro80 .aep-lbl { color: #b87000 !important; }
@@ -793,7 +793,7 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 
 /* ── Entries terminal ── */
 .retro80 .entry {
-  border-bottom: 1px solid rgba(216,27,110,0.28) !important;
+  border-bottom: 1px solid rgba(180,100,0,0.28) !important;
   border-left: 2px solid transparent !important;
 }
 .retro80 .entry:hover { background: rgba(200,120,0,0.07) !important; border-left-color: #c88000 !important; }
@@ -803,7 +803,7 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 
 /* ── Notifications ── */
 .retro80 .call { border-color: rgba(180,100,0,0.3) !important; border-left: 2px solid #c88000 !important; }
-.retro80 .call:hover { background: rgba(216,27,110,0.08) !important; }
+.retro80 .call:hover { background: rgba(200,120,0,0.08) !important; }
 .retro80 .call .title { color: #ffaa00 !important; }
 .retro80 .call .sub, .retro80 .call .ago { color: #b87000 !important; }
 .retro80 .call .ico svg { fill: #c88000 !important; }
@@ -826,11 +826,11 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 /* ── Menu ctx / sit ── */
 .retro80 .ctx {
   background: #000 !important; border: 1px solid #b87000 !important;
-  border-radius: 0 !important; box-shadow: 0 0 15px rgba(216,27,110,0.5) !important;
+  border-radius: 0 !important; box-shadow: 0 0 15px rgba(180,100,0,0.5) !important;
 }
 .retro80 .ctx button {
   color: #ffaa00 !important; font-size: 11px !important;
-  border-bottom: 1px solid rgba(216,27,110,0.2) !important;
+  border-bottom: 1px solid rgba(180,100,0,0.2) !important;
 }
 .retro80 .ctx button:hover { background: #c88000 !important; color: #000 !important; }
 
@@ -838,7 +838,7 @@ html, body { width: 100%; height: 100%; background: transparent; color: #f0f0f0;
 .retro80 .toast {
   background: #000 !important; border: 1px solid #c88000 !important; color: #ffaa00 !important;
   border-radius: 0 !important; font-size: 11px !important;
-  box-shadow: 0 0 12px rgba(216,27,110,0.5) !important;
+  box-shadow: 0 0 12px rgba(200,120,0,0.5) !important;
 }
 
 /* ===== Résultats de recherche d'agents (Patrouille) ===== */

@@ -464,7 +464,7 @@ function renderSliders(items) {
             </div>
             <div class="parent-box">
                 <div class="parent-img-wrap">
-                    <img id="img-mom" src="${Config.parentImages[momId] || ''}" class="parent-img" onerror="this.src='https://ui-avatars.com/api/?name=M&background=e91e63&color=fff'">
+                    <img id="img-mom" src="${Config.parentImages[momId] || ''}" class="parent-img" onerror="this.src='https://ui-avatars.com/api/?name=M&background=8e44ad&color=fff'">
                 </div>
                 <span class="parent-label">MÈRE</span>
             </div>

@@ -254,7 +254,7 @@ local function paintVehicle(veh, dt)
   if job.progress >= 100.0 and gun.color then
     SetVehicleColours(veh, gun.color, gun.color)
     local colorName = PaintGun.ColorByIndex[gun.color] and PaintGun.ColorByIndex[gun.color].name or "peinture"
-    notify(('Véhicule entièrement repeint en <span style="color:#f2b4d9; font-weight:bold;">%s</span>.'):format(colorName), 'success')
+    notify(('Véhicule entièrement repeint en <span style="color:#ffffff; font-weight:bold;">%s</span>.'):format(colorName), 'success')
   end
 
   return delta -- = conso de reservoir (1 point de % = 1 unite)

@@ -171,7 +171,7 @@ RegisterNetEvent('vg_paint:server:selectColor', function(itemId, paintIndex)
   meta.description = ('%s | Reservoir 100%%'):format(color.name)
   local updated = INV.UpdateItemMetadata(src, itemId, meta)
 
-  notify(src, ('Peinture chargée : <span style="color:#f2b4d9; font-weight:bold;">%s</span>.<br>Réservoir plein (<span style="color:#2ecc71; font-weight:bold;">100%%</span>).'):format(color.name), 'success')
+  notify(src, ('Peinture chargée : <span style="color:#ffffff; font-weight:bold;">%s</span>.<br>Réservoir plein (<span style="color:#2ecc71; font-weight:bold;">100%%</span>).'):format(color.name), 'success')
 
   -- Notifs : conso de pigment par pot (uniquement ceux qui ont ete utilises).
   if cost.rouge > 0 then
