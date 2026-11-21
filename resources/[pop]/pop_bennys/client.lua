@@ -7,6 +7,9 @@ local buildItemDb
 -- Helpers
 -- ─────────────────────────────────────────────
 
+-- Certains natives renvoient un booléen, d'autres 0/1 : on normalise.
+local function isOn(v) return v == true or v == 1 end
+
 local function saveOrig(veh)
     local p1, p2 = GetVehicleColours(veh)
     local r1, g1, b1 = GetVehicleCustomPrimaryColour(veh)
@@ -49,7 +52,7 @@ local function saveOrig(veh)
     end
     for i = 0, 20 do
         if DoesExtraExist(veh, i) then
-            origMods.extras[i] = IsVehicleExtraTurnedOn(veh, i) == 1
+            origMods.extras[i] = isOn(IsVehicleExtraTurnedOn(veh, i))
         end
     end
 end
@@ -105,7 +108,7 @@ local function buildVehicleData(veh)
     local extras = {}
     for i = 0, 20 do
         if DoesExtraExist(veh, i) then
-            extras[#extras + 1] = { id = i, on = IsVehicleExtraTurnedOn(veh, i) == 1 }
+            extras[#extras + 1] = { id = i, on = isOn(IsVehicleExtraTurnedOn(veh, i)) }
         end
     end
 
@@ -279,17 +282,61 @@ RegisterNUICallback('focusCamera', function(data, cb)
     cb('ok')
 end)
 
-RegisterNUICallback('apply', function(data, cb)
-    local items = data.items
-    if type(items) == 'table' and #items > 0 then
-        TriggerServerEvent('pop_bennys:payItems', items)
-    else
-        closeMenu(true)
+-- Catégories réellement modifiées, calculées ici (pas par la NUI) en comparant
+-- le véhicule à son état d'origine. Le serveur en déduit lui-même le coût.
+local function changedCategories(veh)
+    local o, out = origMods, {}
+    if GetVehicleWheelType(veh) ~= o.wheelType or GetVehicleMod(veh, 23) ~= o.wheelMod then out.wheel = 1 end
+
+    local bodyN = 0
+    for mt, idx in pairs(o.mods) do
+        if GetVehicleMod(veh, mt) ~= idx then bodyN = bodyN + 1 end
     end
+    if bodyN > 0 then out.body = bodyN end
+
+    if GetVehicleMod(veh, 11) ~= o.engine or GetVehicleMod(veh, 12) ~= o.brakes
+        or GetVehicleMod(veh, 13) ~= o.trans or GetVehicleMod(veh, 15) ~= o.susp
+        or GetVehicleMod(veh, 16) ~= o.armor
+        or isOn(IsToggleModOn(veh, 18)) ~= isOn(o.turbo) or isOn(IsToggleModOn(veh, 22)) ~= isOn(o.xenon) then
+        out.performance = 1
+    end
+
+    local nr, ng, nb = GetVehicleNeonLightsColour(veh)
+    local neonChanged = nr ~= o.nr or ng ~= o.ng or nb ~= o.nb
+    for i = 0, 3 do
+        if isOn(IsVehicleNeonLightEnabled(veh, i)) ~= isOn(o.neons[i + 1]) then neonChanged = true end
+    end
+    if neonChanged then out.neon = 1 end
+
+    if GetVehicleWindowTint(veh) ~= o.winTint then out.window = 1 end
+    if GetVehicleNumberPlateTextIndex(veh) ~= o.plateStyle then out.plate = 1 end
+    if GetVehicleLivery(veh) ~= o.livery or GetVehicleMod(veh, 48) ~= o.liveryMod then out.livery = 1 end
+
+    local extraN = 0
+    for id, on in pairs(o.extras or {}) do
+        if isOn(IsVehicleExtraTurnedOn(veh, id)) ~= on then extraN = extraN + 1 end
+    end
+    if extraN > 0 then out.extra = extraN end
+    return out
+end
+
+local payPending = false
+RegisterNUICallback('apply', function(_, cb)
     cb('ok')
+    if not DoesEntityExist(vehicle) or payPending then return end
+    -- Le texte de plaque n'est jamais modifiable ici (copie de plaque impossible)
+    SetVehicleNumberPlateText(vehicle, origMods.plateText)
+    local cats = changedCategories(vehicle)
+    if next(cats) == nil then
+        closeMenu(true)
+        return
+    end
+    payPending = true
+    TriggerServerEvent('pop_bennys:payItems', cats)
 end)
 
 RegisterNetEvent('pop_bennys:payResult', function(ok)
+    payPending = false
     if ok then
         closeMenu(true)
         exports['pop_notify']:ShowNotify({ icon = 'fas fa-circle-info', message = 'Modifications appliquées !', duration = 3000 })
@@ -356,8 +403,8 @@ end)
 
 RegisterNUICallback('preview_plate', function(data, cb)
     if DoesEntityExist(vehicle) then
+        -- Seul le style de plaque est modifiable (le texte est lié aux papiers du véhicule)
         if data.style ~= nil then SetVehicleNumberPlateTextIndex(vehicle, data.style) end
-        if data.text  ~= nil then SetVehicleNumberPlateText(vehicle, data.text) end
     end
     cb('ok')
 end)
@@ -385,7 +432,10 @@ end)
 -- Trigger
 -- ─────────────────────────────────────────────
 
-RegisterCommand(Config.Command, openMenu, false)
+-- /bennys : réservé aux admins (contrôle côté serveur), sinon passer par le point Benny's
+RegisterNetEvent('pop_bennys:adminOpen', function()
+    if not nuiOpen then openMenu() end
+end)
 
 exports('open', openMenu)
 
