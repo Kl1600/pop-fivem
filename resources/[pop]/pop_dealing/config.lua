@@ -5,8 +5,8 @@ Config = {}
 -- ─────────────────────────────────────────────
 
 Config.Debug                 = false      -- prints + logs pour debug
-Config.DevIgnoreZone         = true       -- ignore le check "joueur dans la zone" pour test
-Config.DevIgnoreItemCheck    = true       -- ignore le check "joueur a la drogue" pour test
+Config.DevIgnoreZone         = false       -- ignore le check "joueur dans la zone" pour test
+Config.DevIgnoreItemCheck    = false       -- ignore le check "joueur a la drogue" pour test
 
 -- ─────────────────────────────────────────────
 -- Réglages généraux
