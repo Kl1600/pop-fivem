@@ -1,10 +1,29 @@
 Config = {}
 
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false      -- prints + logs pour debug
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'  -- item d'argent (pop_inventory) : paiement des deals
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_dealing
+------------------------------------------------------------------------
 -- ─────────────────────────────────────────────
 -- Mode dev
 -- ─────────────────────────────────────────────
 
-Config.Debug                 = false      -- prints + logs pour debug
 Config.DevIgnoreZone         = false       -- ignore le check "joueur dans la zone" pour test
 Config.DevIgnoreItemCheck    = false       -- ignore le check "joueur a la drogue" pour test
 
@@ -19,7 +38,6 @@ Config.CustomerApproachRange = 1.8        -- distance à laquelle le client s'ar
 Config.OfferTimeout          = 25         -- secondes avant que le client s'en aille (refus implicite)
 Config.WalkSpeed             = 1.0        -- vitesse d'approche du client
 Config.DrawDistance          = 6.0        -- distance d'affichage du HUD 3D
-Config.MoneyItem             = 'cash'     -- item d'argent (pop_inventory)
 
 Config.BustChance            = 0.02       -- 2% que le client soit un flic (dev: laisser bas)
 Config.BustAlertRadius       = 250.0      -- portée d'alerte police en cas de bust
@@ -125,4 +143,31 @@ Config.Zones = {
         center = vec3(80.0, -1956.0, 21.1),
         radius = 60.0,
     },
+}
+
+-- ─────────────────────────────────────────────
+-- Réglages techniques (valeurs d'origine)
+-- ─────────────────────────────────────────────
+
+Config.CustomerLifetime     = 600    -- secondes avant qu'un client non servi disparaisse
+Config.StaticCustomerRange  = 15.0   -- distance max serveur joueur ↔ client immobile (mode vente)
+Config.CustomerRangeMargin  = 15.0   -- marge ajoutée à CustomerDetectRange pour un client de zone
+Config.CustomerStreamMargin = 50.0   -- marge avant de retirer un client de zone chez un joueur éloigné
+Config.ApproachTimeout      = 30     -- secondes avant qu'un client qui marche vers le joueur abandonne
+
+-- Durées des notifications (ms)
+Config.NotifyDurations = {
+    selling = 4000,   -- mode vente (activé, arrêté, plus de stock) et /dealing_spawn
+    short   = 3000,   -- client occupé, stock insuffisant, inventaire plein, commandes admin
+    deal    = 5000,   -- deal conclu
+    bust    = 6000,   -- flic infiltré
+    alert   = 7000,   -- signalement police
+}
+
+-- Caméra de négociation (focus + flou d'arrière-plan)
+Config.DealCam = {
+    offset = 1.4,     -- distance devant le client
+    side   = 0.55,    -- décalage sur le côté
+    height = 0.55,    -- hauteur
+    fov    = 32.0,
 }
