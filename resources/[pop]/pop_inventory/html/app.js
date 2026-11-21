@@ -2845,6 +2845,20 @@
   }
 
   document.addEventListener('keydown', (event) => {
+    // TAB (ou I) referme l'inventaire, comme il l'a ouvert — sauf pendant une saisie.
+    const tag = (event.target && event.target.tagName) || '';
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (event.target && event.target.isContentEditable);
+    const isToggleKey = event.key === 'Tab' || ((event.key === 'i' || event.key === 'I') && !typing);
+    if (isToggleKey && !event.repeat) {
+      event.preventDefault();
+      if (typing && event.key === 'Tab') event.target.blur();
+      const sFrame = document.getElementById('standby-frame');
+      if (sFrame && sFrame.style.display === 'block') {
+        fetch(`https://${GetParentResourceName()}/standbyClose`, { method: 'POST' });
+      }
+      fetch(`https://${GetParentResourceName()}/close`, { method: 'POST' });
+      return;
+    }
     if (event.key === 'Escape') {
       event.preventDefault();
       const sFrame = document.getElementById('standby-frame');

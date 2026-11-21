@@ -743,6 +743,20 @@
   });
 
   document.addEventListener('keydown', function (e) {
+    const tag = (e.target && e.target.tagName) || '';
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA';
+    if ((e.key === 'Tab' || ((e.key === 'i' || e.key === 'I') && !typing)) && !e.repeat) {
+      // TAB (ou I) referme le coffre et l'inventaire
+      e.preventDefault();
+      fetch(`https://${RES}/saveState`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: currentState })
+      });
+      fetch(`https://${RES}/standbyClose`, { method: 'POST' });
+      fetch(`https://${RES}/close`, { method: 'POST' });
+      return;
+    }
     if (e.key === "Escape") {
       fetch(`https://${RES}/standbyClose`, { method: 'POST' });
       fetch(`https://${RES}/saveState`, {
