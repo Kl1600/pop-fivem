@@ -1,0 +1,57 @@
+# Déploie resources/[pop]/ sur le serveur de test par SFTP à chaque push sur main.
+# Secrets à créer dans GitHub (Settings > Secrets and variables > Actions) :
+#   SFTP_HOST         ex. 123.45.67.89
+#   SFTP_PORT         ex. 2022
+#   SFTP_USER         identifiant SFTP du panel
+#   SFTP_PASSWORD     mot de passe SFTP du panel
+#   SFTP_REMOTE_PATH  dossier des ressources sur le serveur, ex. /resources/[pop]
+name: Deploy to test server
+
+on:
+  push:
+    branches: [main]
+    paths: ['resources/\[pop\]/**']
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secrets
+        id: check
+        env:
+          HOST: ${{ secrets.SFTP_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "Secrets SFTP absents : déploiement ignoré."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.skip != 'true'
+
+      - name: Install lftp
+        if: steps.check.outputs.skip != 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Upload via SFTP
+        if: steps.check.outputs.skip != 'true'
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_REMOTE_PATH: ${{ secrets.SFTP_REMOTE_PATH }}
+        run: |
+          lftp -e "
+            set sftp:auto-confirm yes;
+            set net:max-retries 2;
+            open -u \"$SFTP_USER\",\"$SFTP_PASSWORD\" -p \"${SFTP_PORT:-22}\" sftp://$SFTP_HOST;
+            mkdir -p -f \"$SFTP_REMOTE_PATH\";
+            mirror -R --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md \"resources/[pop]/\" \"$SFTP_REMOTE_PATH\";
+            bye
+          "
