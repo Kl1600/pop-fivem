@@ -1,0 +1,40 @@
+#menu {
+  box-sizing: border-box;
+  position: fixed;
+  inset-inline-end: 24px;
+  top: 20%;
+  width: min(270px, calc(100vw - 48px));
+  max-height: 70vh;
+  padding: 12px;
+  overflow: auto;
+  background: #0e0e11;
+}
+#menu header, #menu .actions, #menu .item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+#menu h1 { margin: 0; font-size: var(--pop-size); }
+#invitation { margin: 8px 0; padding: 8px; border: 1px solid var(--pop-accent); }
+#invitation p { margin: 0 0 8px; overflow-wrap: anywhere; }
+#menu .filter { display: flex; gap: 6px; align-items: center; margin: 8px 0; }
+#menu input { accent-color: var(--pop-accent); }
+#items button {
+  color: var(--pop-text);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  padding: 6px;
+  cursor: pointer;
+}
+#items .play {
+  text-align: start;
+  border-inline-start: 3px solid transparent;
+  width: 100%;
+}
+#items .play:hover, #items .current { border-inline-start-color: var(--pop-accent); }
+#items small { display: block; }
+#items .favorite { color: var(--pop-accent); }
+#menu :focus-visible { outline: 2px solid var(--pop-accent); outline-offset: -1px; }
+#stop { margin-top: 8px; }

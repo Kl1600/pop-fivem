@@ -1,0 +1,14 @@
+#terminal {
+  position: fixed;
+  inset-inline-end: 1.5rem;
+  inset-block-start: 24vh;
+  width: min(21rem, 86vw);
+  padding: 1rem;
+  border-inline-start: 3px solid var(--pop-accent);
+}
+header, dl div { display: flex; justify-content: space-between; align-items: baseline; gap: .8rem; }
+h1 { font-size: var(--pop-size); margin: 0; }
+dl { margin: .9rem 0 0; font-size: var(--pop-size-sm); }
+dl div + div { margin-top: .4rem; }
+dt { color: var(--pop-muted); }
+dd { margin: 0; overflow-wrap: anywhere; }

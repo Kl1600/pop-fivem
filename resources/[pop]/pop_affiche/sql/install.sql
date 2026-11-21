@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS `pop_affiche_surfaces` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `owner` VARCHAR(96) NOT NULL,
+    `x` DOUBLE NOT NULL,
+    `y` DOUBLE NOT NULL,
+    `z` DOUBLE NOT NULL,
+    `nx` DOUBLE NOT NULL,
+    `ny` DOUBLE NOT NULL,
+    `nz` DOUBLE NOT NULL,
+    `revision` INT UNSIGNED NOT NULL DEFAULT 1,
+    `content` VARCHAR(1024) NOT NULL,
+    PRIMARY KEY (`id`)
+);

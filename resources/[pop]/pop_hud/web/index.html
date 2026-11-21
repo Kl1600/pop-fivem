@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <link rel="stylesheet" href="kit/pop.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="hud">
+    <section id="vitals" class="pop-panel pop-fade">
+      <time id="clock" hidden></time>
+      <label id="health" hidden><span data-locale="health"></span><meter min="0" max="100"></meter></label>
+      <label id="armor" hidden><span data-locale="armor"></span><meter min="0" max="100"></meter></label>
+      <label id="hunger" hidden><span data-locale="hunger"></span><meter min="0" max="100"></meter></label>
+      <label id="thirst" hidden><span data-locale="thirst"></span><meter min="0" max="100"></meter></label>
+    </section>
+    <section id="vehicle" class="pop-panel pop-fade">
+      <div class="speed"><strong id="speed"></strong><span id="kmh" data-locale="kmh"></span><span id="mph" data-locale="mph" hidden></span></div>
+      <label id="fuel" hidden><span data-locale="fuel"></span><meter min="0" max="100"></meter></label>
+    </section>
+  </main>
+  <script src="kit/pop.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

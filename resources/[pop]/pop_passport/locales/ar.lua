@@ -1,0 +1,37 @@
+-- العربية
+Locales['ar'] = {
+    _rtl = true,
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'إلغاء',
+    confirm            = 'تأكيد',
+    close              = 'إغلاق',
+    interact           = 'تفاعل',
+    progress_cancelled = 'تم إلغاء الإجراء',
+    no_permission      = 'ليس لديك صلاحية',
+    wrong_job          = 'ليست لديك الوظيفة المطلوبة',
+    too_far            = 'أنت بعيد جدًا',
+    not_enough_money   = 'لا تملك مالًا كافيًا',
+    missing_item       = 'تحتاج إلى: %s',
+    inventory_full     = 'حقيبتك ممتلئة',
+    cooldown           = 'يرجى الانتظار %s ث',
+    busy               = 'أنت مشغول بالفعل',
+    error              = 'حدث خطأ ما',
+
+    -- Textes propres au script :
+    document_title = "جواز السفر",
+    document_us = "الولايات المتحدة",
+    document_mx = "المكسيك",
+    document_number = "الرقم",
+    document_birth = "تاريخ الميلاد",
+    document_sex = "الجنس",
+    document_male = "ذكر",
+    document_female = "أنثى",
+    document_issued = "تاريخ الإصدار",
+    document_expires = "تاريخ الانتهاء",
+    invalid_variant = "اختر US أو MX",
+    invalid_viewer = "اللاعب غير موجود",
+    missing_identity = "هوية الشخصية غير متاحة",
+    no_document = "هذه الوثيقة ليست بحوزتك",
+    document_expired = "انتهت صلاحية هذه الوثيقة",
+    document_ready = "الوثيقة جاهزة",
+}

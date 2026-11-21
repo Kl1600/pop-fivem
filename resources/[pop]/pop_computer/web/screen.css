@@ -1,0 +1,4 @@
+:root { background: #151518; color: #fff; font: 34px system-ui, sans-serif; }
+body { display: grid; place-items: center; min-height: 100vh; margin: 0; }
+main { display: grid; gap: .45em; border-inline-start: .13em solid var(--pop-accent, #ff2e88); padding-inline-start: .65em; }
+span { color: #c7c7cb; font-size: .8em; }

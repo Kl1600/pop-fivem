@@ -1,0 +1,36 @@
+-- Polski
+Locales['pl'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Anuluj',
+    confirm            = 'Potwierdź',
+    close              = 'Zamknij',
+    interact           = 'Interakcja',
+    progress_cancelled = 'Akcja anulowana',
+    no_permission      = 'Nie masz uprawnień',
+    wrong_job          = 'Nie masz wymaganej pracy',
+    too_far            = 'Jesteś za daleko',
+    not_enough_money   = 'Za mało pieniędzy',
+    missing_item       = 'Potrzebujesz: %s',
+    inventory_full     = 'Twój ekwipunek jest pełny',
+    cooldown           = 'Poczekaj jeszcze %s s',
+    busy               = 'Już coś robisz',
+    error              = 'Coś poszło nie tak',
+
+    -- Textes propres au script :
+    document_title = "Dowód tożsamości",
+    document_us = "Stany Zjednoczone",
+    document_mx = "Meksyk",
+    document_number = "Numer",
+    document_birth = "Data urodzenia",
+    document_sex = "Płeć",
+    document_male = "Mężczyzna",
+    document_female = "Kobieta",
+    document_issued = "Data wydania",
+    document_expires = "Ważny do",
+    invalid_variant = "Wybierz US lub MX",
+    invalid_viewer = "Nie znaleziono gracza",
+    missing_identity = "Tożsamość postaci jest niedostępna",
+    no_document = "Nie masz tego dokumentu",
+    document_expired = "Ten dokument stracił ważność",
+    document_ready = "Dokument jest gotowy",
+}

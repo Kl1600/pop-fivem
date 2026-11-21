@@ -1,0 +1,36 @@
+-- Deutsch
+Locales['de'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Abbrechen',
+    confirm            = 'Bestätigen',
+    close              = 'Schließen',
+    interact           = 'Interagieren',
+    progress_cancelled = 'Aktion abgebrochen',
+    no_permission      = 'Dazu hast du keine Berechtigung',
+    wrong_job          = 'Du hast nicht den erforderlichen Job',
+    too_far            = 'Du bist zu weit entfernt',
+    not_enough_money   = 'Nicht genug Geld',
+    missing_item       = 'Du brauchst: %s',
+    inventory_full     = 'Dein Inventar ist voll',
+    cooldown           = 'Bitte warte noch %s s',
+    busy               = 'Du bist bereits beschäftigt',
+    error              = 'Etwas ist schiefgelaufen',
+
+    -- Textes propres au script :
+    document_title = "Personalausweis",
+    document_us = "Vereinigte Staaten",
+    document_mx = "Mexiko",
+    document_number = "Nummer",
+    document_birth = "Geburtsdatum",
+    document_sex = "Geschlecht",
+    document_male = "Männlich",
+    document_female = "Weiblich",
+    document_issued = "Ausgestellt am",
+    document_expires = "Gültig bis",
+    invalid_variant = "Wähle US oder MX",
+    invalid_viewer = "Spieler nicht gefunden",
+    missing_identity = "Die Identität des Charakters ist nicht verfügbar",
+    no_document = "Du hast dieses Dokument nicht",
+    document_expired = "Dieses Dokument ist abgelaufen",
+    document_ready = "Dokument bereit",
+}

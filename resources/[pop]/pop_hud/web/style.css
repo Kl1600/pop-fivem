@@ -1,0 +1,31 @@
+#hud {
+  position: fixed;
+  inset-inline-end: 24px;
+  bottom: 24px;
+  display: grid;
+  gap: 6px;
+  width: min(170px, calc(100vw - 48px));
+  pointer-events: none;
+}
+#hud .pop-panel {
+  background: #0e0e11;
+  pointer-events: none;
+}
+#hud .pop-panel:not(.is-visible) { position: absolute; }
+#hud label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--pop-size-sm);
+}
+#hud [hidden] { display: none; }
+#hud meter {
+  width: 60px;
+  height: 9px;
+  appearance: none;
+}
+#hud meter::-webkit-meter-bar { background: #303036; border: 0; border-radius: 2px; }
+#hud meter::-webkit-meter-optimum-value { background: var(--pop-accent); border-radius: 2px; }
+#hud .speed { display: flex; align-items: baseline; gap: 6px; color: var(--pop-muted); }
+#hud strong { color: var(--pop-text); font-size: 26px; font-variant-numeric: tabular-nums; }

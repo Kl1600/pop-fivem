@@ -1,0 +1,36 @@
+-- Nederlands
+Locales['nl'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuleren',
+    confirm            = 'Bevestigen',
+    close              = 'Sluiten',
+    interact           = 'Interactie',
+    progress_cancelled = 'Actie geannuleerd',
+    no_permission      = 'Je hebt geen toestemming',
+    wrong_job          = 'Je hebt niet de vereiste baan',
+    too_far            = 'Je bent te ver weg',
+    not_enough_money   = 'Niet genoeg geld',
+    missing_item       = 'Je hebt nodig: %s',
+    inventory_full     = 'Je inventaris is vol',
+    cooldown           = 'Wacht nog %s s',
+    busy               = 'Je bent al bezig',
+    error              = 'Er is iets misgegaan',
+
+    -- Textes propres au script :
+    document_title = "Paspoort",
+    document_us = "Verenigde Staten",
+    document_mx = "Mexico",
+    document_number = "Nummer",
+    document_birth = "Geboortedatum",
+    document_sex = "Geslacht",
+    document_male = "Man",
+    document_female = "Vrouw",
+    document_issued = "Afgegeven op",
+    document_expires = "Geldig tot",
+    invalid_variant = "Kies US of MX",
+    invalid_viewer = "Speler niet gevonden",
+    missing_identity = "De identiteit van het personage is niet beschikbaar",
+    no_document = "Je hebt dit document niet",
+    document_expired = "Dit document is verlopen",
+    document_ready = "Document klaar",
+}

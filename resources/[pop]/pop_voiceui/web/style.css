@@ -1,0 +1,16 @@
+#voice {
+  position: fixed;
+  inset-inline-start: 24px;
+  top: 24px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #0e0e11;
+  pointer-events: none;
+}
+#voice .activity {
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 50%;
+  background: var(--pop-accent);
+}

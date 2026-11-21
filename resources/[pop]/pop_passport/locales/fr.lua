@@ -1,0 +1,36 @@
+-- Français
+Locales['fr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuler',
+    confirm            = 'Confirmer',
+    close              = 'Fermer',
+    interact           = 'Interagir',
+    progress_cancelled = 'Action annulée',
+    no_permission      = "Vous n'avez pas la permission",
+    wrong_job          = "Vous n'avez pas le métier requis",
+    too_far            = 'Vous êtes trop loin',
+    not_enough_money   = "Pas assez d'argent",
+    missing_item       = 'Il vous faut : %s',
+    inventory_full     = 'Votre inventaire est plein',
+    cooldown           = 'Patientez encore %s s',
+    busy               = 'Vous êtes déjà occupé',
+    error              = 'Une erreur est survenue',
+
+    -- Textes propres au script :
+    document_title = "Passeport",
+    document_us = "États-Unis",
+    document_mx = "Mexique",
+    document_number = "Numéro",
+    document_birth = "Date de naissance",
+    document_sex = "Sexe",
+    document_male = "Masculin",
+    document_female = "Féminin",
+    document_issued = "Délivré le",
+    document_expires = "Expire le",
+    invalid_variant = "Choisissez US ou MX",
+    invalid_viewer = "Joueur introuvable",
+    missing_identity = "L’identité du personnage est indisponible",
+    no_document = "Vous n’avez pas ce document",
+    document_expired = "Ce document a expiré",
+    document_ready = "Document prêt",
+}
