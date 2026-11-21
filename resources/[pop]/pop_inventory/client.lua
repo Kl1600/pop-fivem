@@ -129,7 +129,7 @@ exports('IsInventoryOpen', function()
   return isOpen == true
 end)
 
-RegisterCommand('pop_inventory', function()
+local function toggleInventory()
   if isOpen then
     closeUi()
   else
@@ -138,10 +138,13 @@ RegisterCommand('pop_inventory', function()
     if IsNuiFocused() then return end
     openUi()
   end
-end, false)
+end
 
-RegisterKeyMapping('pop_inventory', 'Ouvrir l\'interface Tab Inventory', 'keyboard', 'TAB')
-RegisterKeyMapping('pop_inventory', 'Ouvrir l\'interface Tab Inventory', 'keyboard', 'I')
+-- Deux commandes distinctes : une même commande ne peut avoir qu'une touche par défaut.
+RegisterCommand('pop_inventory', toggleInventory, false)
+RegisterCommand('pop_inventory_alt', toggleInventory, false)
+RegisterKeyMapping('pop_inventory', 'Inventaire : ouvrir / fermer', 'keyboard', 'TAB')
+RegisterKeyMapping('pop_inventory_alt', 'Inventaire : ouvrir / fermer (touche 2)', 'keyboard', 'I')
 
 -- Switch weapons keys (touches 1 à 4 pour les petites cases)
 local function switchToWeaponSlot(slot)
