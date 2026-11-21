@@ -39,3 +39,18 @@ Preuve commune : `lua tests/run.lua` = 134 réussis / 0 échec ; luacheck pop_ta
 - **socle-13 OK** : chaque champ de la section 7.4 accepte N et rejette N+1 (ASCII et UTF-8), types, contrôle, enums, charges 16 Ko et 128 Ko, profondeur.
 - **Restent false (partie « en jeu » non prouvable ici)** : socle-05 (conversion : logique prouvée avec faux inventaire, y compris retour arrière), socle-06 (mode repli codé, `D.Mode()`, message console), socle-08 (drop/arrêt prouvés avec faux Bridge ; commande `pop_tablet_sessions` sous `Config.Debug`), socle-09 (setup prouvé avec faux DB : haché, seconde config refusée ; reste le test sur vraie base), socle-10 (blocage 60 s puis x2 prouvé ; reste le message en jeu), socle-11 (idem), socle-14 (paquets < 1 Ko prouvés ; relevé en jeu à faire), socle-15 (scheduler prouvé avec faux `SetTimeout` ; minuteur 10 s en jeu), socle-16 (give prouvé avec faux Bridge ; ACE en jeu), socle-17 (`DB.Purge` écrit ; suppression réelle à voir sur base).
 - **Décisions** : l'objet `pop_tablet` n'est pas ajouté à `pop_inventory` (la SPEC demande seulement de le documenter dans le README). Série du mode repli = dérivée de l'identifiant (SHA-256), sans stockage.
+
+### Socle client (cli-01 à cli-09) : code écrit, tous restent false
+Preuve commune : `lua tests/run.lua` = 186 réussis / 0 échec (faux natives, vrai code de `client/*.lua`) ; luacheck 0/0 sur 51 fichiers ; `luac -p` 33 fichiers.
+Prouvé hors jeu : aucun thread ni boucle au chargement ; `RegisterKeyMapping('pop_tablet_toggle', texte traduit, 'keyboard', 'F5')` ; ouverture (focus true/true, `tablet:open` avec locale, rtl, accent, horloge) ; touche sans objet silencieuse ; relais `tablet:call` : liste blanche, `device:open`/`device:close`/noms inconnus/charge > 128 Ko rejetés, tablette fermée refusée ; fermeture (focus rendu, objet supprimé, serveur prévenu, double fermeture sans effet) ; mort (handler `gameEventTriggered` posé seulement pendant l'ouverture), `forceClose`, arrêt de la ressource ; resynchronisation 60 s en chaîne de `SetTimeout` coupée à la sortie ; scheduler client (délai en ms réelles, minuit, minute entamée, minuterie périmée sans effet, une seule minuterie).
+- cli-01, 02, 03, 05, 06, 08, 09 : le test « en jeu » (touche, resmon 0,00 ms, prop/animation, restart pendant l'usage, objet retiré) reste à faire. cli-04 : RTL en jeu et vitest (interface) restent à faire. cli-07 : délai prouvé, alarme à +2 min jeu à voir en jeu.
+- Valeurs à valider en jeu : `Config.Prop`, `Config.Anim`, `GetClockMonth` (supposé 0-11), `SetNuiFocus` (absente des docs locales, utilisée par le bridge).
+- Fichiers client ajoutés par rapport à la SPEC : `client/anim.lua` (animation + objet, séparé de main.lua).
+
+### Points de la SPEC à corriger ou décider
+1. `luacheck resources templates` complet ne peut pas valoir 0/0 (1529 avertissements d'autres ressources) : la commande de contrôle doit viser `resources/[pop]/pop_tablet`.
+2. Contrat NUI complété : `tablet:open` porte aussi `serial`, `needSetup`, `locked`, `app` ; ajout du message `tablet:openApp` (appli demandée alors que la tablette est déjà ouverte) et du callback `tablet:locale { lang }` ; callback serveur interne `pop_tablet:app:open` pour l'export client `OpenApp`.
+3. Objet perdu : sans surveillance continue, la fermeture n'a lieu qu'au prochain appel serveur ; un événement d'inventaire (hook par inventaire) serait nécessaire pour fermer aussitôt (à décider).
+4. `diff -r` de `shared/` ne peut pas être vide (ajout de `shared/tablet.lua`) : comparer fichier par fichier.
+5. feature_list.json compte 120 entrées (PROGRESS annonçait 116).
+6. Item `pop_tablet` non ajouté à `pop_inventory` (README seulement), à décider.

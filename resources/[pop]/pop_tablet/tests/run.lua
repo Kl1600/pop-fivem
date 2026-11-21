@@ -471,5 +471,227 @@ do
     check('give : objet avec serial + ligne en base', ok and D.SerialValid(serial) and inv[5][1].metadata.serial == serial and rows[serial] ~= nil)
 end
 
+------------------------------------------------------------------------
+-- Client : faux natives, vrai code de client/*.lua
+------------------------------------------------------------------------
+section('client : ouverture, focus, animation, relais, mort, arrêt')
+do
+    local cmds, keymaps, netEvents, gameHandlers, nuiCb, nuiMsgs, focus = {}, {}, {}, {}, {}, {}, {}
+    local triggers, notifs, deleted, created, removedHandlers, serverEvents, exportsReg = {}, {}, {}, 0, 0, {}, {}
+    local serverReply, threadsAtLoad, loading = {}, 0, true
+    local deadPed, hour, minute, second = false, 8, 30, 0
+    local clientTimers = {}
+    def('RegisterCommand', function(n, fn) cmds[n] = fn end)
+    def('RegisterKeyMapping', function(...) keymaps[#keymaps + 1] = { ... } end)
+    def('RegisterNetEvent', function(n, fn) if fn then netEvents[n] = fn end end)
+    def('AddEventHandler', function(n, fn)
+        if n == 'gameEventTriggered' then gameHandlers[#gameHandlers + 1] = fn return #gameHandlers end
+        netEvents[n] = fn
+    end)
+    def('RemoveEventHandler', function() removedHandlers = removedHandlers + 1 end)
+    def('RegisterNUICallback', function(n, fn) nuiCb[n] = fn end)
+    def('SendNUIMessage', function(m) nuiMsgs[#nuiMsgs + 1] = m end)
+    def('SetNuiFocus', function(a, b) focus[#focus + 1] = { a, b } end)
+    def('SetTimeout', function(ms, fn) clientTimers[#clientTimers + 1] = { ms = ms, fn = fn } end)
+    def('TriggerServerEvent', function(n, ...) serverEvents[#serverEvents + 1] = { n, ... } end)
+    def('exports', function(n, fn) exportsReg[n] = fn end)
+    def('CreateThread', function(fn) if loading then threadsAtLoad = threadsAtLoad + 1 end fn() end)
+    def('Wait', function() end)
+    def('PlayerPedId', function() return 77 end)
+    def('RequestAnimDict', function() end)
+    def('HasAnimDictLoaded', function() return true end)
+    def('TaskPlayAnim', function() end)
+    def('joaat', function() return 1 end)
+    def('RequestModel', function() end)
+    def('HasModelLoaded', function() return true end)
+    def('GetEntityCoords', function() return { x = 0, y = 0, z = 0 } end)
+    def('CreateObject', function() created = created + 1 return 555 end)
+    def('GetPedBoneIndex', function() return 1 end)
+    def('AttachEntityToEntity', function() end)
+    def('SetModelAsNoLongerNeeded', function() end)
+    def('DoesEntityExist', function() return true end)
+    def('DeleteEntity', function(e) deleted[#deleted + 1] = e end)
+    def('StopAnimTask', function() end)
+    def('RemoveAnimDict', function() end)
+    def('IsPedDeadOrDying', function() return deadPed end)
+    def('GetClockHours', function() return hour end)
+    def('GetClockMinutes', function() return minute end)
+    def('GetClockSeconds', function() return second end)
+    def('GetClockDayOfMonth', function() return 14 end)
+    def('GetClockMonth', function() return 5 end)
+    def('GetClockYear', function() return 2026 end)
+    def('GetMillisecondsPerGameMinute', function() return 2000 end)
+    Bridge.OnUiClose = function(fn) nuiCb['__uiclose'] = fn end
+    Bridge.Notify = function(msg) notifs[#notifs + 1] = msg end
+    Callback = {
+        Register = function() end,
+        Trigger = function(name, cb, ...)
+            triggers[#triggers + 1] = { name = name, args = { ... } }
+            local reply = serverReply[name]
+            cb(type(reply) == 'function' and reply(...) or reply)
+        end,
+    }
+    Config.Locale = 'en'
+    for _, f in ipairs({ 'locale', 'anim', 'device', 'scheduler', 'main', 'nui', 'api' }) do dofile('client/' .. f .. '.lua') end
+    loading = false
+    local C = Tablet.Client
+    local function triggered(name) for i = #triggers, 1, -1 do if triggers[i].name == name then return triggers[i] end end end
+    local function lastMsg() return nuiMsgs[#nuiMsgs] end
+    local function reset() triggers, nuiMsgs, notifs, focus, deleted = {}, {}, {}, {}, {} end
+
+    check('aucune boucle ni thread au chargement (0,00 ms fermée)', threadsAtLoad == 0, threadsAtLoad)
+    check('touche : RegisterKeyMapping(commande, texte traduit, keyboard, F5)',
+        keymaps[1] and keymaps[1][1] == 'pop_tablet_toggle' and keymaps[1][2] == 'Open the tablet'
+        and keymaps[1][3] == 'keyboard' and keymaps[1][4] == 'F5')
+    check('exports IsOpen/Close/OpenApp', exportsReg.IsOpen and exportsReg.Close and exportsReg.OpenApp)
+
+    -- Textes
+    local ar = C.LocaleTable('ar')
+    check('locale ar : RTL + clés en arabe', ar._rtl == true and ar.tablet_key == Locales.ar.tablet_key and ar.cancel ~= nil)
+    check('locale fr : repli anglais pour une clé absente', C.LocaleTable('fr').tablet_key == Locales.fr.tablet_key and not C.LocaleTable('fr')._rtl)
+    check('locale inconnue : langue du serveur', C.LocaleTable('zz').tablet_key == Locales.en.tablet_key)
+    local snap = C.ClockSnapshot()
+    check('horloge : heure, mois 1-12, ms par minute', snap.h == 8 and snap.m == 30 and snap.mo == 6 and snap.y == 2026 and snap.msPerMin == 2000)
+
+    -- Ouverture par la touche
+    serverReply['pop_tablet:device:open'] = { ok = false, err = 'err_no_tablet' }
+    cmds.pop_tablet_toggle()
+    check('touche sans objet : aucune notification, rien d\'ouvert', #notifs == 0 and not C.IsOpen() and #focus == 0)
+    netEvents['pop_tablet:client:use']('PT-ABCDEFGH23')
+    check('objet utilisé sans tablette valide : message d\'erreur', #notifs == 1 and not C.IsOpen())
+    check('série de l\'objet transmise comme indice', triggered('pop_tablet:device:open').args[1] == 'PT-ABCDEFGH23')
+
+    reset()
+    serverReply['pop_tablet:device:open'] = { ok = true, serial = 'PT-ABCDEFGH23', needSetup = false, locked = true,
+        boot = { settings = { lang = 'ar' } } }
+    cmds.pop_tablet_toggle()
+    check('ouverture : focus NUI (true, true)', C.IsOpen() and focus[1] and focus[1][1] == true and focus[1][2] == true)
+    check('ouverture : message tablet:open (locale, rtl, accent, horloge)', lastMsg().action == 'tablet:open'
+        and lastMsg().data.rtl == true and lastMsg().data.accent == Config.AccentColor and lastMsg().data.clock.h == 8
+        and lastMsg().data.locale.tablet_key == Locales.ar.tablet_key)
+    check('animation : objet créé et gestionnaire de mort posé', created == 1 and C.Anim.HasProp() and #gameHandlers == 1)
+
+    local replies = {}
+    nuiCb['tablet:ready']({}, function(r) replies[#replies + 1] = r end)
+    check('tablet:ready renvoie tablet:open', lastMsg().action == 'tablet:open' and replies[1].ok)
+
+    -- Relais NUI
+    serverReply['pop_tablet:notes:list'] = { ok = true, notes = {} }
+    local got
+    nuiCb['tablet:call']({ name = 'notes:list', data = { a = 1 } }, function(r) got = r end)
+    check('relais : nom autorisé transmis au serveur', got and got.ok and triggered('pop_tablet:notes:list') ~= nil)
+    for _, bad in ipairs({ 'device:open', 'device:close', 'evil:thing', '../x', '' }) do
+        local before = #triggers
+        got = nil
+        nuiCb['tablet:call']({ name = bad }, function(r) got = r end)
+        check('relais : « ' .. bad .. ' » rejeté', got and got.ok == false and got.err == 'err_unknown_call' and #triggers == before)
+    end
+    nuiCb['tablet:call']({ name = 42 }, function(r) got = r end)
+    check('relais : nom non texte rejeté', got.ok == false)
+    nuiCb['tablet:call']({ name = 'notes:save', data = { body = string.rep('x', 140000) } }, function(r) got = r end)
+    check('relais : charge > 128 Ko rejetée', got.err == 'err_too_large')
+    serverReply['pop_tablet:notes:save'] = nil
+    nuiCb['tablet:call']({ name = 'notes:save', data = {} }, function(r) got = r end)
+    check('relais : pas de réponse serveur -> err_timeout', got.err == 'err_timeout')
+    nuiCb['tablet:camera']({}, function(r) got = r end)
+    check('caméra/carte/micro : réponse propre en attendant les applis', got.ok == false and got.err == 'err_unavailable')
+
+    -- Horloge et resynchronisation
+    clientTimers = {}
+    reset()
+    nuiCb['tablet:resync']({ active = true }, function(r) got = r end)
+    check('resync : instantané + une minuterie de 60 s', got.ok and lastMsg().action == 'tablet:clock'
+        and #clientTimers == 1 and clientTimers[1].ms == 60000)
+    clientTimers[1].fn()
+    check('resync : se ré-arme tant que l\'appli est active', #clientTimers == 2 and clientTimers[2].ms == 60000)
+    nuiCb['tablet:resync']({ active = false }, function() end)
+    local n = #nuiMsgs
+    clientTimers[2].fn()
+    check('resync coupée : plus aucun message ni minuterie', #nuiMsgs == n)
+
+    -- Fermeture par l'interface
+    reset()
+    nuiCb['tablet:close']({}, function() end)
+    check('fermeture : focus rendu, objet supprimé, serveur prévenu',
+        not C.IsOpen() and focus[1][1] == false and deleted[1] == 555 and triggered('pop_tablet:device:close') ~= nil
+        and removedHandlers == 1 and lastMsg().action == 'tablet:close')
+    nuiCb['tablet:call']({ name = 'notes:list' }, function(r) got = r end)
+    check('tablette fermée : relais refusé', got.err == 'err_session')
+    local f = #focus
+    nuiCb['__uiclose']()
+    check('fermer deux fois : sans effet', #focus == f)
+
+    -- Mort, objet perdu, arrêt
+    cmds.pop_tablet_toggle()
+    check('réouverture', C.IsOpen())
+    gameHandlers[#gameHandlers]('CEventNetworkEntityDamage', { 12 })
+    check('dégât sur un autre : reste ouverte', C.IsOpen())
+    deadPed = true
+    gameHandlers[#gameHandlers]('CEventNetworkEntityDamage', { 77 })
+    check('mort du joueur : fermeture + focus rendu', not C.IsOpen() and focus[#focus][1] == false)
+    deadPed = false
+    cmds.pop_tablet_toggle()
+    netEvents['pop_tablet:client:forceClose']({ reason = 'lost' })
+    check('forceClose (objet perdu) : fermée', not C.IsOpen())
+    cmds.pop_tablet_toggle()
+    reset()
+    netEvents.onResourceStop('autre')
+    check('arrêt d\'une autre ressource : ignoré', C.IsOpen())
+    netEvents.onResourceStop('pop_tablet')
+    check('arrêt de la ressource : focus rendu, objet supprimé', focus[#focus][1] == false and deleted[1] == 555)
+    C.Close('test')
+
+    -- OpenApp
+    exportsReg.OpenApp('settings', { a = 1 })
+    check('export OpenApp : passe par le serveur', triggered('pop_tablet:app:open') ~= nil)
+    serverReply['pop_tablet:device:open'].boot = nil
+    netEvents['pop_tablet:client:open']({ app = 'notes' })
+    check('push open : ouvre la tablette avec l\'appli demandée', C.IsOpen() and lastMsg().data.app.app == 'notes')
+    netEvents['pop_tablet:client:open']({ app = 'clock' })
+    check('déjà ouverte : tablet:openApp', lastMsg().action == 'tablet:openApp' and lastMsg().data.app == 'clock')
+    check('push notify relayé seulement ouverte', (function()
+        netEvents['pop_tablet:client:notify']({ app = 'x' })
+        local ok1 = lastMsg().action == 'tablet:notify'
+        C.Close('t')
+        local n2 = #nuiMsgs
+        netEvents['pop_tablet:client:notify']({ app = 'x' })
+        return ok1 and #nuiMsgs == n2
+    end)())
+
+    -- Scheduler client
+    local S = C.Scheduler
+    check('Sanitize garde les éléments valides seulement', #S.Sanitize({ { id = 1, kind = 'alarm', minute = 480 }, { id = 2, kind = 'bad', minute = 1 },
+        { id = 3, kind = 'alarm', minute = 1440 }, { id = 'x', kind = 'alarm', minute = 5 }, 'x' }) == 1)
+    local it, ms = S.Next({ { id = 1, kind = 'alarm', minute = 8 * 60 + 32 }, { id = 2, kind = 'alarm', minute = 9 * 60 } }, 8, 30, 0, 2000)
+    check('délai : alarme dans 2 minutes de jeu = 4000 ms', it.id == 1 and ms == 4000, ms)
+    ms = select(2, S.Next({ { id = 1, kind = 'alarm', minute = 8 * 60 + 32 } }, 8, 30, 30, 2000))
+    check('délai : secondes de jeu déduites (1 min 30 = 3000 ms)', ms == 3000, ms)
+    ms = select(2, S.Next({ { id = 1, kind = 'alarm', minute = 8 * 60 + 30 } }, 8, 30, 10, 2000))
+    check('minute déjà entamée : reportée au lendemain de jeu', ms == (86400 - 10) * 2000 / 60, ms)
+    ms = select(2, S.Next({ { id = 1, kind = 'alarm', minute = 5 } }, 23, 59, 0, 2000))
+    check('passage de minuit', ms == 6 * 60 * 2000 / 60 * 1.0, ms)
+    check('liste vide : nil', S.Next({}, 1, 1, 1, 2000) == nil)
+
+    clientTimers, serverEvents = {}, {}
+    S.Set({ { id = 7, kind = 'alarm', minute = 8 * 60 + 32 } })
+    check('une seule minuterie planifiée', #clientTimers == 1 and clientTimers[1].ms == 4000)
+    S.Set({ { id = 7, kind = 'alarm', minute = 8 * 60 + 32 }, { id = 8, kind = 'event', minute = 8 * 60 + 31 } })
+    check('re-planification : nouvelle minuterie, l\'ancienne est périmée', #clientTimers == 2 and clientTimers[2].ms == 2000)
+    clientTimers[1].fn()
+    check('minuterie périmée sans effet', #serverEvents == 0 and #clientTimers == 2)
+    minute = 31
+    clientTimers[2].fn()
+    check('à l\'échéance : pop_tablet:server:due(id, kind) puis re-planification',
+        serverEvents[1] and serverEvents[1][1] == 'pop_tablet:server:due' and serverEvents[1][2] == 8 and serverEvents[1][3] == 'event'
+        and #clientTimers == 3)
+    minute = 30
+    clientTimers[3].fn()
+    check('arrivée trop tôt : pas d\'alerte, nouvelle tentative', #serverEvents == 1 and #clientTimers == 4)
+    S.Set({})
+    local nt = #clientTimers
+    clientTimers[#clientTimers].fn()
+    check('liste vidée : plus aucune minuterie', #clientTimers == nt)
+end
+
 print(('\n%d réussis, %d échecs'):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)
