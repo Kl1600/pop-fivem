@@ -12,6 +12,7 @@
 
 
 ## Gabarit POP (restructuration)
+- pop_vehiclepersistence : gabarit complet, client.lua (982 l.) découpé en client/props.lua, main.lua, debug_hud.lua, notify.lua ; server/ en common, keys, storage, spatial, events. Notifications via pop_notify (avant : ox_lib). Exports inchangés.
 - pop_hud : gabarit complet (client/status.lua, client/minimap.lua), chargement du perso via Bridge.OnPlayerLoaded, exports inchangés.
 - pop_chat : gabarit complet (bridge, config, locales, client/server, README), nom RP via Bridge.GetName.
 - pop_speedometer : gabarit (config.lua, client/main.lua, README), sans bridge comme pop_notify.
