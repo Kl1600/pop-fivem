@@ -1,8 +1,8 @@
 -- Les événements relaient une action d'un joueur vers un autre : on vérifie que la
 -- cible existe et qu'elle est proche de la source (anti-abus à distance).
 -- Seul le NOM de l'emote circule : chaque client la retrouve dans sa propre liste.
-local MAX_DIST = 10.0
-local REQUEST_TTL = 15 -- secondes de validité d'une demande
+local MAX_DIST = Config.ShareMaxDistance
+local REQUEST_TTL = Config.ShareRequestTTL -- secondes de validité d'une demande
 
 local pendingShare = {}  -- [cible] = { from = src, name = nom, t = os.time() }
 local pendingClone = {}  -- [cible] = { [demandeur] = os.time() }
@@ -41,18 +41,18 @@ local function takePendingClone(target, requester)
 end
 
 -- Emote partagée : demande
-RegisterNetEvent("emotes:AskForSharedEmote")
-AddEventHandler("emotes:AskForSharedEmote", function(player, emoteName)
+RegisterNetEvent("pop_emotes:AskForSharedEmote")
+AddEventHandler("pop_emotes:AskForSharedEmote", function(player, emoteName)
     local src = source
     player = tonumber(player)
     if not isNear(src, player) or not isSharedEmote(emoteName) then return end
     pendingShare[player] = { from = src, name = emoteName, t = os.time() }
-    TriggerClientEvent("emotes:AskForSharedEmote", player, emoteName, src)
+    TriggerClientEvent("pop_emotes:AskForSharedEmote", player, emoteName, src)
 end)
 
 -- Emote partagée : acceptation (seulement si une demande existe)
-RegisterNetEvent("emotes:AcceptSharedEmote")
-AddEventHandler("emotes:AcceptSharedEmote", function(emoteName, player)
+RegisterNetEvent("pop_emotes:AcceptSharedEmote")
+AddEventHandler("pop_emotes:AcceptSharedEmote", function(emoteName, player)
     local src = source
     player = tonumber(player)
     local req = pendingShare[src]
@@ -60,56 +60,56 @@ AddEventHandler("emotes:AcceptSharedEmote", function(emoteName, player)
     pendingShare[src] = nil
     if not isNear(src, player) then return end
     partners[src], partners[player] = player, src
-    TriggerClientEvent("emotes:PlaySharedEmote", player, emoteName, 1, src)
-    TriggerClientEvent("emotes:PlaySharedEmote", src, emoteName, 2, player)
+    TriggerClientEvent("pop_emotes:PlaySharedEmote", player, emoteName, 1, src)
+    TriggerClientEvent("pop_emotes:PlaySharedEmote", src, emoteName, 2, player)
 end)
 
 -- Arrêt : seul le partenaire de l'emote partagée peut arrêter l'autre joueur
-RegisterNetEvent("emotes:StopEmote")
-AddEventHandler("emotes:StopEmote", function(player)
+RegisterNetEvent("pop_emotes:StopEmote")
+AddEventHandler("pop_emotes:StopEmote", function(player)
     local src = source
     player = tonumber(player)
     if not player or partners[src] ~= player then return end
     partners[src] = nil
     if partners[player] == src then partners[player] = nil end
-    TriggerClientEvent("emotes:StopEmote", player)
+    TriggerClientEvent("pop_emotes:StopEmote", player)
 end)
 
 -- Cloner l'emote d'un joueur proche
-RegisterNetEvent("emotes:CloneEmote")
-AddEventHandler("emotes:CloneEmote", function(player)
+RegisterNetEvent("pop_emotes:CloneEmote")
+AddEventHandler("pop_emotes:CloneEmote", function(player)
     local src = source
     player = tonumber(player)
     if not isNear(src, player) then return end
     addPendingClone(player, src)
-    TriggerClientEvent("emotes:RequestCloneEmote", player, src)
+    TriggerClientEvent("pop_emotes:RequestCloneEmote", player, src)
 end)
 
-RegisterNetEvent("emotes:GiveEmoteCloned")
-AddEventHandler("emotes:GiveEmoteCloned", function(player, emoteName)
+RegisterNetEvent("pop_emotes:GiveEmoteCloned")
+AddEventHandler("pop_emotes:GiveEmoteCloned", function(player, emoteName)
     local src = source
     player = tonumber(player)
     if not takePendingClone(src, player) or not isNear(src, player) or not isKnownEmote(emoteName) then return end
-    TriggerClientEvent("emotes:PlayEmote", player, emoteName)
+    TriggerClientEvent("pop_emotes:PlayEmote", player, emoteName)
 end)
 
 -- Copier l'emote d'un joueur (export CopyEmoteFromPlayer)
-RegisterNetEvent("emotes:CopyEmoteFromPlayer")
-AddEventHandler("emotes:CopyEmoteFromPlayer", function(targetPlayer)
+RegisterNetEvent("pop_emotes:CopyEmoteFromPlayer")
+AddEventHandler("pop_emotes:CopyEmoteFromPlayer", function(targetPlayer)
     local requester = source
     targetPlayer = tonumber(targetPlayer)
     if not isNear(requester, targetPlayer) then return end
     addPendingClone(targetPlayer, requester)
-    TriggerClientEvent("emotes:RequestCopyEmote", targetPlayer, requester)
+    TriggerClientEvent("pop_emotes:RequestCopyEmote", targetPlayer, requester)
 end)
 
-RegisterNetEvent("emotes:GiveCopiedEmote")
-AddEventHandler("emotes:GiveCopiedEmote", function(requester, emoteName)
+RegisterNetEvent("pop_emotes:GiveCopiedEmote")
+AddEventHandler("pop_emotes:GiveCopiedEmote", function(requester, emoteName)
     local src = source
     requester = tonumber(requester)
     if not takePendingClone(src, requester) or not isNear(src, requester) then return end
     if not isKnownEmote(emoteName) then emoteName = nil end
-    TriggerClientEvent("emotes:ReceiveCopiedEmote", requester, emoteName)
+    TriggerClientEvent("pop_emotes:ReceiveCopiedEmote", requester, emoteName)
 end)
 
 AddEventHandler('playerDropped', function()

@@ -1,3 +1,4 @@
+-- luacheck: ignore (liste de données RPEmotes, gardée telle quelle)
 -- ALL custon animations added to this repository were added with express permission from the creators and does not contain any paid content --
 -- If an emote does not work, you may be on an older gamebuild. --
 -- To get a higher gamebuild, see ReadMe on github repository --

@@ -1,9 +1,10 @@
 fx_version 'cerulean'
 game 'gta5'
 
+name 'pop_emotes'
 author 'KL'
 description 'Discreet Animation Menu with full RPEmotes assets'
-version '1.1.0'
+version '1.2.0'
 lua54 'yes'
 
 ui_page 'html/index.html'
@@ -14,27 +15,40 @@ files {
     'html/js/app.js',
 }
 
+-- Ordre imposé : la liste personnalisée complète la liste principale.
 shared_scripts {
+    'config.lua',
+    'shared/callback.lua',
+    'shared/locale.lua',
+    'locales/*.lua',
     'shared/emotes.lua',
-    'shared/emotes_custom.lua'
+    'shared/emotes_custom.lua',
 }
 
 client_scripts {
-    'client/core/utils.lua',
-    'client/core/favorites.lua',
-    'client/core/events.lua',
-    'client/core/crouch.lua',
-    'client/main.lua',
-    'client/radio_anim.lua'
+    'bridge/client.lua',
+    'client/emote.lua',
+    'client/favorites.lua',
+    'client/events.lua',
+    'client/crouch.lua',
+    'client/menu.lua',
+    'client/radio_anim.lua',
 }
 
 server_scripts {
-    'server/main.lua'
+    'bridge/server.lua',
+    'server/main.lua',
 }
 
 exports {
     'GetCurrentEmoteName',
     'CopyEmoteFromPlayer',
+}
+
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
 }
 
 -- Props : .ytyp de stream/[Props]/ (référencés par leur nom de fichier, comme RPEmotes)

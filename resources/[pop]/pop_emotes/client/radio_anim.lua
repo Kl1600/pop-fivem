@@ -1,8 +1,5 @@
-local isTransmitting = false
-
 RegisterNetEvent('pma-voice:radioActive')
 AddEventHandler('pma-voice:radioActive', function(radioActive)
-    isTransmitting = radioActive
     if radioActive then
         -- Play "radio2" emote when transmitting on radio
         if EmotesList and EmotesList.PropEmotes and EmotesList.PropEmotes["radio2"] then

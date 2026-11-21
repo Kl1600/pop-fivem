@@ -1,9 +1,12 @@
+-- luacheck: ignore 131 111
+-- (fonctions et variables globales partagées entre les fichiers client ou exportées : exports du manifest)
 preview_emote = nil
 
--- vNotif n'est pas présent sur le serveur : notifications redirigées vers pop_notify.
+-- Notification au style d'origine (icône selon le type), envoyée par le bridge (pop_notify).
+-- Les codes couleur GTA (~s, ~c, ~K…) des textes sont retirés.
 function EmoteNotify(data)
     local msg = tostring(data.content or ''):gsub('~%a', ''):gsub('%s+', ' '):match('^%s*(.-)%s*$')
-    exports['pop_notify']:ShowNotify({
+    Bridge.Notify({
         message  = msg,
         icon     = data.type == 'ROUGE' and 'fas fa-triangle-exclamation' or 'fas fa-circle-info',
         duration = (data.duration or 4) * 1000,
@@ -91,13 +94,6 @@ function StopPedPreview()
         DeleteEntity(emotePed)
     end
     emotePed = nil
-end
-
-local function abs(n)
-    if n < 0 then
-        return -n
-    end
-    return n
 end
 
 function RotationToDirection(rotation)
@@ -365,7 +361,7 @@ function PlaySharedEmote(emote, player)
         end
     end
 
-    --print(duration, flag)
+    if Config.Debug then print('[pop_emotes] emote partagée', duration, flag) end
 
     local coords = GetOffsetFromEntityInWorldCoords(pedInFront, SyncOffsetSide, SyncOffsetFront, SyncOffsetHeight)
     local heading = GetEntityHeading(pedInFront)
@@ -382,7 +378,7 @@ function StopEmote()
         end
         -- if current emote is a shared emote, send a stop event to the other player
         if player_emoting_with then
-            TriggerServerEvent("emotes:StopEmote", player_emoting_with)
+            TriggerServerEvent("pop_emotes:StopEmote", player_emoting_with)
         end
         DestroyAttachedProps()
         if current_emote.AnimationOptions ~= nil and current_emote.AnimationOptions.ExitEmote ~= nil then
@@ -460,12 +456,12 @@ function CloneEmoteNearestPlayer()
             end
         end
     end
-    if ClosestPlayer ~= nil and ClosestDistance < 3.0 then
-        TriggerServerEvent("emotes:CloneEmote", GetPlayerServerId(ClosestPlayer))
+    if ClosestPlayer ~= nil and ClosestDistance < Config.NearbyRadius then
+        TriggerServerEvent("pop_emotes:CloneEmote", GetPlayerServerId(ClosestPlayer))
     else
         EmoteNotify({
             type = 'ROUGE',
-            content = "~s Aucun joueur à proximité !"
+            content = L('no_player_nearby')
         })
     end
 end
@@ -479,7 +475,7 @@ function GetCurrentEmoteName()
 end
 
 function CopyEmoteFromPlayer(targetServerId)
-    TriggerServerEvent("emotes:CopyEmoteFromPlayer", targetServerId)
+    TriggerServerEvent("pop_emotes:CopyEmoteFromPlayer", targetServerId)
 end
 
 function GetClosestPlayer(radius)

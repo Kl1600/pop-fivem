@@ -12,6 +12,7 @@
 
 
 ## Gabarit POP (restructuration)
+- pop_emotes : gabarit (client/ aplati en emote, menu, events, crouch, favorites, radio_anim ; config, locales), évènements emotes:* renommés pop_emotes:*, aucune emote supprimée (en plus des 3 déjà retirées avec accord).
 - pop_medexam : gabarit complet (client/injuries+exam, server/main, locales), options ox_target renommées pop_medexam_examine / pop_medexam_treat.
 - pop_bennys : gabarit complet (client/vehicle, camera, menu, preview, zone ; server/payment, admin), paiement via Bridge.GetItemCount/RemoveItem, admin via Bridge.IsAdmin.
 - pop_enterprisegarage : gabarit complet (client/main+zones, server/common+fleet+garage), notifications via pop_notify (avant : ESX), ESX.Game gardé en direct.

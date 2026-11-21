@@ -1,19 +1,20 @@
+-- luacheck: ignore 131
 FavoritesEmotes = {}
 
 function RegisterFavoriteEmote()
     if current_emote ~= nil then
         local emote = ""
-        for k,v in pairs(AllEmotes) do 
-            if v[3] == current_emote[3] then 
+        for k,v in pairs(AllEmotes) do
+            if v[3] == current_emote[3] then
                 emote = k
             end
         end
         local goodgo = true
-        for k,v in pairs(FavoritesEmotes) do 
-            if v == emote then 
+        for _,v in pairs(FavoritesEmotes) do
+            if v == emote then
                 EmoteNotify({
                     type = 'ROUGE',
-                    content = "Vous avez déjà enregistré cette animation"
+                    content = L('fav_already')
                 })
                 goodgo = false
                 break
@@ -24,19 +25,19 @@ function RegisterFavoriteEmote()
         SetResourceKvp("favoritesemotesVision",json.encode(FavoritesEmotes))
         EmoteNotify({
             type = 'VERT',
-            content = "L'animation à été~c sauvegardé dans vos favoris"
+            content = L('fav_saved')
         })
     else
         EmoteNotify({
             type = 'ROUGE',
-            content = "Jouez l'animation pour la mettre en favoris"
+            content = L('fav_need_emote')
         })
     end
 end
 
 function GetFavoriteEmotesFromCache()
     local cache = GetResourceKvpString("favoritesemotesVision")
-    if cache then 
+    if cache then
         FavoritesEmotes = json.decode(cache) or {}
     end
 end

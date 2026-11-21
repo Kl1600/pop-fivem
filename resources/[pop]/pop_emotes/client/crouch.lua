@@ -1,8 +1,6 @@
 IsProne = false
 local isCrouched = false
-local isCrawling = false
 local inAction = false
-local proneType = "onfront"
 local lastKeyPress = 0
 
 local function CanPlayerCrouchCrawl(playerPed)
@@ -152,7 +150,7 @@ local function CrouchKeyPressed()
     end
 end
 
-RegisterKeyMapping('+crouch', "Accroupir", "keyboard", "lcontrol")
+RegisterKeyMapping('+crouch', L('keymap_crouch'), "keyboard", Config.CrouchKey)
 RegisterCommand('+crouch', function() CrouchKeyPressed() end, false)
 RegisterCommand('-crouch', function() end, false) -- This needs to be here to prevent errors/warnings
 RegisterCommand('crouch', function()

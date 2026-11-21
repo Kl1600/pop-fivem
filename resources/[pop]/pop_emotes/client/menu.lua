@@ -12,7 +12,7 @@ function SetNuiState(state)
         type = "toggle",
         display = state
     })
-    
+
     if state then
         -- Affiche le perso solide à l'écran pendant que le menu est ouvert
         CreateThread(StartPedPreview)
@@ -70,7 +70,7 @@ RegisterNUICallback("getAnimations", function(data, cb)
             if type(categoryTable) == "table" then
                 for emoteName, emoteData in pairs(categoryTable) do
                     count = count + 1
-                    local label = emoteName
+                    local label
                     -- Standard RPEmotes format: [1]=dict, [2]=anim, [3]=label
                     -- Walks/Expressions format: [1]=dict/style, [2]=label
                     if key == "walks" or key == "expressions" then
@@ -114,7 +114,7 @@ RegisterNUICallback("previewEmote", function(data, cb)
     if category == "shared" then
         emoteData = EmotesList.Shared[emote]
     else
-        for catName, catTable in pairs(EmotesList) do
+        for _, catTable in pairs(EmotesList) do
             if catTable[emote] then
                 emoteData = catTable[emote]
                 break
@@ -131,7 +131,7 @@ end)
 RegisterNUICallback("playEmote", function(data, cb)
     local emote = data.emote
     local category = data.category
-    
+
     if emote == "c" then
         ExecuteCommand("e c")
         cb('ok')
@@ -156,8 +156,8 @@ RegisterCommand('animenu', function()
     SetNuiState(not isMenuOpen)
 end)
 
--- Touche d'ouverture (F5 par défaut) via key mapping : plus de boucle par frame au repos.
-RegisterKeyMapping('animenu', 'Menu des animations', 'keyboard', 'F5')
+-- Touche d'ouverture (Config.MenuKey, F5 par défaut) via key mapping : plus de boucle par frame au repos.
+RegisterKeyMapping('animenu', L('keymap_menu'), 'keyboard', Config.MenuKey)
 
 -- Boucle de contrôles : par frame uniquement quand le menu est ouvert.
 CreateThread(function()
@@ -175,7 +175,7 @@ CreateThread(function()
                 DisableControlAction(0, 1, true) -- LookLeftRight
                 DisableControlAction(0, 2, true) -- LookUpDown
                 DisableControlAction(0, 106, true) -- VehicleMouseControlOverride
-                
+
                 -- Disable actions that might interfere or cause bugs
                 DisableControlAction(0, 200, true) -- pause menu
                 DisableControlAction(0, 199, true) -- pause menu
@@ -190,10 +190,10 @@ CreateThread(function()
                 DisableControlAction(0, 81, true) -- Radio Next
                 DisableControlAction(0, 82, true) -- Radio Previous
             end
-            
+
             -- Allow characters movement (WASD/Joystick)
             -- These are NOT disabled by default, so character will move
-            
+
             if IsControlJustPressed(0, 202) then -- ESC
                 SetNuiState(false)
             end
