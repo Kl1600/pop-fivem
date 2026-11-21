@@ -32,6 +32,21 @@ function Police.RefreshState()
 end
 Bridge.OnPlayerLoaded(Police.RefreshState)
 Bridge.OnJobUpdate(Police.RefreshState)
+local function unload()
+    stateVersion = stateVersion + 1
+    Police.state = { officer = false, onDuty = false, grade = 0 }
+    civilian = nil
+    Police.CloseUi()
+end
+RegisterNetEvent('esx:onPlayerLogout', unload)
+RegisterNetEvent('QBCore:Client:OnPlayerUnload', unload)
+
+AddEventHandler('gameEventTriggered', function(name, data)
+    if not Police.uiOpen or name ~= 'CEventNetworkEntityDamage' or data[1] ~= PlayerPedId() then return end
+    SetTimeout(0, function()
+        if IsEntityDead(PlayerPedId()) then Police.CloseUi() end
+    end)
+end)
 AddStateBagChangeHandler(Police.STATE_DUTY, nil, function(bagName, _, value)
     if bagName ~= 'player:' .. GetPlayerServerId(PlayerId()) then return end
     Police.state.onDuty = value == true
