@@ -1,5 +1,6 @@
 # Outils serveur lancés à la main (onglet Actions > Server tools > Run workflow).
 #  - list        : affiche l'arborescence des ressources du serveur.
+#  - logs        : affiche les erreurs récentes de la console (txAdmin).
 #  - disable_esx : déplace les ressources esx_* inutiles hors de resources/
 #                  (dans esx_desactives/ à la racine du serveur, réversible).
 name: Server tools
@@ -8,11 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "list ou disable_esx"
+        description: "list, disable_esx ou logs"
         required: true
         default: list
         type: choice
-        options: [list, disable_esx]
+        options: [list, disable_esx, logs]
 
 concurrency:
   group: server-tools
@@ -72,3 +73,29 @@ jobs:
             bye
           "
           echo "Terminé."
+
+      - name: Erreurs récentes de la console
+        if: inputs.action == 'logs'
+        run: |
+          ROOT='${{ steps.p.outputs.root }}'
+          lftp -e "
+            set sftp:auto-confirm yes;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
+            cd '$ROOT';
+            find --maxdepth=4 . ;
+            bye
+          " | grep -iE 'log' | grep -vE '/resources/' | head -40 > logs_list.txt || true
+          echo "== Fichiers de logs trouvés :"; cat logs_list.txt
+          LOG=$(grep -iE 'fxserver.*\.log$' logs_list.txt | head -1)
+          if [ -z "$LOG" ]; then echo "Aucun fxserver.log trouvé."; exit 0; fi
+          lftp -e "
+            set sftp:auto-confirm yes;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
+            cd '$ROOT';
+            get '$LOG' -o fx.log;
+            bye
+          "
+          echo "== Lignes utiles (fin du log) :"
+          tail -n 4000 fx.log | sed 's/\x1b\[[0-9;]*m//g' \
+            | grep -iE 'error|erreur|warn|failed|stale|save|dropped|es_extended|script:pop|oxmysql|stack|attempt to' \
+            | grep -viE 'licensekey|password|mysql_connection_string|token' | tail -n 150
