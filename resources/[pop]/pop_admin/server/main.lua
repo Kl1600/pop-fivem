@@ -306,9 +306,20 @@ end)
 -- =====================================================================
 --  ACCÈS CLIENT
 -- =====================================================================
-RegisterNetEvent('pop_admin:requestAccess', function()
+RegisterNetEvent('pop_admin:requestAccess', function(openAfter)
     local src = source
-    TriggerClientEvent('pop_admin:setAccess', src, IsAdmin(src))
+    TriggerClientEvent('pop_admin:setAccess', src, IsAdmin(src), openAfter == true)
+end)
+
+-- Changement de groupe (menu admin, /setgroup ESX, txAdmin...) : on met à jour
+-- l'accès du joueur tout de suite, sans qu'il ait à se reconnecter.
+AddEventHandler('esx:setGroup', function(playerId)
+    playerId = tonumber(playerId)
+    if playerId then
+        SetTimeout(200, function()
+            TriggerClientEvent('pop_admin:setAccess', playerId, IsAdmin(playerId), false)
+        end)
+    end
 end)
 
 -- =====================================================================
@@ -446,6 +457,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         if not xTarget then return end
         local group = tostring(data.group or 'user')
         xTarget.setGroup(group)
+        TriggerClientEvent('pop_admin:setAccess', xTarget.source, IsAdmin(xTarget.source), false)
         notify(src, ('%s → groupe %s'):format(xTarget.getName(), group), 'success')
 
     elseif action == 'giveitem' then

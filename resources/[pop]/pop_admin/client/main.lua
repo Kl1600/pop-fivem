@@ -117,8 +117,13 @@ end)
 -- =====================================================================
 --  ACCÈS
 -- =====================================================================
-RegisterNetEvent('pop_admin:setAccess', function(allowed)
+local openMenu
+
+RegisterNetEvent('pop_admin:setAccess', function(allowed, openAfter)
     Admin.isAdmin = allowed == true
+    if openAfter then
+        if Admin.isAdmin then openMenu() else AdminNotify("Accès refusé", 'error') end
+    end
 end)
 
 CreateThread(function()
@@ -131,9 +136,10 @@ end)
 -- =====================================================================
 --  OUVERTURE / FERMETURE
 -- =====================================================================
-local function openMenu()
+openMenu = function()
     if not Admin.isAdmin then
-        AdminNotify("Accès refusé", 'error')
+        -- Le groupe a pu changer depuis la connexion : on redemande au serveur.
+        TriggerServerEvent('pop_admin:requestAccess', true)
         return
     end
     Admin.open = true

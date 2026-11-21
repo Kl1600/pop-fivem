@@ -1,11 +1,11 @@
 /* pop_admin : menu liste en haut à droite, DA et couleurs de pop_inventory
    (tuiles claires translucides, angles 2px, titres Segoe UI Black, séparateurs fins, sans couleur d'accent : sélection en blanc). */
 :root {
-    --tile: rgba(245, 245, 245, 0.15);
-    --tile-soft: rgba(245, 245, 245, 0.10);
+    --tile: rgba(28, 31, 36, 0.88);
+    --tile-soft: rgba(28, 31, 36, 0.80);
     --line: rgba(245, 245, 245, 0.15);
     --accent: rgba(255, 255, 255, 0.75);
-    --accent-bg: rgba(255, 255, 255, 0.30);
+    --accent-bg: rgba(80, 86, 96, 0.95);
     --accent-strong: #ffffff;
     --danger: #ef5b6a;
     --text: #ffffff;
@@ -43,7 +43,9 @@ body {
 .m-head {
     display: flex;
     align-items: flex-end;
-    padding: 0 0.1rem 0.75rem;
+    padding: 0.8rem 0.9rem 0.75rem;
+    background: var(--tile);
+    border-radius: 2px 2px 0 0;
     border-bottom: 1px solid var(--line);
 }
 
@@ -60,7 +62,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.6rem 0.1rem 0.55rem;
+    padding: 0.55rem 0.9rem;
+    margin-bottom: 0.28rem;
+    background: var(--tile);
+    border-radius: 0 0 2px 2px;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--muted);
@@ -124,8 +129,8 @@ body {
 
 .m-row.sep {
     height: auto;
-    padding: 0.55rem 0.1rem 0.2rem;
-    background: transparent;
+    padding: 0.45rem 0.9rem 0.3rem;
+    background: var(--tile-soft);
     border: none;
     border-bottom: 1px solid var(--line);
     border-radius: 0;
@@ -215,9 +220,10 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem 0.9rem;
-    margin-top: 0.5rem;
-    padding: 0.45rem 0.1rem 0;
-    border-top: 1px solid var(--line);
+    margin-top: 0.3rem;
+    padding: 0.45rem 0.9rem;
+    background: var(--tile-soft);
+    border-radius: 2px;
     font-size: 0.7rem;
     color: var(--muted);
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
