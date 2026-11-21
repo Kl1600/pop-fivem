@@ -548,32 +548,99 @@ function Bridge.IsNear(src, coords, maxDist)
     return #(pos - vector3(coords.x, coords.y, coords.z)) <= (tonumber(maxDist) or 0)
 end
 
+--- Vrai si le joueur est mort ou à terre (QBCore/Qbox : metadata isdead / inlaststand ;
+--- ESX : statebag isDead / dead si un script de mort le pose ; sinon santé du ped <= 0).
+function Bridge.IsDead(src)
+    src = tonumber(src)
+    if not src then return false end
+    if Bridge.Framework == 'qbcore' or Bridge.Framework == 'qbox' then
+        local ok, dead = try(function()
+            local p = FW.player(src)
+            local m = p and p.PlayerData.metadata
+            return m ~= nil and (m.isdead == true or m.inlaststand == true)
+        end)
+        if ok and dead then return true end
+    elseif Bridge.Framework == 'esx' then
+        -- NOTE: ESX ne pose pas d'état de mort standard ; certains scripts de mort (esx_ambulancejob récents,
+        -- alternatives) posent le statebag isDead ou dead. Absent = on passe au repli.
+        local ok, dead = try(function()
+            local st = Player(src).state
+            return st.isDead == true or st.dead == true
+        end)
+        if ok and dead then return true end
+    end
+    local ok, health = try(function()
+        local ped = GetPlayerPed(src)
+        if not ped or ped == 0 then return nil end
+        return GetEntityHealth(ped)
+    end)
+    return ok and health ~= nil and health <= 0
+end
+
 ------------------------------------------------------------------------
 -- Évènements unifiés (locaux à la ressource)
---   <ressource>:playerLoaded (src)   <ressource>:playerDropped (src)
+--   <ressource>:playerLoaded (src)   <ressource>:playerUnloaded (src)   <ressource>:playerDropped (src)
+-- playerUnloaded : retour au choix du personnage sans quitter le serveur (multicharacter, /logout).
+-- Émis au plus une fois par personnage chargé, jamais pendant ou après un drop.
+-- Après un unload, GetPlayer/GetIdentifier/GetJob... peuvent renvoyer nil : gardez vos propres
+-- données indexées par src et nettoyez-les dans OnPlayerUnloaded comme dans OnPlayerDropped.
 ------------------------------------------------------------------------
 
 local EV_LOADED = RES .. ':playerLoaded'
+local EV_UNLOADED = RES .. ':playerUnloaded'
 local EV_DROPPED = RES .. ':playerDropped'
 
 function Bridge.OnPlayerLoaded(cb) return AddEventHandler(EV_LOADED, cb) end
+function Bridge.OnPlayerUnloaded(cb) return AddEventHandler(EV_UNLOADED, cb) end
 function Bridge.OnPlayerDropped(cb) return AddEventHandler(EV_DROPPED, cb) end
 
+-- État par joueur : true = personnage chargé. Évite un unload en double (Qbox émet deux events)
+-- ou un unload émis par le framework pendant la déconnexion.
+local loadedState = {}
+
+local function emitLoaded(src)
+    src = tonumber(src)
+    if not src then return end
+    loadedState[src] = true
+    TriggerEvent(EV_LOADED, src)
+end
+
+local function emitUnloaded(src)
+    src = tonumber(src)
+    if not src or not loadedState[src] then return end
+    loadedState[src] = nil
+    if not GetPlayerName(src) then return end -- déjà déconnecté : playerDropped s'en charge
+    TriggerEvent(EV_UNLOADED, src)
+end
+
 if Bridge.Framework == 'esx' then
-    AddEventHandler('esx:playerLoaded', function(playerId) TriggerEvent(EV_LOADED, tonumber(playerId)) end)
+    AddEventHandler('esx:playerLoaded', function(playerId) emitLoaded(playerId) end)
+    AddEventHandler('esx:playerLogout', function(playerId) emitUnloaded(playerId) end)
 elseif Bridge.Framework == 'qbcore' or Bridge.Framework == 'qbox' then
     AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-        TriggerEvent(EV_LOADED, player.PlayerData.source)
+        local ok, src = pcall(function() return player.PlayerData.source end)
+        if ok then emitLoaded(src) end
     end)
+    -- Qbox émet aussi cet event de compatibilité dans sa fonction Logout.
+    AddEventHandler('QBCore:Server:OnPlayerUnload', function(src) emitUnloaded(src) end)
+    if Bridge.Framework == 'qbox' then
+        -- NOTE: nom de l'event natif Qbox à confirmer selon la version de qbx_core ; s'il n'existe pas, OnPlayerUnload suffit.
+        -- Doublon filtré par loadedState.
+        AddEventHandler('qbx_core:server:playerLoggedOut', function(src) emitUnloaded(src) end)
+    end
 else
-    AddEventHandler('playerJoining', function() TriggerEvent(EV_LOADED, source) end)
+    AddEventHandler('playerJoining', function() emitLoaded(source) end)
 end
 
 -- NOTE: selon l'ordre des handlers, le framework peut avoir déjà déchargé le joueur ici.
-AddEventHandler('playerDropped', function() TriggerEvent(EV_DROPPED, source) end)
+AddEventHandler('playerDropped', function()
+    local src = source
+    loadedState[src] = nil
+    TriggerEvent(EV_DROPPED, src)
+end)
 
 -- Au (re)démarrage de la ressource, les joueurs déjà connectés reçoivent playerLoaded.
 AddEventHandler('onResourceStart', function(res)
     if res ~= RES then return end
-    for _, src in ipairs(Bridge.GetPlayers()) do TriggerEvent(EV_LOADED, src) end
+    for _, src in ipairs(Bridge.GetPlayers()) do emitLoaded(src) end
 end)

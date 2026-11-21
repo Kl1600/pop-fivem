@@ -119,17 +119,35 @@ function Bridge.OnPlayerLoaded(cb)
     if Bridge.IsLoaded() then fire({ cb }, Bridge.GetPlayerData()) end
 end
 
---- cb(job) à chaque changement de job (format commun).
+--- cb(job) à chaque changement de job ou de service (format commun).
 function Bridge.OnJobUpdate(cb)
     jobHandlers[#jobHandlers + 1] = cb
 end
 
+-- Évite de prévenir deux fois pour le même état (OnJobUpdate et SetDuty arrivent souvent ensemble).
+local lastJobKey = nil
+
+local function fireJob(job)
+    local key = ('%s|%s|%s|%s'):format(job.name, job.label, job.grade, job.onDuty)
+    if key == lastJobKey then return end
+    lastJobKey = key
+    fire(jobHandlers, job)
+end
+
 if Bridge.Framework == 'esx' then
     RegisterNetEvent('esx:playerLoaded', function(xPlayer) fire(loadedHandlers, xPlayer) end)
-    RegisterNetEvent('esx:setJob', function(job) fire(jobHandlers, normalizeJob(job)) end)
+    RegisterNetEvent('esx:setJob', function(job) fireJob(normalizeJob(job)) end)
 elseif Bridge.Framework == 'qbcore' or Bridge.Framework == 'qbox' then
     RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function() fire(loadedHandlers, Bridge.GetPlayerData()) end)
-    RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job) fire(jobHandlers, normalizeJob(job)) end)
+    RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job) fireJob(normalizeJob(job)) end)
+    -- Prise / fin de service (QBCore, et Qbox qui émet le même event). Le PlayerData peut ne pas
+    -- être encore à jour : l'état reçu fait foi.
+    RegisterNetEvent('QBCore:Client:SetDuty', function(duty)
+        local ok, job = pcall(Bridge.GetJob)
+        if not ok or type(job) ~= 'table' then return end
+        job.onDuty = duty == true
+        fireJob(job)
+    end)
 elseif not Bridge.IsLoaded() then
     -- Standalone : "chargé" dès que la session réseau a démarré.
     CreateThread(function()
@@ -212,7 +230,7 @@ end)
 -- Une seule boucle partagée, cadence adaptée à la distance du point le plus proche.
 ------------------------------------------------------------------------
 
-local points = {}       -- [id] = { coords = vec3 | entity = handle, radius, options }
+local points = {}       -- [id] = { entity = handle | coords, hx, hy, hz, cos, sin (boîte) ; radius, options }
 local modelTargets = {} -- [id] = { hashes = { [hash] = true }, pools = { CObject = true, ... }, radius, options }
 local candidates = {}   -- entités proches correspondant à un modèle : { entity, target }
 local hasModels = false
@@ -224,6 +242,51 @@ local function maxDistance(options)
     local d = 0.0
     for _, o in ipairs(options) do d = math.max(d, o.distance or DEFAULT_DISTANCE) end
     return d
+end
+
+-- Boîtes englobantes des modèles (min, max), lues une seule fois par modèle.
+local bounds = {}
+
+local function modelBounds(entity)
+    local hash = GetEntityModel(entity)
+    local b = bounds[hash]
+    if not b then
+        local mn, mx = GetModelDimensions(hash)
+        b = { min = mn, max = mx, radius = math.max(#mn, #mx) }
+        bounds[hash] = b
+    end
+    return b
+end
+
+-- Distance hors de l'intervalle [lo, hi] (0 à l'intérieur).
+local function outside(v, lo, hi)
+    if v < lo then return lo - v end
+    if v > hi then return v - hi end
+    return 0.0
+end
+
+-- Distance au point le plus proche de la boîte englobante (orientée) d'une entité.
+-- Loin de l'entité, une borne inférieure suffit (aucune native de plus).
+local function entityDistance(pos, entity, radius)
+    local b = modelBounds(entity)
+    local far = #(pos - GetEntityCoords(entity)) - b.radius
+    if far > radius then return far end
+    local l = GetOffsetFromEntityGivenWorldCoords(entity, pos.x, pos.y, pos.z)
+    local ex = outside(l.x, b.min.x, b.max.x)
+    local ey = outside(l.y, b.min.y, b.max.y)
+    local ez = outside(l.z, b.min.z, b.max.z)
+    return math.sqrt(ex * ex + ey * ey + ez * ez)
+end
+
+-- Distance au bord d'une zone rectangulaire orientée (0 à l'intérieur).
+local function boxDistance(pos, p)
+    local dx, dy, dz = pos.x - p.coords.x, pos.y - p.coords.y, pos.z - p.coords.z
+    local lx = dx * p.cos + dy * p.sin
+    local ly = dy * p.cos - dx * p.sin
+    local ex = math.max(math.abs(lx) - p.hx, 0.0)
+    local ey = math.max(math.abs(ly) - p.hy, 0.0)
+    local ez = math.max(math.abs(dz) - p.hz, 0.0)
+    return math.sqrt(ex * ex + ey * ey + ez * ez)
 end
 
 local function showPrompt(label, index, count)
@@ -287,8 +350,7 @@ local function startLoop()
         local pos, nearest, best, bestEntity, bestDist
 
         -- Garde le point le plus proche, et le meilleur point à portée d'interaction.
-        local function check(target, coords, entity)
-            local d = #(pos - coords)
+        local function check(target, d, entity)
             if d < nearest then nearest = d end
             if d <= target.radius and d < bestDist then best, bestEntity, bestDist = target, entity, d end
         end
@@ -308,13 +370,15 @@ local function startLoop()
 
             for _, p in pairs(points) do
                 if p.entity then
-                    if DoesEntityExist(p.entity) then check(p, GetEntityCoords(p.entity), p.entity) end
+                    if DoesEntityExist(p.entity) then check(p, entityDistance(pos, p.entity, p.radius), p.entity) end
                 else
-                    check(p, p.coords, nil)
+                    check(p, boxDistance(pos, p), nil)
                 end
             end
             for _, c in ipairs(candidates) do
-                if DoesEntityExist(c.entity) then check(c.target, GetEntityCoords(c.entity), c.entity) end
+                if DoesEntityExist(c.entity) then
+                    check(c.target, entityDistance(pos, c.entity, c.target.radius), c.entity)
+                end
             end
 
             local opts = (best and not progressActive and not IsPauseMenuActive() and not IsEntityDead(ped))
@@ -423,10 +487,13 @@ function Bridge.Target.AddBoxZone(id, coords, size, heading, options)
         }, qbOptions(options, false))
         targets[id] = { kind = 'qb_zone' }
     else
-        -- NOTE: le prompt mesure la distance au centre de la zone (rayon = distance max des options,
-        -- au moins la moitié du plus grand côté).
-        local radius = math.max(maxDistance(options), math.max(size.x, size.y) / 2)
-        points[id] = { coords = coords, radius = radius, options = options }
+        -- Prompt : distance au bord de la boîte orientée (0 à l'intérieur).
+        local rad = math.rad(heading)
+        points[id] = {
+            coords = coords, hx = size.x / 2, hy = size.y / 2, hz = size.z / 2,
+            cos = math.cos(rad), sin = math.sin(rad),
+            radius = maxDistance(options), options = options,
+        }
         targets[id] = { kind = 'point' }
         startLoop()
     end

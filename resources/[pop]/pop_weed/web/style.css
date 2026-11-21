@@ -1,0 +1,73 @@
+/* pop_weed : styles propres au script (le kit fournit fond, fondu, touches, variables). */
+
+#weed-info,
+#weed-place {
+  position: fixed;
+  right: 24px;
+  box-sizing: border-box;
+  font-size: var(--pop-size-sm);
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+/* ---- Carte d'info ---- */
+#weed-info {
+  top: 28%;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weed-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.weed-title { font-size: var(--pop-size); font-weight: 600; min-width: 0; }
+.weed-stage { color: var(--pop-muted); min-width: 0; }
+.weed-stage.is-ready { color: var(--pop-accent); }
+
+.weed-row { display: flex; flex-direction: column; gap: 4px; }
+.weed-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.weed-label { color: var(--pop-muted); min-width: 0; }
+.weed-val { flex-shrink: 0; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+
+.weed-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.weed-fill {
+  height: 100%;
+  background: var(--pop-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.weed-fill.is-low { background: var(--pop-danger); }
+.weed-val.is-low { color: var(--pop-danger); }
+
+/* ---- Panneau de placement ---- */
+#weed-place {
+  bottom: 12%;
+  max-width: 320px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.weed-action { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.weed-reason { color: var(--pop-danger); min-width: 0; }
+
+/* ---- Droite à gauche (arabe) ---- */
+[dir="rtl"] #weed-info,
+[dir="rtl"] #weed-place { right: auto; left: 24px; }
+[dir="rtl"] .weed-fill { transform-origin: right center; }

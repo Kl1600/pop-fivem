@@ -27,8 +27,8 @@ pop_hud, pop_chat, pop_emotes, pop_affiche, pop_boards, pop_charcreator, pop_clo
 | Vague | Statut |
 |---|---|
 | 0 | terminée |
-| 1 | en cours |
-| 2 | à faire |
+| 1 | terminée |
+| 2 | en cours |
 | 3 | à faire |
 | 4 | à faire |
 | 5 | à faire |

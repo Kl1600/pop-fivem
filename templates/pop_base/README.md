@@ -89,7 +89,9 @@ Les valeurs de retour multiples sont transmises.
 | `Bridge.GetPlayers()` | `{ src, ... }` | joueurs chargés |
 | `Bridge.GetCoords(src)` | vector3 \| nil | position côté serveur |
 | `Bridge.IsNear(src, coords, maxDist)` | bool | à utiliser pour toute action liée à un lieu |
+| `Bridge.IsDead(src)` | bool | QBCore/Qbox metadata `isdead`/`inlaststand`, ESX statebag `isDead`/`dead`, sinon santé du ped <= 0 |
 | `Bridge.OnPlayerLoaded(cb(src))` | | event `<ressource>:playerLoaded`, aussi émis au (re)démarrage pour les joueurs déjà connectés |
+| `Bridge.OnPlayerUnloaded(cb(src))` | | event `<ressource>:playerUnloaded` : retour au choix du personnage sans quitter (ESX `esx:playerLogout`, QB/Qbox `OnPlayerUnload`) ; une fois par personnage, jamais lors d'un drop. Ensuite `GetPlayer`/`GetIdentifier` peuvent renvoyer nil : nettoyer ses données par src ici aussi |
 | `Bridge.OnPlayerDropped(cb(src))` | | event `<ressource>:playerDropped` |
 
 Correspondance des comptes : ESX `money` / `bank` / `black_money` ; QBCore/Qbox `cash` / `bank` / `black_money`
@@ -118,7 +120,8 @@ ACE admin, dans `server.cfg` : `add_ace group.admin pop.admin allow`.
 
 Options de target : `{ { label, icon, distance, canInteract = fn(entity) → bool, onSelect = fn(entity) }, ... }`
 (`entity` vaut nil pour une zone). Sans ox_target ni qb-target : prompt « [E] Texte » sur le côté, molette pour
-changer d'option, une seule boucle partagée (1000 ms au-delà de 30 m, 250 ms jusqu'à 5 m, 100 ms en approche,
+changer d'option ; distance mesurée jusqu'à la boîte englobante de l'entité (props décalés compris) ou jusqu'au
+bord de la zone (heading pris en compte) ; une seule boucle partagée (1000 ms au-delà de 30 m, 250 ms jusqu'à 5 m, 100 ms en approche,
 chaque frame seulement à portée).
 
 Tout est nettoyé à l'arrêt de la ressource (targets, prompt, animation, focus NUI).
