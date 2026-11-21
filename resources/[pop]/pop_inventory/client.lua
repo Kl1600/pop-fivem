@@ -44,7 +44,7 @@ local function givePreviewToMenu()
   if not previewPed or not DoesEntityExist(previewPed) then return end
   ClearPedInPauseMenu()
   SetEntityAlpha(previewPed, previewAlpha, false)
-  GivePedToPauseMenu(previewPed, 1)
+  GivePedToPauseMenu(previewPed, 2)
   SetPauseMenuPedLighting(true)
   SetPauseMenuPedSleepState(true)
 end
@@ -64,9 +64,18 @@ local function startInvPedPreview()
   previewAlpha = 255
   CreateThread(function()
     SetFrontendActive(true)
-    ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY_NO_BACKGROUND'), false, -1)
-    ReplaceHudColourWithRgba(117, 0, 0, 0, 0) -- fond du menu transparent
-    Wait(100)
+    ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY_NO_BACKGROUND'), true, -1)
+    -- Attend que le menu (invisible) soit vraiment actif avant d'y mettre le ped
+    local tries = 0
+    while not IsPauseMenuActive() and tries < 20 do
+      Wait(50)
+      tries = tries + 1
+      if tries == 10 then
+        SetFrontendActive(true)
+        ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY_NO_BACKGROUND'), true, -1)
+      end
+    end
+    Wait(150)
     if not previewActive then return end
     SetMouseCursorVisibleInMenus(false)
 
@@ -79,7 +88,8 @@ local function startInvPedPreview()
     SetEntityInvincible(previewPed, true)
     SetEntityCollision(previewPed, false, false)
     SetEntityVisible(previewPed, false, false)
-    Wait(150)
+    NetworkSetEntityInvisibleToNetwork(previewPed, false)
+    Wait(300)
     givePreviewToMenu()
 
     local lastSig = appearanceSignature(playerPed)
