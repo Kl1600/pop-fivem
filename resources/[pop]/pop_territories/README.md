@@ -1,64 +1,62 @@
 # pop_territories
 
-Guerre de territoires entre crews : influence par zone, prise de contrôle, bonus de prix pour pop_dealing.
-ESX (Legacy et ancien), QBCore, Qbox, standalone. 10 langues. ~0.00 ms au repos.
+Crew territory control with influence by zone, captures, and sale-price bonuses for pop_dealing. Supports ESX Legacy and older ESX, QBCore, Qbox, and standalone. Ten languages. Idle target of ~0.00 ms.
 
 ## Installation
 
-1. Dépendance : `oxmysql`. Optionnel : `pop_crew` (crews de joueurs), `pop_dealing` (ventes).
-2. Copier `pop_territories` dans `resources/[pop]/`.
-3. `server.cfg` (framework et oxmysql **avant** `[pop]`) :
+1. Install `oxmysql`. Optional integrations are `pop_crew` for player crews and `pop_dealing` for sales.
+2. Copy `pop_territories` into `resources/[pop]/`.
+3. Start the framework and oxmysql before `[pop]` in `server.cfg`:
+
    ```
    ensure oxmysql
-   ensure es_extended   # ou qb-core / qbx_core
+   ensure es_extended   # or qb-core / qbx_core
    ensure [pop]
    add_ace group.admin pop.admin allow
    ```
-4. Tables : créées automatiquement au démarrage (`sql/install.sql` pour un import manuel facultatif).
 
-## Appartenance à un crew
+4. The tables are created on startup. For a manual import, use `sql/install.sql`.
 
-Évaluée à chaque appel :
-1. `pop_crew` lancé : son crew (`GetPlayerCrew`) ; sans crew dans pop_crew = pas de crew.
-2. Sinon `Config.UseJobsAsCrews = true` (ESX, QBCore, Qbox) : les jobs listés dans `Config.JobCrews` servent de crews.
-3. Sinon (y compris en standalone sans pop_crew) : influence désactivée (zones, blips et HUD restent actifs).
+## Crew membership
 
-## Fonctionnement
+The resource checks crew membership on every call:
 
-- Influence de 0 à 100 par crew et par zone, total d'une zone ≤ 100.
-- Vente dans la zone : `+PerSale` (une vente comptée par joueur toutes les `SaleCooldown` s).
-- Présence (par minute, membre vivant ; les joueurs morts / à terre ne comptent pas) : `+PerTick`, sans dépasser `Capture` sauf pour le propriétaire.
-- Absence : `-Decay` par minute.
-- Prise à `Capture` (60), maintien tant que l'influence reste ≥ `Keep` (30).
-- Prix : `zone.price`, puis `Prices.Owner` (vendeur propriétaire) ou `Prices.Rival` (zone tenue par un autre).
-  Ces multiplicateurs **se cumulent** avec le `mult` de la zone de vente pop_dealing (appliqué avant) :
-  ex. Vespucci = 1.2 (pop_dealing) × 1.0 (`zone.price`) × 1.25 (propriétaire). Laissez `price = 1.0` si pop_dealing gère déjà le prix du quartier.
+1. With `pop_crew` running, `GetPlayerCrew` determines membership. A player without a crew there has no crew here.
+2. Without `pop_crew`, if `Config.UseJobsAsCrews = true` on ESX, QBCore, or Qbox, jobs listed in `Config.JobCrews` act as crews.
+3. Otherwise, including standalone without pop_crew, influence is disabled and zones, blips, and HUD remain active.
 
-## Avec pop_dealing
+## How territories work
 
-Seule la vente permet de prendre une zone (la présence plafonne sous `Capture`). Les **zones de vente de pop_dealing
-(`Config.Zones` de pop_dealing) doivent recouvrir les territoires** : un territoire où l'on ne peut pas vendre est imprenable.
-En ajoutant ou déplaçant un territoire, ajoutez une zone de vente pop_dealing qui le couvre.
+- Each crew has 0–100 influence per zone. The total for a zone cannot exceed 100.
+- Sales add `PerSale` influence in the zone. One sale counts per player every `SaleCooldown` seconds.
+- Each minute, living members in the zone add `PerTick`. Dead or downed players do not count. Presence stays below the capture threshold for crews that do not own the zone.
+- Absence subtracts `Decay` each minute.
+- A crew captures the zone at `Capture` (60) and holds it while influence stays at or above `Keep` (30).
+- Prices apply `zone.price` and then `Prices.Owner` for sellers from the owning crew or `Prices.Rival` when another crew controls the zone. These multiply the pop_dealing area `mult`, which applies first. For example, Vespucci can apply 1.2 (pop_dealing) × 1.0 (`zone.price`) × 1.25 (owner). Keep `price = 1.0` if pop_dealing already sets the area's price.
+
+## pop_dealing integration
+
+A sale is required to capture a zone because presence caps below `Capture`. Cover each territory with a selling area in pop_dealing's `Config.Zones`. Update the selling areas when moving or adding a territory.
 
 ## Configuration (`config.lua`)
 
-| Clé | Rôle |
+| Key | Purpose |
 |---|---|
-| `UseJobsAsCrews`, `JobCrews` | crews par job (sans pop_crew) : `job = '#rrggbb'` |
-| `Influence` | `PerSale`, `PerTick`, `Decay`, `Capture` (51-100), `Keep` (< Capture), `SaleCooldown` |
+| `UseJobsAsCrews`, `JobCrews` | Job crews for servers without pop_crew, formatted as `job = '#rrggbb'` |
+| `Influence` | `PerSale`, `PerTick`, `Decay`, `Capture` (51–100), `Keep` (< Capture), `SaleCooldown` |
 | `Prices` | `Owner`, `Rival` |
-| `RivalAlertCooldown` | secondes entre deux alertes rivales par zone (0 = désactivé) |
-| `ZoneBlips` | zones colorées sur la carte |
-| `HudDuration` | secondes d'affichage du HUD (0 = tant qu'on est dans la zone) |
+| `RivalAlertCooldown` | Seconds between rival alerts per zone (0 disables rival alerts) |
+| `ZoneBlips` | Colored zones on the map |
+| `HudDuration` | HUD display time in seconds (0 keeps it visible inside the zone) |
 | `Commands` | `Info` (`/territory`), `Admin` (`/territoryadmin`) |
-| `Zones` | `{ id, label, center, radius }` ou `{ id, label, points = { vec2, ... } }`, `price` optionnel (0.1-10) |
+| `Zones` | `{ id, label, center, radius }` or `{ id, label, points = { vec2, ... } }`, with optional `price` (0.1–10) |
 
-`label` est une clé de traduction (ajoutez-la dans `locales/*.lua`) ou un texte brut.
+`label` accepts a translation key from `locales/*.lua` or plain text.
 
-## Exports serveur
+## Server exports
 
 ```lua
--- À appeler AVANT de payer : renvoie le montant final (entier) et des infos.
+-- Call before paying. Returns the final integer amount and territory details.
 local final, info = exports.pop_territories:RecordDrugSale(source, coords, amount)
 -- info = { zone = 'grove' | nil, owner = { key, label, color } | nil, mult = 1.25, rival = false }
 
@@ -66,22 +64,22 @@ local zoneId, label = exports.pop_territories:GetZoneAt(coords)
 local owner = exports.pop_territories:GetZoneOwner('grove') -- { key, label, color } | nil
 ```
 
-Event serveur local : `AddEventHandler('pop_territories:ownerChanged', function(zoneId, newOwner, oldOwner) end)`.
+Local server event: `AddEventHandler('pop_territories:ownerChanged', function(zoneId, newOwner, oldOwner) end)`.
 
-## Export client
+## Client export
 
 ```lua
 local zoneId = exports.pop_territories:GetCurrentZone()
 ```
 
-## Commande admin
+## Admin command
 
-`/territoryadmin` (ACE `pop.admin`, groupe admin du framework, ou console) :
-- `info [zone]` : propriétaire et influences (zone actuelle si omise).
-- `reset <zone|all>` : remet la ou les zones à zéro.
-- `set <zone> <crew> <0-100>` : `crew` = `crew:<id>` ou `job:<nom>`.
+`/territoryadmin` is available through ACE `pop.admin`, the framework admin group, or the server console.
 
-## Sécurité
+- `info [zone]` shows the owner and influence values. Omit the zone to use the current one.
+- `reset <zone|all>` resets one or all zones.
+- `set <zone> <crew> <0-100>` accepts `crew:<id>` or `job:<name>` for the crew.
 
-Aucun event client → serveur. Zone calculée depuis la position serveur, montant validé, crew relu côté serveur,
-influence de vente limitée par joueur, requêtes SQL paramétrées. pop_territories ne donne jamais d'argent.
+## Security
+
+The resource has no client-to-server events. The server reads the player's position and crew, validates the amount, limits sales influence per player, and uses parameterized SQL. The calling resource handles payments.

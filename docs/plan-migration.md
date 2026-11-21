@@ -31,4 +31,4 @@ pop_hud, pop_chat, pop_emotes, pop_affiche, pop_boards, pop_charcreator, pop_clo
 | 2 | terminée |
 | 3 | terminée |
 | 4 | terminée |
-| 5 | à faire |
+| 5 | terminée |

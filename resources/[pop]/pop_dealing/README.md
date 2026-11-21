@@ -1,25 +1,25 @@
 # pop_dealing
 
-Vente de drogue aux PNJ, façon GTA 6 : `/sell` dans une zone de deal, un client à la fois vient vers vous,
-vous négociez le prix (3 tentatives), attention aux flics infiltrés et aux témoins.
+GTA 6-style drug sales to NPCs. Run `/sell` in a dealing area. Customers approach one at a time, and you have three attempts to negotiate a price. Watch for undercover officers and witnesses.
 
 ## Installation
 
-1. Copier `pop_dealing` dans `resources/[pop]/`.
-2. Dans `server.cfg`, lancer le framework, l'inventaire, le target et le dispatch **avant** `[pop]` :
+1. Copy `pop_dealing` into `resources/[pop]/`.
+2. In `server.cfg`, start the framework, inventory, target, and dispatch resources before `[pop]`:
+
    ```cfg
-   ensure es_extended   # ou qb-core / qbx_core (facultatif)
-   ensure ox_inventory  # facultatif
+   ensure es_extended   # or qb-core / qbx_core (optional)
+   ensure ox_inventory  # optional
    ensure [pop]
    ```
-3. Aucune dépendance obligatoire. Pas de SQL, pas d'oxmysql.
 
-**OneSync requis** (activé par défaut sur FXServer) : le serveur lit la position du PNJ client et compte les PNJ proches.
+3. There are no required dependencies or database tables.
+
+**OneSync is required** (enabled by default on FXServer). The server reads the client's NPC position and counts nearby NPCs.
 
 ## Items
 
-Les noms par défaut de `Config.Drugs` sont ceux de QBCore (`weed_white-widow`, `cokebaggy`, `meth`).
-Remplacez-les par les items de votre inventaire :
+`Config.Drugs` defaults to QBCore item names (`weed_white-widow`, `cokebaggy`, and `meth`). Replace them with items from your inventory:
 
 ```lua
 Config.Drugs = {
@@ -27,43 +27,35 @@ Config.Drugs = {
 }
 ```
 
-`label` est une **clé de locale**. Pour une nouvelle drogue avec une nouvelle clé, ajoutez-la au moins dans
-`locales/en.lua` (sinon la clé brute s'affiche), idéalement dans les 10 fichiers :
+`label` is a locale key. For a new drug with a new key, add the key to at least `locales/en.lua` to avoid displaying the raw key. Add it to all ten locale files to translate it everywhere.
 
 ```lua
 drug_lean = 'Lean',
 ```
 
-## Paiement
+## Payment
 
-`Config.Payment.type` :
-- `'black'` : argent sale (compte `black_money` ESX). Si le framework n'a pas ce compte (QBCore par défaut), repli sur `cash`.
-- `'cash'` : argent liquide.
-- `'item'` : un item, par exemple `black_money` d'ox_inventory (`Config.Payment.item`).
+- `Config.Payment.type = 'black'` pays into the ESX `black_money` account. Frameworks without that account, such as QBCore by default, fall back to `cash`.
+- `Config.Payment.type = 'cash'` pays in cash.
+- `Config.Payment.type = 'item'` pays in the item set by `Config.Payment.item`, such as ox_inventory's `black_money`.
 
-En standalone (sans framework), utilisez `'item'` (avec ox_inventory par exemple) : il n'y a pas de compte d'argent.
+In standalone mode, use `'item'` with a supported inventory such as ox_inventory. Standalone has no money accounts.
 
-## Zones de vente
+## Dealing areas
 
-`Config.Zones` : cercles `coords` + `radius`, `mult` = multiplicateur du prix de la rue. Liste vide = vente partout.
-Les zones par défaut couvrent les territoires par défaut de pop_territories : Forum Drive (`-165, -1620`, rayon 110)
-et Sandy Shores (`1850, 3700`, rayon 250) reprennent exactement le centre et le rayon de son `config.lua`, et Vespucci Beach
-est placée dans son polygone `vespucci`, Davis dans le cercle `grove`. Si vous modifiez les territoires, alignez ces zones.
+`Config.Zones` contains circles defined by `coords` and `radius`. Each area's `mult` scales the street price. An empty list allows sales everywhere.
 
-**Cumul des multiplicateurs** : si pop_territories est lancé, il applique son propre multiplicateur (`price` du territoire)
-au montant déjà calculé avec le `mult` de la zone pop_dealing. Les deux se multiplient : c'est pourquoi toutes les zones
-ont `mult = 1.0` par défaut (Vespucci a déjà `price = 1.2` dans pop_territories). Ne mettez un `mult` différent de 1.0
-que sur une zone hors territoire, ou si pop_territories n'est pas utilisé.
+The default areas cover the default pop_territories territories. Forum Drive (`-165, -1620`, radius 110) and Sandy Shores (`1850, 3700`, radius 250) match the territory centers and radii in `config.lua`. Vespucci Beach sits within the `vespucci` polygon and Davis sits within the `grove` circle. Keep the selling areas aligned if you edit the territories.
 
-## Intégrations optionnelles
+When pop_territories is running, its territory `price` multiplies the total after the pop_dealing area `mult`. All dealing areas default to `mult = 1.0` because pop_territories already sets Vespucci's `price` to `1.2`. Use a different `mult` for an area outside any territory or when running without pop_territories.
 
-- **Dispatch** : ps-dispatch, cd_dispatch ou qs-dispatch détectés automatiquement (`Config.Police.dispatch = 'auto'`),
-  sinon notification + blip aux policiers en service. Les formats d'appel sont dans `server/police.lua`.
-- **pop_territories** : s'il est lancé, chaque vente lui est déclarée (`RecordDrugSale`) et il peut ajuster le montant final
-  (plafonné à 3 fois le montant calculé par sécurité).
-- **Target** : ox_target ou qb-target, sinon prompt natif (touche E).
+## Optional integrations
 
-## Hook serveur
+- **Dispatch.** With `Config.Police.dispatch = 'auto'`, the script detects ps-dispatch, cd_dispatch, or qs-dispatch. The fallback sends a notification and blip to on-duty officers. See `server/police.lua` for the integration signatures.
+- **pop_territories.** Each sale calls `RecordDrugSale`. The integration can adjust the final amount up to three times the computed amount.
+- **Target.** Supports ox_target and qb-target, with a native E prompt as fallback.
+
+## Server hook
 
 ```lua
 AddEventHandler('pop_dealing:sold', function(src, item, qty, amount, coords) end)
@@ -72,12 +64,11 @@ AddEventHandler('pop_dealing:sold', function(src, item, qty, amount, coords) end
 ## Exports
 
 ```lua
-exports.pop_dealing:IsSelling(src)    -- serveur, boolean
-exports.pop_dealing:StopSelling(src)  -- serveur, boolean
+exports.pop_dealing:IsSelling(src)    -- server, boolean
+exports.pop_dealing:StopSelling(src)  -- server, boolean
 exports.pop_dealing:IsSelling()       -- client, boolean
 ```
 
-## Langues
+## Languages
 
-`Config.Locale` : en, fr, es, de, it, pt, nl, pl, tr, ar. Une clé absente retombe sur l'anglais.
-Ajouter une langue : copier `locales/en.lua` et changer le code.
+`Config.Locale` supports en, fr, es, de, it, pt, nl, pl, tr, and ar. Missing keys fall back to English. To add a language, copy `locales/en.lua` and change the language code.
