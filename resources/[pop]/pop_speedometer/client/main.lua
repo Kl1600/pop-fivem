@@ -1,5 +1,5 @@
 local GM = { State = { CinemaMode = 0 } }
-local useMetric = GetConvarInt("sh_miles", 0) == 0
+local useMetric = Config.UseMetric
 local speedFactor = useMetric and 3.6 or 2.236936
 local speedUnit = useMetric and "km/h" or "mph"
 
@@ -24,16 +24,16 @@ Citizen.CreateThread(function()
 	local PlayerPedId, GetVehiclePedIsIn, GetIsVehicleEngineRunning, SendNUIMessage, GetEntitySpeed, GetVehicleFuelLevel = PlayerPedId, GetVehiclePedIsIn, GetIsVehicleEngineRunning, SendNUIMessage, GetEntitySpeed, GetVehicleFuelLevel
 
 	while true do
-		local waitTime = 750
+		local waitTime = Config.RefreshIdle
 		local veh = GetVehiclePedIsIn(PlayerPedId(), false)
 
 		if not hudHidden and veh ~= 0 and GetIsVehicleEngineRunning(veh) and GM.State.CinemaMode == 0 then
-			waitTime = 150
+			waitTime = Config.RefreshDriving
 			-- kilométrage : export appelé ~1x/s seulement
 			mileageTick = mileageTick - 1
 			if mileageTick <= 0 then
 				mileage = getMileage()
-				mileageTick = 7
+				mileageTick = Config.MileageTicks
 			end
 
 			local speed = math.ceil(GetEntitySpeed(veh) * speedFactor)
