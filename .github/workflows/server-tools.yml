@@ -86,6 +86,13 @@ jobs:
             bye
           " | grep -iE 'log' | grep -vE '/resources/' | head -40 > logs_list.txt || true
           echo "== Fichiers de logs trouvés :"; cat logs_list.txt
+          echo "== Diagnostic sauvegarde ESX (pop_admin) :"
+          lftp -e "
+            set sftp:auto-confirm yes;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
+            get '${{ steps.p.outputs.res }}/[pop]/pop_admin/diag_save.log' -o diag.log;
+            bye
+          " 2>/dev/null && tail -n 80 diag.log || echo "(aucun diagnostic pour l'instant)"
           LOG=$(grep -iE 'fxserver.*\.log$' logs_list.txt | head -1)
           if [ -z "$LOG" ]; then echo "Aucun fxserver.log trouvé."; exit 0; fi
           lftp -e "
