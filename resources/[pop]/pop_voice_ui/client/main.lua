@@ -1,3 +1,5 @@
+-- Barre d'activité vocale : /voice-ui affiche ou cache la barre, qui suit le micro (MumbleIsPlayerTalking).
+
 local uiVisible = false
 
 local function SetUIVisible(visible)
@@ -5,9 +7,10 @@ local function SetUIVisible(visible)
     SendNUIMessage({
         action = visible and 'show' or 'hide'
     })
+    if Config.Debug then print(('[pop_voice_ui] barre %s'):format(visible and 'affichée' or 'cachée')) end
 end
 
-RegisterCommand('voice-ui', function()
+RegisterCommand(Config.Command, function()
     SetUIVisible(not uiVisible)
 end)
 
@@ -24,7 +27,7 @@ CreateThread(function()
                 -- so we simulate a flow between 60% and 100% when talking is detected.
                 SendNUIMessage({
                     action = 'voiceLevel',
-                    volume = 0.6 + (math.random() * 0.4)
+                    volume = Config.VolumeMin + (math.random() * Config.VolumeRange)
                 })
             elseif wasTalking then
                 -- Silence : un seul message suffit
@@ -35,10 +38,10 @@ CreateThread(function()
             end
             wasTalking = isTalking
 
-            Wait(50) -- 20 FPS UI update for smooth bar
+            Wait(Config.ActiveInterval) -- 20 FPS UI update for smooth bar
         else
             wasTalking = false
-            Wait(500)
+            Wait(Config.IdleInterval)
         end
     end
 end)
