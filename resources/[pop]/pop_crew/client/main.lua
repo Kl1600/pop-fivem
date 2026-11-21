@@ -1,4 +1,4 @@
-local ESX = exports['es_extended']:getSharedObject()
+-- Menu NUI du crew (/crew), cache d'état et recrutement via ox_target.
 
 local CrewState = { inCrew = false, isOwner = false }
 local menuOpen  = false
@@ -8,7 +8,7 @@ local menuOpen  = false
 -- ─────────────────────────────────────────────
 
 local function refreshState(cb)
-    ESX.TriggerServerCallback('pop_crew:getState', function(state)
+    Callback.Trigger('pop_crew:getState', function(state)
         CrewState = state or { inCrew = false, isOwner = false }
         if cb then cb(CrewState) end
     end)
@@ -42,10 +42,10 @@ local function closeMenu()
     SendNUIMessage({ type = 'close' })
 end
 
-RegisterCommand('crew', function()
+RegisterCommand(Config.Command, function()
     -- Une ancienne version liait /crew à F7 (touche du noclip admin) et FiveM garde
     -- ce raccourci sur le PC des joueurs : on ignore l'appel s'il vient de F7.
-    if IsControlPressed(0, 168) or IsDisabledControlPressed(0, 168) then return end
+    if IsControlPressed(0, Config.IgnoredControl) or IsDisabledControlPressed(0, Config.IgnoredControl) then return end
     if menuOpen then closeMenu() else openMenu() end
 end, false)
 
@@ -90,16 +90,17 @@ end)
 
 -- ─────────────────────────────────────────────
 -- Recrutement via ox_target (chef de crew uniquement)
+-- ox_target direct : addGlobalPlayer n'existe pas dans le bridge.
 -- ─────────────────────────────────────────────
 
 AddEventHandler('onClientResourceStart', function(resourceName)
     if resourceName ~= 'ox_target' and resourceName ~= GetCurrentResourceName() then return end
     exports.ox_target:addGlobalPlayer({
         {
-            name = 'vg_crew_recruit',
+            name = 'pop_crew_recruit',
             icon = 'fas fa-user-plus',
-            label = 'Recruter dans le crew',
-            distance = 2.5,
+            label = L('target_recruit'),
+            distance = Config.RecruitTargetDistance,
             canInteract = function(entity)
                 return CrewState.inCrew == true and CrewState.isOwner == true
             end,
@@ -108,8 +109,8 @@ AddEventHandler('onClientResourceStart', function(resourceName)
                 if targetId and targetId > 0 then
                     TriggerServerEvent('pop_crew:invite', targetId)
                 else
-                    exports['pop_notify']:ShowNotify({
-                        title = 'Crew', message = 'Impossible d\'identifier ce joueur.', type = 'error', duration = 4000,
+                    Bridge.Notify({
+                        title = L('crew_title'), message = L('player_unknown'), type = 'error', duration = Config.ClientNotifyDuration,
                     })
                 end
             end
@@ -118,14 +119,9 @@ AddEventHandler('onClientResourceStart', function(resourceName)
 end)
 
 -- ─────────────────────────────────────────────
--- État initial
+-- État initial : tout de suite si le personnage est déjà chargé, puis à chaque chargement
 -- ─────────────────────────────────────────────
 
-RegisterNetEvent('esx:playerLoaded', function()
-    refreshState()
-end)
-
-CreateThread(function()
-    while not ESX.IsPlayerLoaded or not ESX.IsPlayerLoaded() do Wait(500) end
+Bridge.OnPlayerLoaded(function()
     refreshState()
 end)
