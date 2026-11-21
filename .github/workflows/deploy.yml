@@ -44,13 +44,13 @@ jobs:
           SFTP_HOST: ${{ secrets.SFTP_HOST }}
           SFTP_PORT: ${{ secrets.SFTP_PORT }}
           SFTP_USER: ${{ secrets.SFTP_USER }}
-          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          LFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
           SFTP_REMOTE_PATH: ${{ secrets.SFTP_REMOTE_PATH }}
         run: |
           lftp -e "
             set sftp:auto-confirm yes;
             set net:max-retries 2;
-            open -u \"$SFTP_USER\",\"$SFTP_PASSWORD\" -p \"${SFTP_PORT:-22}\" sftp://$SFTP_HOST;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
             mkdir -p -f '$SFTP_REMOTE_PATH';
             lcd 'resources/[pop]';
             mirror -R --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md . '$SFTP_REMOTE_PATH';
