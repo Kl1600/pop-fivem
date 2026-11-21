@@ -43,6 +43,9 @@ local function closeMenu()
 end
 
 RegisterCommand('crew', function()
+    -- Une ancienne version liait /crew à F7 (touche du noclip admin) et FiveM garde
+    -- ce raccourci sur le PC des joueurs : on ignore l'appel s'il vient de F7.
+    if IsControlPressed(0, 168) or IsDisabledControlPressed(0, 168) then return end
     if menuOpen then closeMenu() else openMenu() end
 end, false)
 
