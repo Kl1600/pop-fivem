@@ -68,6 +68,6 @@ jobs:
             open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
             mkdir -p -f '$SFTP_REMOTE_PATH';
             lcd 'resources/[pop]';
-            mirror -R --parallel=8 --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md . '$SFTP_REMOTE_PATH';
+            mirror -R --parallel=8 --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md --exclude-glob diag_save.log . '$SFTP_REMOTE_PATH';
             bye
           "

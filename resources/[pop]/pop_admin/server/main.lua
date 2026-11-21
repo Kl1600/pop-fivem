@@ -769,3 +769,47 @@ RegisterNetEvent('pop_admin:jobDelete', function(jobName)
         end)
     end)
 end)
+
+-- =====================================================================
+--  DIAGNOSTIC « Cleaning stale player entry » (ESX bloqué à la connexion)
+--  Si un joueur déconnecté est encore en mémoire ESX 20 s plus tard, c'est que
+--  la sauvegarde ESX de fin de session échoue en boucle. On rejoue chaque étape
+--  de cette sauvegarde pour trouver laquelle plante, et on l'écrit dans
+--  diag_save.log (lisible depuis GitHub, outil serveur « logs »).
+-- =====================================================================
+local function diagWrite(lines)
+    local old = LoadResourceFile(resName, 'diag_save.log') or ''
+    local text = old .. table.concat(lines, '\n') .. '\n\n'
+    if #text > 60000 then text = text:sub(-60000) end
+    SaveResourceFile(resName, 'diag_save.log', text, -1)
+end
+
+AddEventHandler('playerDropped', function(reason)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if not xPlayer then return end
+    local identifier, name = xPlayer.identifier, xPlayer.getName()
+    SetTimeout(20000, function()
+        local stale = ESX.GetPlayerFromIdentifier(identifier)
+        if not stale then return end
+        local lines = { ('[%s] Joueur encore en mémoire ESX 20 s après sa déconnexion : %s (raison : %s)'):format(os.date('%Y-%m-%d %H:%M:%S'), tostring(name), tostring(reason)) }
+        local steps = {
+            { 'accounts', function() return json.encode(stale.getAccounts(true)) end },
+            { 'job', function() return tostring(stale.job and stale.job.name) .. ' / ' .. tostring(stale.job and stale.job.grade) end },
+            { 'group', function() return tostring(stale.group) end },
+            { 'coords', function() return json.encode(stale.getCoords(false, true)) end },
+            { 'inventory', function() return json.encode(stale.getInventory(true)) end },
+            { 'loadout', function() return json.encode(stale.getLoadout(true)) end },
+            { 'metadata', function() return json.encode(stale.getMeta()) end },
+            { 'pendingOps', function() return tostring(stale.getPendingAccountOperations and stale.getPendingAccountOperations()) end },
+        }
+        for _, step in ipairs(steps) do
+            local ok, res = pcall(step[2])
+            local value = tostring(res)
+            if #value > 300 then value = value:sub(1, 300) .. '…' end
+            lines[#lines + 1] = ('  %s : %s %s'):format(step[1], ok and 'OK' or 'ERREUR', value)
+        end
+        print('^1[pop_admin] DIAG sauvegarde ESX bloquée :^7\n' .. table.concat(lines, '\n'))
+        diagWrite(lines)
+    end)
+end)
