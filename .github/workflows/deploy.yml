@@ -15,7 +15,7 @@ on:
 
 concurrency:
   group: deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -53,6 +53,6 @@ jobs:
             open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
             mkdir -p -f '$SFTP_REMOTE_PATH';
             lcd 'resources/[pop]';
-            mirror -R --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md . '$SFTP_REMOTE_PATH';
+            mirror -R --parallel=8 --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md . '$SFTP_REMOTE_PATH';
             bye
           "
