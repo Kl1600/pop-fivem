@@ -21,91 +21,59 @@ local function sendNui(action, payload)
 end
 
 -- =====================================================================
---  PED DE PRÉVISUALISATION (rendu « menu pause »)
---  Le ped est dessiné par le jeu par-dessus le monde : toujours face à l'écran
---  et jamais caché par les murs. Il apparaît à droite (zone Vêtements).
+--  APERÇU DU PERSO : caméra placée devant le joueur, qui le cadre à droite
+--  de l'écran (zone Vêtements). C'est le vrai perso, toujours face à nous,
+--  avec sa vraie tenue. Il devient transparent quand on glisse un vêtement dessus.
 -- =====================================================================
-local previewPed = nil
+local previewCam = nil
 local previewActive = false
-local previewAlpha = 255
-
-local function appearanceSignature(ped)
-  local parts = {}
-  for comp = 0, 11 do
-    parts[#parts + 1] = GetPedDrawableVariation(ped, comp) .. ':' .. GetPedTextureVariation(ped, comp)
-  end
-  for prop = 0, 7 do
-    parts[#parts + 1] = GetPedPropIndex(ped, prop) .. ':' .. GetPedPropTextureIndex(ped, prop)
-  end
-  return table.concat(parts, ',')
-end
-
-local function givePreviewToMenu()
-  if not previewPed or not DoesEntityExist(previewPed) then return end
-  ClearPedInPauseMenu()
-  SetEntityAlpha(previewPed, previewAlpha, false)
-  GivePedToPauseMenu(previewPed, 2)
-  SetPauseMenuPedLighting(true)
-  SetPauseMenuPedSleepState(true)
-end
+local CAM_FOV = 40.0
+local CAM_DIST = 5.0          -- distance caméra → perso (taille à l'écran)
+local CAM_SIDE_ANGLE = 19.5   -- décalage pour placer le perso sur la droite
 
 local function stopInvPedPreview()
   if not previewActive then return end
   previewActive = false
-  ClearPedInPauseMenu()
-  SetFrontendActive(false)
-  if previewPed and DoesEntityExist(previewPed) then DeleteEntity(previewPed) end
-  previewPed = nil
+  ResetEntityAlpha(PlayerPedId())
+  if previewCam then
+    RenderScriptCams(false, true, 300, true, false)
+    DestroyCam(previewCam, false)
+    previewCam = nil
+  end
+end
+
+local function placePreviewCam()
+  local ped = PlayerPedId()
+  local pc = GetEntityCoords(ped)
+  local fwd = GetEntityForwardVector(ped)
+  local right = vector3(fwd.y, -fwd.x, 0.0)
+  local wanted = pc + fwd * CAM_DIST + vector3(0.0, 0.0, 0.25)
+  -- Si un mur est entre le perso et la caméra, on rapproche la caméra
+  local ray = StartShapeTestRay(pc.x, pc.y, pc.z + 0.3, wanted.x, wanted.y, wanted.z, 1 + 16, ped, 0)
+  local _, hit, hitPos = GetShapeTestResult(ray)
+  local dist = CAM_DIST
+  if hit == 1 then
+    dist = math.max(1.6, #(hitPos - pc) - 0.4)
+    wanted = pc + fwd * dist + vector3(0.0, 0.0, 0.25)
+  end
+  local lateral = dist * math.tan(math.rad(CAM_SIDE_ANGLE))
+  local aim = pc + right * lateral + vector3(0.0, 0.0, 0.05)
+  SetCamCoord(previewCam, wanted.x, wanted.y, wanted.z)
+  PointCamAtCoord(previewCam, aim.x, aim.y, aim.z)
 end
 
 local function startInvPedPreview()
   if previewActive then return end
   previewActive = true
-  previewAlpha = 255
+  previewCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+  SetCamFov(previewCam, CAM_FOV)
+  placePreviewCam()
+  SetCamActive(previewCam, true)
+  RenderScriptCams(true, true, 300, true, false)
   CreateThread(function()
-    -- Fond du menu rendu transparent AVANT l'ouverture (sinon fond noir)
-    ReplaceHudColourWithRgba(117, 0, 0, 0, 0)
-    SetFrontendActive(true)
-    ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY'), false, -1)
-    -- Attend que le menu (invisible) soit vraiment actif avant d'y mettre le ped
-    local tries = 0
-    while not IsPauseMenuActive() and tries < 20 do
-      Wait(50)
-      tries = tries + 1
-      if tries == 10 then
-        SetFrontendActive(true)
-        ActivateFrontendMenu(GetHashKey('FE_MENU_VERSION_EMPTY'), false, -1)
-      end
-    end
-    Wait(150)
-    if not previewActive then return end
-    SetMouseCursorVisibleInMenus(false)
-
-    local playerPed = PlayerPedId()
-    previewPed = ClonePed(playerPed, false, false, true)
-    if not previewPed or previewPed == 0 then stopInvPedPreview() return end
-    local c = GetEntityCoords(playerPed) - vector3(0.0, 0.0, 15.0)
-    SetEntityCoordsNoOffset(previewPed, c.x, c.y, c.z, false, false, false)
-    FreezeEntityPosition(previewPed, true)
-    SetEntityInvincible(previewPed, true)
-    SetEntityCollision(previewPed, false, false)
-    SetEntityVisible(previewPed, false, false)
-    NetworkSetEntityInvisibleToNetwork(previewPed, false)
-    Wait(300)
-    givePreviewToMenu()
-
-    local lastSig = appearanceSignature(playerPed)
     while previewActive and isOpen do
-      Wait(500)
-      -- Suit les changements de vêtements du joueur
-      local ped = PlayerPedId()
-      local sig = appearanceSignature(ped)
-      if sig ~= lastSig and previewPed and DoesEntityExist(previewPed) then
-        lastSig = sig
-        ClonePedToTarget(ped, previewPed)
-        Wait(100)
-        givePreviewToMenu()
-      end
+      placePreviewCam()
+      Wait(250)
     end
     stopInvPedPreview()
   end)
@@ -116,11 +84,11 @@ RegisterNUICallback('pedRect', function(_, cb)
 end)
 
 RegisterNUICallback('pedHover', function(data, cb)
-  -- Transparent mais garde la forme du ped
-  local alpha = (data and data.hover) and 110 or 255
-  if alpha ~= previewAlpha then
-    previewAlpha = alpha
-    givePreviewToMenu()
+  -- Transparent mais garde la forme du perso
+  if data and data.hover then
+    SetEntityAlpha(PlayerPedId(), 120, false)
+  else
+    ResetEntityAlpha(PlayerPedId())
   end
   cb('ok')
 end)
