@@ -42,7 +42,8 @@ local function issueCard(targetId, containerId, customData)
             exports['pop_inventory']:GiveItem(xPlayer.source, cardItem, 1, metadata)
         end
         
-        TriggerClientEvent('esx:showNotification', xPlayer.source, 'Vous avez reçu votre carte d\'identité.')
+        -- Notification via pop_notify (esx_notify absent du serveur)
+        TriggerClientEvent('notification:client:ShowNotify', xPlayer.source, { icon = 'fas fa-id-card', message = 'Vous avez reçu votre carte d\'identité.', duration = 5000 })
     end
 
     if customData then

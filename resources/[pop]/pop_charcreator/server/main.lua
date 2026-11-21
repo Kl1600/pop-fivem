@@ -144,7 +144,8 @@ RegisterNetEvent('vanguard_charcreator:save', function(skin, firstname, lastname
     exports['pop_inventory']:GiveItem(src, 'bouteille', 1)
 
     TriggerClientEvent('vanguard_charcreator:client:finishSuccess', src)
-    TriggerClientEvent('esx:showNotification', src, 'Apparence validée ! Heureux de vous revoir '..fn..' !')
+    -- Notification via pop_notify (esx_notify absent du serveur)
+    TriggerClientEvent('notification:client:ShowNotify', src, { icon = 'fas fa-user', message = 'Apparence validée ! Heureux de vous revoir '..fn..' !', duration = 5000 })
     
     -- Retour au monde normal (Bucket 0)
     saving[src] = nil
@@ -166,6 +167,18 @@ RegisterNetEvent('vanguard_charcreator:server:exitInstance', function()
     if not inCreatorInstance[src] then return end
     inCreatorInstance[src] = nil
     SetPlayerRoutingBucket(src, 0)
+end)
+
+-- Décision serveur : le créateur s'ouvre tant que le personnage n'a pas de prénom
+-- en base (joueur qui a quitté pendant la création, pas seulement isNew).
+AddEventHandler('esx:playerLoaded', function(playerId, xPlayer)
+    local src = tonumber(playerId)
+    if not src or not xPlayer or not xPlayer.identifier then return end
+    MySQL.scalar('SELECT firstname FROM users WHERE identifier = ?', { xPlayer.identifier }, function(firstname)
+        if firstname == nil or firstname == '' then
+            TriggerClientEvent('pop_charcreator:client:needCreator', src)
+        end
+    end)
 end)
 
 AddEventHandler('playerDropped', function()

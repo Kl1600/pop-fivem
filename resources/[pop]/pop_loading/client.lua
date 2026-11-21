@@ -2,6 +2,11 @@ local isJoinNuiActive = false
 local hasClickedJoin = false
 local transitionFinished = false
 
+-- Flag posé par pop_charcreator pendant toute la création
+local function creatorOpen()
+    return LocalPlayer.state.charcreatorOpen == true
+end
+
 AddEventHandler("loadingscreen:saveData", function(varName, varValue)
 	SendNUIMessage({ name = varName, value = varValue })
 end)
@@ -22,7 +27,8 @@ AddEventHandler("vfw:loading:showJoinNUI", function()
 end)
 
 RegisterNUICallback('closeUI', function(data, cb)
-    if hasClickedJoin then 
+    -- Un seul clic pris en compte : les clics pendant la transition sont ignorés
+    if hasClickedJoin then
         if cb then cb('ok') end
         return 
     end
@@ -37,14 +43,19 @@ RegisterNUICallback('closeUI', function(data, cb)
 
     -- Transition : Écran noir avec spinner pendant le zoom arrière, puis révélation des nuages
     Citizen.CreateThread(function()
-        -- S'assurer que le joueur reste gelé pendant toute la transition
-        FreezeEntityPosition(PlayerPedId(), true)
+        -- Créateur déjà ouvert : on ne touche ni à la caméra ni au ped
+        local skipSwitch = creatorOpen()
 
-        -- 1. Lancer la transition de caméra GTA Online vers le ciel (satellite zoom out)
-        -- Cette opération se fait en arrière-plan sous l'écran noir de l'UI
-        pcall(function()
-            SwitchOutPlayer(PlayerPedId(), 0, 1)
-        end)
+        -- S'assurer que le joueur reste gelé pendant toute la transition
+        if not skipSwitch then
+            FreezeEntityPosition(PlayerPedId(), true)
+
+            -- 1. Lancer la transition de caméra GTA Online vers le ciel (satellite zoom out)
+            -- Cette opération se fait en arrière-plan sous l'écran noir de l'UI
+            pcall(function()
+                SwitchOutPlayer(PlayerPedId(), 0, 1)
+            end)
+        end
 
         -- 2. Laisser le mini-chargement circulaire actif le temps que la caméra monte tout en haut (2.5 secondes)
         -- Le joueur ne voit que l'écran noir avec le spinner pendant l'ascension de la caméra
@@ -54,35 +65,42 @@ RegisterNUICallback('closeUI', function(data, cb)
         isJoinNuiActive = false
         SendNUIMessage({ action = "hide" })
         SendLoadingScreenMessage(json.encode({ action = "hide" }))
-        -- Notifier le core que le joueur a validé la connexion
-        TriggerEvent("vfw:loading:playerClickedJoin")
 
         -- Petit temps d'attente poétique dans les nuages (1.2 seconde)
         Citizen.Wait(1200)
 
         -- 4. Zoom avant vers le joueur (satellite zoom in)
-        pcall(function()
-            SwitchInPlayer(PlayerPedId())
-        end)
+        if not skipSwitch and not creatorOpen() then
+            pcall(function()
+                SwitchInPlayer(PlayerPedId())
+            end)
+        end
 
         -- Attendre 5.5 secondes que la caméra redescende et se fixe derrière le joueur
         Citizen.Wait(5500)
 
         -- 5. Une fois arrivé au sol, on libère définitivement le joueur et on affiche le HUD
         transitionFinished = true
-        
+
+        -- Notifier le core (et le créateur) seulement à la fin de la transition :
+        -- sinon SwitchInPlayer et la libération du ped cassent la caméra/pose du créateur.
+        -- Le créateur pose son flag de façon synchrone, avant la boucle ci-dessous.
+        TriggerEvent("vfw:loading:playerClickedJoin")
+
         Citizen.CreateThread(function()
             local playerId = PlayerId()
-            
+
             -- S'assurer de fermer définitivement tout écran natif ou spinner restant
             ShutdownLoadingScreen()
             ShutdownLoadingScreenNui()
             if BusyspinnerIsOn() then
                 BusyspinnerOff()
             end
-            
+
             for i = 1, 10 do
                 local ped = PlayerPedId()
+                -- Créateur ouvert : il gère lui-même gel, pose et invincibilité
+                if creatorOpen() then break end
                 if ped and ped ~= 0 then
                     FreezeEntityPosition(ped, false)
                     SetEntityCollision(ped, true, true)

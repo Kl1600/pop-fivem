@@ -59,7 +59,8 @@ local function issuePassport(targetId, passportType, containerId, customData)
             exports['pop_inventory']:GiveItem(xPlayer.source, item, 1, metadata)
         end
 
-        TriggerClientEvent('esx:showNotification', xPlayer.source, 'Vous avez reçu votre passeport.')
+        -- Notification via pop_notify (esx_notify absent du serveur)
+        TriggerClientEvent('notification:client:ShowNotify', xPlayer.source, { icon = 'fas fa-passport', message = 'Vous avez reçu votre passeport.', duration = 5000 })
     end
 
     if customData then

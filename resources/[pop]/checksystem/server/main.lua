@@ -51,7 +51,16 @@ function EnsureAccountNumber(identifier, cb)
             return
         end
 
+        -- Réessais limités : une collision (UNIQUE) se règle en 1 ou 2 essais ; si la
+        -- base est en erreur, on abandonne au lieu de boucler à l'infini.
+        local attempts = 0
         local function tryInsert()
+            attempts = attempts + 1
+            if attempts > 5 then
+                print('^1[checksystem] Impossible de créer le numéro de compte (base en erreur ?)^7')
+                cb(nil)
+                return
+            end
             local accountNumber = generateAccountNumber()
             MySQL.insert(
                 'INSERT INTO bank_accounts (identifier, account_number) VALUES (?, ?)',
@@ -60,7 +69,7 @@ function EnsureAccountNumber(identifier, cb)
                     if insertId then
                         cb(accountNumber)
                     else
-                        tryInsert() -- collision sur account_number (UNIQUE) : on retente avec un autre
+                        tryInsert()
                     end
                 end
             )
@@ -150,6 +159,10 @@ AddEventHandler("pop_inventory:createCheque", function(cheque)
 
     chequeBusy[src] = true
     EnsureAccountNumber(issuerCompany and ('company_' .. issuerCompany) or xPlayer.identifier, function(accountNumber)
+        if not accountNumber then
+            chequeBusy[src] = nil
+            return
+        end
         local uniqueCheckId = ("CHK-%s-%s"):format(
             os.time(),
             math.random(1000, 9999)

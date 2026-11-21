@@ -18,6 +18,10 @@ exports('ApplyCreatorPose', function()
 end)
 
 local function OpenCreator()
+    -- Flag posé avant le premier Wait : pop_loading le voit dès le TriggerEvent
+    -- et ne touche plus caméra/pose/invincibilité pendant l'ouverture.
+    LocalPlayer.state:set('charcreatorOpen', true, false)
+
     local model = GetHashKey('mp_m_freemode_01')
     RequestModel(model)
     while not HasModelLoaded(model) do Wait(0) end
@@ -448,21 +452,26 @@ AddEventHandler('vanguard_charcreator:open', function()
     OpenCreator()
 end)
 
--- Auto-open for NEW players ONLY — but defer until the player has clicked
--- "Rejoindre le plateau de jeu" on the loading-screen Join NUI, so the two
--- UIs don't overlap.
+-- Ouverture auto décidée par le serveur (personnage sans prénom en base), reportée
+-- jusqu'au clic sur "Accéder au plateau de jeu" pour ne pas superposer les deux UI.
 local pendingCreatorOpen = false
+local joinClicked = false
 
-RegisterNetEvent('esx:playerLoaded')
-AddEventHandler('esx:playerLoaded', function(xPlayer, isNew)
-    if isNew then
+RegisterNetEvent('pop_charcreator:client:needCreator', function()
+    if isCreatorOpen or LocalPlayer.state.charcreatorOpen then return end
+    if joinClicked then
+        -- Réponse serveur arrivée après le clic : ouverture directe
+        OpenCreator()
+    else
         pendingCreatorOpen = true
     end
 end)
 
 AddEventHandler('vfw:loading:playerClickedJoin', function()
+    joinClicked = true
     if pendingCreatorOpen then
         pendingCreatorOpen = false
+        if isCreatorOpen or LocalPlayer.state.charcreatorOpen then return end
         OpenCreator()
     end
 end)
