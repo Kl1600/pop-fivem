@@ -25,14 +25,12 @@ shared_scripts {
 }
 
 client_scripts {
-    '@es_extended/imports.lua',
     'client/main.lua',
     'client/camera.lua'
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    '@es_extended/imports.lua',
     'server/main.lua'
 }
 

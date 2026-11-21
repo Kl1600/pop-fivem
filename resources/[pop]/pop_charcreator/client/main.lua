@@ -132,8 +132,9 @@ local function OpenCreator()
                 UpdateCamera()
             end
             
-            -- Keep player updated if they quit NUI via console or crash
-            if not IsNuiFocused() then break end
+            -- Fin de boucle à la fermeture du créateur (et non plus à la perte du focus :
+            -- passer par les vêtements/tatouages coupait définitivement les commandes caméra).
+            if not isCreatorOpen then break end
         end
     end)
 end

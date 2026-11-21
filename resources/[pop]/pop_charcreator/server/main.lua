@@ -157,9 +157,21 @@ RegisterNetEvent('vanguard_charcreator:server:enterInstance', function()
     local src = source
     -- Uniquement depuis le monde normal (évite de sortir d'une autre instance : prison, etc.)
     if GetPlayerRoutingBucket(src) ~= 0 then return end
-    inCreatorInstance[src] = true
-    -- On place le joueur dans un bucket unique basé sur son ID source (+1000 pour éviter les conflits)
-    SetPlayerRoutingBucket(src, src + 1000)
+
+    local function enter()
+        inCreatorInstance[src] = true
+        -- On place le joueur dans un bucket unique basé sur son ID source (+1000 pour éviter les conflits)
+        SetPlayerRoutingBucket(src, src + 1000)
+    end
+
+    -- Instance réservée à une vraie création : perso sans prénom, ou créateur rouvert
+    -- par un admin (sinon n'importe qui s'isolait et avait les tatouages gratuits).
+    if adminReopen[src] then return enter() end
+    local xPlayer = ESX and ESX.GetPlayerFromId(src)
+    if not xPlayer then return end
+    MySQL.scalar('SELECT firstname FROM users WHERE identifier = ?', { xPlayer.identifier }, function(firstname)
+        if firstname == nil or firstname == '' then enter() end
+    end)
 end)
 
 RegisterNetEvent('vanguard_charcreator:server:exitInstance', function()
