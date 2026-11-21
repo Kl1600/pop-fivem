@@ -55,7 +55,7 @@ jobs:
         if: inputs.action == 'disable_esx'
         run: |
           # Gardées : celles de la base d'origine + celles appelées par les scripts pop.
-          KEEP="es_extended esx_skin skinchanger cron esx_addonaccount esx_basicneeds esx_datastore esx_society esx_status esx_addoninventory"
+          KEEP="es_extended esx_lib esx_skin skinchanger cron esx_addonaccount esx_basicneeds esx_datastore esx_society esx_status esx_addoninventory"
           : > cmds.txt
           grep -E '/esx_[^/]+/?$' tree.txt | sed 's#/$##' | while read -r p; do
             name="$(basename "$p")"
