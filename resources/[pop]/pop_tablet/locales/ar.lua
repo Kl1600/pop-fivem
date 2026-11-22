@@ -66,4 +66,13 @@ Locales['ar'] = {
     clock_alarm = 'منبّه',
     clock_timer = 'مؤقّت',
     clock_timer_done = 'انتهى المؤقّت',
+    msg_photo = 'صورة',
+    msg_location = 'موقع مشترك',
+    msg_notif = 'رسالة من %s: %s',
+    msg_group = 'مجموعة جديدة: %s',
+    call_incoming = 'مكالمة واردة من %s',
+    call_missed = 'مكالمة فائتة من %s',
+    call_voicemail = 'بريد صوتي من %s',
+    err_busy = 'الخط مشغول',
+    err_unreachable = 'الرقم غير متاح',
 }

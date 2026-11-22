@@ -65,4 +65,13 @@ Locales['de'] = {
     clock_alarm = 'Wecker',
     clock_timer = 'Timer',
     clock_timer_done = 'Timer abgelaufen',
+    msg_photo = 'Foto',
+    msg_location = 'Geteilter Standort',
+    msg_notif = 'Nachricht von %s: %s',
+    msg_group = 'Neue Gruppe: %s',
+    call_incoming = 'Eingehender Anruf von %s',
+    call_missed = 'Verpasster Anruf von %s',
+    call_voicemail = 'Mailbox von %s',
+    err_busy = 'Leitung besetzt',
+    err_unreachable = 'Nummer nicht erreichbar',
 }

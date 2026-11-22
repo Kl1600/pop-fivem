@@ -67,7 +67,8 @@ function M.Thread(src, data)
     local me = P.PhoneOf(s)
     local before = data.before ~= nil and Tablet.Limits.Int(data.before, 1, BIG) or BIG
     if not before then return Tablet.Fail('err_payload') end
-    local rows, gid = nil, groupId(data.phone)
+    local rows
+    local gid = groupId(data.phone)
     if gid then
         if not member(gid, me) then return Tablet.Fail('err_not_found') end
         rows = Tablet.DB.GroupThread(gid, before)

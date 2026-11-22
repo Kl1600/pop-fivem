@@ -65,4 +65,13 @@ Locales['en'] = {
     clock_alarm = 'Alarm',
     clock_timer = 'Timer',
     clock_timer_done = 'Timer finished',
+    msg_photo = 'Photo',
+    msg_location = 'Shared location',
+    msg_notif = 'Message from %s: %s',
+    msg_group = 'New group: %s',
+    call_incoming = 'Incoming call from %s',
+    call_missed = 'Missed call from %s',
+    call_voicemail = 'Voicemail from %s',
+    err_busy = 'Line busy',
+    err_unreachable = 'Number unreachable',
 }

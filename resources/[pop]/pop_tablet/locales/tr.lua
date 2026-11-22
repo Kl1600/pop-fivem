@@ -65,4 +65,13 @@ Locales['tr'] = {
     clock_alarm = 'Alarm',
     clock_timer = 'Zamanlayıcı',
     clock_timer_done = 'Zamanlayıcı bitti',
+    msg_photo = 'Fotoğraf',
+    msg_location = 'Paylaşılan konum',
+    msg_notif = '%s kişisinden mesaj: %s',
+    msg_group = 'Yeni grup: %s',
+    call_incoming = '%s arıyor',
+    call_missed = '%s kişisinden cevapsız arama',
+    call_voicemail = '%s kişisinden sesli mesaj',
+    err_busy = 'Hat meşgul',
+    err_unreachable = 'Numaraya ulaşılamıyor',
 }

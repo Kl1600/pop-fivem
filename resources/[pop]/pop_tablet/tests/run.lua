@@ -1893,5 +1893,229 @@ do
     def('json', keep)
 end
 
+
+------------------------------------------------------------------------
+section('Messages, Téléphone, Contacts (app-msg, app-tel, app-con)')
+------------------------------------------------------------------------
+do
+    local AD, MSG, CALLS, CON, GRP, MEM = {}, {}, {}, {}, {}, {}
+    local seq, keep, jstore = 0, json, {}
+    local function nid() seq = seq + 1 return seq end
+    def('json', { encode = function(v) local k = 'C' .. nid() jstore[k] = v return k end, decode = function(k) return jstore[k] end })
+    DB.GetAppData = function(serial, app) return AD[serial .. '|' .. app] end
+    DB.SetAppData = function(serial, app, data) AD[serial .. '|' .. app] = data end
+    DB.SerialOfPhone = function(p) for s, r in pairs(rows) do if r.phone == p then return s end end end
+    DB.InsertMessage = function(f, t, b, k, r, now) MSG[#MSG + 1] = { id = #MSG + 1, from_phone = f, to_phone = t, body = b, kind = k, ref = r, sent_at = now } return #MSG end
+    DB.GetMessage = function(id) return MSG[id] end
+    DB.PhotoOwned = function(serial, id) return id == 7 and serial == Tablet.Device.SerialOf(60) end
+    DB.GetPhoto = function(_, id) return id == 7 and { data = 'PIX', kind = 'photo' } or nil end
+    DB.LastDirect = function(me)
+        local last = {}
+        for _, m in ipairs(MSG) do
+            if (m.from_phone == me or m.to_phone == me) and m.to_phone:sub(1, 1) ~= 'g' then last[m.from_phone == me and m.to_phone or m.from_phone] = m end
+        end
+        local out = {}
+        for _, m in pairs(last) do out[#out + 1] = m end
+        return out
+    end
+    DB.UnreadDirect = function(me)
+        local n = {}
+        for _, m in ipairs(MSG) do if m.to_phone == me and not m.read_at then n[m.from_phone] = (n[m.from_phone] or 0) + 1 end end
+        local out = {}
+        for f, c in pairs(n) do out[#out + 1] = { from_phone = f, n = c } end
+        return out
+    end
+    DB.DirectThread = function(a, b, before)
+        local out = {}
+        for i = #MSG, 1, -1 do
+            local m = MSG[i]
+            if m.id < before and ((m.from_phone == a and m.to_phone == b) or (m.from_phone == b and m.to_phone == a)) then out[#out + 1] = m end
+        end
+        return out
+    end
+    DB.GroupThread = function(gid, before)
+        local out = {}
+        for i = #MSG, 1, -1 do if MSG[i].to_phone == 'g' .. gid and MSG[i].id < before then out[#out + 1] = MSG[i] end end
+        return out
+    end
+    DB.MarkRead = function(me, peer, now)
+        local n = 0
+        for _, m in ipairs(MSG) do if m.to_phone == me and m.from_phone == peer and not m.read_at then m.read_at = now n = n + 1 end end
+        return n
+    end
+    DB.Voicemails = function(me)
+        local out = {}
+        for _, m in ipairs(MSG) do if m.to_phone == me and m.ref == 'vm' then out[#out + 1] = m end end
+        return out
+    end
+    DB.CreateGroup = function(name) GRP[#GRP + 1] = { id = #GRP + 1, name = name } return #GRP end
+    DB.AddMember = function(gid, p) MEM[#MEM + 1] = { gid = gid, phone = p } end
+    DB.GroupsOf = function(me)
+        local out = {}
+        for _, mb in ipairs(MEM) do if mb.phone == me then out[#out + 1] = { id = mb.gid, name = GRP[mb.gid].name, unread = 0 } end end
+        return out
+    end
+    DB.GroupMembers = function(gid)
+        local o = {}
+        for _, mb in ipairs(MEM) do if mb.gid == gid then o[#o + 1] = { phone = mb.phone } end end
+        return o
+    end
+    DB.GroupLast = function(gid) for i = #MSG, 1, -1 do if MSG[i].to_phone == 'g' .. gid then return MSG[i] end end end
+    DB.GroupMarkRead = function() end
+    DB.InsertCall = function(f, t, now) CALLS[#CALLS + 1] = { id = #CALLS + 1, from_phone = f, to_phone = t, started_at = now, status = 'missed' } return #CALLS end
+    DB.UpdateCall = function(id, st, ans, ended) local c = CALLS[id] c.status, c.answered_at, c.ended_at = st, ans or c.answered_at, ended end
+    DB.CallHistory = function(me)
+        local o = {}
+        for i = #CALLS, 1, -1 do local c = CALLS[i] if c.from_phone == me or c.to_phone == me then o[#o + 1] = c end end
+        return o
+    end
+    DB.ListContacts = function(serial)
+        local o = {}
+        for _, c in ipairs(CON) do if c.serial == serial then o[#o + 1] = c end end
+        return o
+    end
+    DB.CountContacts = function(serial) return #DB.ListContacts(serial) end
+    DB.GetContact = function(serial, id) for _, c in ipairs(CON) do if c.id == id and c.serial == serial then return c end end end
+    DB.InsertContact = function(serial, c)
+        CON[#CON + 1] = { id = #CON + 1, serial = serial, name = c.name, phone = c.phone, mail = c.mail, note = c.note, favorite = c.favorite and 1 or 0 }
+        return #CON
+    end
+    DB.DeleteContact = function(serial, id)
+        for i, c in ipairs(CON) do if c.id == id and c.serial == serial then table.remove(CON, i) return true end end
+        return false
+    end
+    Callback = { Register = function(name, fn) handlers[name] = fn end }
+    local notified, coords, voiceCalls = {}, { [60] = { x = 10.04, y = 20.0, z = 1.0 } }, {}
+    Bridge.GetPlayers = function() return { 60, 61, 62 } end
+    Bridge.GetCoords = function(src) return coords[src] end
+    Bridge.Notify = function(src, msg) notified[#notified + 1] = { src = src, msg = msg } end
+    def('GetResourceState', function() return 'started' end)
+    -- exports['pma-voice']:setPlayerCall(src, canal) : l'appel par deux-points passe la table en premier argument
+    def('exports', setmetatable({}, { __index = function() return { setPlayerCall = function(_, src, ch) voiceCalls[#voiceCalls + 1] = { src, ch } end } end }))
+    for _, f in ipairs({ 'appdata', 'comm', 'contacts', 'messages', 'phone', 'share' }) do dofile('server/apps/' .. f .. '.lua') end
+
+    local function tk() clock = clock + 6 end
+    local ph = {}
+    for i, src in ipairs({ 60, 61, 62 }) do
+        players[src] = 'char' .. src
+        inv[src] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+        tk() handlers['pop_tablet:device:open'](src, nil, '2026-06-14 08:30')
+        tk() handlers['pop_tablet:device:setup'](src, { code = '4321', name = 'Cy' .. i, lang = 'fr', mail = 'cy' .. i .. '.test' })
+        Tablet.Device.GetSession(src).settings = {}
+        ph[src] = rows[Tablet.Device.SerialOf(src)].phone
+    end
+    Tablet.Scheduler.SetClock(function() return clock end)
+    local H = handlers
+    local function err(name, src, data) tk() return H['pop_tablet:' .. name](src, data).err end
+
+    tk() sent = {}
+    local r = H['pop_tablet:messages:send'](60, { to = ph[61], body = 'Salut' })
+    local pushed = false
+    for _, m in ipairs(sent) do if m.name == 'pop_tablet:client:message' and m.src == 61 and m.data.from == ph[60] then pushed = true end end
+    check('messages:send : texte livré, push à la tablette ouverte', r.ok and pushed, tostring(r.err))
+    check('messages:send : message vide refusé', err('messages:send', 60, { to = ph[61], body = '' }) == 'err_payload')
+    check('messages:send : soi-même refusé', err('messages:send', 60, { to = ph[60], body = 'x' }) == 'err_payload')
+    check('messages:send : numéro inconnu refusé', err('messages:send', 60, { to = '000-0000', body = 'x' }) == 'err_not_found')
+    check('messages:send : plus de 1000 caractères refusé', err('messages:send', 60, { to = ph[61], body = string.rep('a', 1001) }) == 'err_too_large')
+    tk()
+    local th = H['pop_tablet:messages:threads'](61)
+    check('messages:threads : non-lu compté chez le destinataire', th.ok and #th.items == 1 and th.items[1].unread == 1 and th.items[1].id == ph[60])
+    tk() sent = {}
+    H['pop_tablet:messages:read'](61, { phone = ph[60] })
+    local ack = false
+    for _, m in ipairs(sent) do if m.name == 'pop_tablet:client:message' and m.src == 60 and m.data.read == ph[61] then ack = true end end
+    tk()
+    check('messages:read : accusé Lu poussé à l\'expéditeur, non-lus à zéro', ack and H['pop_tablet:messages:threads'](61).items[1].unread == 0)
+    tk()
+    check('messages:thread : fil renvoyé', #H['pop_tablet:messages:thread'](61, { phone = ph[60] }).items == 1)
+    tk()
+    local ph1 = H['pop_tablet:messages:send'](60, { to = ph[61], kind = 'photo', ref = 7 })
+    check('messages:send photo : propriété vérifiée', ph1.ok and err('messages:send', 60, { to = ph[61], kind = 'photo', ref = 8 }) == 'err_not_found')
+    tk()
+    check('messages:media : lue chez l\'expéditeur', H['pop_tablet:messages:media'](61, ph1.msg.id).data == 'PIX')
+    check('messages:media : refusée à un tiers', err('messages:media', 62, ph1.msg.id) == 'err_not_found')
+    tk()
+    local loc = H['pop_tablet:messages:send'](60, { to = ph[61], kind = 'location' })
+    check('messages:send position : donnée par le serveur', loc.ok and loc.msg.ref == '10.0,20.0')
+    check('messages:send position : sans position serveur refusé', err('messages:send', 61, { to = ph[60], kind = 'location' }) == 'err_not_found')
+    tk() notified = {}
+    Tablet.Device.GetSession(61).openedAt = nil
+    H['pop_tablet:messages:send'](60, { to = ph[61], body = 'Tu dors ?' })
+    check('tablette fermée : notification du jeu', #notified == 1 and notified[1].src == 61)
+    tk() sent, notified = {}, {}
+    Tablet.Device.GetSession(61).settings = { air = true }
+    H['pop_tablet:messages:send'](60, { to = ph[61], body = 'Encore' })
+    check('destinataire en Mode Avion : rien reçu', #notified == 0 and #sent == 0)
+    Tablet.Device.GetSession(60).settings = { wifi = false }
+    check('expéditeur Wi-Fi coupé : err_offline', err('messages:send', 60, { to = ph[61], body = 'x' }) == 'err_offline')
+    Tablet.Device.GetSession(60).settings = {}
+    Tablet.Device.GetSession(61).settings = {}
+    Tablet.Device.GetSession(61).openedAt = clock
+    tk()
+    check('messages:pin : épingle', #H['pop_tablet:messages:pin'](60, { phone = ph[61], on = true }).pins == 1)
+    tk()
+    check('messages:pin : retire', #H['pop_tablet:messages:pin'](60, { phone = ph[61], on = false }).pins == 0)
+    tk()
+    local g = H['pop_tablet:messages:group'](60, { name = 'Equipe', members = { ph[61], ph[62] } })
+    check('messages:group : créé avec 3 membres', g.ok and g.id == 'g1', tostring(g.err))
+    check('messages:group : deux membres seulement refusé', err('messages:group', 60, { name = 'Duo', members = { ph[61] } }) == 'err_payload')
+    tk() sent = {}
+    H['pop_tablet:messages:send'](62, { to = g.id, body = 'Hello groupe' })
+    local got = {}
+    for _, m in ipairs(sent) do if m.name == 'pop_tablet:client:message' then got[m.src] = true end end
+    check('groupe : message poussé aux deux autres membres seulement', got[60] and got[61] and not got[62])
+
+    -- Téléphone
+    tk() sent = {}
+    local call1 = H['pop_tablet:phone:call'](60, { to = ph[61] })
+    check('phone:call : sonnerie poussée au destinataire', call1.ok and sent[#sent].name == 'pop_tablet:client:call' and sent[#sent].data.state == 'ring' and sent[#sent].src == 61, tostring(call1.err))
+    check('phone:call : appelant occupé', err('phone:call', 60, { to = ph[62] }) == 'err_busy' or err('phone:call', 60, { to = ph[62] }) == 'err_rate')
+    check('phone:call : destinataire occupé', err('phone:call', 62, { to = ph[61] }) == 'err_busy')
+    check('phone:answer : l\'appelant ne peut pas décrocher', err('phone:answer', 60, call1.callId) == 'err_not_found')
+    tk()
+    local an = H['pop_tablet:phone:answer'](61, call1.callId)
+    check('phone:answer : même canal pma-voice pour les deux joueurs', an.ok and #voiceCalls == 2 and voiceCalls[1][2] == voiceCalls[2][2] and voiceCalls[1][2] == Config.Phone.ChannelBase + call1.callId)
+    tk() sent = {}
+    H['pop_tablet:phone:hangup'](61, call1.callId)
+    local ended = false
+    for _, m in ipairs(sent) do if m.src == 60 and m.data.state == 'end' then ended = true end end
+    check('phone:hangup : l\'autre côté prévenu, canal quitté (0)', ended and voiceCalls[3][2] == 0 and voiceCalls[4][2] == 0 and Tablet.Phone.ActiveCount() == 0)
+    tk()
+    local c2 = H['pop_tablet:phone:call'](60, { to = ph[61] })
+    clock = clock + Config.Phone.RingSeconds + 1
+    Tablet.Scheduler.Run()
+    tk()
+    local hist = H['pop_tablet:phone:history'](61)
+    check('appel sans réponse : manqué après la sonnerie, dans l\'historique', c2.ok and Tablet.Phone.ActiveCount() == 0 and hist.items[1].dir == 'missed' and hist.items[1].peer == ph[60])
+    tk()
+    local c3 = H['pop_tablet:phone:call'](60, { to = ph[61] })
+    tk()
+    H['pop_tablet:phone:decline'](61, c3.callId)
+    check('phone:decline : refusé, ligne libérée', Tablet.Phone.ActiveCount() == 0 and CALLS[c3.callId].status == 'declined')
+    tk()
+    local c4 = H['pop_tablet:phone:call'](60, { to = ph[61] })
+    tk() H['pop_tablet:phone:answer'](61, c4.callId)
+    Tablet.Device.DropSession(61)
+    check('joueur parti pendant l\'appel : appel terminé', Tablet.Phone.ActiveCount() == 0 and CALLS[c4.callId].status == 'answered')
+    tk()
+    local vm = H['pop_tablet:phone:voicemail'](60, { to = ph[62], text = 'Rappelle-moi' })
+    tk()
+    check('messagerie vocale : déposée et listée', vm.ok and #H['pop_tablet:phone:voicemails'](62).items == 1)
+
+    -- Contacts
+    tk()
+    local ct = H['pop_tablet:contacts:save'](60, { name = 'Lina Costa', phone = ph[61], mail = '', addr = '12 Vinewood', notes = 'ami', grp = 'ami', fav = true })
+    tk()
+    local list = H['pop_tablet:contacts:list'](60)
+    check('contacts:save + list : adresse, groupe et favori conservés', ct.ok and list.items[1].addr == '12 Vinewood' and list.items[1].grp == 'ami' and list.items[1].fav)
+    check('contacts:save : groupe inconnu refusé', err('contacts:save', 60, { name = 'X', phone = ph[61], grp = 'mafia' }) == 'err_payload')
+    check('contacts:save : numéro invalide refusé', err('contacts:save', 60, { name = 'X', phone = 'abc' }) == 'err_payload')
+    check('contacts:list : propre à chaque tablette', #(function() tk() return H['pop_tablet:contacts:list'](62).items end)() == 0)
+    check('contacts:delete : contact d\'une autre tablette refusé', err('contacts:delete', 62, ct.id) == 'err_not_found')
+    tk()
+    check('contacts:delete : supprime', H['pop_tablet:contacts:delete'](60, ct.id).ok)
+    def('json', keep)
+end
+
 print(('\n%d réussis, %d échecs'):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

@@ -65,4 +65,13 @@ Locales['pt'] = {
     clock_alarm = 'Alarme',
     clock_timer = 'Temporizador',
     clock_timer_done = 'Temporizador terminado',
+    msg_photo = 'Foto',
+    msg_location = 'Localização partilhada',
+    msg_notif = 'Mensagem de %s: %s',
+    msg_group = 'Novo grupo: %s',
+    call_incoming = 'Chamada de %s',
+    call_missed = 'Chamada perdida de %s',
+    call_voicemail = 'Correio de voz de %s',
+    err_busy = 'Linha ocupada',
+    err_unreachable = 'Número inacessível',
 }

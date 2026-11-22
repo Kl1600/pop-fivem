@@ -65,4 +65,13 @@ Locales['nl'] = {
     clock_alarm = 'Wekker',
     clock_timer = 'Timer',
     clock_timer_done = 'Timer afgelopen',
+    msg_photo = 'Foto',
+    msg_location = 'Gedeelde locatie',
+    msg_notif = 'Bericht van %s: %s',
+    msg_group = 'Nieuwe groep: %s',
+    call_incoming = 'Inkomend gesprek van %s',
+    call_missed = 'Gemist gesprek van %s',
+    call_voicemail = 'Voicemail van %s',
+    err_busy = 'Lijn bezet',
+    err_unreachable = 'Nummer onbereikbaar',
 }
