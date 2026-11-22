@@ -31,6 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("message", (event) => {
+  // POP : les choix restent cachés tant que le joueur n'a pas cliqué.
+  if (event.data.event === "focus") {
+    body.classList.toggle("pop-focus", !!event.data.state);
+    return;
+  }
+
   if (event.data.event !== "showChecklist") {
     optionsWrapper.innerHTML = "";
   }
@@ -38,6 +44,7 @@ window.addEventListener("message", (event) => {
   switch (event.data.event) {
     case "visible": {
       isTargetActive = event.data.state;
+      if (!isTargetActive) body.classList.remove("pop-focus");
       updateBodyVisibility();
       const eyeEl = document.getElementById("eye");
       if (eyeEl) eyeEl.style.visibility = isTargetActive ? "visible" : "hidden";

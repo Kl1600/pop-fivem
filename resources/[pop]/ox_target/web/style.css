@@ -43,11 +43,14 @@ p { margin: 0; }
 
 /* Carte du menu, à droite du point */
 #options-wrapper {
+  display: none; /* affiché seulement après le clic gauche */
   position: absolute;
   top: 50%;
   left: calc(50% + 26px);
   transform: translateY(-22px);
 }
+
+body.pop-focus #options-wrapper { display: block; }
 
 .pop-target {
   min-width: 210px;
