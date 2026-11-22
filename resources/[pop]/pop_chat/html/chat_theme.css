@@ -86,18 +86,32 @@
 }
 
 .chat-input .prefix {
+    position: static !important;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
-    margin: 0 6px 0 2px !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    margin: 0 8px 0 4px !important;
+    padding: 0 !important;
     border-radius: 50%;
     background: #fff;
-    color: #0a0a0c !important;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1 !important;
+    font-size: 0 !important; /* on cache la flèche « ➤ » du chat de base (mal centrée) */
+    line-height: 0 !important;
+    color: transparent !important;
+}
+
+/* Chevron net et centré, dessiné en CSS (comme le rond des notifications) */
+.chat-input .prefix::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    margin-left: -2px;
+    border-top: 2px solid #0a0a0c;
+    border-right: 2px solid #0a0a0c;
+    transform: rotate(45deg);
 }
 
 .chat-input textarea {
