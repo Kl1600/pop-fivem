@@ -28,6 +28,35 @@ local menuChanged
 local menuHistory = {}
 local nearbyZones
 
+-- POP : identité affichée en en-tête du menu (NOM Prénom + ID), mise en cache.
+local popIdentity
+local popIdentityAt = 0
+
+local function refreshPopIdentity()
+    popIdentityAt = GetGameTimer()
+    lib.callback('ox_target:popIdentity', false, function(data)
+        local name
+        if data and data.first and data.first ~= '' then
+            name = data.last and data.last ~= ''
+                and ('%s %s'):format(data.last:upper(), data.first)
+                or data.first
+        end
+        popIdentity = name or GetPlayerName(PlayerId())
+    end)
+end
+
+local function getPopIdentity()
+    if not popIdentity or GetGameTimer() - popIdentityAt > 60000 then
+        refreshPopIdentity()
+    end
+    return { name = popIdentity or GetPlayerName(PlayerId()), id = GetPlayerServerId(PlayerId()) }
+end
+
+RegisterNetEvent('esx:playerLoaded', function()
+    if source == '' then return end
+    refreshPopIdentity()
+end)
+
 -- Toggle ox_target, instead of holding the hotkey
 local toggleHotkey = GetConvarInt('ox_target:toggleHotkey', 0) == 1
 local mouseButton = GetConvarInt('ox_target:leftClick', 1) == 1 and 24 or 25
@@ -332,6 +361,7 @@ local function startTargeting()
                     event = 'setTarget',
                     options = options,
                     zones = zones,
+                    identity = getPopIdentity(),
                 }, { sort_keys = true }))
             end
 

@@ -1,8 +1,8 @@
-import { createOptions } from "./createOptions.js";
+import { createOptions, beginMenu, endMenu } from "./createOptions.js";
 
 const optionsWrapper = document.getElementById("options-wrapper");
 const body = document.body;
-const eye = document.getElementById("eyeSvg");
+const eye = document.getElementById("eye");
 
 let isTargetActive = false;
 let isChecklistActive = false;
@@ -31,6 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("message", (event) => {
+  // POP : les choix restent cachés tant que le joueur n'a pas cliqué.
+  if (event.data.event === "focus") {
+    body.classList.toggle("pop-focus", !!event.data.state);
+    return;
+  }
+
   if (event.data.event !== "showChecklist") {
     optionsWrapper.innerHTML = "";
   }
@@ -38,6 +44,7 @@ window.addEventListener("message", (event) => {
   switch (event.data.event) {
     case "visible": {
       isTargetActive = event.data.state;
+      if (!isTargetActive) body.classList.remove("pop-focus");
       updateBodyVisibility();
       const eyeEl = document.getElementById("eye");
       if (eyeEl) eyeEl.style.visibility = isTargetActive ? "visible" : "hidden";
@@ -51,6 +58,7 @@ window.addEventListener("message", (event) => {
 
     case "setTarget": {
       eye.classList.add("eye-hover");
+      beginMenu(event.data.identity);
 
       if (event.data.options) {
         for (const type in event.data.options) {
@@ -67,6 +75,7 @@ window.addEventListener("message", (event) => {
           });
         }
       }
+      endMenu();
       break;
     }
 

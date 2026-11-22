@@ -28,6 +28,8 @@ function state.setNuiFocus(value, cursor)
     if value then SetCursorLocation(0.5, 0.5) end
 
     nuiFocus = value
+    -- POP : les choix ne s'affichent qu'après le clic (curseur actif).
+    SendNuiMessage(value and '{"event": "focus", "state": true}' or '{"event": "focus", "state": false}')
     SetNuiFocus(value, cursor or false)
     SetNuiFocusKeepInput(value)
 end

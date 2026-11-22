@@ -66,7 +66,7 @@ Ce que le bridge ne couvre pas (ex. `ESX.GetJobs()`, joueur par identifier, comp
 - Noms d'évènements utilisés par d'autres scripts (sauf renommage vanguard_/vg_/tab_ → pop_ demandé, fait partout en même temps).
 - Noms d'objets en base (`tab_douilles`, `tab_sabot`, …), tables SQL, ids de coffres.
 - HTML/CSS/JS de la NUI (sauf allègement d'images sans perte visible).
-- Dépendances tierces : utility_lib, ox_target, object_gizmo, checksystem, interact-sound, chHyperSound, pma_voice_challenge, clm_ProgressBar.
+- Dépendances tierces : utility_lib, ox_target, object_gizmo, checksystem, interact-sound, chHyperSound, pma_voice_challenge.
 
 ## 5. Vérifier avant chaque push
 ```bash
