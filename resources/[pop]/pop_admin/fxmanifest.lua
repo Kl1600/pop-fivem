@@ -21,7 +21,8 @@ client_scripts {
     'client/timeweather.lua',
     'client/players.lua',
     'client/characters.lua',
-    'client/bridge.lua'
+    'client/bridge.lua',
+    'client/target.lua'
 }
 
 server_scripts {

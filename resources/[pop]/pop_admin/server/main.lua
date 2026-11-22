@@ -506,6 +506,22 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         notify(src, ('%s → groupe %s'):format(xTarget.getName(), group), 'success')
         staffLog(src, ('a mis %s dans le groupe %s'):format(xTarget.getName(), group))
 
+    elseif action == 'info' then
+        if not xTarget then return end
+        local job = xTarget.getJob and xTarget.getJob() or {}
+        local bank = xTarget.getAccount('bank')
+        local cash
+        if GetResourceState('pop_inventory') == 'started' then
+            local ok, n = pcall(function() return exports['pop_inventory']:getItemCount(xTarget.source, 'cash') end)
+            cash = ok and tonumber(n) or 0
+        else
+            local acc = xTarget.getAccount('money')
+            cash = acc and acc.money or 0
+        end
+        notify(src, ('%s · ID %d · %s (%s) · Espèces %d$ · Banque %d$'):format(
+            xTarget.getName(), xTarget.source, job.label or '?', job.grade_label or '?',
+            cash, bank and bank.money or 0), 'info')
+
     elseif action == 'giveitem' then
         if not xTarget then return end
         local item = tostring(data.item or '')
@@ -671,6 +687,43 @@ RegisterNetEvent('pop_admin:deleteVehicle', function(plate)
         staffLog(src, ('a supprimé le véhicule %s'):format(plate))
         TriggerClientEvent('pop_admin:vehicleDeleted', src, plate)
     end)
+end)
+
+-- =====================================================================
+--  ACTIONS VÉHICULE (options admin ox_target)
+-- =====================================================================
+local VEHICLE_FIX = { repair = 'réparé', clean = 'nettoyé', flip = 'remis sur ses roues', fuel = 'fait le plein de' }
+
+RegisterNetEvent('pop_admin:vehicleAction', function(action, netId)
+    local src = source
+    if not IsAdmin(src) then return end
+    netId = tonumber(netId)
+    if not netId then return end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 or not DoesEntityExist(veh) or GetEntityType(veh) ~= 2 then return end
+    if #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(veh)) > 15.0 then return end
+
+    local plate = string.upper(string.gsub(GetVehicleNumberPlateText(veh) or '', '%s+', ''))
+
+    if VEHICLE_FIX[action] then
+        TriggerClientEvent('pop_admin:vehicleFix', NetworkGetEntityOwner(veh), action, netId)
+        notify(src, ('Véhicule %s : %s'):format(plate, action == 'fuel' and 'plein fait' or VEHICLE_FIX[action]), 'success')
+        staffLog(src, ('a %s le véhicule %s'):format(VEHICLE_FIX[action], plate))
+
+    elseif action == 'unlock' then
+        SetVehicleDoorsLocked(veh, 1)
+        TriggerClientEvent('vehicle_keys:client:syncLockState', -1, netId, false)
+        notify(src, ('Véhicule %s déverrouillé'):format(plate), 'success')
+        staffLog(src, ('a déverrouillé le véhicule %s'):format(plate))
+
+    elseif action == 'delete' then
+        DeleteEntity(veh)
+        if plate ~= '' then
+            MySQL.update('DELETE FROM persistent_vehicles WHERE plate = ?', { plate })
+        end
+        notify(src, ('Véhicule %s supprimé'):format(plate), 'success')
+        staffLog(src, ('a supprimé le véhicule %s'):format(plate))
+    end
 end)
 
 -- =====================================================================
