@@ -19,13 +19,17 @@ export const useDark = (): boolean => useContext(DarkContext);
 export const useNui = (): NuiApi => useContext(NuiContext);
 export const useNotify = (): ((n: NotifyInput) => void) => useContext(NotifyContext);
 
-import type { ClockApi, SettingsApi } from './types';
+import type { ClockApi, SettingsApi, WeatherData } from './types';
 export const SettingsContext = createContext<SettingsApi | null>(null);
 export function useSettingsApi(): SettingsApi {
   const v = useContext(SettingsContext);
   if (!v) throw new Error('SettingsContext manquant');
   return v;
 }
+
+/** Météo du jeu (null tant que le client n'en a pas envoyé). */
+export const WeatherContext = createContext<WeatherData | null>(null);
+export const useWeather = (): WeatherData | null => useContext(WeatherContext);
 
 /** Heure du jeu : sans appareil, l'horloge du navigateur et aucune échéance. */
 export const ClockContext = createContext<ClockApi>({ gameMs: () => Date.now(), setSchedule: () => {} });

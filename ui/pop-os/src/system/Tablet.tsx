@@ -1,6 +1,6 @@
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { ClockContext, DarkContext, LayoutContext, NotifyContext, NuiContext, SettingsContext, TContext, safeAccent, type SettingsApi } from '../kit';
+import { ClockContext, DarkContext, LayoutContext, NotifyContext, NuiContext, SettingsContext, TContext, WeatherContext, safeAccent, type SettingsApi } from '../kit';
 import { Fit, SCREEN_H, SCREEN_W, SHELL_H, SHELL_W, Shell } from '../device/Shell';
 import { makeT } from '../i18n';
 import { fetchNui, nuiApi, onNuiMessage } from '../nui/bridge';
@@ -38,6 +38,7 @@ export function Tablet() {
   const serial = useOS((s) => s.serial);
   const battery = useOS((s) => s.battery);
   const boot = useOS((s) => s.boot);
+  const weather = useOS((s) => s.weather);
   const apps = useOS((s) => s.apps);
   const settingsApi: SettingsApi = useMemo(() => ({
     settings: st, name, serial: serial ?? '', battery, lang,
@@ -72,7 +73,7 @@ export function Tablet() {
       <TContext.Provider value={t}>
         <LayoutContext.Provider value="regular">
           <DarkContext.Provider value={dark}>
-            <NuiContext.Provider value={nuiApi}><ClockContext.Provider value={clockApi}>
+            <NuiContext.Provider value={nuiApi}><ClockContext.Provider value={clockApi}><WeatherContext.Provider value={weather}>
               <NotifyContext.Provider value={notify}><SettingsContext.Provider value={settingsApi}>
                 <div className={`pop ${dark ? 'dk' : ''}`} dir={rtl ? 'rtl' : 'ltr'} data-blur={st.blur === false ? 'off' : 'on'} data-bold={st.bold === true ? 'on' : 'off'} data-theme={dark ? 'dark' : 'light'} style={{ position: 'fixed', inset: 0, ...vars }}>
                   {shell ? (
@@ -86,7 +87,7 @@ export function Tablet() {
                   )}
                 </div>
               </SettingsContext.Provider></NotifyContext.Provider>
-            </ClockContext.Provider></NuiContext.Provider>
+            </WeatherContext.Provider></ClockContext.Provider></NuiContext.Provider>
           </DarkContext.Provider>
         </LayoutContext.Provider>
       </TContext.Provider>

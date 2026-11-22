@@ -106,6 +106,20 @@ export const LANGUAGE_NAMES: Record<(typeof LANGUAGES)[number], string> = {
   en: 'English', fr: 'Français', es: 'Español', de: 'Deutsch', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe', ar: 'العربية',
 };
 
+/** Météo du jeu envoyée par le client (type, température, vent, pluie). */
+export interface WeatherData {
+  temp: number;
+  /** clear | clouds | rain | thunder | fog | snow */
+  kind: string;
+  hi?: number;
+  lo?: number;
+  city?: string;
+  rain?: number;
+  /** Vent en km/h et cap en degrés. */
+  wind?: number;
+  deg?: number;
+}
+
 /** Heure du jeu et échéances : fournies par l'appareil. `gameMs` = temps du jeu continu (ms, UTC sans fuseau). */
 export interface ClockApi {
   gameMs: () => number;

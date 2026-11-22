@@ -1,5 +1,6 @@
 import { MEDIA_CALLS, mediaCall, seedMedia } from './mock-media';
 import { BOARD_CALLS, boardCall, seedBoard } from './mock-board';
+import { TOOLS_CALLS, mapCall, seedTools, toolsCall } from './mock-tools';
 import { PROD_CALLS, prodCall, seedProd } from './mock-prod';
 import type { Boot, OpenData } from './types';
 
@@ -57,6 +58,7 @@ export function resetMock(): void {
   seedMedia();
   seedProd();
   seedBoard();
+  seedTools();
   installed = [...MOCK_BOOT.apps];
   fails = 0;
   blockedUntil = 0;
@@ -72,6 +74,7 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
   if (name === 'tablet:ready' || name === 'tablet:close' || name === 'close' || name === 'tablet:schedule' || name === 'tablet:micro') return { ok: true };
   if (name === 'tablet:locale') return { ok: true, locale: {}, rtl: d.lang === 'ar' };
   if (name === 'tablet:resync') return { ok: true };
+  if (name === 'tablet:map') return mapCall(data);
   if (name !== 'tablet:call') return { ok: false, err: 'err_unavailable' };
   const inner = (d.data ?? {}) as Json;
   switch (d.name) {
@@ -116,6 +119,6 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
     case 'contacts:list':
       return { ok: true, items: [{ id: 1, name: 'Sam Leroy', phone: '555-0101' }, { id: 2, name: 'Lina Costa', phone: '555-0102' }] };
     default:
-      return MEDIA_CALLS.has(String(d.name)) ? mediaCall(String(d.name), d.data) : PROD_CALLS.has(String(d.name)) ? prodCall(String(d.name), d.data) : BOARD_CALLS.has(String(d.name)) ? boardCall(String(d.name), d.data) : { ok: false, err: 'err_unavailable' };
+      return MEDIA_CALLS.has(String(d.name)) ? mediaCall(String(d.name), d.data) : PROD_CALLS.has(String(d.name)) ? prodCall(String(d.name), d.data) : BOARD_CALLS.has(String(d.name)) ? boardCall(String(d.name), d.data) : TOOLS_CALLS.has(String(d.name)) ? toolsCall(String(d.name), d.data) : { ok: false, err: 'err_unavailable' };
   }
 }

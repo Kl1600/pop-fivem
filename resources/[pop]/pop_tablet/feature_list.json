@@ -413,7 +413,7 @@
       "id": "app-bou-01",
       "description": "Bourse : simulation serveur, symboles fictifs, bornes de prix",
       "verification": "tests/run.lua : 10 000 pas, prix dans [5 %, 10x]",
-      "passes": false
+      "passes": true
     },
     {
       "id": "app-bou-02",
@@ -713,7 +713,7 @@
       "id": "arb-03",
       "description": "Traduire hors ligne : dictionnaire embarqué 10 langues, phrases puis mot à mot, jamais masquée",
       "verification": "vitest sur la fonction de traduction (fr->en, en->es, phrase connue et mot inconnu)",
-      "passes": false
+      "passes": true
     },
     {
       "id": "arb-04",

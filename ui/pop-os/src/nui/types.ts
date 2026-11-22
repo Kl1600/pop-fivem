@@ -18,6 +18,9 @@ export interface Weather {
   hi?: number;
   lo?: number;
   city?: string;
+  rain?: number;
+  wind?: number;
+  deg?: number;
 }
 
 export type Settings = DeviceSettings;
