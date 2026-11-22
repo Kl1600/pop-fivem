@@ -52,6 +52,11 @@ Tablet.Productivity = {
 Tablet.Max.place, Tablet.Max.evNotes, Tablet.Max.remTitle = 80, 500, 120
 Tablet.Max.listName, Tablet.Max.alarmLabel = 40, 40
 
+-- Limites de Tableau, Dictaphone et du partage de proximité.
+Tablet.Media.boards, Tablet.Media.boardPoints, Tablet.Media.boardItems = 30, 10000, 300
+Tablet.Media.recs, Tablet.Media.recSeconds, Tablet.Media.recBytes, Tablet.Media.recChunk = 30, 120, 409600, 32768
+Tablet.Media.shareSeconds = 30
+
 -- Version du système et modèle affichés dans Réglages > Général > Informations.
 Tablet.OsVersion = '1.0'
 Tablet.Model = 'POP Tab'
@@ -118,7 +123,7 @@ local relayed = {
     'clock:list', 'clock:saveAlarm', 'clock:deleteAlarm', 'clock:startTimer', 'clock:cancelTimer',
     'photos:capture', 'photos:list', 'photos:get', 'photos:delete', 'photos:favorite', 'photos:restore', 'photos:rate', 'photos:filter',
     'photos:thumb', 'photos:albums', 'photos:albumSave', 'photos:albumDelete', 'photos:albumLink',
-    'rec:save', 'rec:list', 'rec:delete',
+    'rec:save', 'rec:list', 'rec:get', 'rec:rename', 'rec:delete',
     'messages:threads', 'messages:thread', 'messages:send', 'messages:read',
     'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history',
     'mail:folders', 'mail:list', 'mail:get', 'mail:send', 'mail:move', 'mail:flag', 'mail:delete',

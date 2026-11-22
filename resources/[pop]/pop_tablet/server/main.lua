@@ -27,8 +27,13 @@ else
 end
 
 -- Nettoyage : drop, retour au choix du personnage, arrêt de la ressource.
-Bridge.OnPlayerDropped(function(src) Tablet.Device.DropSession(src) end)
-Bridge.OnPlayerUnloaded(function(src) Tablet.Device.DropSession(src) end)
+local function forget(src)
+    Tablet.Device.DropSession(src)
+    if Tablet.Share then Tablet.Share.Forget(src) end
+    if Tablet.Recorder then Tablet.Recorder.Forget(src) end
+end
+Bridge.OnPlayerDropped(forget)
+Bridge.OnPlayerUnloaded(forget)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource == RES then Tablet.Device.StopAll() end

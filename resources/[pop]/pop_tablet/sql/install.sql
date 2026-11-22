@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS `pop_tablet_recordings` (
   `title`      VARCHAR(80)     NOT NULL DEFAULT '',
   `seconds`    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   `url`        VARCHAR(255)    NULL,
-  `data`       MEDIUMBLOB      NULL,
+  `data`       MEDIUMTEXT      NULL,
   `created_at` BIGINT          NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_recordings_serial` (`serial`, `created_at`),

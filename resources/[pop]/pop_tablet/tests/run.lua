@@ -1519,5 +1519,158 @@ do
     check('liste vidée : plus aucune minuterie', #clientTimers == nt)
 end
 
+------------------------------------------------------------------------
+section('Tableau, Dictaphone, partage de proximité (app-tab, app-dic, share)')
+------------------------------------------------------------------------
+do
+    local BO, RE, NOTES, FIL = {}, {}, {}, {}
+    local seq = 0
+    local function nid() seq = seq + 1 return seq end
+    local function count(t, serial) local n = 0 for _, v in pairs(t) do if v.serial == serial then n = n + 1 end end return n end
+    DB.ListBoards = function(serial) local o = {} for _, b in pairs(BO) do if b.serial == serial then o[#o + 1] = b end end return o end
+    DB.CountBoards = function(serial) return count(BO, serial) end
+    DB.GetBoard = function(serial, id) local b = BO[id] return b and b.serial == serial and b or nil end
+    DB.InsertBoard = function(serial, title, strokes, now) local id = nid() BO[id] = { id = id, serial = serial, title = title, strokes = strokes, updated_at = now } return id end
+    DB.UpdateBoard = function(serial, id, title, strokes, now) local b = BO[id] if not b or b.serial ~= serial then return false end b.title, b.strokes, b.updated_at = title, strokes, now return true end
+    DB.DeleteBoard = function(serial, id) if not BO[id] or BO[id].serial ~= serial then return false end BO[id] = nil return true end
+    DB.ListRecs = function(serial) local o = {} for _, r in pairs(RE) do if r.serial == serial then o[#o + 1] = { id = r.id, title = r.title, seconds = r.seconds, created_at = r.created_at, memo = r.data:sub(1, 5) == 'memo:' and 1 or 0 } end end return o end
+    DB.CountRecs = function(serial) return count(RE, serial) end
+    DB.GetRec = function(serial, id) local r = RE[id] return r and r.serial == serial and r or nil end
+    DB.InsertRec = function(serial, title, seconds, data, now) local id = nid() RE[id] = { id = id, serial = serial, title = title, seconds = seconds, data = data, created_at = now } return id end
+    DB.RenameRec = function(serial, id, title) local r = RE[id] if not r or r.serial ~= serial then return false end r.title = title return true end
+    DB.DeleteRec = function(serial, id) if not RE[id] or RE[id].serial ~= serial then return false end RE[id] = nil return true end
+    DB.GetNote = function(serial, id) local n = NOTES[id] return n and n.serial == serial and n or nil end
+    DB.InsertNote = function(serial, n) local id = nid() NOTES[id] = { id = id, serial = serial, title = n.title, body = n.body } return id end
+    DB.CountNotes = function(serial) return count(NOTES, serial) end
+    DB.ListFiles = function(serial) local o = {} for _, f in pairs(FIL) do if f.serial == serial then o[#o + 1] = f end end return o end
+    DB.GetFile = function(serial, id) local f = FIL[id] return f and f.serial == serial and f or nil end
+    DB.InsertFile = function(serial, f) local id = nid() FIL[id] = { id = id, serial = serial, kind = f.kind, name = f.name, body = f.body } return id end
+    DB.CountPhotos = function() return 0 end
+    DB.GetPhoto = function() return nil end
+    DB.InsertPhoto = function() return nid() end
+    local keep, jstore = json, {}
+    def('json', { encode = function(v) local k = 'J' .. nid() jstore[k] = v return k end, decode = function(k) return jstore[k] end })
+    Callback = { Register = function(name, fn) handlers[name] = fn end }
+    for _, f in ipairs({ 'board', 'dictaphone', 'share' }) do dofile('server/apps/' .. f .. '.lua') end
+
+    players[40], players[41], players[42] = 'char40', 'char41', 'char42'
+    local function tk() clock = clock + 5 end
+    local serials = {}
+    for i, src in ipairs({ 40, 41, 42 }) do
+        inv[src] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+        tk()
+        local o = handlers['pop_tablet:device:open'](src, nil, '2026-06-14 08:30')
+        tk()
+        handlers['pop_tablet:device:setup'](src, { code = '4321', name = 'Tab' .. i, lang = 'fr', mail = 'sh' .. i .. '.test' })
+        serials[i] = o.serial
+    end
+    local pos = { [40] = { x = 0, y = 0, z = 0 }, [41] = { x = 1, y = 0, z = 0 }, [42] = { x = 50, y = 0, z = 0 } }
+    Bridge.GetCoords = function(src) return pos[src] end
+
+    -- Tableau
+    local good = json.encode({ items = { { type = 'note', x = 10, y = 10, w = 190, h = 190, col = 0, text = 'a' }, { type = 'arrow', x1 = 1, y1 = 1, x2 = 5, y2 = 5, col = 5 } },
+        strokes = { { col = 1, pts = { { 1, 2 }, { 3, 4 } } } } })
+    tk()
+    local b = handlers['pop_tablet:board:save'](40, { title = 'Enquête', strokes = good })
+    check('board:save : tableau créé', b.ok and BO[b.id] ~= nil, tostring(b.err))
+    tk()
+    local g = handlers['pop_tablet:board:get'](40, b.id)
+    check('board:get : rechargement identique', g.ok and g.board.strokes == good and g.board.title == 'Enquête')
+    tk()
+    check('board:get : tableau d\'autrui refusé', handlers['pop_tablet:board:get'](41, b.id).err == 'err_not_found')
+    tk()
+    check('board:save : modification', handlers['pop_tablet:board:save'](40, { id = b.id, title = 'Plan', strokes = good }).ok and BO[b.id].title == 'Plan')
+    tk()
+    check('board:save : modification d\'autrui refusée', handlers['pop_tablet:board:save'](41, { id = b.id, title = 'x', strokes = good }).err == 'err_not_found')
+    tk()
+    check('board:save : JSON invalide refusé', handlers['pop_tablet:board:save'](40, { title = 'x', strokes = '{nope' }).err == 'err_payload')
+    tk()
+    check('board:save : type d\'élément inconnu refusé', handlers['pop_tablet:board:save'](40, { title = 'x', strokes = json.encode({ items = { { type = 'evil', col = 0 } }, strokes = {} }) }).err == 'err_payload')
+    local pts = {}
+    for i = 1, 10001 do pts[i] = { 1, 1 } end
+    tk()
+    check('board:save : plus de 10 000 points refusé', handlers['pop_tablet:board:save'](40, { title = 'x', strokes = json.encode({ items = {}, strokes = { { col = 0, pts = pts } } }) }).err ~= nil)
+    tk()
+    check('board:save : plus de 128 Ko refusé', handlers['pop_tablet:board:save'](40, { title = 'x', strokes = string.rep('a', 131073) }).err ~= nil)
+    tk()
+    check('board:list : sans contenu', #handlers['pop_tablet:board:list'](40).items == 1 and handlers['pop_tablet:board:list'](40).items[1].strokes == nil)
+    for _ = 1, 29 do DB.InsertBoard(serials[1], 't', good, clock) end
+    tk()
+    check('board : le 31e est refusé', handlers['pop_tablet:board:save'](40, { title = 'x', strokes = good }).err == 'err_limit')
+    tk()
+    check('board:delete : propriétaire seulement', handlers['pop_tablet:board:delete'](41, b.id).err == 'err_not_found' and handlers['pop_tablet:board:delete'](40, b.id).ok)
+
+    -- Dictaphone
+    tk()
+    local memo = handlers['pop_tablet:rec:save'](40, { title = 'Mémo', seconds = 12, memo = 'Rapport de patrouille' })
+    check('rec:save : mémo dicté enregistré', memo.ok and RE[memo.id].data == 'memo:Rapport de patrouille', tostring(memo.err))
+    tk()
+    local mg = handlers['pop_tablet:rec:get'](40, memo.id)
+    check('rec:get : mémo relu (texte)', mg.ok and mg.rec.memo == true and mg.rec.text == 'Rapport de patrouille' and mg.rec.audio == nil)
+    tk()
+    local p1 = handlers['pop_tablet:rec:save'](40, { title = 'Voix', seconds = 5, index = 1, total = 2, chunk = 'data:audio/webm;base64,AAAA' })
+    tk()
+    local p2 = handlers['pop_tablet:rec:save'](40, { title = 'Voix', seconds = 5, index = 2, total = 2, chunk = 'BBBB' })
+    check('rec:save : audio assemblé en 2 morceaux', p1.ok and p1.partial and p2.ok and RE[p2.id].data == 'data:audio/webm;base64,AAAABBBB', tostring(p2.err))
+    tk()
+    check('rec:save : morceau hors ordre refusé', handlers['pop_tablet:rec:save'](40, { title = 'v', seconds = 5, index = 2, total = 2, chunk = 'x' }).err == 'err_payload')
+    tk()
+    check('rec:save : durée > 120 s refusée', handlers['pop_tablet:rec:save'](40, { title = 'v', seconds = 121, memo = 'x' }).err == 'err_too_large')
+    tk()
+    handlers['pop_tablet:rec:save'](40, { title = 'v', seconds = 5, index = 1, total = 20, chunk = 'data:audio/webm;base64,' .. string.rep('a', 32000) })
+    local over
+    for i = 2, 20 do
+        tk()
+        local r = handlers['pop_tablet:rec:save'](40, { title = 'v', seconds = 5, index = i, total = 20, chunk = string.rep('a', 32000) })
+        if r.err then over = r.err break end
+    end
+    check('rec:save : plus de 400 Ko refusé', over == 'err_too_large', tostring(over))
+    tk()
+    check('rec:save : audio sans data URI refusé', handlers['pop_tablet:rec:save'](40, { title = 'v', seconds = 1, index = 1, total = 1, chunk = 'memo:x' }).err == 'err_payload')
+    tk()
+    check('rec:rename / list / delete', handlers['pop_tablet:rec:rename'](40, { id = memo.id, title = 'Nouveau' }).ok and RE[memo.id].title == 'Nouveau'
+        and #handlers['pop_tablet:rec:list'](40).items == 2 and handlers['pop_tablet:rec:delete'](41, memo.id).err == 'err_not_found' and handlers['pop_tablet:rec:delete'](40, memo.id).ok)
+
+    -- Partage de proximité
+    local note = DB.InsertNote(serials[1], { title = 'Idée', body = 'J0', pinned = false }, clock)
+    tk()
+    local near = handlers['pop_tablet:share:nearby'](40)
+    check('share:nearby : seulement les tablettes proches (nom d\'appareil)', near.ok and #near.items == 1 and near.items[1].id == 41 and near.items[1].name == 'Tab2', tostring(near.err))
+    tk()
+    check('share:send : trop loin refusé', handlers['pop_tablet:share:send'](40, { target = 42, kind = 'note', id = note }).err == 'err_far')
+    tk()
+    check('share:send : ressource d\'autrui refusée', handlers['pop_tablet:share:send'](41, { target = 40, kind = 'note', id = note }).err == 'err_not_found')
+    tk()
+    check('share:send : genre inconnu refusé', handlers['pop_tablet:share:send'](40, { target = 41, kind = 'drop', id = note }).err == 'err_payload')
+    tk()
+    local offer = handlers['pop_tablet:share:send'](40, { target = 41, kind = 'note', id = note })
+    local push = sent[#sent]
+    check('share:send : offre envoyée au destinataire', offer.ok and push and push.name == 'pop_tablet:client:share' and push.src == 41 and push.data.offerId == offer.offerId and push.data.kind == 'note', tostring(offer.err))
+    tk()
+    check('share:accept : autre joueur refusé', handlers['pop_tablet:share:accept'](42, offer.offerId).err == 'err_not_found')
+    pos[41] = { x = 90, y = 0, z = 0 }
+    tk()
+    check('share:accept : distance revérifiée', handlers['pop_tablet:share:accept'](41, offer.offerId).err == 'err_far')
+    pos[41] = { x = 1, y = 0, z = 0 }
+    tk()
+    local o2 = handlers['pop_tablet:share:send'](40, { target = 41, kind = 'note', id = note })
+    clock = clock + 60
+    check('share:accept : offre expirée (30 s)', handlers['pop_tablet:share:accept'](41, o2.offerId).err == 'err_offer', tostring(o2.err))
+    tk()
+    local o3 = handlers['pop_tablet:share:send'](40, { target = 41, kind = 'note', id = note })
+    tk()
+    local acc = handlers['pop_tablet:share:accept'](41, o3.offerId)
+    local copied = false
+    for _, n in pairs(NOTES) do if n.serial == serials[2] and n.title == 'Idée' and n.body == 'J0' then copied = true end end
+    check('share:accept : copie chez le destinataire', acc.ok and copied, tostring(acc.err))
+    tk()
+    check('share:accept : une offre ne sert qu\'une fois', handlers['pop_tablet:share:accept'](41, o3.offerId).err == 'err_not_found')
+    tk()
+    local o4 = handlers['pop_tablet:share:send'](40, { target = 41, kind = 'note', id = note })
+    tk()
+    check('share:refuse : l\'offre disparaît', handlers['pop_tablet:share:refuse'](41, o4.offerId).ok and handlers['pop_tablet:share:accept'](41, o4.offerId).err == 'err_not_found')
+    def('json', keep)
+end
+
 print(('\n%d réussis, %d échecs'):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

@@ -302,6 +302,62 @@ function DB.PhotoData(id)
     return MySQL.scalar.await('SELECT data FROM pop_tablet_photos WHERE id = ? AND deleted_at IS NULL', { id })
 end
 
+--- Tableaux : liste sans contenu, lecture, écriture. La suppression emporte les raccourcis de Fichiers.
+function DB.ListBoards(serial)
+    return MySQL.query.await('SELECT id, title, updated_at FROM pop_tablet_boards WHERE serial = ? ORDER BY updated_at DESC, id DESC LIMIT 30', { serial }) or {}
+end
+
+function DB.CountBoards(serial)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_boards WHERE serial = ?', { serial })) or 0
+end
+
+function DB.GetBoard(serial, id)
+    return MySQL.single.await('SELECT id, title, strokes, updated_at FROM pop_tablet_boards WHERE id = ? AND serial = ?', { id, serial })
+end
+
+function DB.InsertBoard(serial, title, strokes, now)
+    return MySQL.insert.await('INSERT INTO pop_tablet_boards (serial, title, strokes, updated_at) VALUES (?, ?, ?, ?)', { serial, title, strokes, now })
+end
+
+function DB.UpdateBoard(serial, id, title, strokes, now)
+    local r = MySQL.update.await('UPDATE pop_tablet_boards SET title = ?, strokes = ?, updated_at = ? WHERE id = ? AND serial = ?', { title, strokes, now, id, serial })
+    return (r or 0) > 0
+end
+
+function DB.DeleteBoard(serial, id)
+    local r = MySQL.update.await('DELETE FROM pop_tablet_boards WHERE id = ? AND serial = ?', { id, serial })
+    if (r or 0) > 0 then MySQL.update.await("DELETE FROM pop_tablet_files WHERE serial = ? AND kind = 'board' AND ref_id = ?", { serial, id }) end
+    return (r or 0) > 0
+end
+
+--- Enregistrements : liste sans contenu (memo = 1 pour un mémo dicté), lecture, écriture.
+function DB.ListRecs(serial)
+    return MySQL.query.await("SELECT id, title, seconds, created_at, (LEFT(data, 5) = 'memo:') AS memo FROM pop_tablet_recordings WHERE serial = ? ORDER BY created_at DESC, id DESC LIMIT 30", { serial }) or {}
+end
+
+function DB.CountRecs(serial)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_recordings WHERE serial = ?', { serial })) or 0
+end
+
+function DB.GetRec(serial, id)
+    return MySQL.single.await('SELECT id, title, seconds, data, created_at FROM pop_tablet_recordings WHERE id = ? AND serial = ?', { id, serial })
+end
+
+function DB.InsertRec(serial, title, seconds, data, now)
+    return MySQL.insert.await('INSERT INTO pop_tablet_recordings (serial, title, seconds, data, created_at) VALUES (?, ?, ?, ?, ?)', { serial, title, seconds, data, now })
+end
+
+function DB.RenameRec(serial, id, title)
+    local r = MySQL.update.await('UPDATE pop_tablet_recordings SET title = ? WHERE id = ? AND serial = ?', { title, id, serial })
+    return (r or 0) > 0
+end
+
+function DB.DeleteRec(serial, id)
+    local r = MySQL.update.await('DELETE FROM pop_tablet_recordings WHERE id = ? AND serial = ?', { id, serial })
+    if (r or 0) > 0 then MySQL.update.await("DELETE FROM pop_tablet_files WHERE serial = ? AND kind = 'audio' AND ref_id = ?", { serial, id }) end
+    return (r or 0) > 0
+end
+
 function DB.BoardOwned(serial, id)
     return MySQL.scalar.await('SELECT 1 FROM pop_tablet_boards WHERE id = ? AND serial = ? LIMIT 1', { id, serial }) ~= nil
 end

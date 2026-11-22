@@ -71,9 +71,16 @@ RegisterNUICallback('tablet:camera', function(data, cb)
     cb({ ok = false, err = 'err_payload' })
 end)
 
--- Carte et micro : branchés avec les applis correspondantes (passages suivants).
-for _, name in ipairs({ 'tablet:map', 'tablet:micro' }) do
-    RegisterNUICallback(name, function(_, cb)
-        cb({ ok = false, err = 'err_unavailable' })
-    end)
-end
+-- Micro du Dictaphone : l'interface teste getUserMedia et annonce `granted` ou `denied` (aucun audio ne transite par Lua).
+C.MicroState = 'unknown'
+RegisterNUICallback('tablet:micro', function(data, cb)
+    local state = type(data) == 'table' and data.state or nil
+    if state ~= 'granted' and state ~= 'denied' then return cb({ ok = false, err = 'err_payload' }) end
+    C.MicroState = state
+    cb({ ok = true })
+end)
+
+-- Carte : branchée avec Plans (passage suivant).
+RegisterNUICallback('tablet:map', function(_, cb)
+    cb({ ok = false, err = 'err_unavailable' })
+end)
