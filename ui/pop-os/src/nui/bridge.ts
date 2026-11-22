@@ -33,9 +33,18 @@ export function onServerLocked(fn: (() => void) | null): void {
   lockedHandler = fn;
 }
 
+/** Journal des appels NUI (développement seulement) : `window.__popCalls`, un `tablet:call` est déplié en `{ name, data }` de l'appel interne. */
+function recordCall(name: string, data: unknown): void {
+  const w = window as unknown as { __popCalls?: Array<{ name: string; data: unknown }> };
+  const inner = name === 'tablet:call' && data !== null && typeof data === 'object' ? (data as { name?: unknown; data?: unknown }) : null;
+  (w.__popCalls ??= []).push(inner && typeof inner.name === 'string' ? { name: inner.name, data: inner.data } : { name, data });
+}
+
 /** Appel d'un RegisterNUICallback côté Lua. Hors jeu : réponse simulée (aucun réseau). */
 export async function fetchNui<T = unknown>(name: string, data?: unknown): Promise<T | null> {
   if (!inGame()) {
+    // Crochet de test (robot Playwright) : `import.meta.env.DEV` est remplacé par `false` dans le build, ce bloc n'y existe donc pas.
+    if (import.meta.env.DEV) recordCall(name, data);
     // Simulation chargée à la demande : hors de l'entrée du bundle, jamais téléchargée en jeu.
     const { simulate } = await import('./mock');
     return (await simulate(name, data)) as T | null;

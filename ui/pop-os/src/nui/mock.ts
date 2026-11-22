@@ -86,6 +86,8 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
   if (name === 'tablet:ready' || name === 'tablet:close' || name === 'close' || name === 'tablet:schedule' || name === 'tablet:micro') return { ok: true };
   if (name === 'tablet:locale') return { ok: true, locale: {}, rtl: d.lang === 'ar' };
   if (name === 'tablet:resync') return { ok: true };
+  // Appareil photo : caméra scriptée par défaut (zoom disponible, pas de mode selfie natif) ; les autres actions réussissent.
+  if (name === 'tablet:camera') return d.action === 'start' ? { ok: true, mode: 'scripted', zoom: true } : { ok: true };
   if (name === 'tablet:map') return mapCall(data);
   if (name !== 'tablet:call') return { ok: false, err: 'err_unavailable' };
   const inner = (d.data ?? {}) as Json;

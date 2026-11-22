@@ -4,3 +4,5 @@ Thumbs.db
 node_modules/
 .env
 luac.out
+ui/pop-os/e2e/.sortie/
+ui/pop-os/playwright-report/
