@@ -2,40 +2,70 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent;
-    font-family: 'Segoe UI', Arial, sans-serif; color: #fff; user-select: none; }
-  #death { position: fixed; inset: 0; opacity: 0; transition: opacity 150ms ease; pointer-events: none;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.7) 100%); }
+  @import url(https://fonts.cdnfonts.com/css/tt-firs-neue-trl);
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none;
+    font-family: 'TT Firs Neue Trl', 'Segoe UI', sans-serif; color: #fff; }
+
+  /* Même DA que pop_notify : verre sombre flouté, bord fin, rond blanc, barre bleue */
+  #death { position: fixed; inset: 0; opacity: 0; transition: opacity .3s ease; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,.55) 100%); }
   #death.show { opacity: 1; }
-  .panel { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); min-width: 320px;
-    background: rgba(14,14,14,0.92); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px;
-    padding: 16px 22px 14px; text-align: center; }
-  .title { font-size: 13px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: #e74c3c; }
-  .sub { margin-top: 10px; font-size: 12px; color: rgba(255,255,255,0.6); }
-  .timer { margin-top: 2px; font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
-  .call { margin-top: 12px; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
-  .key { min-width: 20px; padding: 2px 6px; border: 1px solid rgba(255,255,255,0.7); border-radius: 3px;
-    font-size: 11px; font-weight: 700; }
-  .call.sent { color: rgba(255,255,255,0.45); }
-  .call.sent .key { display: none; }
+  .card { position: absolute; left: 50%; bottom: 120px; width: 300px; transform: translateX(-50%);
+    background: rgba(10,10,12,.4); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 4px; padding: 12px 15px 14px; overflow: hidden; }
+  #death.show .card { animation: up .3s ease-out; }
+  @keyframes up { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+  .head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; margin-bottom: 9px;
+    border-bottom: 1px solid rgba(255,255,255,.1); }
+  .circle { width: 18px; height: 18px; border-radius: 50%; background: #fff; color: #0a0a0c;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .circle i { font-size: 10px; }
+  .title { font-size: 14px; font-weight: 600; }
+  .timer { margin-left: auto; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .line { display: flex; align-items: center; gap: 10px; font-size: 12px; color: rgba(255,255,255,.5); }
+  .line + .line { margin-top: 7px; }
+  .line i { width: 12px; text-align: center; font-size: 10px; }
+  .key { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px;
+    border-radius: 4px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    color: #fff; font-size: 11px; font-weight: 600; }
+  #call { color: rgba(255,255,255,.85); }
+  #call.sent { color: rgba(255,255,255,.4); }
+  #call.sent .key { display: none; }
+  #call .done { display: none; color: #2aad0a; font-size: 11px; }
+  #call.sent .done { display: inline; }
+
+  .progress { position: absolute; left: 0; bottom: 0; height: 2px; background: #5d90ec; width: 100%;
+    transition: width .5s linear; }
 </style>
 </head>
 <body>
   <div id="death">
-    <div class="panel">
-      <div class="title" id="title">Inconscient</div>
-      <div class="sub" id="respawnIn">Transfert à l'hôpital dans</div>
-      <div class="timer" id="timer">05:00</div>
-      <div class="call" id="call"><span class="key" id="key">G</span><span id="callText">Appeler les secours</span></div>
+    <div class="card">
+      <div class="head">
+        <div class="circle"><i class="fas fa-heart-pulse"></i></div>
+        <div class="title" id="title">Inconscient</div>
+        <div class="timer" id="timer">05:00</div>
+      </div>
+      <div class="line"><i class="fas fa-hospital"></i><span id="respawnIn">Transfert à l'hôpital à la fin du temps</span></div>
+      <div class="line" id="call"><span class="key" id="key">G</span><i class="fas fa-check done"></i><span id="callText">Appeler les secours</span></div>
+      <div class="progress" id="progress"></div>
     </div>
   </div>
 <script>
   const $ = (id) => document.getElementById(id);
-  let texts = {};
+  let texts = {}, total = 300;
   const fmt = (s) => {
     s = Math.max(0, s | 0);
     return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  };
+  const setTime = (s) => {
+    $('timer').textContent = fmt(s);
+    $('progress').style.width = Math.max(0, Math.min(100, (s / total) * 100)) + '%';
   };
   const setCallReady = () => {
     $('call').classList.remove('sent');
@@ -45,17 +75,18 @@
     const d = e.data || {};
     if (d.action === 'show') {
       texts = d.texts || {};
+      total = d.total || d.seconds || 300;
       $('title').textContent = texts.title || 'Inconscient';
       $('respawnIn').textContent = texts.respawnIn || '';
       $('key').textContent = texts.key || 'G';
       setCallReady();
-      $('timer').textContent = fmt(d.seconds);
+      setTime(d.seconds);
       $('death').classList.add('show');
     } else if (d.action === 'tick') {
-      $('timer').textContent = fmt(d.seconds);
+      setTime(d.seconds);
     } else if (d.action === 'called') {
       $('call').classList.add('sent');
-      $('callText').textContent = '✓ ' + (texts.callSent || 'Secours appelés');
+      $('callText').textContent = texts.callSent || 'Secours appelés';
     } else if (d.action === 'callReady') {
       setCallReady();
     } else if (d.action === 'hide') {

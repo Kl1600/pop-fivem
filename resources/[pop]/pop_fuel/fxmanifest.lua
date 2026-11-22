@@ -8,7 +8,6 @@ version '1.0.0'
 description 'Essence : consommation et stations-service (espèces ou carte)'
 
 dependencies {
-    'ox_lib',
     'pop_inventory', -- le bridge doit le détecter pour payer avec l'objet cash
 }
 
@@ -19,7 +18,6 @@ shared_scripts {
 }
 
 client_scripts {
-    '@ox_lib/init.lua',
     'bridge/client.lua',
     'client/consumption.lua',
     'client/stations.lua',
@@ -28,6 +26,12 @@ client_scripts {
 server_scripts {
     'bridge/server.lua',
     'server/main.lua',
+}
+
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
 }
 
 escrow_ignore {

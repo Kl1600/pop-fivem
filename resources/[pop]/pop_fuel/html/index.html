@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  @import url(https://fonts.cdnfonts.com/css/tt-firs-neue-trl);
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none;
+    font-family: 'TT Firs Neue Trl', 'Segoe UI', sans-serif; color: #fff; }
+
+  /* Même DA que pop_notify : verre sombre flouté, bord fin, rond blanc, barre bleue */
+  .card { position: absolute; left: 50%; bottom: 120px; width: 300px; transform: translateX(-50%);
+    background: rgba(10,10,12,.4); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 4px; padding: 12px 15px 14px; overflow: hidden;
+    display: none; }
+  .card.show { display: block; animation: up .3s ease-out; }
+  @keyframes up { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+  .head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,.1); }
+  .circle { width: 18px; height: 18px; border-radius: 50%; background: #fff; color: #0a0a0c;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .circle i { font-size: 10px; }
+  .title { font-size: 14px; font-weight: 600; }
+  .right { margin-left: auto; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .line { display: flex; align-items: center; gap: 10px; font-size: 12px; color: rgba(255,255,255,.5); }
+  .line i { width: 12px; text-align: center; font-size: 10px; }
+  .line b { color: #fff; font-weight: 600; }
+
+  .buttons { display: flex; gap: 8px; margin-top: 12px; }
+  .btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 34px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 4px;
+    color: rgba(255,255,255,.85); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease; }
+  .btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.2); color: #fff; }
+  .btn i { font-size: 11px; }
+
+  .hint { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,.4); }
+  .key { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px;
+    border-radius: 4px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    color: #fff; font-size: 11px; font-weight: 600; }
+
+  .progress { position: absolute; left: 0; bottom: 0; height: 2px; background: #5d90ec; width: 0; }
+</style>
+</head>
+<body>
+  <!-- Choix du paiement -->
+  <div class="card" id="pay">
+    <div class="head">
+      <div class="circle"><i class="fas fa-gas-pump"></i></div>
+      <div class="title" id="payTitle">Station-service</div>
+      <div class="right" id="liters">0 L</div>
+    </div>
+    <div class="line"><i class="fas fa-receipt"></i><span id="totalLabel">Total</span><b id="price">0 $</b></div>
+    <div class="buttons">
+      <button class="btn" data-method="cash"><i class="fas fa-money-bill"></i><span id="cashLabel">Espèces</span></button>
+      <button class="btn" data-method="bank"><i class="fas fa-credit-card"></i><span id="cardLabel">Carte</span></button>
+    </div>
+    <div class="hint"><span class="key">Échap</span><span id="closeLabel">Fermer</span></div>
+  </div>
+
+  <!-- Barre de progression (Bridge.Progress) -->
+  <div class="card" id="prog">
+    <div class="head">
+      <div class="circle"><i class="fas fa-gas-pump"></i></div>
+      <div class="title" id="progLabel">Remplissage</div>
+    </div>
+    <div class="hint" id="progCancel"><span class="key" id="cancelKey">X</span><span id="cancelLabel">Annuler</span></div>
+    <div class="progress" id="progBar"></div>
+  </div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const RES = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'pop_fuel';
+  const post = (name, data) => fetch(`https://${RES}/${name}`, { method: 'POST', body: JSON.stringify(data || {}) }).catch(() => {});
+  let open = false;
+
+  const closePay = (notify) => {
+    if (!open) return;
+    open = false;
+    $('pay').classList.remove('show');
+    if (notify) post('close');
+  };
+
+  document.querySelectorAll('.btn').forEach((b) => b.addEventListener('click', () => {
+    if (!open) return;
+    open = false;
+    $('pay').classList.remove('show');
+    post('pay', { method: b.dataset.method });
+  }));
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePay(true); });
+
+  window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.action === 'open') {
+      const t = d.texts || {};
+      $('payTitle').textContent = t.title || 'Station-service';
+      $('totalLabel').textContent = t.total || 'Total';
+      $('cashLabel').textContent = t.cash || 'Espèces';
+      $('cardLabel').textContent = t.card || 'Carte';
+      $('closeLabel').textContent = t.close || 'Fermer';
+      $('liters').textContent = d.liters + ' L';
+      $('price').textContent = d.price + ' $';
+      open = true;
+      $('pay').classList.add('show');
+    } else if (d.action === 'close') {
+      closePay(false);
+    } else if (d.action === 'pop:progress') {
+      const bar = $('progBar');
+      if (d.show) {
+        $('progLabel').textContent = d.label || '';
+        $('progCancel').style.display = d.cancelKey ? 'flex' : 'none';
+        $('cancelKey').textContent = d.cancelKey || 'X';
+        bar.style.transition = 'none';
+        bar.style.width = '0';
+        $('prog').classList.add('show');
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          bar.style.transition = `width ${d.duration || 0}ms linear`;
+          bar.style.width = '100%';
+        }));
+      } else {
+        $('prog').classList.remove('show');
+      }
+    }
+  });
+</script>
+</body>
+</html>

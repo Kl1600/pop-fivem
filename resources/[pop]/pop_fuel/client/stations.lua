@@ -2,6 +2,7 @@
 -- → remplissage (annulable, rien n'est payé avant la fin) → le serveur encaisse et valide le plein.
 
 local busy = false
+local pending = nil -- véhicule en attente du choix de paiement
 
 local function notify(message, icon)
     Bridge.Notify({ title = L('title'), message = message, icon = icon or 'fas fa-gas-pump', duration = 5000 })
@@ -53,18 +54,30 @@ local function openPump(pump)
     if liters < 1 then return notify(L('already_full')) end
     local price = math.ceil(liters * Config.PricePerLiter)
 
-    lib.registerContext({
-        id = 'pop_fuel_pay',
-        title = L('menu_title', liters),
-        options = {
-            { title = L('pay_cash'), description = L('price', price), icon = 'fas fa-money-bill',
-              onSelect = function() refuel(vehicle, 'cash') end },
-            { title = L('pay_card'), description = L('price', price), icon = 'fas fa-credit-card',
-              onSelect = function() refuel(vehicle, 'bank') end },
-        },
+    pending = vehicle
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'open', liters = liters, price = price,
+        texts = { title = L('title'), total = L('total'), cash = L('pay_cash'), card = L('pay_card'), close = L('close') },
     })
-    lib.showContext('pop_fuel_pay')
 end
+
+RegisterNUICallback('pay', function(data, cb)
+    SetNuiFocus(false, false)
+    local vehicle = pending
+    pending = nil
+    if vehicle and DoesEntityExist(vehicle) and (data.method == 'cash' or data.method == 'bank') then
+        CreateThread(function() refuel(vehicle, data.method) end)
+    end
+    cb('ok')
+end)
+
+-- Échap : le bridge enlève le focus (callback NUI 'close'), on oublie le véhicule.
+Bridge.OnUiClose(function() pending = nil end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() and pending then SetNuiFocus(false, false) end
+end)
 
 CreateThread(function()
     Bridge.Target.AddModel(Config.PumpModels, {

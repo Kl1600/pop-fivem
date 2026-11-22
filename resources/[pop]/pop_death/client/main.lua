@@ -69,7 +69,7 @@ local function onDeath()
     state.dead, state.called = true, false
     state.endTime = GetGameTimer() + seconds * 1000
     TriggerServerEvent('pop_death:server:died')
-    SendNUIMessage({ action = 'show', texts = texts(), seconds = seconds })
+    SendNUIMessage({ action = 'show', texts = texts(), seconds = seconds, total = Config.RespawnTime })
 
     CreateThread(function()
         while state.dead do
