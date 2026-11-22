@@ -1,9 +1,9 @@
-# Vérifie la syntaxe Lua et JS à chaque push et pull request.
+# Vérifie la syntaxe Lua et JS, à la main seulement (onglet Actions > Lint > Run workflow) :
+# les chefs lancent luacheck / luac5.4 -p / node --check en local avant chaque push (quota gratuit).
 name: Lint
 
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   lint:

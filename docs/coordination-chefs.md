@@ -17,7 +17,7 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 
 ## 2. Serveur de test et déploiement
 
-- Un push sur `main` qui touche `resources/[pop]/` déploie automatiquement par SFTP (`.github/workflows/deploy.yml`), en 1 à 2 minutes. Seuls les fichiers modifiés partent.
+- Plus de déploiement automatique (quota gratuit GitHub épuisé le 22/11) : on pousse sur `main`, le client lance lui-même le déploiement (Actions > Deploy to test server > Run workflow) puis teste. Le lint GitHub est aussi manuel : vérifier en local avant chaque push (`luacheck`, `luac5.4 -p`, `node --check`). Ne pas lancer de workflow soi-même sans accord du client.
 - Le client relance lui-même dans txAdmin (`restart <ressource>` ou Restart). On ne peut pas redémarrer le serveur nous-mêmes.
 - `resources/[pop]/pop.cfg` (exécuté par `server.cfg`) contient les ACE et un `ensure [pop]`. **Seul le Chef 1 le modifie.**
 - Outil `.github/workflows/server-tools.yml` (lancé par workflow_dispatch) :

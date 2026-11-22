@@ -1,4 +1,5 @@
-# Déploie resources/[pop]/ sur le serveur de test par SFTP à chaque push sur main.
+# Déploie resources/[pop]/ sur le serveur de test par SFTP, à la main seulement
+# (onglet Actions > Deploy to test server > Run workflow), pour économiser le quota gratuit.
 # Secrets à créer dans GitHub (Settings > Secrets and variables > Actions) :
 #   SFTP_HOST         ex. 123.45.67.89
 #   SFTP_PORT         ex. 2022
@@ -8,9 +9,6 @@
 name: Deploy to test server
 
 on:
-  push:
-    branches: [main]
-    paths: ['resources/\[pop\]/**']
   workflow_dispatch:
 
 concurrency:

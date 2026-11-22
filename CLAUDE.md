@@ -9,7 +9,7 @@ Dépôt des scripts FiveM POP, vendus dans l'esprit 0Resmon (~0.00 ms). Identit�
 
 ## Règles du dépôt
 - Chaque script vit dans `resources/[pop]/pop_<nom>/` (préfixe `pop_`, minuscules, underscore).
-- Un push sur `main` qui modifie `resources/[pop]/` est déployé automatiquement sur le serveur de test par SFTP (`.github/workflows/deploy.yml`). Ne pousse sur `main` que du code qui démarre sans erreur.
+- Plus de déploiement automatique (quota gratuit GitHub) : on pousse sur `main`, puis le client déploie lui-même (Actions > Deploy to test server > Run workflow) et teste. Lint en local avant chaque push (`luacheck`, `luac5.4 -p`, `node --check`). Ne pousse sur `main` que du code qui démarre sans erreur.
 - Scripts = base d'origine du client (anciens tab_*/vg_*/vanguard_*) renommée en pop_*, optimisée, couleurs d'origine conservées (pas de rose ajouté). Même fonctionnement et même style, ESX, français ; multi-framework et langues : plus tard. utility_lib, checksystem, object_gizmo = dépendances tierces (utility_lib en CfxLua, exclu de luac). Lint : `luacheck templates` 0/0 et `luac5.4 -p` sur les scripts.
 - Jamais de clé de licence, mot de passe ou identifiant dans le dépôt : ils vont dans les secrets GitHub.
 
