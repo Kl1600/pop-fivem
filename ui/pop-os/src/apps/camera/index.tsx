@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { Glass, type AppProps, type NuiResult } from '../../kit';
-import { MODES, nextTimer, type ShotKind } from './model';
+import { cropImage } from './crop';
+import { MODES, PANO_BAR, SQUARE_BAR, cropOf, nextTimer, visibleBox, type Crop, type ShotKind } from './model';
 
 const YELLOW = '#ffd60a';
 /** Bandeaux noirs autour du viseur (px) : haut sous la barre d'état, bas au-dessus de la barre d'accueil, colonne de droite pour les commandes. */
 const BAR = { top: 88, bottom: 34, left: 24, right: 190 } as const;
 interface Caps { ok: boolean; mode?: string; zoom?: boolean; selfie?: boolean }
 interface LookMsg { on?: boolean }
-interface CapRes extends NuiResult { id?: number }
+interface CapRes extends NuiResult { id?: number; token?: string; img?: string; crop?: Crop }
 interface GetRes extends NuiResult { photo?: { data: string } }
 
 function Ico({ d, size = 22, fill = 'none' }: { d: string; size?: number; fill?: string }) {
@@ -31,6 +32,7 @@ export default function App(p: AppProps) {
   const [looking, setLooking] = useState(false);
   const timers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
   const look = useRef({ dx: 0, dy: 0, raf: 0 });
+  const vfRef = useRef<HTMLDivElement>(null);
 
   const later = (fn: () => void, ms: number) => { timers.current.push(setTimeout(fn, ms)); };
 
@@ -56,11 +58,30 @@ export default function App(p: AppProps) {
   const take = useCallback(async () => {
     setShooting(true);
     await new Promise((r) => setTimeout(r, 80));
-    const r = await nui.call<CapRes>('photos:capture', { kind: mode });
+    // La photo = ce que montre le viseur : zone visible (hors bandeaux du format) en fractions de la fenêtre.
+    const vf = vfRef.current;
+    let crop: Crop | null = null;
+    if (vf) {
+      const b = vf.getBoundingClientRect();
+      crop = cropOf(visibleBox(b, mode, vf.offsetWidth > 0 ? b.width / vf.offsetWidth : 1), { w: window.innerWidth, h: window.innerHeight });
+    }
+    const r = await nui.call<CapRes>('photos:capture', crop ? { kind: mode, crop } : { kind: mode });
     setWhite(true);
     later(() => setWhite(false), flash ? 400 : 90);
     setShooting(false);
-    if (!r.ok || r.id === undefined) { setMsg(!r.err || r.err === 'err_unavailable' ? t('cam.err') : t(r.err)); return; }
+    const fail = (e?: string) => setMsg(!e || e === 'err_unavailable' ? t('cam.err') : t(e));
+    if (!r.ok) { fail(r.err); return; }
+    if (r.token && r.img) {
+      // Le serveur a rendu la capture entière : recadrage et ré-encodage ici, puis enregistrement par jeton.
+      let out: string;
+      try { out = await cropImage(r.img, r.crop ?? crop ?? { x: 0, y: 0, w: 1, h: 1 }); } catch { fail(); return; }
+      const sv = await nui.call<CapRes>('photos:save', { token: r.token, img: out });
+      if (!sv.ok) { fail(sv.err); return; }
+      setMsg(t('cam.saved'));
+      setThumb(out);
+      return;
+    }
+    if (r.id === undefined) { fail(r.err); return; }
     setMsg(t('cam.saved'));
     const g = await nui.call<GetRes>('photos:get', r.id);
     if (g.ok && g.photo) setThumb(g.photo.data);
@@ -118,9 +139,9 @@ export default function App(p: AppProps) {
   // Le viseur est un rectangle arrondi sans fond ; son ombre étalée peint en noir tout le reste de l'écran.
   return (
     <div data-app="camera" onPointerMove={drag} style={{ position: 'absolute', inset: 0, color: '#fff', overflow: 'hidden', fontFamily: 'inherit', background: live ? 'transparent' : 'linear-gradient(180deg,#2b1a5e,#b8326f 40%,#ff7a45 65%,#14101c)', touchAction: 'none' }}>
-      <div data-viewfinder="1" style={{ position: 'absolute', left: BAR.left, right: BAR.right, top: BAR.top, bottom: BAR.bottom, borderRadius: 28, overflow: 'hidden', boxShadow: '0 0 0 2000px #000', background: 'transparent' }}>
-        {mode === 'square' && <><div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 116, background: '#000' }} /><div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 116, background: '#000' }} /></>}
-        {mode === 'pano' && <><div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 280, background: '#000' }} /><div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 280, background: '#000' }} /></>}
+      <div data-viewfinder="1" ref={vfRef} style={{ position: 'absolute', left: BAR.left, right: BAR.right, top: BAR.top, bottom: BAR.bottom, borderRadius: 28, overflow: 'hidden', boxShadow: '0 0 0 2000px #000', background: 'transparent' }}>
+        {mode === 'square' && <><div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: SQUARE_BAR, background: '#000' }} /><div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: SQUARE_BAR, background: '#000' }} /></>}
+        {mode === 'pano' && <><div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: PANO_BAR, background: '#000' }} /><div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: PANO_BAR, background: '#000' }} /></>}
         {mode === 'portrait' && <><div style={{ position: 'absolute', left: '50%', top: '50%', margin: '-170px 0 0 -250px', width: 500, height: 340, border: `2px solid ${YELLOW}`, borderRadius: 16 }} /><Glass className="dk" style={{ position: 'absolute', top: 20, left: '50%', marginLeft: -70, padding: '6px 16px', borderRadius: 16, fontSize: 14, fontWeight: 600, ...ui }}>{t('cam.depth')}</Glass></>}
         <div style={{ position: 'absolute', left: '50%', top: '50%', margin: '-40px 0 0 -40px', width: 80, height: 80, border: '1.5px solid rgba(255,214,10,.9)', borderRadius: 6, opacity: shooting ? 1 : 0, transition: 'opacity .3s' }} />
         {count > 0 && <div aria-live="assertive" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 160, fontWeight: 800, textShadow: '0 4px 30px rgba(0,0,0,.4)' }}>{count}</div>}

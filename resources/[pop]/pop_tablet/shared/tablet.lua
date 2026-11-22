@@ -135,7 +135,7 @@ local relayed = {
     'files:list', 'files:get', 'files:save', 'files:delete', 'files:move', 'files:share', 'files:unshare', 'files:open',
     'board:list', 'board:get', 'board:save', 'board:delete',
     'clock:list', 'clock:saveAlarm', 'clock:deleteAlarm', 'clock:startTimer', 'clock:cancelTimer',
-    'photos:capture', 'photos:list', 'photos:get', 'photos:delete', 'photos:favorite', 'photos:restore', 'photos:rate', 'photos:filter',
+    'photos:capture', 'photos:save', 'photos:list', 'photos:get', 'photos:delete', 'photos:favorite', 'photos:restore', 'photos:rate', 'photos:filter',
     'photos:thumb', 'photos:albums', 'photos:albumSave', 'photos:albumDelete', 'photos:albumLink',
     'rec:save', 'rec:list', 'rec:get', 'rec:rename', 'rec:delete',
     'messages:threads', 'messages:thread', 'messages:send', 'messages:read',

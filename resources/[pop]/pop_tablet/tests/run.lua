@@ -940,6 +940,63 @@ do
     r = handlers['pop_tablet:photos:capture'](30, { kind = 'pano' })
     check('capture : format panorama enregistré', r.ok and P[r.id].kind == 'pano', r.err)
 
+    -- Recadrage sur le viseur : capture pleine résolution + jeton à usage unique, enregistrement par photos:save
+    do
+        local lastOpts
+        local raw = 'data:image/webp;base64,AAAA'
+        def('exports', setmetatable({ screencapture = { serverCapture = function(_, _, opts, cb) lastOpts = opts cb(raw) end } }, { __call = function() end }))
+        local cap, sav = handlers['pop_tablet:photos:capture'], handlers['pop_tablet:photos:save']
+        local crop = { x = 0.1, y = 0.2, w = 0.5, h = 0.4 }
+        local before = 0
+        for _ in pairs(P) do before = before + 1 end
+        local function count() local n = 0 for _ in pairs(P) do n = n + 1 end return n end
+        tk()
+        r = cap(30, { kind = 'square', crop = crop })
+        check('recadrage : capture pleine résolution (1920), jeton et image renvoyés, rien enregistré',
+            r.ok and type(r.token) == 'string' and #r.token >= 16 and r.img == raw and r.crop.w == 0.5 and lastOpts.maxWidth == 1920 and count() == before, r.err)
+        local tok = r.token
+        tk()
+        check('recadrage : jeton d\'un autre joueur refusé', sav(31, { token = tok, img = raw }).err == 'err_payload' and count() == before)
+        tk()
+        check('recadrage : jeton faux refusé', sav(30, { token = 'x' .. tok, img = raw }).err == 'err_payload' and count() == before)
+        -- un jeton faux ne consomme pas le vrai : sauvegarde valide
+        tk()
+        r = sav(30, { token = tok, img = raw })
+        check('recadrage : photos:save avec le bon jeton enregistre (type de la prise)', r.ok and P[r.id].kind == 'square' and P[r.id].serial == serial and count() == before + 1, r.err)
+        tk()
+        check('recadrage : jeton réutilisé refusé', sav(30, { token = tok, img = raw }).err == 'err_payload' and count() == before + 1)
+
+        tk()
+        tok = cap(30, { crop = crop }).token
+        clock = clock + 31
+        check('recadrage : jeton expiré (30 s) refusé', sav(30, { token = tok, img = raw }).err == 'err_payload' and count() == before + 1)
+
+        tk()
+        tok = cap(30, { crop = crop }).token
+        tk()
+        check('recadrage : image invalide refusée', sav(30, { token = tok, img = '<svg onload=x>' }).err == 'err_payload' and count() == before + 1)
+        tk()
+        check('recadrage : un jeton présenté est consommé même si l\'image est refusée', sav(30, { token = tok, img = raw }).err == 'err_payload')
+        tk()
+        tok = cap(30, { crop = crop }).token
+        tk()
+        check('recadrage : image trop grande refusée', sav(30, { token = tok, img = 'data:image/webp;base64,' .. string.rep('A', 150 * 1024) }).err == 'err_too_large')
+
+        local bad = {
+            nan = { x = 0 / 0, y = 0, w = 0.5, h = 0.5 }, inf = { x = 0, y = 0, w = math.huge, h = 0.5 }, neg = { x = -0.1, y = 0, w = 0.5, h = 0.5 },
+            petit = { x = 0, y = 0, w = 0.05, h = 0.5 }, deborde = { x = 0.6, y = 0, w = 0.5, h = 0.5 }, debordeY = { x = 0, y = 0.7, w = 0.5, h = 0.5 },
+            texte = { x = '0', y = 0, w = 0.5, h = 0.5 }, manque = { x = 0, y = 0, w = 0.5 }, pasTable = 'oui',
+        }
+        for name, c in pairs(bad) do
+            tk()
+            check('recadrage : zone invalide refusée (' .. name .. ')', cap(30, { crop = c }).err == 'err_payload')
+        end
+        tk()
+        check('recadrage : zone pleine fenêtre acceptée', cap(30, { crop = { x = 0, y = 0, w = 1, h = 1 } }).ok)
+        tk()
+        check('recadrage : sans jeton ni session refusé', sav(3, { token = tok, img = raw }).err ~= nil and sav(30, { img = raw }).err == 'err_payload')
+    end
+
     -- Notes
     local note = handlers['pop_tablet:notes:save'](30, { title = 'Plaque', blocks = {
         { type = 'text', value = 'Fourgon blanc\nplaque 42' }, { type = 'todo', items = { { t = 'Appeler', done = false } } },

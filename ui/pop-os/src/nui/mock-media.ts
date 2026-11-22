@@ -2,6 +2,9 @@
 type Json = Record<string, unknown>;
 
 const PX = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+// Capture « pleine fenêtre » du mock : un PNG 16 x 9 uni (de quoi vérifier la proportion du recadrage).
+const SHOT = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAFElEQVR4nGM4YRNFEmIY1TAoNAAA3HDE4ehgJA4AAAAASUVORK5CYII=';
+let shot: { token: string; kind: string } | null = null;
 interface MPhoto { id: number; kind: string; rating: number; fav: boolean; fx: string; taken: number; deleted: boolean; albums: number[] }
 interface MNote { id: number; folder: number | null; title: string; blocks: unknown[]; pinned: boolean; deleted: boolean; updated: number }
 interface MFile { id: number; parent: number | null; kind: string; name: string; body: string; ref: number | null; size: number; shared: boolean; token: string | null; tag: string | null; fav: boolean; updated: number }
@@ -32,7 +35,7 @@ const fileRow = (f: MFile): Json => ({ id: f.id, parent: f.parent, kind: f.kind,
 const albumsOut = () => mAlbums.map((al) => ({ ...al, n: mPhotos.filter((p) => p.albums.includes(al.id)).length }));
 
 export const MEDIA_CALLS = new Set([
-  'photos:capture', 'photos:list', 'photos:get', 'photos:favorite', 'photos:rate', 'photos:filter', 'photos:delete', 'photos:restore', 'photos:thumb',
+  'photos:capture', 'photos:save', 'photos:list', 'photos:get', 'photos:favorite', 'photos:rate', 'photos:filter', 'photos:delete', 'photos:restore', 'photos:thumb',
   'photos:albums', 'photos:albumSave', 'photos:albumDelete', 'photos:albumLink',
   'notes:list', 'notes:get', 'notes:save', 'notes:delete', 'notes:restore', 'notes:folderSave', 'notes:folderDelete',
   'files:list', 'files:get', 'files:save', 'files:delete', 'files:move', 'files:share', 'files:unshare', 'files:open',
@@ -44,8 +47,17 @@ export function mediaCall(name: string, raw: unknown): unknown {
   const id = Number(typeof raw === 'object' && raw ? a.id : raw);
   switch (name) {
     case 'photos:capture': {
+      // Avec `crop` : comme le serveur, renvoie la capture entière et un jeton (rien n'est enregistré avant `photos:save`).
+      if (a.crop) { shot = { token: `t${++mSeq}`, kind: String(a.kind ?? 'photo') }; return { ok: true, token: shot.token, img: SHOT, crop: a.crop, kind: shot.kind }; }
       const n = ++mSeq;
       mPhotos.unshift({ id: n, kind: String(a.kind ?? 'photo'), rating: 0, fav: false, fx: 'none', taken: NOW, deleted: false, albums: [] });
+      return { ok: true, id: n };
+    }
+    case 'photos:save': {
+      if (!shot || shot.token !== a.token || typeof a.img !== 'string') return { ok: false, err: 'err_payload' };
+      const n = ++mSeq;
+      mPhotos.unshift({ id: n, kind: shot.kind, rating: 0, fav: false, fx: 'none', taken: NOW, deleted: false, albums: [] });
+      shot = null;
       return { ok: true, id: n };
     }
     case 'photos:list': {

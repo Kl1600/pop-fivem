@@ -1,6 +1,8 @@
 -- Photos : prise de vue côté serveur (mode 'database'), photothèque, favoris, notes en étoiles, filtres, albums, corbeille.
 -- Sert à l'Appareil photo, à Photos et à « Enregistrement » du centre de contrôle.
--- Le serveur demande la capture à screencapture (export serveur serverCapture) ; aucun jeton ne passe par le client.
+-- Le serveur demande la capture à screencapture (export serveur serverCapture) ; aucune clé ni URL d'envoi ne passe par le client.
+-- Avec `crop` (zone du viseur, fractions 0..1) : capture pleine résolution renvoyée à l'interface avec un jeton à usage unique ;
+-- l'interface recadre, ré-encode puis rend l'image par `photos:save` (le serveur ne l'enregistre qu'à ce moment).
 
 Tablet = Tablet or {}
 Tablet.Photos = {}
@@ -11,8 +13,13 @@ local SHOT_GAP = 3           -- secondes entre deux prises
 local WAIT_MS = 10000
 local PAGE = 30
 local MAX_ID = 4294967295
+local RAW_MAX = 3 * 1024 * 1024 -- capture brute (avant recadrage) renvoyée à l'interface
+local TOKEN_TTL = 30            -- secondes de validité du jeton de recadrage
+local CROP_MIN = 0.05
+local CROP_EPS = 1e-6
 
 local lastShot = {} -- [src] = seconde
+local pending = {}  -- [src] = { token, serial, kind, exp } : un seul jeton en attente par joueur
 
 local function photoId(v) return Tablet.Limits.Int(v, 1, MAX_ID) end
 
@@ -29,14 +36,43 @@ local function idOf(data)
     return photoId(data)
 end
 
---- pop_tablet:photos:capture  { kind? = 'photo' | 'square' | 'portrait' | 'pano' }
+local function finite(v) return type(v) == 'number' and v == v and v ~= math.huge and v ~= -math.huge end
+
+--- Zone de recadrage `{ x, y, w, h }` en fractions de la fenêtre : nombres finis, x,y >= 0, w,h > 0,05, x+w <= 1, y+h <= 1.
+--- Renvoie la zone nettoyée (4 champs seulement) ou nil.
+function P.CropValid(c)
+    if type(c) ~= 'table' then return nil end
+    local x, y, w, h = c.x, c.y, c.w, c.h
+    if not (finite(x) and finite(y) and finite(w) and finite(h)) then return nil end
+    if x < 0 or y < 0 or w <= CROP_MIN or h <= CROP_MIN then return nil end
+    if x + w > 1 + CROP_EPS or y + h > 1 + CROP_EPS then return nil end
+    return { x = x, y = y, w = w, h = h }
+end
+
+local function newToken()
+    local chars, t = 'abcdefghijklmnopqrstuvwxyz0123456789', {}
+    for i = 1, 24 do
+        local k = math.random(#chars)
+        t[i] = chars:sub(k, k)
+    end
+    return table.concat(t)
+end
+
+--- pop_tablet:photos:capture  { kind? = 'photo' | 'square' | 'portrait' | 'pano', crop? = { x, y, w, h } }
+--- Sans `crop` : capture réduite (960) enregistrée directement { ok, id }. Avec `crop` : { ok, token, img, crop, kind },
+--- rien n'est enregistré avant `photos:save`.
 function P.Capture(src, data)
-    local s, err = Tablet.Guard(src, nil, { name = 'photoCapture', rate = 2, payload = data, maxBytes = 256 })
+    local s, err = Tablet.Guard(src, nil, { name = 'photoCapture', rate = 2, payload = data, maxBytes = 384 })
     if not s then return Tablet.Fail(err) end
     local kind = 'photo'
+    local crop
     if type(data) == 'table' and data.kind ~= nil then
         if not (type(data.kind) == 'string' and Tablet.Media.photoKinds[data.kind]) then return Tablet.Fail('err_payload') end
         kind = data.kind
+    end
+    if type(data) == 'table' and data.crop ~= nil then
+        crop = P.CropValid(data.crop)
+        if not crop then return Tablet.Fail('err_payload') end
     end
     if Config.Photos.Mode ~= 'database' then return Tablet.Fail('err_unavailable') end
     local now = Tablet.Now()
@@ -46,19 +82,44 @@ function P.Capture(src, data)
     lastShot[src] = now
 
     local p = promise.new()
-    exports.screencapture:serverCapture(src, { encoding = 'webp', maxWidth = 960 }, function(img) p:resolve(img) end)
+    -- Recadrage demandé : capture pleine résolution, la qualité doit survivre au recadrage côté interface.
+    local opts = crop and { encoding = 'webp', maxWidth = 1920, maxHeight = 1080 } or { encoding = 'webp', maxWidth = 960 }
+    exports.screencapture:serverCapture(src, opts, function(img) p:resolve(img) end)
     SetTimeout(WAIT_MS, function() p:resolve(nil) end)
     local img = Citizen.Await(p)
 
     if type(img) ~= 'string' or img == '' then return Tablet.Fail('err_unavailable') end
-    if #img > MAX_BYTES then return Tablet.Fail('err_too_large') end
+    if #img > (crop and RAW_MAX or MAX_BYTES) then return Tablet.Fail('err_too_large') end
     if not P.ImageValid(img) then return Tablet.Fail('err_unavailable') end
     -- La session peut avoir disparu pendant l'attente : la photo n'est enregistrée que pour la tablette encore portée.
     if not Tablet.Device.GetSession(src) or Tablet.Device.SerialOf(src) ~= s.serial or not Tablet.Device.Carries(src, s.serial) then
         return Tablet.Fail('err_session')
     end
+    if crop then
+        local token = newToken()
+        pending[src] = { token = token, serial = s.serial, kind = kind, exp = Tablet.Now() + TOKEN_TTL }
+        return { ok = true, token = token, img = img, crop = crop, kind = kind }
+    end
     local id = Tablet.DB.InsertPhoto(s.serial, img, Tablet.Now(), kind)
     return { ok = true, id = id }
+end
+
+--- pop_tablet:photos:save  { token, img } : image recadrée par l'interface, enregistrée si le jeton de la prise est valide.
+--- Le jeton est lié au joueur et à la tablette, expire en 30 s et ne sert qu'une fois (consommé dès qu'il est présenté).
+function P.Save(src, data)
+    local s, err = Tablet.Guard(src, nil, { name = 'photoSave', rate = 2, payload = data, maxBytes = MAX_BYTES + 512 })
+    if not s then return Tablet.Fail(err) end
+    if type(data) ~= 'table' or type(data.token) ~= 'string' or type(data.img) ~= 'string' then return Tablet.Fail('err_payload') end
+    local tk = pending[src]
+    if not tk or tk.token ~= data.token then return Tablet.Fail('err_payload') end
+    pending[src] = nil
+    if Tablet.Now() > tk.exp then return Tablet.Fail('err_payload') end
+    if tk.serial ~= s.serial then return Tablet.Fail('err_session') end
+    if #data.img > MAX_BYTES then return Tablet.Fail('err_too_large') end
+    if not P.ImageValid(data.img) then return Tablet.Fail('err_payload') end
+    if not Tablet.Device.Carries(src, s.serial) then return Tablet.Fail('err_session') end
+    if Tablet.DB.CountPhotos(s.serial) >= Config.Photos.Max then return Tablet.Fail('err_photos_full') end
+    return { ok = true, id = Tablet.DB.InsertPhoto(s.serial, data.img, Tablet.Now(), tk.kind) }
 end
 
 local function flag(v) return v == 1 or v == true end
@@ -251,9 +312,10 @@ function P.Owned(serial, id)
     return id ~= nil and Tablet.DB.PhotoOwned(serial, id)
 end
 
-Bridge.OnPlayerDropped(function(src) lastShot[src] = nil end)
+Bridge.OnPlayerDropped(function(src) lastShot[src] = nil; pending[src] = nil end)
 
 Callback.Register('pop_tablet:photos:capture', function(src, data) return P.Capture(src, data) end)
+Callback.Register('pop_tablet:photos:save', function(src, data) return P.Save(src, data) end)
 Callback.Register('pop_tablet:photos:list', function(src, data) return P.List(src, data) end)
 Callback.Register('pop_tablet:photos:get', function(src, id) return P.Get(src, id) end)
 Callback.Register('pop_tablet:photos:delete', function(src, id) return P.Delete(src, id) end)
