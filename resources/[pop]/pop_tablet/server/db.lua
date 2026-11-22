@@ -540,3 +540,122 @@ end
 function DB.ListTimers()
     return MySQL.query.await('SELECT id, serial, label, ends_at FROM pop_tablet_alarms WHERE kind = \'timer\' AND ends_at IS NOT NULL ORDER BY ends_at LIMIT 5000', {}) or {}
 end
+
+------------------------------------------------------------------------
+-- Messages, Téléphone, Contacts (requêtes préparées, index sur les numéros)
+------------------------------------------------------------------------
+
+--- Série de la tablette qui porte ce numéro, ou nil.
+function DB.SerialOfPhone(phone)
+    return MySQL.scalar.await('SELECT serial FROM pop_tablet_devices WHERE phone = ? LIMIT 1', { phone })
+end
+
+function DB.InsertMessage(from, to, body, kind, ref, now)
+    return MySQL.insert.await('INSERT INTO pop_tablet_messages (from_phone, to_phone, body, kind, ref, sent_at) VALUES (?, ?, ?, ?, ?, ?)',
+        { from, to, body, kind, ref, now })
+end
+
+function DB.GetMessage(id)
+    return MySQL.single.await('SELECT id, from_phone, to_phone, body, kind, ref, sent_at, read_at FROM pop_tablet_messages WHERE id = ?', { id })
+end
+
+--- Dernier message de chaque conversation à deux de `phone` (100 au plus).
+function DB.LastDirect(phone)
+    return MySQL.query.await('SELECT m.id, m.from_phone, m.to_phone, m.body, m.kind, m.sent_at, m.read_at FROM pop_tablet_messages m'
+        .. ' JOIN (SELECT MAX(id) AS mid FROM pop_tablet_messages WHERE (from_phone = ? OR to_phone = ?) AND to_phone NOT LIKE \'g%\''
+        .. ' GROUP BY IF(from_phone = ?, to_phone, from_phone)) x ON x.mid = m.id ORDER BY m.id DESC LIMIT 100', { phone, phone, phone }) or {}
+end
+
+--- Messages non lus reçus par `phone`, par expéditeur.
+function DB.UnreadDirect(phone)
+    return MySQL.query.await('SELECT from_phone, COUNT(*) AS n FROM pop_tablet_messages WHERE to_phone = ? AND read_at IS NULL GROUP BY from_phone', { phone }) or {}
+end
+
+--- 30 messages d'un fil à deux, du plus récent au plus ancien (`before` : id exclu).
+function DB.DirectThread(a, b, before)
+    return MySQL.query.await('SELECT id, from_phone, to_phone, body, kind, ref, sent_at, read_at FROM pop_tablet_messages'
+        .. ' WHERE ((from_phone = ? AND to_phone = ?) OR (from_phone = ? AND to_phone = ?)) AND id < ? ORDER BY id DESC LIMIT 30',
+        { a, b, b, a, before }) or {}
+end
+
+function DB.GroupThread(gid, before)
+    return MySQL.query.await('SELECT id, from_phone, to_phone, body, kind, ref, sent_at, read_at FROM pop_tablet_messages'
+        .. ' WHERE to_phone = ? AND id < ? ORDER BY id DESC LIMIT 30', { 'g' .. gid, before }) or {}
+end
+
+--- Marque lus les messages que `me` a reçus de `peer`. Renvoie le nombre de messages modifiés.
+function DB.MarkRead(me, peer, now)
+    return MySQL.update.await('UPDATE pop_tablet_messages SET read_at = ? WHERE to_phone = ? AND from_phone = ? AND read_at IS NULL', { now, me, peer }) or 0
+end
+
+function DB.Voicemails(phone)
+    return MySQL.query.await('SELECT id, from_phone, body, sent_at, read_at FROM pop_tablet_messages WHERE to_phone = ? AND ref = \'vm\' ORDER BY id DESC LIMIT 30', { phone }) or {}
+end
+
+function DB.CreateGroup(name, now)
+    return MySQL.insert.await('INSERT INTO pop_tablet_msg_groups (name, created_at) VALUES (?, ?)', { name, now })
+end
+
+function DB.AddMember(gid, phone)
+    MySQL.update.await('INSERT IGNORE INTO pop_tablet_msg_members (group_id, phone) VALUES (?, ?)', { gid, phone })
+end
+
+--- Groupes de `phone` avec leur nom et le nombre de non-lus.
+function DB.GroupsOf(phone)
+    return MySQL.query.await('SELECT g.id, g.name, mb.last_read, (SELECT COUNT(*) FROM pop_tablet_messages m WHERE m.to_phone = CONCAT(\'g\', g.id)'
+        .. ' AND m.id > mb.last_read AND m.from_phone <> mb.phone) AS unread FROM pop_tablet_msg_members mb'
+        .. ' JOIN pop_tablet_msg_groups g ON g.id = mb.group_id WHERE mb.phone = ? LIMIT 50', { phone }) or {}
+end
+
+function DB.GroupMembers(gid)
+    return MySQL.query.await('SELECT phone FROM pop_tablet_msg_members WHERE group_id = ? LIMIT 20', { gid }) or {}
+end
+
+function DB.GroupLast(gid)
+    return MySQL.single.await('SELECT id, from_phone, body, kind, sent_at FROM pop_tablet_messages WHERE to_phone = ? ORDER BY id DESC LIMIT 1', { 'g' .. gid })
+end
+
+function DB.GroupMarkRead(gid, phone)
+    MySQL.update.await('UPDATE pop_tablet_msg_members SET last_read = (SELECT COALESCE(MAX(id), 0) FROM pop_tablet_messages WHERE to_phone = ?) WHERE group_id = ? AND phone = ?',
+        { 'g' .. gid, gid, phone })
+end
+
+function DB.InsertCall(from, to, now)
+    return MySQL.insert.await('INSERT INTO pop_tablet_calls (from_phone, to_phone, started_at) VALUES (?, ?, ?)', { from, to, now })
+end
+
+function DB.UpdateCall(id, status, answeredAt, endedAt)
+    MySQL.update.await('UPDATE pop_tablet_calls SET status = ?, answered_at = COALESCE(?, answered_at), ended_at = ? WHERE id = ?', { status, answeredAt, endedAt, id })
+end
+
+--- 50 derniers appels (émis ou reçus) d'un numéro.
+function DB.CallHistory(phone)
+    return MySQL.query.await('SELECT id, from_phone, to_phone, started_at, answered_at, ended_at, status FROM pop_tablet_calls'
+        .. ' WHERE from_phone = ? OR to_phone = ? ORDER BY id DESC LIMIT 50', { phone, phone }) or {}
+end
+
+function DB.ListContacts(serial)
+    return MySQL.query.await('SELECT id, name, phone, mail, note, favorite FROM pop_tablet_contacts WHERE serial = ? ORDER BY name LIMIT 300', { serial }) or {}
+end
+
+function DB.CountContacts(serial)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_contacts WHERE serial = ?', { serial })) or 0
+end
+
+function DB.GetContact(serial, id)
+    return MySQL.single.await('SELECT id, name, phone, mail, note, favorite FROM pop_tablet_contacts WHERE id = ? AND serial = ?', { id, serial })
+end
+
+function DB.InsertContact(serial, c)
+    return MySQL.insert.await('INSERT INTO pop_tablet_contacts (serial, name, phone, mail, note, favorite) VALUES (?, ?, ?, ?, ?, ?)',
+        { serial, c.name, c.phone, c.mail, c.note, c.favorite and 1 or 0 })
+end
+
+function DB.UpdateContact(serial, id, c)
+    return (MySQL.update.await('UPDATE pop_tablet_contacts SET name = ?, phone = ?, mail = ?, note = ?, favorite = ? WHERE id = ? AND serial = ?',
+        { c.name, c.phone, c.mail, c.note, c.favorite and 1 or 0, id, serial }) or 0) > 0
+end
+
+function DB.DeleteContact(serial, id)
+    return (MySQL.update.await('DELETE FROM pop_tablet_contacts WHERE id = ? AND serial = ?', { id, serial }) or 0) > 0
+end

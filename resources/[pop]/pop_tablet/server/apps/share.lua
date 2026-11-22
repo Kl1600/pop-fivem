@@ -6,7 +6,7 @@ Tablet.Share = {}
 local S = Tablet.Share
 local M = Tablet.Media
 
-local KINDS = { file = true, photo = true, note = true, board = true }
+local KINDS = { file = true, photo = true, note = true, board = true, contact = true }
 local offers = {} -- [offerId] = { from, to, kind, id, name, expires }
 local nextOffer = 0
 
@@ -46,6 +46,10 @@ local function source(serial, kind, rid)
         local b = DB.GetBoard(serial, rid)
         if not b then return nil end
         return b.title, { strokes = b.strokes or '' }
+    elseif kind == 'contact' then
+        local c = DB.GetContact(serial, rid)
+        if not c then return nil end
+        return c.name, { phone = c.phone or '', mail = c.mail }
     end
 end
 
@@ -114,6 +118,9 @@ function S.Accept(src, offerId)
     elseif o.kind == 'note' then
         if DB.CountNotes(s.serial) >= M.notes then return Tablet.Fail('err_limit') end
         DB.InsertNote(s.serial, { title = name, excerpt = '', hint = '', body = copy.body, pinned = false }, now)
+    elseif o.kind == 'contact' then
+        if DB.CountContacts(s.serial) >= Tablet.Comm.contacts then return Tablet.Fail('err_limit') end
+        DB.InsertContact(s.serial, { name = name, phone = copy.phone, mail = copy.mail, note = nil, favorite = false })
     else
         if DB.CountBoards(s.serial) >= M.boards then return Tablet.Fail('err_limit') end
         DB.InsertBoard(s.serial, name, copy.strokes, now)

@@ -289,3 +289,21 @@ CREATE TABLE IF NOT EXISTS `pop_tablet_appdata` (
   PRIMARY KEY (`serial`, `app`),
   CONSTRAINT `fk_appdata_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Conversations de groupe (Messages) : les messages d'un groupe sont des lignes de pop_tablet_messages dont to_phone = 'g<id>'.
+-- last_read : dernier message lu par ce membre (compteur de non-lus).
+CREATE TABLE IF NOT EXISTS `pop_tablet_msg_groups` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`       VARCHAR(40)     NOT NULL DEFAULT '',
+  `created_at` BIGINT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `pop_tablet_msg_members` (
+  `group_id`  BIGINT UNSIGNED NOT NULL,
+  `phone`     CHAR(8)         NOT NULL,
+  `last_read` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (`group_id`, `phone`),
+  KEY `idx_msg_members_phone` (`phone`),
+  CONSTRAINT `fk_msg_members_group` FOREIGN KEY (`group_id`) REFERENCES `pop_tablet_msg_groups` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -10,7 +10,7 @@ import re
 import sqlite3
 import sys
 
-EXPECTED = 21
+EXPECTED = 23
 src = open('sql/install.sql', encoding='utf-8').read()
 src = re.sub(r'--[^\n]*', '', src)
 statements = [s.strip() for s in src.split(';\n') if s.strip()]
@@ -46,7 +46,7 @@ assert len(tables) == EXPECTED, 'attendu %d tables, trouvé %d' % (EXPECTED, len
 assert len(set(tables)) == EXPECTED, 'table en double'
 
 # Chaque table liée à une tablette porte `serial` et une clé étrangère CASCADE vers pop_tablet_devices.
-no_serial = {'pop_tablet_devices', 'pop_tablet_messages', 'pop_tablet_calls', 'pop_tablet_market', 'pop_tablet_sites', 'pop_tablet_photo_albums'}
+no_serial = {'pop_tablet_devices', 'pop_tablet_messages', 'pop_tablet_calls', 'pop_tablet_market', 'pop_tablet_sites', 'pop_tablet_photo_albums', 'pop_tablet_msg_groups', 'pop_tablet_msg_members'}
 for t in tables:
     cols = [r[1] for r in conn.execute('PRAGMA table_info(`%s`)' % t)]
     if t in no_serial:

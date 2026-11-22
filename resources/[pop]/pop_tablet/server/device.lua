@@ -291,6 +291,7 @@ function D.DropSession(src)
     Tablet.Limits.Forget(src)
     if not s then return end
     pcall(endUse, s)
+    if Tablet.Phone then pcall(Tablet.Phone.Forget, src) end -- appel en cours : fin propre des deux côtés
     if serialSrc[s.serial] == src then serialSrc[s.serial] = nil end
     sessions[src] = nil
 end

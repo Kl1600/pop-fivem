@@ -58,6 +58,10 @@ Tablet.Media.recs, Tablet.Media.recSeconds, Tablet.Media.recBytes, Tablet.Media.
 Tablet.Media.shareSeconds = 30
 
 -- Limites de Plans, Traduire et Bourse (données par tablette rangées dans pop_tablet_appdata).
+-- Messages, Téléphone, Contacts.
+Tablet.Comm = { contacts = 300, pins = 12, group = 8, groupName = 40, voicemail = 200, contactNote = 200, contactAddr = 60, contactNotes = 100, preview = 80 }
+Tablet.ContactGroups = { famille = true, travail = true, lspd = true, ami = true }
+
 Tablet.Tools = { favPlaces = 12, recentPlaces = 5, translateFavs = 30, translateChars = 500, watch = 20 }
 
 -- Version du système et modèle affichés dans Réglages > Général > Informations.
@@ -131,6 +135,7 @@ local relayed = {
     'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history',
     'mail:folders', 'mail:list', 'mail:get', 'mail:send', 'mail:move', 'mail:flag', 'mail:delete',
     'contacts:list', 'contacts:save', 'contacts:delete',
+    'messages:pin', 'messages:group', 'messages:media', 'phone:voicemail', 'phone:voicemails',
     'browser:sites', 'music:stations', 'translate:run',
     'stocks:subscribe', 'stocks:unsubscribe', 'stocks:watch',
     'plans:state', 'plans:fav', 'plans:recent', 'translate:favs', 'translate:fav',
