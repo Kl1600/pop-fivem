@@ -12,6 +12,8 @@ const fr: Record<string, string> = {
   'setup.hello': 'Bonjour', 'setup.lang': 'Choisissez votre langue', 'setup.code': 'Choisissez un code à 4 chiffres', 'setup.confirm': 'Confirmez votre code',
   'setup.name': "Nom de l'appareil", 'setup.mail': 'Adresse mail', 'setup.mail_hint': 'nom@exemple.fr', 'setup.mail_ph': 'nom', 'setup.mail_rules': "Choisissez un nom de 3 à 32 caractères : lettres, chiffres, point, tiret ou tiret bas. Votre adresse sera nom@%s.", 'setup.mismatch': 'Les codes ne correspondent pas',
   'setup.next': 'Continuer', 'setup.back': 'Retour', 'setup.finish': 'Terminer',
+  'setup.slide': 'Glisser vers le haut pour configurer', 'setup.look': 'Apparence', 'setup.look_hint': "Choisissez l'apparence de votre tablette. Vous pourrez la changer plus tard dans Réglages.", 'setup.light': 'Clair', 'setup.dark': 'Sombre',
+  'setup.name_hint': 'Donnez un nom à votre tablette.', 'setup.wall_hint': 'Choisissez un fond d’écran. Vous pourrez le changer plus tard.', 'setup.wall_n': 'Fond d’écran %d', 'setup.welcome': 'Bienvenue sur POP Tab', 'setup.start': 'Commencer', 'setup.step': 'Étape %d sur %d',
   'widget.city': 'Los Santos', 'widget.calendar': 'Calendrier', 'widget.no_event': 'Aucun événement', 'widget.no_reminder': 'Rien à retenir', 'widget.high_low': 'H:%s° B:%s°',
   'weather.clear': 'Ensoleillé', 'weather.clouds': 'Nuageux', 'weather.rain': 'Pluie', 'weather.thunder': 'Orage', 'weather.fog': 'Brouillard', 'weather.snow': 'Neige',
   'time.now': 'maintenant', 'time.min': '%s min', 'time.hour': '%s h', 'time.day': '%s j',

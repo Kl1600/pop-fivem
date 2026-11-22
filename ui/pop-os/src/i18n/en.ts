@@ -12,6 +12,8 @@ const en: Record<string, string> = {
   'setup.hello': 'Hello', 'setup.lang': 'Choose your language', 'setup.code': 'Choose a 4-digit passcode', 'setup.confirm': 'Confirm your passcode',
   'setup.name': 'Device name', 'setup.mail': 'Email address', 'setup.mail_hint': 'name@example.com', 'setup.mail_ph': 'name', 'setup.mail_rules': 'Choose a name of 3 to 32 characters: letters, digits, dot, dash or underscore. Your address will be name@%s.', 'setup.mismatch': 'The passcodes do not match',
   'setup.next': 'Continue', 'setup.back': 'Back', 'setup.finish': 'Finish',
+  'setup.slide': 'Swipe up to set up', 'setup.look': 'Appearance', 'setup.look_hint': 'Choose how your tablet looks. You can change it later in Settings.', 'setup.light': 'Light', 'setup.dark': 'Dark',
+  'setup.name_hint': 'Give your tablet a name.', 'setup.wall_hint': 'Pick a wallpaper. You can change it later.', 'setup.wall_n': 'Wallpaper %d', 'setup.welcome': 'Welcome to POP Tab', 'setup.start': 'Get started', 'setup.step': 'Step %d of %d',
   'widget.city': 'Los Santos', 'widget.calendar': 'Calendar', 'widget.no_event': 'No event', 'widget.no_reminder': 'Nothing to remember', 'widget.high_low': 'H:%s° L:%s°',
   'weather.clear': 'Sunny', 'weather.clouds': 'Cloudy', 'weather.rain': 'Rain', 'weather.thunder': 'Storm', 'weather.fog': 'Fog', 'weather.snow': 'Snow',
   'time.now': 'now', 'time.min': '%s min', 'time.hour': '%s h', 'time.day': '%s d',
