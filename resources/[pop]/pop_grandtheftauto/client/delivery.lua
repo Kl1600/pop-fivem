@@ -3,22 +3,12 @@ local truckModelName = 'mule2'
 local pedModelName = 'a_m_m_mexlabor_01'
 local MAX_REVERSE_DIST = 6.5
 
-local randomDestinations = {
-    vec3(-198.6980, -2624.9761, 5.2923),
-}
+local randomDestinations = Config.Positions.TruckLeaveTo
 
 -- ============================================================
 -- FONCTIONS DE SYNCHRO
 -- ============================================================
-local function EnsureMissionSync()
-    _G.MissionSync = _G.MissionSync or { active = false, id = nil, owner = nil, isOwner = false, entities = {}, flags = {} }
-    return _G.MissionSync
-end
 
-local function Relay(action, data, includeSender)
-    local MS = EnsureMissionSync()
-    if MS.active then TriggerServerEvent('mission:server:relay', action, data, includeSender == true) end
-end
 
 local function trim(s)
     if not s then return "" end
@@ -103,7 +93,7 @@ end
 RegisterNetEvent('mission:client:receiveDeliverySlot')
 AddEventHandler('mission:client:receiveDeliverySlot', function(slotIndex)
     if not slotIndex then
-        ShowNotification("Un <span style='color:#ECA95D; font-weight:bold;'>camion de chargement</span> vous attend déjà, ou aucune place n'est libre.", 7000)
+        MissionNotify(L('truck_busy'), 7000)
         return
     end
 
@@ -132,12 +122,12 @@ AddEventHandler('mission:client:receiveDeliverySlot', function(slotIndex)
         SetBlipColour(truckBlip, 2)
         SetBlipScale(truckBlip, 0.8)
         BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString("Camion de chargement")
+        AddTextComponentString(L('blip_truck'))
         EndTextCommandSetBlipName(truckBlip)
 
         SetVehicleDoorOpen(veh, 5, false, false)
         table.insert(convoy, { vehicle = veh, driver = ped, isLoaded = false, blip = truckBlip, slot = slotIndex, nextTry = 0 })
-        ShowNotification("Un <span style='color:#ECA95D; font-weight:bold;'>camion de chargement</span> vous attend pour la livraison. Reculez la voiture dans le camion.", 7000)
+        MissionNotify(L('truck_ready'), 7000)
     end
 end)
 
@@ -179,7 +169,7 @@ CreateThread(function()
                     PendingDelivery[group.slot] = nil
 
                     if res and res.ok then
-                        ShowNotification("Vous venez de <span style='color:#2ecc71; font-weight:bold;'>livrer le véhicule.</span>", 7000)
+                        MissionNotify(L('delivered'), 7000)
                         StartTruckJourney(group)
                     else
                         -- Refusé (voiture non piratée, déjà livrée...) : on réessaiera plus tard

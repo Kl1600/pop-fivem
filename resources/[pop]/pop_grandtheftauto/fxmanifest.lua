@@ -1,6 +1,11 @@
 fx_version 'cerulean'
-games { 'gta5' }
+game 'gta5'
 lua54 'yes'
+
+name 'pop_grandtheftauto'
+author 'KL'
+version '1.1.0'
+description 'Casse de la concession Benefactor (Vinewood ouest) : vol de sportives en équipe'
 
 dependencies {
     'pma_voice_challenge',
@@ -14,45 +19,34 @@ dependencies {
 }
 -- kq_lasers : facultatif (lasers de sécurité), la mission marche sans.
 
-name 'Grand Vol de Voitures'
-author 'KL'
-description 'Casse de la concession Benefactor, west Vinewood'
-version 'beta'
+shared_scripts {
+    'config.lua',
+    'shared/*.lua',
+    'locales/*.lua',
+}
 
 client_scripts {
-    'shared/config.lua',
-
-    -- utilitaires globaux d'abord
-    'client/utils.lua',
-
-    -- couche synchro coop
-    'client/client.lua',
-
-    -- scénario/PNJ (définit ShowSubtitle + npcHandle)
-    'client/scenario.lua',
-
-    -- portes / veh démo / commandes
-    'client/doors.lua',
-
-    -- voitures showroom (Cars)
-    'client/spawn.lua',
-
-    -- blips (removeblip1 etc.)
+    'bridge/client.lua',
+    'client/utils.lua',     -- outils communs (synchro coop, chargements, invites, minuteur)
+    'client/sync.lua',      -- synchro coop, police (GPS), fin de mission
+    'client/lasers.lua',
+    'client/scenario.lua',  -- Thornton (ShowSubtitle, npcHandle)
+    'client/doors.lua',     -- portes, voiture de démo, GPS livraison
+    'client/spawn.lua',     -- voitures du showroom (Cars)
     'client/blips.lua',
-
-    -- terminal hack / clés / porte / véhicule Thornton
-    'client/interact.lua',
-
-    -- hack véhicules (s'appuie sur Cars/_G.Cars)
-    'client/crack.lua',
-
-    -- livraison
-    'client/delivery.lua',
+    'client/interact.lua',  -- Svetlana, panneau, clés, porte
+    'client/hack.lua',      -- piratage des voitures
+    'client/pcb.lua',       -- module pirate : commande, inventaire, livraison coop
+    'client/delivery.lua',  -- camions de livraison
 }
 
 server_scripts {
-    'shared/config.lua',
-    'server/alert.lua',
+    'bridge/server.lua',
+    'server/common.lua',
+    'server/mission.lua',
+    'server/police.lua',
+    'server/hack.lua',
+    'server/delivery.lua',
     'server/items.lua',
 }
 
@@ -60,4 +54,10 @@ ui_page 'html/index.html'
 
 files {
     'html/index.html'
+}
+
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
 }

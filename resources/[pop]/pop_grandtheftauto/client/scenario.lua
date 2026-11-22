@@ -1,5 +1,4 @@
 local npcHandle = nil
-local npcMoving = false
 local npcBlip = nil
 local missionTerminee = false
 local challengeStarted = false
@@ -7,9 +6,9 @@ local challengeDone = false
 local challengeFails = 0
 
 local pedModel = GetHashKey('ig_thornton')
-local startPos = vector4(-72.6626, 84.9975, 71.4851, 57.4806)
-local targetPos = vector3(-57.3825, 76.5334, 71.6155)
-local targetHeading = 255.9274
+local startPos = Config.Positions.ThorntonStart
+local targetPos = Config.Positions.ThorntonTarget
+local targetHeading = Config.Positions.ThorntonTargetHeading
 
 -- ============================================================
 -- SYNCHRO (COOP)
@@ -18,21 +17,8 @@ local targetHeading = 255.9274
 
 
 
-local function EnsureMissionSync()
-    _G.MissionSync = _G.MissionSync or { active = false, id = nil, owner = nil, isOwner = false, entities = {}, flags = {} }
-    return _G.MissionSync
-end
 
-local function IsCoopActive()
-    local MS = EnsureMissionSync()
-    return MS.active == true
-end
 
-local function IsOwner()
-    local MS = EnsureMissionSync()
-    if not MS.active then return true end
-    return MS.isOwner == true
-end
 
 local function Relay(action, data, includeSender)
     local MS = EnsureMissionSync()
@@ -51,11 +37,6 @@ local function MS_PlayHyper(netId, soundName, distance)
     Relay("hypersound", { netId = netId, sound = soundName, looped = false, distance = distance or 15.0 }, false)
 end
 
-local function MS_PlayInteractSound(soundName, volume)
-    TriggerEvent('InteractSound_CL:PlayOnOne', soundName, volume or 0.6)
-    Relay("interactsound_one", { sound = soundName, volume = volume or 0.6 }, false)
-end
-
 local function EnsureThorntonBlip()
     if missionTerminee then return end
     if not npcHandle or not DoesEntityExist(npcHandle) then return end
@@ -66,7 +47,7 @@ local function EnsureThorntonBlip()
     SetBlipColour(npcBlip, 40)
     SetBlipScale(npcBlip, 0.4)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString("Thornton Duggan")
+    AddTextComponentString(L('blip_thornton'))
     EndTextCommandSetBlipName(npcBlip)
 end
 
@@ -205,7 +186,7 @@ Citizen.CreateThread(function()
 
                 -- --- DIALOGUE INITIAL --- --
                 MS_PlayHyper(currentNetId, '1t', 15.0)
-                MS_ShowSubtitle("M.Duggan : Qu'est-ce que vous faites là, je ne vous attendais pas avant au moins 20min !", 5000)
+                MS_ShowSubtitle(L('thornton_1'), 5000)
                 ThorntonParle(5000)
 
                 -- --- CAMERA ZOOM --- --
@@ -214,7 +195,7 @@ Citizen.CreateThread(function()
                 local rad = math.rad(npcHeading)
                 local cx = npcCoords.x + math.sin(rad) * 1.5
                 local cy = npcCoords.y - math.cos(rad) * 1.5
-                
+
                 SetCamCoord(cam, cx, cy, npcCoords.z + 0.6)
                 PointCamAtEntity(cam, npcHandle, 0.0, 0.0, 0.6, true)
                 SetCamFov(cam, 35.0)
@@ -231,7 +212,7 @@ Citizen.CreateThread(function()
                         finishedChallenge = true
                     end)
                     exports['pma_voice_challenge']:StartChallenge()
-                    ShowSubtitle("~y~Parlez~w~ (push-to-talk) pour convaincre M. Duggan.", 6000)
+                    ShowSubtitle(L('voice_hint'), 6000)
 
                     local limit = GetGameTimer() + 20000
                     while not finishedChallenge and GetGameTimer() < limit do Wait(100) end
@@ -252,27 +233,27 @@ Citizen.CreateThread(function()
                     DestroyCam(cam, false)
 
                     -- --- PARCOURS NORMAL (Après victoire) --- --
-                    
+
                     -- 1. Il marche vers la voiture
                     TaskGoStraightToCoord(npcHandle, targetPos.x, targetPos.y, targetPos.z, 1.0, -1, targetHeading, 0.5)
-                    
+
                     MS_PlayHyper(currentNetId, '2t', 15.0)
-                    MS_ShowSubtitle("M.Duggan : Bon et bien puisque vous êtes déjà là...", 4000)
+                    MS_ShowSubtitle(L('thornton_2'), 4000)
                     ThorntonParle(4000)
 
                     MS_PlayHyper(currentNetId, '3t', 15.0)
-                    MS_ShowSubtitle("M.Duggan : Elle a des voyants moteurs, c'est surement rien", 2500)
+                    MS_ShowSubtitle(L('thornton_3a'), 2500)
                     ThorntonParle(2500)
-                    MS_ShowSubtitle("mais on merde pas avec une voiture à ce prix là.", 2500)
+                    MS_ShowSubtitle(L('thornton_3b'), 2500)
                     ThorntonParle(2500)
 
                     -- Attendre qu'il arrive à la voiture (20 s max)
                     WaitArrival(npcHandle, targetPos, 1.2, 20000)
-                    
+
                     ClearPedTasks(npcHandle)
                     SetEntityCoords(npcHandle, targetPos.x, targetPos.y, targetPos.z - 1.0, false, false, false, true)
                     SetEntityHeading(npcHandle, targetHeading)
-                    
+
                     playArrestAnim(npcHandle)
                     Wait(500)
 
@@ -281,7 +262,7 @@ Citizen.CreateThread(function()
                     Relay("command", { cmd = "opencapot" }, false)
 
                     MS_PlayHyper(currentNetId, '4t', 15.0)
-                    MS_ShowSubtitle("M.Duggan : C'est de l'ingénierie allemande, on rigole pas avec ça !", 4000)
+                    MS_ShowSubtitle(L('thornton_4'), 4000)
                     ThorntonParle(4000)
 
                     ClearPedTasks(npcHandle)
@@ -291,14 +272,14 @@ Citizen.CreateThread(function()
                     TaskGoStraightToCoord(npcHandle, startPos.x, startPos.y, startPos.z, 1.0, -1, startPos.w, 0.5)
 
                     MS_PlayHyper(currentNetId, '5t', 15.0)
-                    MS_ShowSubtitle("M.Duggan : Bon je vous laisse travailler !", 3000)
+                    MS_ShowSubtitle(L('thornton_5'), 3000)
                     ThorntonParle(3000)
 
                     MS_PlayHyper(currentNetId, '6t', 15.0)
-                    MS_ShowSubtitle("M.Duggan : On se revoit quand c'est fait !", 4000)
+                    MS_ShowSubtitle(L('thornton_6'), 4000)
                     ThorntonParle(4000)
 
-                    MS_ShowSubtitle("Attendez que ~HUD_COLOUR_MENU_GREY_LIGHT~M. Duggan~w~ s'en aille.", 6000)
+                    MS_ShowSubtitle(L('wait_thornton'), 6000)
                     Wait(6000)
 
                     -- Il rentre à sa voiture (30 s max), puis s'en va
@@ -316,7 +297,7 @@ Citizen.CreateThread(function()
 
 
 
-                    MS_ShowSubtitle("Piratez les ~r~verrous électriques.", 10000)
+                    MS_ShowSubtitle(L('hack_locks'), 10000)
                     TriggerEvent('mission:setupBlips')
                     Relay("event", { name = 'mission:setupBlips', args = {} }, false)
 
@@ -324,7 +305,7 @@ Citizen.CreateThread(function()
                     challengeStarted = false -- Re-try allowed
                     RenderScriptCams(false, true, 1000, true, true)
                     DestroyCam(cam, false)
-                    ShowNotification("Vous avez <span style='color:#E74C3C; font-weight:bold;'>échoué le test de persuasion</span>.", 5000)
+                    MissionNotify(L('persuasion_failed'), 5000)
                 end
             end
         end

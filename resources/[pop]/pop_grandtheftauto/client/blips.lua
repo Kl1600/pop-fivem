@@ -1,7 +1,7 @@
 -- cl_blips.lua
 
 -- ============================================================
--- BLIP "Panneau électrique" (anti-doublon)
+-- BLIP L('blip_panel') (anti-doublon)
 -- ============================================================
 
 local panelBlipId = nil
@@ -19,7 +19,7 @@ AddEventHandler('mission:setupBlips', function()
     SetBlipScale(panelBlipId, 0.9)
     SetBlipColour(panelBlipId, 1)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString('Panneau électrique')
+    AddTextComponentString(L('blip_panel'))
     EndTextCommandSetBlipName(panelBlipId)
 
     panelBlipCreated = true

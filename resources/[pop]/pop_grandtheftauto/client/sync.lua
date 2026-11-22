@@ -7,17 +7,6 @@
 -- SYNCHRO BRAQUAGE (COOP)
 -- ============================================================
 
-local function EnsureMissionSync()
-    _G.MissionSync = _G.MissionSync or {
-        active = false,
-        id = nil,
-        owner = nil,
-        isOwner = false,
-        entities = {},
-        flags = {}
-    }
-    return _G.MissionSync
-end
 
 local function ShowSubtitleFallback(text, duration)
     BeginTextCommandPrint("STRING")
@@ -33,7 +22,7 @@ AddEventHandler('mission:client:pending', function(heistId, isOwner)
     pendingId = heistId
 
     SetNewWaypoint(Config.ShowroomPos.x, Config.ShowroomPos.y)
-    ShowNotification("Rendez-vous au <span style='color:#ECA95D; font-weight:bold;'>showroom Benefactor</span> indiqué sur votre GPS.", 8000)
+    MissionNotify(L('go_showroom'), 8000)
 
     if not isOwner then return end
     CreateThread(function()
@@ -76,11 +65,11 @@ AddEventHandler('mission:client:reset', function(reason)
     TriggerEvent('mission:local:reset', reason)
 
     if reason == 'done' then
-        ShowNotification("Le casse est <span style='color:#2ecc71; font-weight:bold;'>terminé</span>. Beau travail.", 8000)
+        MissionNotify(L('heist_done'), 8000)
     elseif reason == 'timeout' then
-        ShowNotification("Le casse a été <span style='color:#E74C3C; font-weight:bold;'>abandonné</span> (trop long).", 8000)
+        MissionNotify(L('heist_timeout'), 8000)
     elseif reason == 'owner_left' then
-        ShowNotification("Le chef d'équipe est parti : <span style='color:#E74C3C; font-weight:bold;'>casse annulé</span>.", 8000)
+        MissionNotify(L('heist_owner_left'), 8000)
     end
 end)
 
@@ -187,27 +176,24 @@ end)
 -- ============================================================
 
 local policeBlips = {}
-local isTrackingActive = false
 
 -- Signal d'arrêt (Serveur -> Client)
 RegisterNetEvent('mission:client:stopPoliceTracking')
 AddEventHandler('mission:client:stopPoliceTracking', function()
     local hadBlips = next(policeBlips) ~= nil
-    isTrackingActive = false
-    for netId, blip in pairs(policeBlips) do
+    for _, blip in pairs(policeBlips) do
         if DoesBlipExist(blip) then RemoveBlip(blip) end
     end
     policeBlips = {}
 
     if hadBlips then
-        ShowNotification("Le signal des sportives volées <br> <span style='color:#E74C3C; font-weight:bold;'>a été perdu.</span>", 7000)
+        MissionNotify(L('signal_lost'), 7000)
     end
 end)
 
 -- Réception des positions (Serveur -> Client)
 RegisterNetEvent('mission:client:startPoliceTracking')
 AddEventHandler('mission:client:startPoliceTracking', function(trackingData)
-    isTrackingActive = true
 
     for _, data in ipairs(trackingData) do
         local netId = data.netId
@@ -221,7 +207,7 @@ AddEventHandler('mission:client:startPoliceTracking', function(trackingData)
             SetBlipScale(blip, 1.2)
             PulseBlip(blip)
             BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString("GPS : Véhicule Volé")
+            AddTextComponentString(L('blip_gps'))
             EndTextCommandSetBlipName(blip)
             policeBlips[netId] = blip
         else
@@ -256,7 +242,7 @@ AddEventHandler('mission:client:policeShowroomBlip', function(coords)
     PulseBlip(showroomAlertBlip)
 
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString("ALERTE : Braquage Showroom")
+    AddTextComponentString(L('blip_alert'))
     EndTextCommandSetBlipName(showroomAlertBlip)
 
     showroomAlertRadius = AddBlipForRadius(coords.x, coords.y, coords.z, 50.0)

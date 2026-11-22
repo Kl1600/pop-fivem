@@ -1,56 +1,12 @@
-local ESX = nil
-local QBCore = nil
-
-if Config.Framework == 'esx' then
-    ESX = exports['es_extended']:getSharedObject()
-elseif Config.Framework == 'qbcore' then
-    QBCore = exports['qb-core']:GetCoreObject()
-end
-
-local function CheckItem(item, cb)
-    if Config.Framework == 'esx' and ESX then
-        ESX.TriggerServerCallback('grandtheftauto:hasItem', cb, item)
-    elseif Config.Framework == 'qbcore' and QBCore then
-        QBCore.Functions.TriggerCallback('grandtheftauto:hasItem', cb, item)
-    else
-        cb(false)
-    end
-end
-
 local canHack = false
 
 -- ============================================================
 -- SYNCHRO (COOP)
 -- ============================================================
 
-local function EnsureMissionSync()
-    _G.MissionSync = _G.MissionSync or {
-        active = false,
-        id = nil,
-        owner = nil,
-        isOwner = false,
-        entities = {},
-        flags = {}
-    }
-    return _G.MissionSync
-end
 
-local function IsCoopActive()
-    return EnsureMissionSync().active == true
-end
 
-local function IsOwner()
-    local MS = EnsureMissionSync()
-    if not MS.active then return true end
-    return MS.isOwner == true
-end
 
-local function Relay(action, data, includeSender)
-    local MS = EnsureMissionSync()
-    if MS.active then
-        TriggerServerEvent('mission:server:relay', action, data, includeSender == true)
-    end
-end
 
 ------------------------------------------------------------
 -- Thread 1: Spawn le NPC Svetlana (Début)
@@ -88,11 +44,11 @@ Citizen.CreateThread(function()
 
         if dist <= 3.0 then
             wait = 0
-            ShowPrompt("svetlana", svetlanaPos + vector3(0,0,1.0), "PARLER", "fas fa-comments")
+            ShowPrompt("svetlana", svetlanaPos + vector3(0,0,1.0), L('prompt_talk'), "fas fa-comments")
             if IsControlJustReleased(0, 38) and GetGameTimer() - lastTalk > 3000 then
                 lastTalk = GetGameTimer()
                 HidePrompt("svetlana")
-                ShowSubtitle("Svetlana : Quatre sportives au showroom Benefactor. Ramène-les-moi, je paie bien.", 6000)
+                ShowSubtitle(L('svetlana_line'), 6000)
                 TriggerServerEvent('mission:server:talkSvetlana')
             end
         else
@@ -139,7 +95,7 @@ function EntrerVoiture(ped)
     SetBlockingOfNonTemporaryEvents(ped, true)
     TaskWarpPedIntoVehicle(ped, veh2, -1)
 
-    local destination = vector3(-370.2602, 148.7482, 65.8740)
+    local destination = Config.Positions.ThorntonLeaveTo
     TaskVehicleDriveToCoord(ped, veh2, destination.x, destination.y, destination.z, 20.0, 1, GetEntityModel(veh2), 786603, 5.0, 1)
 
     local car = veh2
@@ -208,7 +164,7 @@ local function CreateKeysBlip()
     SetBlipScale(keyBlip, 0.4)
     SetBlipAsShortRange(keyBlip, false)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString("Clés de la porte de garage")
+    AddTextComponentString(L('blip_keys'))
     EndTextCommandSetBlipName(keyBlip)
 end
 
@@ -219,7 +175,7 @@ local function RemoveKeysBlip()
     keyBlip = nil
 end
 
-local hackPanelPos = vector3(-54.4972, 79.1231, 72.4629)
+local hackPanelPos = Config.Positions.Panel
 
 local function OnPanelHacked()
     canHack = false
@@ -231,8 +187,8 @@ local function OnPanelHacked()
 
     if _G.npcHandle and DoesEntityExist(_G.npcHandle) then EntrerVoiture(_G.npcHandle) end
 
-    ShowSubtitle("Attendez la ~y~coupure de courant~w~ pour entrer dans le showroom.", 8500)
-    Relay("subtitle", { text = "Attendez la ~y~coupure de courant~w~ pour entrer dans le showroom.", duration = 8500 }, false)
+    ShowSubtitle(L('wait_blackout'), 8500)
+    Relay("subtitle", { text = L('wait_blackout'), duration = 8500 }, false)
     Wait(6000)
     TriggerEvent('mission:client:openShowroomDoors')
     Relay("command", { cmd = "open1" }, false)
@@ -248,13 +204,13 @@ local function OnPanelHacked()
     TriggerEvent('mission:local:lasers', false)
     Relay("command", { cmd = "laseroff" }, false)
     Wait(900)
-    ShowNotification("Forcez une <span style='color:#ECA95D; font-weight:bold;'>voiture</span> en utilisant votre module pirate à proximité.", 10000)
+    MissionNotify(L('force_car'), 10000)
     StartMissionTimer()
     Relay("event", { name = "StartMissionTimer", args = {} }, false)
 end
 
 Citizen.CreateThread(function()
-    local terminalCoords = vector3(-54.7984, 78.8763, 71.6531)
+    local terminalCoords = Config.Positions.Terminal
     local busy = false
     while true do
         local wait = 1000
@@ -266,18 +222,18 @@ Citizen.CreateThread(function()
                 DrawMarker(24, hackPanelPos.x, hackPanelPos.y, hackPanelPos.z, 0.2, 0.5, 0, 0, 0, 0, 0.4, 0.4, 0.4, 175, 75, 75, 200, 0, 0, 2, 0, 0, 0, 0)
 
                 if dist <= 2.0 then
-                    ShowPrompt("hack_terminal", hackPanelPos, "PIRATER", "fas fa-laptop-code")
+                    ShowPrompt("hack_terminal", hackPanelPos, L('prompt_hack'), "fas fa-laptop-code")
                     if IsControlJustReleased(0, 38) then
                         HidePrompt("hack_terminal")
                         busy = true -- Empêche la réapparition le temps du callback / mini-jeu
                         CheckItem('flipper', function(hasItem)
                             CreateThread(function()
                                 if not hasItem then
-                                    ShowNotification("Vous avez besoin d'un <span style='color:#E74C3C; font-weight:bold;'>Flipper Zero</span> pour faire ça.", 5000)
+                                    MissionNotify(L('need_flipper'), 5000)
                                 elseif RunVoltlab(40) then
                                     if canHack then OnPanelHacked() end
                                 else
-                                    ShowNotification("Le <span style='color:#E74C3C; font-weight:bold;'>piratage a échoué</span>.", 5000)
+                                    MissionNotify(L('hack_failed'), 5000)
                                 end
                                 busy = false
                             end)
@@ -306,8 +262,8 @@ end)
 ------------------------------------------------------------
 local keysTaken = false
 local doorOpened = false
-local keysPos = vector3(-69.8501, 76.5493, 71.4452)
-local doorPos = vector3(-78.4765, 79.3014, 71.6154)
+local keysPos = Config.Positions.Keys
+local doorPos = Config.Positions.GarageDoor
 
 local function DeleteKeysProp()
     local keysEntity = GetClosestObjectOfType(keysPos.x, keysPos.y, keysPos.z, 2.0, GetHashKey('prop_cuff_keys_01'), false, false, false)
@@ -358,7 +314,7 @@ CreateThread(function()
                     DrawMarker(20, keysPos.x, keysPos.y, keysPos.z + 0.6, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.3, 0.3, 0.3, 89, 213, 156, 150, true, true, 2, nil, nil, false)
                 end
                 if d < 1.8 then
-                    ShowPrompt("keys", keysPos + vector3(0,0,0.5), "RAMASSER", "fas fa-key")
+                    ShowPrompt("keys", keysPos + vector3(0,0,0.5), L('prompt_pickup'), "fas fa-key")
                     if IsControlJustPressed(0, 38) then
                         HidePrompt("keys")
                         TakeMappedKeys(ped)
@@ -373,7 +329,7 @@ CreateThread(function()
             if keysTaken and not doorOpened then
                 if #(coords - doorPos) < 2.0 then
                     wait = 0
-                    ShowPrompt("door", doorPos + vector3(0,0,1.0), "OUVRIR", "fas fa-door-open")
+                    ShowPrompt("door", doorPos + vector3(0,0,1.0), L('prompt_open'), "fas fa-door-open")
                     if IsControlJustPressed(0, 38) then
                         OpenWhiteDoor(ped)
                     end
@@ -395,7 +351,7 @@ function TakeMappedKeys(ped)
     if keysTaken then return end
     keysTaken = true
     RemoveKeysBlip()
-    ShowNotification("Vous avez <span style='color:#ECA95D; font-weight:bold;'>récupéré les clés</span> de la porte de garage.", 7000)
+    MissionNotify(L('keys_taken'), 7000)
 
     -- Animation de ramassage
     if LoadAnimDict("pickup_object") then

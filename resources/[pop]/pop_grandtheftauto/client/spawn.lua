@@ -1,4 +1,3 @@
-
 -- ============================================================
 -- SYNCHRO (COOP)
 -- Objectif:
@@ -7,28 +6,8 @@
 --    et les autres clients reçoivent les NetID.
 -- ============================================================
 
-local function EnsureMissionSync()
-    _G.MissionSync = _G.MissionSync or {
-        active = false,
-        id = nil,
-        owner = nil,
-        isOwner = false,
-        entities = {},
-        flags = {}
-    }
-    return _G.MissionSync
-end
 
-local function IsCoopActive()
-    local MS = EnsureMissionSync()
-    return MS.active == true
-end
 
-local function IsOwner()
-    local MS = EnsureMissionSync()
-    if not MS.active then return true end
-    return MS.isOwner == true
-end
 
 -- Expose Cars global comme avant (utile pour crack.lua qui check _G.Cars)
 _G.Cars = Cars
@@ -139,7 +118,7 @@ AddEventHandler('mission:setupBlips', function()
             SetBlipScale(blipId, 0.5)
             SetBlipColour(blipId, 2)
             BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString('Sportive Benefactor')
+            AddTextComponentString(L('blip_car'))
             EndTextCommandSetBlipName(blipId)
 
             Cars[i].blipId = blipId

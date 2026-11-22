@@ -35,8 +35,15 @@ Scripts : pop_grandtheftauto, pma_voice_challenge, ultra-voltlab, kq_lasers (man
 ### Fait (publication 2)
 - chHyperSound : suppression, avec l'accord du client, des fichiers privés de `sounds/` (page Gmail sauvegardée, photos, vidéos .mp4, zips/rar). Vérifié par grep : aucun script ne les utilisait. Tous les .ogg et .mp3 sont gardés. Le déploiement (`mirror --delete`) les retire aussi du serveur.
 
+### Gabarit POP (22/11/2026)
+Restructuration selon `docs/gabarit-pop.md` (config.lua, locales/fr.lua, bridge/ + shared/ copiés du modèle, client/ et server/ découpés < 600 lignes, README.md), aucun changement visible en jeu. Un push par script.
+- pop_bikerental, pop_voice_ui, pop_livraison : publiés. pop_voice_ui sans bridge (affichage seul, comme pop_notify). pop_bikerental garde `ESX.Game.SpawnVehicle` et `exports.ox_target:addLocalEntity` en direct (options `rent_` filtrées par ox_target). `/previewlivraison` via `Bridge.IsAdmin` (ACE pop.admin ou groupe admin ESX).
+- pop_weed, pop_crew : publiés. `vg_crew_recruit` → `pop_crew_recruit` (plus aucun `vg_crew` dans le dépôt). pop_weed garde la license Cfx comme propriétaire des plantes (compatibilité plants.json).
+- pop_territories, pop_dealing : publiés. Zones dans `pop_territories/shared/zones.lua` (fichier propre au script, à garder si `shared/` est recopié). pop_dealing garde l'évènement `pop_dealing:notify` (écouté par la checklist de pop_territories) ; les réponses console de `dealing_list` restent visibles.
+- pop_grandtheftauto : restructuré (server/alert.lua découpé en common/mission/police/hack/delivery, crack.lua en hack.lua + pcb.lua, lasers à part, positions dans config.lua, 70 textes dans fr.lua). Audit de non-régression OK, publié. `/startheist` garde le contrôle ACE d'origine ; kit compté par licence. Callback interne `hasItem` à la place de `grandtheftauto:hasItem` (aucun autre script ne l'utilisait).
+
 ### Reste
-- Tester la mission en jeu avec le client.
+- Tester la mission en jeu avec le client (après la restructuration).
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).
 
 ### Bugs connus / à vérifier en jeu

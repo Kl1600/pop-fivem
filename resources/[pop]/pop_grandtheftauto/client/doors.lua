@@ -5,36 +5,10 @@
 local heistDemoVeh = nil
 
 -- Utilisation du système de synchronisation global
-local function EnsureMissionSync()
-    _G.MissionSync = _G.MissionSync or {
-        active = false,
-        id = nil,
-        owner = nil,
-        isOwner = false,
-        entities = {},
-        flags = {}
-    }
-    return _G.MissionSync
-end
 
-local function IsCoopActive()
-    local MS = EnsureMissionSync()
-    return MS.active == true
-end
 
-local function IsOwner()
-    local MS = EnsureMissionSync()
-    if not MS.active then return true end
-    return MS.isOwner == true
-end
 
 -- Fonction de relais pour diffuser les actions aux autres joueurs
-local function Relay(action, data, includeSender)
-    local MS = EnsureMissionSync()
-    if MS.active then
-        TriggerServerEvent('mission:server:relay', action, data, includeSender == true)
-    end
-end
 
 -- ============================================================
 -- ACTIONS DE VERROUILLAGE (FONCTIONNALITÉS CONSERVÉES)
@@ -53,14 +27,6 @@ function Lockdoor2()
     if DoesEntityExist(door2) then
         SetEntityHeading(door2, 247.0)
         FreezeEntityPosition(door2, true)
-    end
-end
-
-function Lockgarage1()
-    local door3 = GetClosestObjectOfType(-62.4782, 79.9412, 71.6412, 3.0, -1797916783)
-    if DoesEntityExist(door3) then
-        SetEntityHeading(door3, 67.0)
-        FreezeEntityPosition(door3, true)
     end
 end
 
@@ -169,8 +135,8 @@ AddEventHandler('spawncamion', function()
             if distance <= 150.0 then
                 -- On exécute la logique de démarrage originale
                 TriggerServerEvent('mission:server:requestDeliverySlot')
-            
-                
+
+
                 -- On sort de la boucle pour arrêter la vérification
                 heistStarted = true
             end
@@ -248,7 +214,7 @@ AddEventHandler('ondeliveryblip', function()
     SetBlipScale(blip, 0.9)
     SetBlipAsShortRange(blip, false)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString("Livraison")
+    AddTextComponentString(L('blip_delivery'))
     EndTextCommandSetBlipName(blip)
 
     SetBlipRoute(blip, true)
@@ -270,8 +236,8 @@ AddEventHandler('ondeliveryblip', function()
             if #(GetEntityCoords(PlayerPedId()) - destination) < 25.0 then
                 RemoveBlip(blip)
                 ClearGpsMultiRoute()
-                ShowNotification("Vous avez <span style='color:#ECA95D; font-weight:bold;'>atteint votre destination.</span>", 7000)
-                
+                MissionNotify(L('destination_reached'), 7000)
+
                 -- SIGNAL DE FIN SYNCHRONISÉ : Coupe le GPS pour toute la police en même temps
                 TriggerServerEvent('mission:server:stopPoliceTracking')
                 break
