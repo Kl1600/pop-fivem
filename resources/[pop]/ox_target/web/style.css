@@ -23,6 +23,7 @@ p { margin: 0; }
 
 /* Point de visée au centre de l'écran */
 #eye {
+  display: none !important; /* pas de point de visée (demande du client) */
   position: absolute;
   top: 50%;
   left: 50%;
@@ -90,6 +91,7 @@ p { margin: 0; }
 
 .pop-target-head .count {
   margin-left: auto;
+  padding-left: 12px;
   font-size: 11px;
   color: var(--pop-muted);
 }

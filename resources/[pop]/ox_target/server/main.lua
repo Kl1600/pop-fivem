@@ -46,3 +46,22 @@ CreateThread(function()
         end
     end
 end)
+
+-- POP : identité du joueur pour l'en-tête du menu (NOM Prénom + ID).
+lib.callback.register('ox_target:popIdentity', function(source)
+    if GetResourceState('es_extended') ~= 'started' then return nil end
+    local ok, ESX = pcall(function() return exports.es_extended:getSharedObject() end)
+    local xPlayer = ok and ESX and ESX.GetPlayerFromId(source)
+    if not xPlayer then return nil end
+
+    local first = xPlayer.get and xPlayer.get('firstName')
+    local last = xPlayer.get and xPlayer.get('lastName')
+
+    if (not first or first == '') and xPlayer.getName then
+        local full = xPlayer.getName() or ''
+        first, last = full:match('^(%S+)%s+(.+)$')
+        first = first or full
+    end
+
+    return { first = first, last = last }
+end)

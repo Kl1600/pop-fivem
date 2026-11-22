@@ -51,7 +51,7 @@ window.addEventListener("message", (event) => {
 
     case "setTarget": {
       eye.classList.add("eye-hover");
-      beginMenu();
+      beginMenu(event.data.identity);
 
       if (event.data.options) {
         for (const type in event.data.options) {

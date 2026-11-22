@@ -20,7 +20,7 @@ function escapeHtml(text) {
 }
 
 // Carte POP : en-tête « Interactions » + liste des options.
-export function beginMenu() {
+export function beginMenu(identity) {
   card = document.createElement("div");
   card.className = "pop-target";
   card.innerHTML = `
@@ -29,6 +29,8 @@ export function beginMenu() {
       <span class="title">Interactions</span>
       <span class="count"></span>
     </div>`;
+  card.querySelector(".title").textContent = (identity && identity.name) || "Interactions";
+  card.querySelector(".count").textContent = identity && identity.id != null ? `ID ${identity.id}` : "";
   list = document.createElement("div");
   card.appendChild(list);
   count = 0;
@@ -37,7 +39,6 @@ export function beginMenu() {
 export function endMenu() {
   if (!card) return;
   if (count > 0) {
-    card.querySelector(".count").textContent = String(count);
     optionsWrapper.appendChild(card);
   }
   card = null;
