@@ -13,8 +13,8 @@ Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | 'qs-inventory' |
 Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
 Config.Notify    = 'auto' -- 'framework' | 'ox_lib' | 'pop' | 'native'
 
--- Couleur d'accent de l'interface. Rose néon par défaut, cyan : '#22d3ee'.
-Config.AccentColor = '#ff2e88'
+-- Couleur d'accent de l'interface. Bleu POP Tab par défaut.
+Config.AccentColor = '#0088FF'
 
 -- Objet « argent liquide » de pop_inventory (lu par le bridge ; pop_tablet ne touche pas à l'argent).
 Config.CashItem = 'cash'
