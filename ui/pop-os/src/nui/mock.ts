@@ -11,8 +11,15 @@ export const MOCK_CODE = '1234';
 
 // Réglages « enregistrés par le serveur » : `settings:save` les retient, un déverrouillage les rend (comme le vrai serveur).
 let saved: Record<string, unknown> = {};
+let setupDone = false;
+let setupName: string | null = null;
 const wantsDark = (): boolean => typeof location !== 'undefined' && new URLSearchParams(location.search).get('dark') === '1';
-const bootNow = (): Boot => ({ ...MOCK_BOOT, settings: { ...MOCK_BOOT.settings, ...(wantsDark() ? { dark: true } : {}), ...saved } as Boot['settings'] });
+const bootNow = (): Boot => ({ ...MOCK_BOOT, name: setupName ?? MOCK_BOOT.name, settings: { ...MOCK_BOOT.settings, ...(wantsDark() ? { dark: true } : {}), ...saved } as Boot['settings'] });
+
+/** Navigateur de développement : le premier allumage a-t-il été fait (la réouverture n'y revient pas) ? */
+export const mockSetupDone = (): boolean => setupDone;
+/** Données de démarrage telles que le serveur les rendrait maintenant (réglages enregistrés compris). */
+export const mockBoot = (): Boot => bootNow();
 
 const MOCK_BOOT: Boot = {
   serial: 'PT-DEV0000001',
@@ -81,6 +88,8 @@ export function resetMock(): void {
   blockedUntil = 0;
   code = MOCK_CODE;
   saved = {};
+  setupDone = false;
+  setupName = null;
 }
 
 type Json = Record<string, unknown>;
@@ -113,9 +122,14 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       }
       return { ok: false, err: 'err_code_wrong' };
     }
-    case 'device:setup':
+    case 'device:setup': {
+      // Comme le serveur : le code, le nom et les réglages choisis sont gardés ; une réouverture les retrouve.
       code = String(inner.code ?? code);
-      return { ok: true, boot: { ...MOCK_BOOT, name: String(inner.name ?? MOCK_BOOT.name), settings: { ...MOCK_BOOT.settings, lang: String(inner.lang ?? 'fr'), mail: String(inner.mail ?? '') } } };
+      setupName = String(inner.name ?? MOCK_BOOT.name);
+      setupDone = true;
+      saved = { ...saved, lang: String(inner.lang ?? 'fr'), mail: String(inner.mail ?? ''), dark: inner.dark === true, ...(typeof inner.wall === 'string' ? { wall: inner.wall } : {}) };
+      return { ok: true, boot: bootNow() };
+    }
     case 'device:changeCode':
       if (inner.old !== code) return { ok: false, err: 'err_code_wrong' };
       code = String(inner.new);

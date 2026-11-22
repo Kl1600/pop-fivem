@@ -4,9 +4,16 @@ import { inGame } from './bridge';
 
 // Outil de développement (navigateur seulement, jamais monté en jeu) : ouvre la tablette simulée et permet de la rouvrir.
 async function openMock(): Promise<void> {
-  const { mockOpen } = await import('./mock');
+  const { mockOpen, mockSetupDone, mockBoot } = await import('./mock');
   const q = new URLSearchParams(location.search);
   const dark = q.get('dark') === '1';
+  // Réouverture après le premier allumage : réglages enregistrés (langue, clair/sombre, fond) et plus de configuration.
+  if (mockSetupDone()) {
+    const boot = mockBoot();
+    const lang = boot.settings.lang ?? 'fr';
+    window.postMessage({ action: 'tablet:open', data: mockOpen({ lang, rtl: lang === 'ar', needSetup: false, boot }) }, '*');
+    return;
+  }
   const data = mockOpen({ lang: q.get('lang') ?? 'fr', rtl: q.get('lang') === 'ar', needSetup: q.get('setup') === '1' });
   if (data.boot) data.boot = { ...data.boot, settings: { ...data.boot.settings, dark } };
   window.postMessage({ action: 'tablet:open', data }, '*');

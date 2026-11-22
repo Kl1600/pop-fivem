@@ -180,47 +180,96 @@ describe('ui-09 code', () => {
   });
 });
 
+async function toCode(lang = 'English') {
+  fireEvent.click(screen.getByRole('button', { name: /^(Swipe up|Glisser)/ }));
+  fireEvent.click(screen.getByRole('button', { name: lang }));
+  await waitFor(() => expect(os.get().lang).toBe(lang === 'English' ? 'en' : 'fr'));
+  fireEvent.click(screen.getByRole('button', { name: /^(Continue|Continuer)$/ })); // langue -> apparence
+  fireEvent.click(screen.getByRole('button', { name: /^(Continue|Continuer)$/ })); // apparence -> code
+}
+async function toName() {
+  await typeCode('2468');
+  await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Confirm your passcode'));
+  await typeCode('2468');
+  await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Device name'));
+}
+
 describe('ui-10 premier allumage', () => {
-  it('langue, code, confirmation, nom, adresse mail puis accueil', async () => {
+  it('Bonjour, langue, apparence, code, confirmation, nom, mail, fond, bienvenue puis accueil', async () => {
     render(<Host />);
     openTablet({ needSetup: true, locked: true });
     expect(os.get().screen).toBe('setup');
-    fireEvent.click(screen.getByRole('button', { name: 'English' }));
-    await waitFor(() => expect(os.get().lang).toBe('en'));
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    await typeCode('2468');
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Confirm your passcode'));
-    await typeCode('2468');
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Device name'));
+    await toCode();
+    await toName();
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'alex@exemple.fr' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
-    await waitFor(() => expect(os.get().screen).toBe('home'));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Wallpaper 3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Welcome to POP Tab'));
+    expect(os.get().needSetup).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+    expect(os.get().screen).toBe('home');
     expect(os.get().needSetup).toBe(false);
+    expect(os.get().settings.wall).toBe('2');
+  });
+  it('choix Sombre : l’écran de configuration passe en sombre, l’accueil aussi, réglage enregistré', async () => {
+    render(<Host />);
+    openTablet({ needSetup: true, locked: true });
+    fireEvent.click(screen.getByRole('button', { name: /^Glisser/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    expect(document.querySelector('.pop')?.className).not.toContain('dk');
+    fireEvent.click(screen.getByRole('button', { name: 'Sombre' }));
+    expect(document.querySelector('.pop')?.className).toContain('dk');
+    expect(document.querySelector('[data-layer="setup"]')?.getAttribute('data-step')).toBe('look');
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    await typeCode('2468');
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Confirmez votre code'));
+    await typeCode('2468');
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe("Nom de l'appareil"));
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    fireEvent.change(screen.getByLabelText('Adresse mail'), { target: { value: 'sombre.test' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Bienvenue sur POP Tab'));
+    fireEvent.click(screen.getByRole('button', { name: 'Commencer' }));
+    expect(os.get().settings.dark).toBe(true);
+    expect(document.querySelector('.pop')?.className).toContain('dk');
+    // Réouverture : les réglages enregistrés par le serveur simulé sont rendus.
+    act(() => closeTablet());
+    const { mockBoot } = await import('../nui/mock');
+    expect(mockBoot().settings.dark).toBe(true);
+    expect(mockBoot().settings.lang).toBe('fr');
+  });
+  it('choix de langue : les textes sont traduits tout de suite', async () => {
+    render(<Host />);
+    openTablet({ needSetup: true });
+    fireEvent.click(screen.getByRole('button', { name: /^Glisser/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Deutsch' }));
+    await waitFor(() => expect(os.get().lang).toBe('de'));
+    expect(screen.getByRole('status').textContent).toBe('Sprache wählen');
+    expect(screen.getByRole('button', { name: 'Weiter' })).toBeTruthy();
   });
   it('adresse mail : domaine fixe, partie avant @ gardée, erreur avant envoi', async () => {
     render(<Host />);
     openTablet({ needSetup: true, mailDomain: 'exemple.test' });
-    fireEvent.click(screen.getByRole('button', { name: 'English' }));
-    await waitFor(() => expect(os.get().lang).toBe('en'));
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-    await typeCode('2468');
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Confirm your passcode'));
-    await typeCode('2468');
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Device name'));
+    await toCode();
+    await toName();
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByTestId('mail-domain').textContent).toBe('@exemple.test');
     const input = screen.getByLabelText('Email address') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Silvun@silvun.com' } });
     expect(input.value).toBe('Silvun');
     fireEvent.change(input, { target: { value: 'ab' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('name@exemple.test'));
     expect(os.get().needSetup).toBe(true);
   });
   it('codes différents : message et retour à la saisie', async () => {
     render(<Host />);
     openTablet({ needSetup: true });
+    fireEvent.click(screen.getByRole('button', { name: /^Glisser/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }));
     await typeCode('1111');
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Confirmez votre code'));

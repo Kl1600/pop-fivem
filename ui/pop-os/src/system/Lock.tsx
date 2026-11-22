@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AppIcon, Glass, useT } from '../kit';
-import { LANGUAGES, LANGUAGE_NAMES } from '../i18n';
 import { formatDate, formatTime, useGameDate } from './clock';
-import { cancelCode, setLanguage, submitCode, submitSetup } from './actions';
+import { cancelCode, submitCode } from './actions';
 import { os, useOS } from './store';
 import { relTime } from './format';
-import { Field, Button, palette, useDark } from '../kit';
-import { isValidMailLocal, mailLocalPart } from './mailLocal';
 
-// Écran verrouillé, saisie du code et premier allumage. Positions de la maquette Main.dc.html (référence 1348 x 1019).
+// Écran verrouillé et saisie du code (le premier allumage est dans setup/). Positions de la maquette Main.dc.html (référence 1348 x 1019).
 
 export function LockLayer({ active, toCode }: { active: boolean; toCode: boolean }) {
   const t = useT();
@@ -57,8 +54,16 @@ export function LockLayer({ active, toCode }: { active: boolean; toCode: boolean
 
 const KEYS: Array<[string, string]> = [['1', ''], ['2', 'ABC'], ['3', 'DEF'], ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'], ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'], ['', ''], ['0', ''], ['', '']];
 
+/** Teintes du pavé : verre blanc sur le fond d'écran (déverrouillage), ou à plat clair/sombre (premier allumage). */
+const INK = {
+  glass: { fg: '#fff', key: 'rgba(255,255,255,.16)', edge: 'rgba(255,255,255,.22)', cls: 'gw key' },
+  light: { fg: '#000', key: '#e3e3e8', edge: 'transparent', cls: 'key' },
+  dark: { fg: '#fff', key: '#2c2c2e', edge: 'transparent', cls: 'key' },
+};
+
 /** Pavé numérique et points de saisie, partagés par le déverrouillage et le premier allumage. */
-export function Keypad({ code, onDigit, onDelete, shake, disabled }: { code: string; onDigit: (d: string) => void; onDelete: () => void; shake: boolean; disabled: boolean }) {
+export function Keypad({ code, onDigit, onDelete, shake, disabled, tone = 'glass' }: { code: string; onDigit: (d: string) => void; onDelete: () => void; shake: boolean; disabled: boolean; tone?: keyof typeof INK }) {
+  const ink = INK[tone];
   // Les chiffres du clavier physique fonctionnent aussi : l'écouteur n'existe que pendant la saisie.
   useEffect(() => {
     if (disabled) return;
@@ -73,13 +78,13 @@ export function Keypad({ code, onDigit, onDelete, shake, disabled }: { code: str
     <>
       <div className={shake ? 'shake' : ''} data-testid="dots" style={{ display: 'flex', gap: 22, margin: '26px 0 50px' }}>
         {[0, 1, 2, 3].map((i) => (
-          <span key={i} data-filled={i < code.length ? '1' : '0'} style={{ width: 15, height: 15, borderRadius: '50%', border: '1.5px solid #fff', background: i < code.length ? '#fff' : 'transparent' }} />
+          <span key={i} data-filled={i < code.length ? '1' : '0'} style={{ width: 15, height: 15, borderRadius: '50%', border: `1.5px solid ${ink.fg}`, background: i < code.length ? ink.fg : 'transparent' }} />
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 84px)', gap: '22px 30px' }}>
         {KEYS.map(([d, l], i) =>
           d ? (
-            <button key={i} aria-label={d} className="gw key" onClick={() => !disabled && onDigit(d)} style={{ width: 84, height: 84, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.22)' }}>
+            <button key={i} aria-label={d} className={ink.cls} onClick={() => !disabled && onDigit(d)} style={{ width: 84, height: 84, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: ink.key, border: `1px solid ${ink.edge}`, color: ink.fg }}>
               <span style={{ fontSize: 36, fontWeight: 400, lineHeight: 1 }}>{d}</span>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, opacity: 0.9 }}>{l}</span>
             </button>
@@ -138,103 +143,3 @@ export function CodeLayer({ active }: { active: boolean }) {
   );
 }
 
-type Step = 'lang' | 'code' | 'confirm' | 'name' | 'mail';
-const STEPS: Step[] = ['lang', 'code', 'confirm', 'name', 'mail'];
-
-/** Premier allumage : langue, code, nom de l'appareil, adresse mail. Le serveur valide tout. */
-export function SetupLayer({ active }: { active: boolean }) {
-  const t = useT();
-  const lang = useOS((s) => s.lang);
-  const domain = useOS((s) => s.mailDomain);
-  const [step, setStep] = useState<Step>('lang');
-  const [code, setCode] = useState('');
-  const [first, setFirst] = useState('');
-  const [name, setName] = useState('POP Tab');
-  const [mail, setMail] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [shake, setShake] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => { if (!active) { setStep('lang'); setCode(''); setFirst(''); setError(null); } }, [active]);
-
-  const onDigit = (d: string) => {
-    if (shake || (step !== 'code' && step !== 'confirm')) return;
-    const next = (code + d).slice(0, 4);
-    setCode(next);
-    if (next.length < 4) return;
-    if (step === 'code') {
-      setFirst(next);
-      setTimeout(() => { setCode(''); setStep('confirm'); }, 180);
-    } else if (next === first) {
-      setError(null);
-      setTimeout(() => setStep('name'), 180);
-    } else {
-      setError('setup.mismatch');
-      setShake(true);
-      setTimeout(() => { setShake(false); setCode(''); setFirst(''); setStep('code'); }, 600);
-    }
-  };
-  const finish = async () => {
-    // Même règle que le serveur : l'erreur s'affiche avant l'envoi.
-    if (!isValidMailLocal(mail)) { setError('setup.mail_rules'); return; }
-    setBusy(true);
-    const res = await submitSetup({ code: first, name: name.trim(), lang, mail: mail.trim() });
-    setBusy(false);
-    if (!res.ok) setError(res.err === 'err_mail_invalid' ? 'setup.mail_rules' : res.err ?? 'err_unavailable');
-  };
-  const idx = STEPS.indexOf(step);
-  const title = { lang: 'setup.lang', code: 'setup.code', confirm: 'setup.confirm', name: 'setup.name', mail: 'setup.mail' }[step];
-  return (
-    <div className="tr" data-layer="setup" aria-hidden={!active} inert={!active} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 120, opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}>
-      <span style={{ fontSize: 40, fontWeight: 700 }}>{t('setup.hello')}</span>
-      <span role="status" style={{ fontSize: 22, fontWeight: 500, marginTop: 10 }}>{t(title)}</span>
-      {step === 'lang' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 220px)', gap: 12, marginTop: 30 }}>
-          {LANGUAGES.map((l) => (
-            <Glass key={l} kind="gw" as="button" onClick={() => void setLanguage(l)} style={{ height: 52, borderRadius: 18, fontSize: 18, fontWeight: lang === l ? 700 : 500, outline: lang === l ? '2px solid #fff' : 'none' }}>
-              {LANGUAGE_NAMES[l]}
-            </Glass>
-          ))}
-        </div>
-      )}
-      {(step === 'code' || step === 'confirm') && <Keypad code={code} onDigit={onDigit} onDelete={() => setCode((c) => c.slice(0, -1))} shake={shake} disabled={!active || shake} />}
-      {step === 'name' && (
-        <div style={{ width: 420, marginTop: 30, color: '#000' }}><Field value={name} onChange={setName} label={t('setup.name')} maxLength={32} onEnter={() => name.trim() && setStep('mail')} /></div>
-      )}
-      {step === 'mail' && (
-        <div style={{ width: 420, marginTop: 30, color: '#000' }}><MailField value={mail} onChange={(v) => { setMail(mailLocalPart(v)); setError(null); }} label={t('setup.mail')} placeholder={t('setup.mail_ph')} domain={domain} onEnter={() => void finish()} /></div>
-      )}
-      {error && <span role="alert" style={{ marginTop: 18, fontSize: 16, fontWeight: 600 }}>{error === 'setup.mismatch' ? t('setup.mismatch') : error === 'setup.mail_rules' ? t(error, domain) : t(error)}</span>}
-      <div style={{ display: 'flex', gap: 14, marginTop: 34 }}>
-        {idx > 0 && step !== 'name' && step !== 'mail' ? <Button kind="plain" onClick={() => { setCode(''); setStep(STEPS[Math.max(0, idx - (step === 'confirm' ? 2 : 1))] as Step); }} style={{ color: '#fff' }}>{t('setup.back')}</Button> : null}
-        {step === 'lang' && <Button onClick={() => setStep('code')}>{t('setup.next')}</Button>}
-        {step === 'name' && <Button disabled={!name.trim()} onClick={() => setStep('mail')}>{t('setup.next')}</Button>}
-        {step === 'mail' && <Button disabled={busy || !mail.trim()} onClick={() => void finish()}>{t('setup.finish')}</Button>}
-      </div>
-    </div>
-  );
-}
-
-/** Champ du nom d'adresse : le domaine est un suffixe fixe, dans la même pastille que le champ (style Field). */
-function MailField({ value, onChange, label, placeholder, domain, onEnter }: { value: string; onChange: (v: string) => void; label: string; placeholder: string; domain: string; onEnter: () => void }) {
-  const c = palette(useDark());
-  return (
-    <div dir="ltr" style={{ display: 'flex', alignItems: 'center', height: 44, borderRadius: 14, padding: '0 14px', background: c.fill, color: c.fg, fontSize: 17 }}>
-      <input
-        aria-label={label}
-        placeholder={placeholder}
-        value={value}
-        maxLength={64}
-        type="text"
-        inputMode="email"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') onEnter(); }}
-        style={{ flex: 1, minWidth: 0, height: '100%', background: 'transparent', color: 'inherit', fontSize: 'inherit' }}
-      />
-      <span data-testid="mail-domain" style={{ flexShrink: 0, color: c.sub }}>@{domain}</span>
-    </div>
-  );
-}

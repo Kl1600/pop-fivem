@@ -1,0 +1,27 @@
+/* Premier allumage : animations légères (transform et opacité seulement, 60 i/s), arrêtées si le mouvement est réduit. */
+@keyframes ps-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.ps-step{animation:ps-in .38s cubic-bezier(.2,.9,.25,1) both}
+
+/* « Bonjour » : apparition, pause, disparition ; le texte change à la fin du cycle (même durée que l'intervalle du composant). */
+@keyframes ps-greet{0%{opacity:0;transform:translateY(10px) scale(.98)}16%,80%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-8px)}}
+.ps-greet{animation:ps-greet 2.6s ease both}
+
+/* Fond animé : trois halos aux couleurs de l'accent qui dérivent lentement. */
+.ps-blob{position:absolute;border-radius:50%;background:radial-gradient(circle,var(--accent) 0%,transparent 68%);will-change:transform}
+@keyframes ps-drift-a{0%,100%{transform:translate3d(-6%,4%,0) scale(1)}50%{transform:translate3d(10%,-8%,0) scale(1.14)}}
+@keyframes ps-drift-b{0%,100%{transform:translate3d(6%,-4%,0) scale(1.08)}50%{transform:translate3d(-10%,8%,0) scale(.94)}}
+@keyframes ps-drift-c{0%,100%{transform:translate3d(0,0,0) scale(.9)}50%{transform:translate3d(-12%,-10%,0) scale(1.12)}}
+.ps-a{width:900px;height:900px;left:-250px;bottom:-380px;opacity:.55;animation:ps-drift-a 14s ease-in-out infinite}
+.ps-b{width:760px;height:760px;right:-200px;top:-320px;opacity:.4;animation:ps-drift-b 18s ease-in-out infinite}
+.ps-c{width:560px;height:560px;left:38%;top:26%;opacity:.22;animation:ps-drift-c 22s ease-in-out infinite}
+
+@keyframes ps-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.ps-bob{animation:ps-bob 1.8s ease-in-out infinite}
+
+.ps-row{transition:background .15s ease}
+[dir="rtl"] .ps-chev{transform:scaleX(-1)}
+
+@media (prefers-reduced-motion: reduce){
+  .ps-step,.ps-greet,.ps-blob,.ps-bob{animation:none!important}
+}
+[data-motion="off"] .ps-step,[data-motion="off"] .ps-greet,[data-motion="off"] .ps-blob,[data-motion="off"] .ps-bob{animation:none!important}

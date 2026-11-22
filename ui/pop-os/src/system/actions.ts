@@ -137,17 +137,25 @@ export interface SetupInput {
   name: string;
   lang: string;
   mail: string;
+  /** Apparence et fond choisis pendant la configuration (facultatifs : le serveur garde ses valeurs par défaut). */
+  dark?: boolean;
+  wall?: string;
 }
 
-/** Premier allumage : le serveur crée le code haché, le nom et l'adresse mail. */
-export async function submitSetup(input: SetupInput): Promise<UnlockResult> {
+/** Premier allumage : le serveur crée le code haché, le nom, l'adresse mail et les réglages. L'écran de bienvenue suit : `finishSetup` ouvre l'accueil. */
+export async function submitSetup(input: SetupInput): Promise<UnlockResult & { boot?: Boot }> {
   const res = await nuiApi.call<{ ok: boolean; err?: string; boot?: Boot }>('device:setup', input);
-  if (res.ok) {
-    const boot = res.boot;
-    os.set({ needSetup: false, screen: 'home', ...(boot ? bootPatch(boot) : { name: input.name }) });
-    return { ok: true };
-  }
-  return { ok: false, err: res.err };
+  return res.ok ? { ok: true, boot: res.boot } : { ok: false, err: res.err };
+}
+
+/** Fin de la configuration : l'accueil s'affiche avec les réglages enregistrés par le serveur. */
+export function finishSetup(boot: Boot | undefined, name: string): void {
+  os.set({ needSetup: false, screen: 'home', ...(boot ? bootPatch(boot) : { name }) });
+}
+
+/** Aperçu en direct pendant la configuration (clair/sombre, fond) : local seulement, le serveur reçoit le choix avec `device:setup`. */
+export function previewSetup(patch: Settings): void {
+  os.set({ settings: { ...os.get().settings, ...patch } });
 }
 
 export function openApp(id: string, origin?: { x: number; y: number }, data?: unknown): void {

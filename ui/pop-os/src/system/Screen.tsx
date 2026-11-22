@@ -5,7 +5,8 @@ import { getApp } from '../apps/registry';
 import { nuiApi } from '../nui/bridge';
 import { formatDate, formatTime, useGameDate } from './clock';
 import { closeApp, dismissBanner, homeBar, isOnlineApp, openApp, power, toggleOverlay } from './actions';
-import { CodeLayer, LockLayer, SetupLayer } from './Lock';
+import { CodeLayer, LockLayer } from './Lock';
+import { SetupLayer } from './setup/SetupLayer';
 import { HomeLayer, originOf } from './Home';
 import { useOS } from './store';
 
@@ -111,7 +112,8 @@ export function Screen({ shell }: { shell: boolean }) {
   // Centres, recherche et multitâche : chargés à la première ouverture, puis gardés montés (animation de sortie).
   const [overlaySeen, setOverlaySeen] = useState(false);
   if (overlay && !overlaySeen) setOverlaySeen(true);
-  const blurWall = s.screen === 'code' || s.screen === 'setup' || overlay;
+  // Le premier allumage couvre tout l'écran : pas de fond flouté dessous.
+  const blurWall = s.screen === 'code' || overlay;
   const home = s.screen === 'home';
   const appVisible = !!s.app;
   // Appareil photo : seul le viseur laisse passer l'image du jeu ; coque et barre d'état restent visibles, accueil et verrouillage cachés dessous.
