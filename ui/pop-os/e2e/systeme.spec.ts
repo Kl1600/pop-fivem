@@ -153,8 +153,9 @@ test.describe('Centres et multitâche', () => {
     await tab.waitCall('settings:save', (d) => (d as { air?: boolean }).air === true);
     await page.getByRole('button', { name: 'Concentration' }).click();
     await tab.waitCall('settings:save', (d) => (d as { focus?: boolean }).focus === true);
-    await page.getByRole('slider', { name: 'Luminosité' }).focus();
-    await page.keyboard.press('ArrowLeft');
+    const lum = page.getByRole('slider', { name: 'Luminosité' });
+    const box = (await lum.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.7); // curseur vertical : plus bas = plus sombre
     await tab.waitCall('settings:save', (d) => typeof (d as { bright?: number }).bright === 'number');
     await page.getByRole('button', { name: HOME_BAR }).click(); // ferme le centre
     await expect(page.getByRole('button', { name: 'Mode sombre' })).toHaveCount(0);
@@ -199,9 +200,13 @@ test.describe('Centres et multitâche', () => {
     await tab.openApp('Horloge');
     await tab.home();
     await page.getByRole('button', { name: HOME_BAR }).dblclick();
-    const sw = page.getByRole('button', { name: 'Calculette' });
-    await expect(sw.first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Horloge' }).first()).toBeVisible();
+    await expect(tab.screen.getByText('Calculette', { exact: true }).first()).toBeVisible();
+    await expect(tab.screen.getByText('Horloge', { exact: true }).first()).toBeVisible();
+    const cards = tab.screen.locator('button[style*="width: 360px"]');
+    await expect(cards).toHaveCount(2);
+    await cards.first().click(); // la plus récente : Horloge
+    await expect(tab.app).toBeVisible();
+    await expect(tab.app.getByRole('button', { name: 'Alarmes' })).toBeVisible();
   });
 });
 

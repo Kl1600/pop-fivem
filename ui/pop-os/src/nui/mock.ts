@@ -9,6 +9,11 @@ import type { Boot, OpenData } from './types';
 
 export const MOCK_CODE = '1234';
 
+// Réglages « enregistrés par le serveur » : `settings:save` les retient, un déverrouillage les rend (comme le vrai serveur).
+let saved: Record<string, unknown> = {};
+const wantsDark = (): boolean => typeof location !== 'undefined' && new URLSearchParams(location.search).get('dark') === '1';
+const bootNow = (): Boot => ({ ...MOCK_BOOT, settings: { ...MOCK_BOOT.settings, ...(wantsDark() ? { dark: true } : {}), ...saved } as Boot['settings'] });
+
 const MOCK_BOOT: Boot = {
   serial: 'PT-DEV0000001',
   name: 'POP Tab',
@@ -75,6 +80,7 @@ export function resetMock(): void {
   fails = 0;
   blockedUntil = 0;
   code = MOCK_CODE;
+  saved = {};
 }
 
 type Json = Record<string, unknown>;
@@ -97,7 +103,7 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       if (now < blockedUntil) return { ok: false, err: 'err_code_blocked', wait: Math.ceil((blockedUntil - now) / 1000) };
       if (d.data === code) {
         fails = 0;
-        return { ok: true, boot: MOCK_BOOT };
+        return { ok: true, boot: bootNow() };
       }
       fails += 1;
       if (fails >= 5) {
@@ -114,8 +120,10 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       if (inner.old !== code) return { ok: false, err: 'err_code_wrong' };
       code = String(inner.new);
       return { ok: true };
-    case 'device:lock':
     case 'settings:save':
+      saved = { ...saved, ...inner };
+      return { ok: true };
+    case 'device:lock':
     case 'app:focus':
       return { ok: true };
     case 'settings:rename':
