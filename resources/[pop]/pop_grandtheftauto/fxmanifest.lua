@@ -8,7 +8,6 @@ version '1.1.0'
 description 'Casse de la concession Benefactor (Vinewood ouest) : vol de sportives en équipe'
 
 dependencies {
-    'pma_voice_challenge',
     'clm_ProgressBar',
     'chHyperSound',
     'ultra-voltlab',

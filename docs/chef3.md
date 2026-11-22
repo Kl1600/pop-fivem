@@ -50,6 +50,7 @@ Restructuration selon `docs/gabarit-pop.md` (config.lua, locales/fr.lua, bridge/
 - pop_grandtheftauto : `/startheist` bloquée en mode production (commande client « restricted ») → `RegisterCommand(..., false)`, le serveur vérifie déjà l'ACE (`command.startheist` ou `pop.admin`). Suggestion de chat ajoutée.
 - pop_crew : avertissement ox_target « Replacing existing target option 'pop_crew_recruit' » → option retirée (`removeGlobalPlayer`) avant d'être remise, et retirée à l'arrêt de la ressource.
 - pop_grandtheftauto : au départ de la mission (Svetlana ou `/startheist`), point jaune « Showroom Benefactor » + itinéraire GPS ; retiré à 100 m du showroom, à la fin ou à l'arrêt.
+- pop_grandtheftauto : test vocal « Inventez un mensonge » (pma_voice_challenge) retiré à la demande du client ; Thornton accepte directement après le plan caméra. pma_voice_challenge n'est plus une dépendance de la mission (ressource laissée dans le dépôt, plus utilisée).
 
 ### Reste
 - Tester la mission en jeu avec le client (après la restructuration).

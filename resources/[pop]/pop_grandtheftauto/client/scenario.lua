@@ -3,7 +3,6 @@ local npcBlip = nil
 local missionTerminee = false
 local challengeStarted = false
 local challengeDone = false
-local challengeFails = 0
 
 local pedModel = GetHashKey('ig_thornton')
 local startPos = Config.Positions.ThorntonStart
@@ -117,7 +116,6 @@ end)
 
 AddEventHandler('startheist', function(ownerServerId, heistId)
     challengeStarted, challengeDone, missionTerminee = false, false, false
-    challengeFails = 0
     if IsCoopActive() and not IsOwner() then
         return
     end
@@ -202,30 +200,9 @@ Citizen.CreateThread(function()
                 SetCamActive(cam, true)
                 RenderScriptCams(true, true, 1000, true, true)
 
-                -- --- VOICE CHALLENGE (parlez au micro pour convaincre Thornton) --- --
-                local finishedChallenge = false
-                local successChallenge = false
-
-                if GetResourceState('pma_voice_challenge') == 'started' then
-                    local challengeListener = AddEventHandler('pma_voice_challenge:finished', function(res)
-                        successChallenge = res == true
-                        finishedChallenge = true
-                    end)
-                    exports['pma_voice_challenge']:StartChallenge()
-                    ShowSubtitle(L('voice_hint'), 6000)
-
-                    local limit = GetGameTimer() + 20000
-                    while not finishedChallenge and GetGameTimer() < limit do Wait(100) end
-                    RemoveEventHandler(challengeListener)
-
-                    -- Sans micro, on ne bloque pas le joueur : au 3e essai, Thornton se laisse convaincre
-                    if not successChallenge then
-                        challengeFails = challengeFails + 1
-                        if challengeFails >= 3 then successChallenge = true end
-                    end
-                else
-                    successChallenge = true -- ressource absente : on ne bloque pas la mission
-                end
+                -- (Test vocal « mensonge » retiré à la demande du client : Thornton accepte directement.)
+                Wait(1500)
+                local successChallenge = true
 
                 if successChallenge then
                     challengeDone = true
@@ -320,7 +297,6 @@ end)
 -- ============================================================
 AddEventHandler('mission:local:reset', function()
     challengeStarted, challengeDone, missionTerminee = false, false, false
-    challengeFails = 0
     if npcBlip and DoesBlipExist(npcBlip) then RemoveBlip(npcBlip) end
     npcBlip = nil
     npcHandle = nil

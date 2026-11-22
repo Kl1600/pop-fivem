@@ -26,7 +26,6 @@ Locales['fr'] = {
     blip_panel            = "Panneau électrique",
     blip_thornton         = "Thornton Duggan",
     thornton_1            = "M.Duggan : Qu'est-ce que vous faites là, je ne vous attendais pas avant au moins 20min !",
-    voice_hint            = "~y~Parlez~w~ (push-to-talk) pour convaincre M. Duggan.",
     thornton_2            = "M.Duggan : Bon et bien puisque vous êtes déjà là...",
     thornton_3a           = "M.Duggan : Elle a des voyants moteurs, c'est surement rien",
     thornton_3b           = "mais on merde pas avec une voiture à ce prix là.",
