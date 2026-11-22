@@ -465,6 +465,13 @@ do
     clock = clock + 1
     s, err = Tablet.Guard(1, nil, { name = 'clockList' })
     check('après le code : un appel d\'appli n\'est plus err_locked', s ~= nil and err == nil, err)
+    -- Verrouillage explicite (bouton d'allumage, Réglages) puis mauvais code : refusé, session verrouillée
+    check('lock : accepté', handlers['pop_tablet:device:lock'](1).ok)
+    clock = clock + 1
+    local afterLock = unlock(1, '0000')
+    check('lock puis mauvais code : err_code_wrong, pas déverrouillé', afterLock.ok ~= true and afterLock.err == 'err_code_wrong', afterLock.err)
+    s, err = Tablet.Guard(1, nil, {})
+    check('lock puis mauvais code : appel d\'appli toujours err_locked', s == nil and err == 'err_locked', err)
     handlers['pop_tablet:device:close'](1)
 end
 

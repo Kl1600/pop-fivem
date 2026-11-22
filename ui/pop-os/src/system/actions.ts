@@ -72,15 +72,22 @@ export function toggleOverlay(which: 'cc' | 'nc' | 'search' | 'sw'): void {
   os.set({ cc: false, nc: false, search: false, sw: false, [which]: !cur });
 }
 
+/** Verrouille côté serveur d'abord ; l'écran verrouillé ne s'affiche qu'après sa réponse (sinon `D.Unlock` accepterait tout code). */
+export async function lockDevice(off = false): Promise<boolean> {
+  const s = os.get();
+  if (!s.needSetup) {
+    const res = await nuiApi.call('device:lock');
+    if (!res.ok && res.err !== 'err_locked') return false; // session encore ouverte côté serveur : on ne montre pas le code
+  }
+  os.set({ ...(off ? { on: false } : {}), screen: s.needSetup ? 'setup' : 'lock', codeError: null, app: null, appData: null, cc: false, nc: false, search: false, sw: false, edit: false, banner: null });
+  return true;
+}
+
 /** Bouton du haut : éteint l'écran (et verrouille), ou rallume sur l'écran verrouillé. */
 export function power(): void {
   const s = os.get();
-  if (s.on) {
-    void nuiApi.call('device:lock');
-    os.set({ on: false, screen: s.needSetup ? 'setup' : 'lock', app: null, cc: false, nc: false, search: false, sw: false, edit: false, banner: null });
-  } else {
-    os.set({ on: true, screen: s.needSetup ? 'setup' : 'lock' });
-  }
+  if (s.on) void lockDevice(true);
+  else os.set({ on: true, screen: s.needSetup ? 'setup' : 'lock' });
 }
 
 export function volume(delta: number): void {
@@ -340,6 +347,13 @@ export function handleMessage(action: string, data: unknown): void {
     default:
       return;
   }
+}
+
+// Réglages (« Verrouiller maintenant ») : le serveur a déjà verrouillé, l'écran verrouillé suit.
+if (typeof window !== 'undefined') {
+  window.addEventListener('pop-device-locked', () => {
+    if (os.get().open) os.set({ screen: 'lock', codeError: null, app: null, appData: null, cc: false, nc: false, search: false, sw: false, edit: false, banner: null });
+  });
 }
 
 // Une appli (Messages, Contacts) demande à ouvrir une autre appli (Téléphone) : seulement tablette ouverte et écran d'accueil.

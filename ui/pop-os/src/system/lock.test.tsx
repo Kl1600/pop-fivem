@@ -1,8 +1,8 @@
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockOpen, resetMock } from '../nui/mock';
 import { nuiApi } from '../nui/bridge';
-import { closeTablet, handleMessage, openApp, showCode, submitCode } from './actions';
+import { closeTablet, handleMessage, openApp, power, showCode, submitCode } from './actions';
 import { os } from './store';
 import { Host } from './Tablet';
 
@@ -63,6 +63,38 @@ describe('verrouillage : l’interface suit le serveur', () => {
     expect(r.err).toBe('err_locked');
     expect(os.get().screen).toBe('code');
     expect(os.get().app).toBeNull();
+  });
+});
+
+describe("verrouillage : le serveur d'abord", () => {
+  it("bouton d'allumage : device:lock appelé, écran verrouillé seulement après la réponse", async () => {
+    let release: (v: Reply) => void = () => {};
+    const seen: string[] = [];
+    w.GetParentResourceName = () => 'pop_tablet';
+    vi.stubGlobal('fetch', vi.fn(async (_u: string, init?: { body?: string }) => {
+      const body = JSON.parse(init?.body ?? '{}') as { name?: string };
+      seen.push(body.name ?? '');
+      if (body.name !== 'device:lock') return { json: async () => ({ ok: true }) };
+      return { json: () => new Promise<Reply>((r) => { release = r; }) };
+    }));
+    render(<Host />);
+    act(() => handleMessage('open', { ...mockOpen({ needSetup: false }), locked: false }));
+    expect(os.get().screen).toBe('home');
+    act(() => power());
+    expect(seen).toContain('device:lock');
+    expect(os.get().screen).toBe('home');
+    await act(async () => { await Promise.resolve(); });
+    expect(os.get().screen).toBe('home');
+    await act(async () => { release({ ok: true }); });
+    await waitFor(() => expect(os.get().screen).toBe('lock'));
+    expect(os.get().on).toBe(false);
+  });
+  it("si le serveur ne verrouille pas, l'écran de code n'est pas affiché", async () => {
+    inGame(() => ({ ok: false, err: 'err_timeout' }));
+    render(<Host />);
+    act(() => handleMessage('open', { ...mockOpen({ needSetup: false }), locked: false }));
+    await act(async () => { power(); });
+    expect(os.get().screen).toBe('home');
   });
 });
 

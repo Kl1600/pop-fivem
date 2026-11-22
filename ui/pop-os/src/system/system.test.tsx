@@ -119,7 +119,8 @@ describe('ui-07 boutons matériels et barre d’accueil', () => {
     fireEvent.click(screen.getByRole('button', { name: "Barre d'accueil" }));
     expect(os.get().screen).toBe('code');
     fireEvent.click(screen.getByRole('button', { name: 'Bouton du haut (verrouiller)' }));
-    expect(os.get().on).toBe(false);
+    // L'écran verrouillé n'apparaît qu'après la réponse du serveur à device:lock (asynchrone).
+    await waitFor(() => expect(os.get().on).toBe(false));
     expect(os.get().screen).toBe('lock');
     expect(document.querySelector('[data-off="1"]')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Bouton du haut (verrouiller)' }));
