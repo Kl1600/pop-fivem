@@ -53,5 +53,5 @@ button{cursor:pointer}
 /* Accessibilité : texte en gras (Réglages). */
 .pop[data-bold='on'] { font-weight: 600; }
 
-/* Appareil photo : l'image du jeu doit traverser l'écran de la tablette (natives CellCam ou caméra scriptée). */
-html[data-cam="live"], html[data-cam="live"] body, html[data-cam="live"] [data-screen="1"], html[data-cam="live"] [data-screen="1"] > div[aria-hidden="true"], html[data-cam="live"] [data-layer="app"] { background: transparent !important; }
+/* Appareil photo : seul le viseur (évidé par l'appli) laisse passer l'image du jeu ; la coque reste peinte, l'écran et ses calques non. */
+html[data-cam="live"], html[data-cam="live"] body, html[data-cam="live"] [data-screen="1"], html[data-cam="live"] [data-screen="1"] > div[aria-hidden="true"]:not([data-bright]), html[data-cam="live"] [data-layer="app"] { background: transparent !important; }

@@ -65,6 +65,7 @@ return function(check, section)
     local LOOPS = {
         ['client/anim.lua']      = { ['while'] = 1, wait = 1, thread = 0, why = 'attente du chargement d\'un asset, bornée à 100 essais x 10 ms, seulement à l\'ouverture' },
         ['client/map.lua']       = { ['while'] = 1, wait = 2, thread = 1, why = 'attente de fermeture du menu pause, bornée par PAUSE_MAX_MS, seulement sur demande de l\'utilisateur' },
+        ['client/camera.lua']    = { ['while'] = 1, wait = 1, thread = 1, why = 'orientation libre (Alt) : un seul thread, vivant seulement pendant ce mode, arrêté par Alt, Cam.Stop ou la fermeture' },
         ['client/main.lua']      = { thread = 1, why = 'CreateThread(C.Anim.Start) : démarrage ponctuel de l\'animation (la boucle bornée est dans anim.lua)' },
         ['server/main.lua']      = { thread = 1, why = 'repli de démarrage sans MySQL.ready : une fois, sans boucle' },
         ['server/hash.lua']      = { ['while'] = 1, why = 'génération des 64 premiers nombres premiers, bornée, au chargement' },
@@ -85,6 +86,7 @@ return function(check, section)
     -- Les boucles autorisées portent leur borne dans le texte.
     check('anim.lua : borne tries < 100', read('client/anim.lua'):find('tries < 100', 1, true) ~= nil)
     check('map.lua : borne PAUSE_MAX_MS', read('client/map.lua'):find('waited < PAUSE_MAX_MS', 1, true) ~= nil)
+    check('camera.lua : la boucle s’arrête avec la caméra ou la fin du mode', read('client/camera.lua'):find('while active == a and a.looking do', 1, true) ~= nil)
     check('hash.lua : borne #primes < 64', read('server/hash.lua'):find('#primes < 64', 1, true) ~= nil)
     check('files.lua : gardes > 50', count(read('server/apps/files.lua'), 'guard > 50') == 2)
 

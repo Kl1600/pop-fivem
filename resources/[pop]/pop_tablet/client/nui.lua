@@ -65,7 +65,7 @@ RegisterNUICallback('tablet:locale', function(data, cb)
     cb({ ok = true, locale = texts, rtl = texts._rtl })
 end)
 
--- Appareil photo : start | stop | selfie | zoom | look. La capture passe par le relais `photos:capture` (serveur).
+-- Appareil photo : start | stop | selfie | zoom | look | look_mode. La capture passe par le relais `photos:capture` (serveur).
 RegisterNUICallback('tablet:camera', function(data, cb)
     if not C.IsOpen() then return cb({ ok = false, err = 'err_session' }) end
     if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
@@ -75,6 +75,7 @@ RegisterNUICallback('tablet:camera', function(data, cb)
     if action == 'selfie' then return cb({ ok = C.Camera.Selfie(data.on) }) end
     if action == 'zoom' then return cb({ ok = C.Camera.Zoom(data.level) }) end
     if action == 'look' then return cb({ ok = C.Camera.Look(data.dx, data.dy) }) end
+    if action == 'look_mode' then return cb({ ok = C.Camera.LookMode(data.on == true) }) end
     cb({ ok = false, err = 'err_payload' })
 end)
 

@@ -69,9 +69,10 @@ Config.Mail = { Domain = 'pop.ls' }
 -- Photos : 'database' (défaut, aucun secret). 'remote' n'est PAS disponible (renvoie err_unavailable), voir README.
 Config.Photos = { Mode = 'database', Url = '', FormField = 'file', UrlPath = 'url', Max = 200 }
 
--- Appareil photo : 'native' (CreateMobilePhone + CellCamActivate) ou 'scripted' (caméra scriptée CreateCam à la position de la
--- tablette). Le choix se fait au test en jeu ; Zooms = champs de vision de la caméra scriptée pour 0,5x, 1x, 2x.
-Config.Camera = { mode = 'native', Fov = { 75.0, 50.0, 25.0 } }
+-- Appareil photo : 'scripted' (défaut : caméra CreateCam à hauteur des yeux, aucun téléphone en main) ou 'native'
+-- (CreateMobilePhone + CellCamActivate : un téléphone apparaît en main). Fov = champs de vision pour 0,5x, 1x, 2x ;
+-- Selfie = position relative à la tête (droite, avant, haut), inclinaison et champ de vision ; Sens = vitesse de l'orientation libre (Alt).
+Config.Camera = { mode = 'scripted', Fov = { 75.0, 50.0, 25.0 }, Selfie = { Offset = { 0.05, 0.55, 0.0 }, Pitch = 10.0, Fov = 60.0 }, Sens = 8.0 }
 
 -- Partage de proximité (mètres).
 Config.Share = { Distance = 3.0 }

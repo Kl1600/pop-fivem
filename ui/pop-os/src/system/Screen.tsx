@@ -114,11 +114,11 @@ export function Screen({ shell }: { shell: boolean }) {
   const blurWall = s.screen === 'code' || s.screen === 'setup' || overlay;
   const home = s.screen === 'home';
   const appVisible = !!s.app;
-  // Appareil photo : l'image du jeu traverse l'écran, l'accueil et les écrans de verrouillage ne doivent pas rester dessous.
+  // Appareil photo : seul le viseur laisse passer l'image du jeu ; coque et barre d'état restent visibles, accueil et verrouillage cachés dessous.
   const camera = s.app === 'camera';
   const wallPhoto = useWallPhoto(s.st.wall, s.screen === 'lock' || s.screen === 'code' || s.screen === 'setup');
   const wall = wallPhoto ? `url("${wallPhoto}") center / cover` : wallpaper(s.st.wall, dark);
-  const inLightApp = appVisible && !dark && !overlay;
+  const inLightApp = appVisible && !camera && !dark && !overlay;
   const bright = Math.max(15, s.st.bright ?? 100);
   const appName = s.app ? t(getApp(s.app)?.nameKey ?? `app.${s.app}`) : '';
   const hot = s.on && s.screen !== 'code' && s.screen !== 'setup';
@@ -166,7 +166,7 @@ export function Screen({ shell }: { shell: boolean }) {
         </button>
       )}
 
-      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: '#000', pointerEvents: 'none', zIndex: 20, opacity: (100 - bright) * 0.006 }} />
+      <div aria-hidden="true" data-bright="1" style={{ position: 'absolute', inset: 0, background: '#000', pointerEvents: 'none', zIndex: 20, opacity: (100 - bright) * 0.006 }} />
       <div className="fade" onClick={power} data-off={s.on ? '0' : '1'} style={{ position: 'absolute', inset: 0, background: '#000', zIndex: 21, opacity: s.on ? 0 : 1, pointerEvents: s.on ? 'none' : 'auto' }} />
     </div>
   );

@@ -1505,6 +1505,7 @@ do
     local last = focus[#focus]
     check('carte du menu pause : ouverte, focus rendu puis repris, point posé relu', got.ok and last[1] == true and lastMsg().action == 'tablet:waypoint')
     -- Appareil photo : natives CellCam, repli scripté, fermeture sans fuite
+    Config.Camera.mode = 'native' -- le défaut est 'scripted' (pas de téléphone en main) : ce bloc teste le mode natif en option
     camCalls = {}
     nuiCb['tablet:camera']({ action = 'start' }, function(r) got = r end)
     check('caméra native : CreateMobilePhone puis CellCamActivate, pas de zoom', got.ok and got.mode == 'native' and got.zoom == false
@@ -1527,6 +1528,92 @@ do
     nuiCb['tablet:camera']({ action = 'start' }, function(r) got = r end)
     check('caméra : tablette fermée refusée', got.ok == false and got.err == 'err_session')
     cmds.pop_tablet_open()
+    check('caméra : le défaut de la configuration est le mode scripté (aucun téléphone en main)', (io.open('config.lua'):read('a')):find("Config.Camera = { mode = 'scripted'", 1, true) ~= nil)
+
+    -- Orientation libre à la souris (Alt, contrôle 19) : focus sans curseur + entrées gardées, un thread, sortie propre
+    do
+        local ctl, co, keep = { pressed = false, just = false, disabled = {}, frames = 0 }, nil, {}
+        local realThread, realWait = CreateThread, Wait
+        def('SetNuiFocusKeepInput', function(v) keep[#keep + 1] = v end)
+        def('DisableControlAction', function(_, c) ctl.disabled[c] = true end)
+        def('IsDisabledControlPressed', function() return ctl.pressed end)
+        def('IsDisabledControlJustPressed', function(_, c) return c == 19 and ctl.just end)
+        def('GetDisabledControlNormal', function(_, c) return c == 1 and 0.5 or 0.0 end)
+        def('CreateThread', function(fn) co = coroutine.create(fn) assert(coroutine.resume(co)) end)
+        def('Wait', function() ctl.frames = ctl.frames + 1 coroutine.yield() end)
+        local function frame() assert(coroutine.resume(co)) end
+        local function lastFocus() return focus[#focus] end
+        local function startScripted()
+            Config.Camera.mode = 'scripted'
+            nuiCb['tablet:camera']({ action = 'start' }, function() end)
+            camCalls = {}
+            ctl.disabled, ctl.pressed, ctl.just, ctl.frames, keep, co = {}, false, false, 0, {}, nil
+            nuiCb['tablet:camera']({ action = 'look_mode', on = true }, function(r) got = r end)
+        end
+
+        nuiCb['tablet:camera']({ action = 'look_mode', on = true }, function(r) got = r end)
+        check('orientation libre : refusée sans caméra', got.ok == false and co == nil)
+        startScripted()
+        check('orientation libre : focus sans curseur + entrées du jeu gardées', got.ok and lastFocus()[1] == true and lastFocus()[2] == false
+            and keep[#keep] == true and C.Camera.IsLooking() and co ~= nil)
+        check('orientation libre : un seul thread, endormi entre deux images', coroutine.status(co) == 'suspended' and ctl.frames == 1)
+        check('orientation libre : attaque, visée, armes, pause, déplacements et Alt coupés',
+            ctl.disabled[24] and ctl.disabled[25] and ctl.disabled[37] and ctl.disabled[199] and ctl.disabled[200] and ctl.disabled[30]
+            and ctl.disabled[35] and ctl.disabled[21] and ctl.disabled[22] and ctl.disabled[44] and ctl.disabled[19])
+        check('orientation libre : la caméra scriptée suit la souris', camCalls[#camCalls] == 'SetCamRot' or camCalls[#camCalls - 1] == 'SetCamCoord')
+        local before = #camCalls
+        frame()
+        check('orientation libre : une image = un recalage de la caméra', #camCalls > before and ctl.frames == 2)
+        nuiCb['tablet:camera']({ action = 'look_mode', on = true }, function(r) got = r end)
+        check('orientation libre : second départ sans second thread', got.ok and ctl.frames == 2)
+        ctl.just = true
+        frame()
+        check('sortie par Alt (contrôle 19) : focus rendu, entrées rendues, interface prévenue',
+            lastFocus()[1] == true and lastFocus()[2] == true and keep[#keep] == false and not C.Camera.IsLooking()
+            and lastMsg().action == 'tablet:cameraLook' and lastMsg().data.on == false and coroutine.status(co) == 'dead')
+        -- l'Alt qui a lancé le mode ne le coupe pas aussitôt : il doit d'abord être relâché
+        ctl.just, ctl.pressed = true, true
+        nuiCb['tablet:camera']({ action = 'look_mode', on = true }, function() end)
+        frame()
+        check('orientation libre : Alt encore enfoncé au départ = pas de sortie', C.Camera.IsLooking())
+        ctl.pressed = false
+        frame()
+        frame()
+        check('orientation libre : Alt relâché puis pressé = sortie', not C.Camera.IsLooking())
+        -- arrêt de la caméra pendant le mode : tout est rendu
+        ctl.just = false
+        nuiCb['tablet:camera']({ action = 'look_mode', on = true }, function() end)
+        local th = co
+        nuiCb['tablet:camera']({ action = 'stop' }, function() end)
+        check('Cam.Stop pendant l’orientation libre : entrées et focus rendus', keep[#keep] == false and lastFocus()[1] == true and lastFocus()[2] == true
+            and not C.Camera.Active() and not C.Camera.IsLooking())
+        frame()
+        check('Cam.Stop : le thread se termine seul', coroutine.status(th) == 'dead')
+        -- fermeture de la tablette pendant le mode
+        nuiCb['tablet:camera']({ action = 'start' }, function() end)
+        nuiCb['tablet:camera']({ action = 'look_mode', on = true }, function() end)
+        C.Close('dead')
+        check('fermeture pendant l’orientation libre : KeepInput coupé, focus final (false, false)', keep[#keep] == false
+            and lastFocus()[1] == false and lastFocus()[2] == false and not C.Camera.Active())
+        -- mode natif : orientation libre acceptée, aucune rotation scriptée
+        def('CreateThread', realThread)
+        def('Wait', realWait)
+        cmds.pop_tablet_open()
+        Config.Camera.mode = 'native'
+        nuiCb['tablet:camera']({ action = 'start' }, function() end)
+        def('CreateThread', function(fn) co = coroutine.create(fn) assert(coroutine.resume(co)) end)
+        def('Wait', function() coroutine.yield() end)
+        camCalls = {}
+        nuiCb['tablet:camera']({ action = 'look_mode', on = true }, function(r) got = r end)
+        check('orientation libre en mode natif : focus sans curseur, la caméra du jeu suit déjà la souris', got.ok and lastFocus()[2] == false
+            and #camCalls == 0)
+        nuiCb['tablet:camera']({ action = 'look_mode', on = false }, function(r) got = r end)
+        check('orientation libre : arrêt demandé par l’interface', got.ok and keep[#keep] == false and lastFocus()[2] == true and not C.Camera.IsLooking())
+        nuiCb['tablet:camera']({ action = 'stop' }, function() end)
+        def('CreateThread', realThread)
+        def('Wait', realWait)
+        Config.Camera.mode = 'scripted'
+    end
     removedHandlers = 0
 
     -- Horloge et resynchronisation
@@ -1542,7 +1629,7 @@ do
     clientTimers[2].fn()
     check('resync coupée : plus aucun message ni minuterie', #nuiMsgs == n)
 
-    -- Fermeture par l'interface
+    -- Fermeture par l’interface
     reset()
     nuiCb['tablet:close']({}, function() end)
     check('fermeture : focus rendu, objet supprimé, serveur prévenu',

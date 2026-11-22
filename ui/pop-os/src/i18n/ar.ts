@@ -224,6 +224,8 @@ const ar: Record<string, string> = {
   "cam.sec": "%s ث",
   "cam.number": "صورة رقم %s",
   "cam.mode": "الوضع",
+  "cam.look_start": "Alt: توجيه",
+  "cam.look_end": "Alt: إنهاء",
   "pho.title": "الصور",
   "pho.lib": "المكتبة",
   "pho.albums": "الألبومات",

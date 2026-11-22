@@ -224,6 +224,8 @@ const es: Record<string, string> = {
   "cam.sec": "%s s",
   "cam.number": "Foto n.º %s",
   "cam.mode": "Modo",
+  "cam.look_start": "Alt: orientar",
+  "cam.look_end": "Alt: terminar",
   "pho.title": "Fotos",
   "pho.lib": "Fototeca",
   "pho.albums": "Álbumes",

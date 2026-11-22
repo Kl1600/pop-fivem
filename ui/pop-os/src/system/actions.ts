@@ -344,6 +344,10 @@ export function handleMessage(action: string, data: unknown): void {
     case 'weather':
       if (os.get().open && data) os.set({ weather: data as Weather });
       return;
+    case 'cameraLook':
+      // Orientation libre de l'appareil photo terminée côté jeu (touche Alt) : l'appli met son repère à jour.
+      if (os.get().open) window.dispatchEvent(new CustomEvent('pop-camera-look', { detail: data }));
+      return;
     default:
       return;
   }

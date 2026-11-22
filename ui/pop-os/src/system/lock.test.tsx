@@ -99,7 +99,7 @@ describe("verrouillage : le serveur d'abord", () => {
 });
 
 describe('Appareil photo : l’accueil ne reste pas derrière l’image du jeu', () => {
-  it('appli caméra ouverte : accueil et écrans de verrouillage cachés, coque transparente', () => {
+  it('appli caméra ouverte : accueil et verrouillage cachés, coque et barre d’état restées visibles, écran évidé', async () => {
     render(<Host />);
     act(() => handleMessage('open', { ...mockOpen({ needSetup: false, shell: true }), locked: false }));
     const home = () => document.querySelector('[data-layer="home"]') as HTMLElement;
@@ -107,9 +107,37 @@ describe('Appareil photo : l’accueil ne reste pas derrière l’image du jeu',
     act(() => openApp('camera'));
     expect(home().style.visibility).toBe('hidden');
     expect(document.querySelector('[data-camera-hide]')?.getAttribute('style')).toContain('visibility: hidden');
-    expect(document.querySelector('[data-shell]')?.getAttribute('data-clear')).toBe('1');
+    const shell = document.querySelector('[data-shell]') as HTMLElement;
+    expect(shell.getAttribute('data-clear')).toBe('1');
+    expect(shell.style.visibility).not.toBe('hidden');
+    expect(Array.from(shell.querySelectorAll<HTMLElement>('div')).filter((d) => (d.getAttribute('style') ?? '').includes('transparent')).length).toBeGreaterThanOrEqual(2);
+    await waitFor(() => expect(document.querySelector('[data-camera-controls]')).not.toBeNull());
+    expect(document.querySelector('[data-viewfinder]')).not.toBeNull();
+    expect(document.body.textContent).toMatch(/\d+\s?%/);
     act(() => os.set({ app: null }));
     expect(home().style.visibility).toBe('visible');
     expect(document.querySelector('[data-shell]')?.getAttribute('data-clear')).toBeNull();
+  });
+});
+
+describe('Appareil photo : orientation libre (Alt)', () => {
+  it('Alt envoie look_mode, le repère change, et le jeu peut y mettre fin', async () => {
+    const posts: Array<{ name?: string; action?: string; on?: boolean }> = [];
+    w.GetParentResourceName = () => 'pop_tablet';
+    vi.stubGlobal('fetch', vi.fn(async (_u: string, init?: { body?: string }) => {
+      const body = JSON.parse(init?.body ?? '{}') as { action?: string; on?: boolean };
+      posts.push({ name: _u.split('/').pop(), action: body.action, on: body.on });
+      return { json: async () => ({ ok: true }) };
+    }));
+    render(<Host />);
+    act(() => handleMessage('open', { ...mockOpen({ needSetup: false }), locked: false }));
+    act(() => openApp('camera'));
+    await waitFor(() => expect(document.querySelector('[data-look-hint]')).not.toBeNull());
+    expect(document.querySelector('[data-look-hint]')?.textContent).toBe('Alt : orienter');
+    await act(async () => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Alt' })); });
+    expect(posts.some((p) => p.action === 'look_mode' && p.on === true)).toBe(true);
+    await waitFor(() => expect(document.querySelector('[data-look-hint]')?.textContent).toBe('Alt : terminer'));
+    act(() => handleMessage('cameraLook', { on: false }));
+    expect(document.querySelector('[data-look-hint]')?.textContent).toBe('Alt : orienter');
   });
 });

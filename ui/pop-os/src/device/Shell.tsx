@@ -41,7 +41,7 @@ interface ShellProps {
   onPower: () => void;
   onVolUp: () => void;
   onVolDown: () => void;
-  /** Appareil photo : coque transparente, l'image du jeu traverse l'écran. */
+  /** Appareil photo : la coque reste visible, mais l'écran est évidé (transparent) pour laisser passer l'image du jeu. */
   clear?: boolean;
   children: ReactNode;
 }
@@ -62,8 +62,8 @@ export function Shell({ finish = 'Noir sidéral', powerLabel, volUpLabel, volDow
       {hw('pw', powerLabel, onPower, { left: 230, top: 57, width: 96, height: 9, borderRadius: '4px 4px 0 0' })}
       {hw('vu', volUpLabel, onVolUp, { left: 1459, top: 190, width: 9, height: 70, borderRadius: '0 4px 4px 0' })}
       {hw('vd', volDownLabel, onVolDown, { left: 1459, top: 272, width: 9, height: 70, borderRadius: '0 4px 4px 0' })}
-      <div style={{ position: 'absolute', left: 60, top: 64, width: 1400, height: 1071, padding: 6, borderRadius: 56, background: clear ? 'transparent' : fin.body, boxShadow: clear ? 'none' : `0 40px 80px rgba(0,0,0,.35), inset 0 0 0 1px ${fin.edge}` }}>
-        <div style={{ position: 'relative', width: '100%', height: '100%', padding: 20, borderRadius: 50, background: clear ? 'transparent' : '#050506' }}>
+      <div style={{ position: 'absolute', left: 60, top: 64, width: 1400, height: 1071, padding: 6, borderRadius: 56, background: clear ? 'transparent' : fin.body, boxShadow: clear ? `0 40px 80px rgba(0,0,0,.35), inset 0 0 0 1px ${fin.edge}, inset 0 0 0 6px ${fin.body}` : `0 40px 80px rgba(0,0,0,.35), inset 0 0 0 1px ${fin.edge}` }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', padding: 20, borderRadius: 50, background: clear ? 'transparent' : '#050506', boxShadow: clear ? 'inset 0 0 0 20px #050506' : 'none' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 6, left: '50%', marginLeft: -5, width: 10, height: 10, borderRadius: '50%', background: '#10121a', boxShadow: 'inset 0 0 0 2px #1b1e2c' }} />
           {children}
         </div>
