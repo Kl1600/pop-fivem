@@ -1,8 +1,8 @@
-import { createOptions } from "./createOptions.js";
+import { createOptions, beginMenu, endMenu } from "./createOptions.js";
 
 const optionsWrapper = document.getElementById("options-wrapper");
 const body = document.body;
-const eye = document.getElementById("eyeSvg");
+const eye = document.getElementById("eye");
 
 let isTargetActive = false;
 let isChecklistActive = false;
@@ -51,6 +51,7 @@ window.addEventListener("message", (event) => {
 
     case "setTarget": {
       eye.classList.add("eye-hover");
+      beginMenu();
 
       if (event.data.options) {
         for (const type in event.data.options) {
@@ -67,6 +68,7 @@ window.addEventListener("message", (event) => {
           });
         }
       }
+      endMenu();
       break;
     }
 
