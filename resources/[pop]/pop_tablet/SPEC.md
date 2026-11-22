@@ -456,3 +456,15 @@ Note d'environnement relevée : sur ce poste `luac5.4` n'est pas dans le PATH (s
 10. **Boutique** : pas d'applis payantes en V1.
 11. `SetNuiFocus` absente des docs locales (utilisée par le bridge).
 12. `luac5.4` absent du PATH du poste.
+
+## Corrections de sécurité (relecture, décisions du chef)
+
+- **Mail en Mode Avion / Wi-Fi coupé (décision du chef)** : la lecture des mails déjà reçus reste permise (`mail:folders`, `list`, `get`, `move`, `flag`, `delete`, brouillons) ; l'envoi (`mail:send` hors brouillon) est refusé avec `err_offline`. L'appli Mail n'est donc plus remplacée par l'écran « Pas de connexion ». Les autres applis en ligne (Messages, Téléphone, Navigateur, Boutique) restent coupées.
+- **Boîte mail** : quota par expéditeur dans la Réception d'un destinataire (`Tablet.MailBox.perSender`, 30) ; boîte pleine (300) : le plus ancien mail reçu sans drapeau est retiré, l'envoi n'échoue plus. Les `SendMail` des scripts passent toujours.
+- **Jeton NUI** : tiré à l'ouverture côté client, remis à la page principale seule (`tablet:open`), exigé sur chaque appel NUI (sauf `tablet:ready` et `tablet:locale`). Les cadres (applis API, Navigateur) ne le reçoivent jamais.
+- **Cadres des applis API** : `sandbox="allow-scripts"` donne une origine opaque, donc `postMessage` ne peut viser que `'*'` ; la protection est `e.source` + `e.origin === 'null'` + refus de relayer si l'URL du cadre a changé ou s'il a été rechargé.
+- **CSP** (`ui/pop-os/index.html`) : scripts locaux, images `self`/`data:`/`blob:`, cadres `nui:` et `https:` (les hôtes autorisés dépendent de la config serveur, revérifiés côté serveur). Non testée en jeu.
+- **Code** : budget global de hachages (`Config.Security.HashBudgetPerSec`) ; aucun hachage sur session déverrouillée ; limites de débit vidées seulement au départ du joueur.
+- **Messages** : « quitter le groupe » (`messages:leave`) et « bloquer un numéro » (`messages:block`) ; un numéro bloqué reçoit `err_unreachable` (message, appel, message vocal).
+- **Photos, mode `remote` : non disponible.** `Config.Photos.Mode = 'remote'` renvoie `err_unavailable` ; seul `database` est codé (la capture distante enverrait l'image à un tiers avec des en-têtes d'identité du serveur et demanderait d'ouvrir la CSP aux images distantes). Les captures n'acceptent que `data:image/(webp|jpeg|png);base64`.
+- **Traduire** : https exigé dès que `pop_tablet_translate_key` est réglée.

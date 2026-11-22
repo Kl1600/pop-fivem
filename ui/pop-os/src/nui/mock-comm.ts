@@ -10,6 +10,7 @@ const now = () => Math.floor(Date.now() / 1000);
 let contacts: Contact[] = [];
 let threads: Record<string, Msg[]> = {};
 let pins: string[] = [];
+let blocked: string[] = [];
 let calls: Array<{ id: number; peer: string; dir: string; at: number; secs: number }> = [];
 let voicemails: Array<{ id: number; from: string; text: string; at: number }> = [];
 let names: Record<string, string> = {};
@@ -51,7 +52,7 @@ export const lastDialed = (): string | null => lastCall;
 export const commState = (): { contacts: Contact[]; threads: Record<string, Msg[]> } => ({ contacts, threads });
 
 export const COMM_CALLS = new Set([
-  'messages:threads', 'messages:thread', 'messages:send', 'messages:read', 'messages:pin', 'messages:group', 'messages:media',
+  'messages:threads', 'messages:thread', 'messages:send', 'messages:read', 'messages:pin', 'messages:group', 'messages:media', 'messages:block', 'messages:leave',
   'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history', 'phone:voicemail', 'phone:voicemails',
   'contacts:list', 'contacts:save', 'contacts:delete',
 ]);
@@ -68,7 +69,7 @@ export function commCall(name: string, raw: unknown): unknown {
         return { id, group: id.startsWith('g'), name: names[id], unread: list.filter((x) => !x.me && !x.read).length,
           last: l ? { kind: l.kind, body: l.kind === 'text' ? l.body : '', me: l.me, at: l.at, read: l.read } : undefined };
       });
-      return { ok: true, items, pins, me: ME };
+      return { ok: true, items, pins, blocked, me: ME };
     }
     case 'messages:thread': return { ok: true, items: threads[String(a.phone)] ?? [], more: false };
     case 'messages:send': {
@@ -92,6 +93,17 @@ export function commCall(name: string, raw: unknown): unknown {
       pins = pins.filter((x) => x !== k);
       if (a.on === true) pins = [...pins, k];
       return { ok: true, pins };
+    }
+    case 'messages:block': {
+      const k = String(a.phone);
+      blocked = blocked.filter((x) => x !== k);
+      if (a.on === true) blocked = [...blocked, k];
+      return { ok: true, blocked };
+    }
+    case 'messages:leave': {
+      const id = String(a.to);
+      delete threads[id];
+      return { ok: true };
     }
     case 'messages:group': {
       const id = `g${++seq}`;

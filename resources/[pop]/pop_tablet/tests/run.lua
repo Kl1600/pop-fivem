@@ -1333,6 +1333,20 @@ do
     local function triggered(name) for i = #triggers, 1, -1 do if triggers[i].name == name then return triggers[i] end end end
     local function lastMsg() return nuiMsgs[#nuiMsgs] end
     local function reset() triggers, nuiMsgs, notifs, focus, deleted = {}, {}, {}, {}, {} end
+    -- Chaque appel NUI exige le jeton de session : les tests ci-dessous passent par un enrobage qui l'ajoute,
+    -- `rawCb` garde les gestionnaires nus pour tester les refus.
+    local rawCb = {}
+    for n, fn in pairs(nuiCb) do
+        if n:match('^tablet:') and n ~= 'tablet:ready' and n ~= 'tablet:locale' then
+            rawCb[n] = fn
+            nuiCb[n] = function(data, cb)
+                local d = {}
+                for k, v in pairs(type(data) == 'table' and data or {}) do d[k] = v end
+                d.token = C.Token()
+                return fn(d, cb)
+            end
+        end
+    end
 
     check('aucune boucle ni thread au chargement (0,00 ms fermée)', threadsAtLoad == 0, threadsAtLoad)
     check('touche : RegisterKeyMapping(commande, texte traduit, keyboard, F5)',
@@ -1399,6 +1413,29 @@ do
     serverReply['pop_tablet:notes:save'] = nil
     nuiCb['tablet:call']({ name = 'notes:save', data = {} }, function(r) got = r end)
     check('relais : pas de réponse serveur -> err_timeout', got.err == 'err_timeout')
+    -- Jeton de session NUI (correction sécurité 3)
+    local tok = lastMsg().data and lastMsg().data.token
+    check('jeton : 32 caractères hexadécimaux remis dans tablet:open', type(tok) == 'string' and #tok == 32 and tok:match('^%x+$') ~= nil and tok == C.Token())
+    local trigBefore = #triggers
+    rawCb['tablet:call']({ name = 'notes:list' }, function(r) got = r end)
+    check('jeton : relais sans jeton refusé, rien envoyé au serveur', got.ok == false and got.err == 'err_unknown_call' and #triggers == trigBefore)
+    rawCb['tablet:call']({ name = 'notes:list', token = 'faux' }, function(r) got = r end)
+    check('jeton : relais avec un faux jeton refusé', got.ok == false and got.err == 'err_unknown_call' and #triggers == trigBefore)
+    local refused = {}
+    for _, n in ipairs({ 'tablet:resync', 'tablet:schedule', 'tablet:camera', 'tablet:micro', 'tablet:map' }) do
+        rawCb[n]({ action = 'start', state = 'granted', active = true }, function(r) got = r end)
+        if got.ok ~= false or got.err ~= 'err_unknown_call' then refused[#refused + 1] = n end
+    end
+    check('jeton : resync, schedule, camera, micro et carte refusent un appel sans jeton', #refused == 0, table.concat(refused, ','))
+    check('jeton : seuls ready et locale restent sans jeton', rawCb['tablet:ready'] == nil and rawCb['tablet:locale'] == nil)
+    rawCb['tablet:close']({}, function(r) got = r end)
+    check('jeton : fermeture sans jeton refusée, tablette toujours ouverte', got.ok == false and C.IsOpen())
+    check('jeton : la page principale seule le reçoit (aucun autre message ne le porte)', (function()
+        for _, m in ipairs(nuiMsgs) do
+            if m.action ~= 'tablet:open' and type(m.data) == 'table' and m.data.token ~= nil then return false end
+        end
+        return true
+    end)())
     -- Plans : callback `tablet:map` (position, itinéraire natif, annulation, carte du menu pause)
     local mapCalls, wpActive = {}, false
     local function mapNative(n, fn) def(n, function(...) mapCalls[#mapCalls + 1] = { n, ... } return fn and fn(...) end) end

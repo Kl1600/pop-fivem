@@ -12,7 +12,8 @@ RegisterNUICallback('tablet:ready', function(_, cb)
     cb({ ok = true })
 end)
 
-RegisterNUICallback('tablet:close', function(_, cb)
+RegisterNUICallback('tablet:close', function(data, cb)
+    if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
     C.Close('ui')
     cb({ ok = true })
 end)
@@ -22,10 +23,13 @@ Bridge.OnUiClose(function()
     C.Close('ui')
 end)
 
+-- Chaque appel NUI (sauf `tablet:ready`, `tablet:locale`) doit porter le jeton de la session (C.Authorized) : les cadres
+-- des applis API et du Navigateur ne le connaissent pas.
 -- Relais générique vers `pop_tablet:<name>` : liste blanche des noms, tablette ouverte, charge bornée.
 -- Le serveur refait tous les contrôles (objet porté, code, taille, propriété).
 RegisterNUICallback('tablet:call', function(data, cb)
     if not C.IsOpen() then return cb({ ok = false, err = 'err_session' }) end
+    if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
     if type(data) ~= 'table' or type(data.name) ~= 'string' or not Tablet.RelaySet[data.name] then
         return cb({ ok = false, err = 'err_unknown_call' })
     end
@@ -41,6 +45,7 @@ end)
 -- Horloge : l'interface demande une resynchronisation en ouvrant Horloge/Météo, et la coupe en les quittant.
 RegisterNUICallback('tablet:resync', function(data, cb)
     if not C.IsOpen() then return cb({ ok = false, err = 'err_session' }) end
+    if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
     C.SetResync(type(data) == 'table' and data.active ~= false)
     cb({ ok = true, clock = C.ClockSnapshot() })
 end)
@@ -48,6 +53,7 @@ end)
 -- Échéances (alarmes, rappels, événements) : une seule minuterie côté client.
 RegisterNUICallback('tablet:schedule', function(data, cb)
     if not C.IsOpen() then return cb({ ok = false, err = 'err_session' }) end
+    if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
     C.Scheduler.Set(type(data) == 'table' and data.items or nil)
     cb({ ok = true })
 end)
@@ -62,6 +68,7 @@ end)
 -- Appareil photo : start | stop | selfie | zoom | look. La capture passe par le relais `photos:capture` (serveur).
 RegisterNUICallback('tablet:camera', function(data, cb)
     if not C.IsOpen() then return cb({ ok = false, err = 'err_session' }) end
+    if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
     local action = type(data) == 'table' and data.action or nil
     if action == 'start' then return cb(C.Camera.Start()) end
     if action == 'stop' then C.Camera.Stop() return cb({ ok = true }) end
@@ -74,6 +81,7 @@ end)
 -- Micro du Dictaphone : l'interface teste getUserMedia et annonce `granted` ou `denied` (aucun audio ne transite par Lua).
 C.MicroState = 'unknown'
 RegisterNUICallback('tablet:micro', function(data, cb)
+    if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
     local state = type(data) == 'table' and data.state or nil
     if state ~= 'granted' and state ~= 'denied' then return cb({ ok = false, err = 'err_payload' }) end
     C.MicroState = state

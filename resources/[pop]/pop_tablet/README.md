@@ -84,3 +84,7 @@ Rien de ce qui suit n'a pu être prouvé hors du jeu :
 - Consommation (resmon) : 0,00 ms au repos, usage normal et caméra ; paquets réseau.
 - Rendu RTL de chaque écran en arabe (le code utilise des bordures logiques, non vérifié visuellement), mise en page `compact` de chaque appli.
 - Affichage réel d'une appli API dans la tablette (exemple `examples/pop_tablet_example/`).
+
+## Photos : mode `remote` non disponible
+
+`Config.Photos.Mode = 'remote'` n'est pas codé : il renvoie `err_unavailable`. Utiliser `'database'` (défaut, aucun secret). Voir SPEC.md, section « Corrections de sécurité ».

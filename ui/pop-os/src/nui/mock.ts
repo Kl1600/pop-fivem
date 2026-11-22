@@ -58,7 +58,7 @@ let mailFresh = true;
 let navFresh = true;
 const NAV_NAMES = new Set(['browser:sites', 'browser:save', 'music:stations', 'music:save', 'music:state']);
 const MAIL_NAMES = new Set(['mail:folders', 'mail:list', 'mail:get', 'mail:send', 'mail:move', 'mail:flag', 'mail:delete']);
-const COMM_NAMES = new Set(['messages:threads', 'messages:thread', 'messages:send', 'messages:read', 'messages:pin', 'messages:group', 'messages:media',
+const COMM_NAMES = new Set(['messages:threads', 'messages:thread', 'messages:send', 'messages:read', 'messages:pin', 'messages:group', 'messages:media', 'messages:block', 'messages:leave',
   'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history', 'phone:voicemail', 'phone:voicemails', 'contacts:list', 'contacts:save', 'contacts:delete']);
 let installed: string[] = [...MOCK_BOOT.apps];
 

@@ -7,7 +7,11 @@ const outDir = fileURLToPath(new URL('../../resources/[pop]/pop_tablet/web/dist'
 
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Le serveur de développement injecte des scripts en ligne et un WebSocket : la CSP n'est gardée que dans le build.
+    { name: 'dev-sans-csp', apply: 'serve', transformIndexHtml: (html: string) => html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\s*/, '') },
+  ],
   build: {
     outDir,
     emptyOutDir: true,

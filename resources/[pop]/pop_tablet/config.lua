@@ -64,7 +64,7 @@ Config.Mail = { Domain = 'pop.ls' }
 -- Horloge : MsPerGameMinute sert si la native du jeu ne répond pas. Zones = horloges du monde fictives (décalage en heures).
 Config.Clock = { Source = 'game', MsPerGameMinute = 2000, Zones = {} }
 
--- Photos : 'database' (défaut, aucun secret) ou 'remote' (clé en convar `set pop_tablet_photo_key`).
+-- Photos : 'database' (défaut, aucun secret). 'remote' n'est PAS disponible (renvoie err_unavailable), voir README.
 Config.Photos = { Mode = 'database', Url = '', FormField = 'file', UrlPath = 'url', Max = 200 }
 
 -- Appareil photo : 'native' (CreateMobilePhone + CellCamActivate) ou 'scripted' (caméra scriptée CreateCam à la position de la

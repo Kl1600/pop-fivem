@@ -25,8 +25,22 @@ export function parseCall(msg: FrameMessage, appId: string): { action: string; d
   return { action: msg.action, data: msg.data, id: msg.id };
 }
 
+/**
+ * Origine cible des réponses vers le cadre. Le cadre est en `sandbox="allow-scripts"` sans `allow-same-origin` : son
+ * origine est opaque (« null »), aucune origine exacte ne peut la désigner et un postMessage vers l'origine d'un hôte https serait
+ * perdu. `'*'` est donc la seule cible possible ; la protection vient de `e.source`, de `e.origin === 'null'` et de
+ * `frameTrusted` (jamais de relais vers une page autre que celle de l'appli).
+ */
+export const FRAME_TARGET = '*';
+
+/** Le cadre est-il toujours celui de l'appli ? URL du cadre inchangée et une seule charge (une 2e charge = navigation du cadre). */
+export function frameTrusted(frame: { getAttribute(name: string): string | null }, expected: string, loads: number): boolean {
+  return loads === 1 && frame.getAttribute('src') === expected;
+}
+
 export default function ApiFrame(p: AppProps) {
   const ref = useRef<HTMLIFrameElement>(null);
+  const loads = useRef(0);
   const info = apiPage(p.id);
   const lang = document.documentElement.lang || 'en';
 
@@ -34,16 +48,21 @@ export default function ApiFrame(p: AppProps) {
     void p.nui.call('app:focus', p.id);
     const onMessage = (e: MessageEvent) => {
       const frame = ref.current;
-      if (!frame || e.source !== frame.contentWindow) return;
+      if (!frame || e.source !== frame.contentWindow || e.origin !== 'null') return;
+      if (!info || !frameTrusted(frame, info.page, loads.current)) return; // URL du cadre changée : rien n'est relayé
       const call = parseCall((e.data ?? {}) as FrameMessage, p.id);
       if (!call) return;
       void p.nui.call('app:call', { appId: p.id, action: call.action, data: call.data }).then((r) => {
-        frame.contentWindow?.postMessage({ type: 'pop-app:result', id: call.id, ok: r.ok, data: r.data, err: r.err }, '*');
+        if (!frameTrusted(frame, info.page, loads.current)) return;
+        frame.contentWindow?.postMessage({ type: 'pop-app:result', id: call.id, ok: r.ok, data: r.data, err: r.err }, FRAME_TARGET);
       });
     };
     const onEvent = (e: Event) => {
       const d = (e as CustomEvent).detail as { appId?: string; name?: string; data?: unknown } | undefined;
-      if (d?.appId === p.id) ref.current?.contentWindow?.postMessage({ type: 'pop-app:event', name: d.name, data: d.data }, '*');
+      const frame = ref.current;
+      if (d?.appId === p.id && frame && info && frameTrusted(frame, info.page, loads.current)) {
+        frame.contentWindow?.postMessage({ type: 'pop-app:event', name: d.name, data: d.data }, FRAME_TARGET);
+      }
     };
     window.addEventListener('message', onMessage);
     window.addEventListener('pop-app-event', onEvent);
@@ -52,13 +71,18 @@ export default function ApiFrame(p: AppProps) {
       window.removeEventListener('pop-app-event', onEvent);
       void p.nui.call('app:focus', null);
     };
-  }, [p.id, p.nui]);
+  }, [p.id, p.nui, info]);
 
   if (!info) return null;
-  const init = () => ref.current?.contentWindow?.postMessage({
+  const init = () => {
+    loads.current += 1;
+    const frame = ref.current;
+    if (!frame || !frameTrusted(frame, info.page, loads.current)) return; // cadre navigué ailleurs : plus d'init ni de relais
+    frame.contentWindow?.postMessage({
     type: 'pop-app:init', layout: p.layout, dark: p.dark, accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || undefined,
     locale: lang, rtl: document.documentElement.dir === 'rtl', data: p.data,
-  }, '*');
+    }, FRAME_TARGET);
+  };
   return (
     <div data-api-app={p.id} style={{ position: 'absolute', inset: 0, background: p.dark ? '#000' : '#fff' }}>
       <iframe ref={ref} title={info.name} src={info.page} sandbox="allow-scripts" onLoad={init} style={{ width: '100%', height: '100%', border: 0, display: 'block' }} />

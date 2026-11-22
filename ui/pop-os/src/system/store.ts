@@ -92,7 +92,7 @@ export const DEFAULT_APPS = ['calendrier', 'photos', 'camera', 'horloge', 'meteo
 export const DOCK = ['messages', 'telephone', 'mail', 'navigateur', 'musique', 'reglages'];
 
 /** Applis qui exigent le réseau : coupées par Mode Avion et Wi-Fi coupé (SPEC section 0). */
-export const ONLINE_APPS: ReadonlySet<string> = new Set(['messages', 'telephone', 'mail', 'navigateur', 'boutique']);
+export const ONLINE_APPS: ReadonlySet<string> = new Set(['messages', 'telephone', 'navigateur', 'boutique']) // Mail : lecture permise hors ligne, envoi bloqué par le serveur;
 
 export function applyOpen(d: OpenData, lang: string): void {
   const boot = d.boot ?? null;

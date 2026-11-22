@@ -102,7 +102,7 @@ describe('app-sto Boutique', () => {
     expect(g.map((x) => [x.cat, x.items.length])).toEqual([['tools', 2], ['media', 1]]);
   });
 
-  it('arb-01 : Mode Avion et Wi-Fi coupé remplacent Boutique, Messages, Téléphone, Mail, Navigateur', async () => {
+  it('arb-01 : Mode Avion et Wi-Fi coupé remplacent Boutique, Messages, Téléphone, Navigateur ; Mail reste lisible (envoi bloqué par le serveur)', async () => {
     render(<Host />);
     await unlock({ air: true });
     expect(networkOff()).toBe(true);
@@ -110,10 +110,12 @@ describe('app-sto Boutique', () => {
     expect(await screen.findByText('Pas de connexion')).toBeTruthy();
     act(() => { os.set({ settings: { ...os.get().settings, air: false, wifi: false } }); });
     expect(networkOff()).toBe(true);
-    for (const id of ['messages', 'telephone', 'mail', 'navigateur']) {
+    for (const id of ['messages', 'telephone', 'navigateur']) {
       act(() => openApp(id));
       expect(document.querySelector(`[data-offline="${id}"]`), id).not.toBeNull();
     }
+    act(() => openApp('mail'));
+    expect(document.querySelector('[data-offline="mail"]')).toBeNull();
     act(() => { os.set({ settings: { ...os.get().settings, wifi: true } }); });
     expect(networkOff()).toBe(false);
   });

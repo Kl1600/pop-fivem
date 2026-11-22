@@ -72,6 +72,7 @@ end
 
 RegisterNUICallback('tablet:map', function(data, cb)
     if not C.IsOpen() then return cb({ ok = false, err = 'err_session' }) end
+    if not C.Authorized(data) then return cb({ ok = false, err = 'err_unknown_call' }) end
     local action = type(data) == 'table' and data.action or nil
     if action == 'position' then
         local x, y, z = here()

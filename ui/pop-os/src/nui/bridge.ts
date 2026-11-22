@@ -10,6 +10,22 @@ declare global {
 /** Vrai dans le client FiveM (CEF) ; faux dans un navigateur de développement. */
 export const inGame = (): boolean => typeof window !== 'undefined' && typeof window.GetParentResourceName === 'function';
 
+// Jeton de session NUI : remis par Lua dans `tablet:open` à cette page seulement, jamais transmis aux cadres des applis
+// (API, Navigateur). Chaque appel `tablet:*` le joint ; sans lui, le client Lua refuse.
+let sessionToken: string | null = null;
+
+/** Joint le jeton à la charge d'un appel (hors `tablet:ready` et `tablet:locale`, publics). */
+export function withToken(name: string, data: unknown, token: string | null = sessionToken): unknown {
+  if (token === null || name === 'tablet:ready' || name === 'tablet:locale') return data;
+  const base = data !== null && typeof data === 'object' && !Array.isArray(data) ? (data as Record<string, unknown>) : {};
+  return { ...base, token };
+}
+
+/** Jeton courant (tests). */
+export function currentToken(): string | null {
+  return sessionToken;
+}
+
 /** Appel d'un RegisterNUICallback côté Lua. Hors jeu : réponse simulée (aucun réseau). */
 export async function fetchNui<T = unknown>(name: string, data?: unknown): Promise<T | null> {
   if (!inGame()) {
@@ -21,7 +37,7 @@ export async function fetchNui<T = unknown>(name: string, data?: unknown): Promi
     const res = await fetch(`https://${window.GetParentResourceName!()}/${name}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-      body: JSON.stringify(data === undefined ? {} : data),
+      body: JSON.stringify(withToken(name, data === undefined ? {} : data)),
     });
     return (await res.json()) as T;
   } catch {
@@ -34,7 +50,15 @@ export function onNuiMessage(handler: (action: string, data: unknown) => void): 
   const listener = (e: MessageEvent) => {
     const msg = e.data as NuiEnvelope | null;
     if (!msg || typeof msg.action !== 'string' || !msg.action.startsWith('tablet:')) return;
-    handler(msg.action.slice('tablet:'.length), msg.data);
+    let data = msg.data;
+    if (msg.action === 'tablet:open' && data !== null && typeof data === 'object' && 'token' in data) {
+      const { token, ...rest } = data as Record<string, unknown>;
+      sessionToken = typeof token === 'string' ? token : null;
+      data = rest; // le jeton ne sort pas de ce module : ni store, ni applis
+    } else if (msg.action === 'tablet:close') {
+      sessionToken = null;
+    }
+    handler(msg.action.slice('tablet:'.length), data);
   };
   window.addEventListener('message', listener);
   return () => window.removeEventListener('message', listener);

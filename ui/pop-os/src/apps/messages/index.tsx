@@ -6,7 +6,7 @@ const BTN = { all: 'unset', cursor: 'pointer' } as const;
 
 interface Thread { id: string; group: boolean; name?: string; unread: number; last?: { kind: string; body: string; me: boolean; at: number; read: boolean; from?: string } }
 interface Msg { id: number; me: boolean; from: string; kind: string; body: string; ref: string | null; at: number; read: boolean }
-interface ThreadsRes extends NuiResult { items?: Thread[]; pins?: string[]; me?: string }
+interface ThreadsRes extends NuiResult { items?: Thread[]; pins?: string[]; blocked?: string[]; me?: string }
 interface ThreadRes extends NuiResult { items?: Msg[] }
 interface SendRes extends NuiResult { msg?: Msg }
 interface ListRes extends NuiResult { items?: ContactRow[] }
@@ -41,6 +41,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
   const lang = useSettingsApi().lang;
   const [threads, setThreads] = useState<Thread[]>([]);
   const [pins, setPins] = useState<string[]>([]);
+  const [blocked, setBlocked] = useState<string[]>([]);
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [me, setMe] = useState('');
   const [sel, setSel] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
 
   const refresh = useCallback(async () => {
     const r = await nui.call<ThreadsRes>('messages:threads');
-    if (r.ok) { setThreads(r.items ?? []); setPins(r.pins ?? []); setMe(r.me ?? ''); }
+    if (r.ok) { setThreads(r.items ?? []); setPins(r.pins ?? []); setBlocked(r.blocked ?? []); setMe(r.me ?? ''); }
   }, [nui]);
 
   const open = useCallback(async (id: string) => {
@@ -111,6 +112,17 @@ export default function App({ t, dark, nui, data }: AppProps) {
     if (!sel) return;
     const r = await nui.call<NuiResult & { pins?: string[] }>('messages:pin', { phone: sel, on: !pins.includes(sel) });
     if (r.ok) setPins(r.pins ?? []);
+  };
+  // Groupe : quitter. Conversation à deux : bloquer ou débloquer le numéro.
+  const leaveOrBlock = async () => {
+    if (!sel) return;
+    if (sel.startsWith('g')) {
+      const r = await nui.call('messages:leave', { to: sel });
+      if (r.ok) { setSel(null); setMsgs([]); void refresh(); } else flash(r.err ? t(r.err) : t('msg.err'));
+      return;
+    }
+    const r = await nui.call<NuiResult & { blocked?: string[] }>('messages:block', { phone: sel, on: !blocked.includes(sel) });
+    if (r.ok) setBlocked(r.blocked ?? []); else flash(r.err ? t(r.err) : t('msg.err'));
   };
   const askPhotos = async () => {
     setPlus(false);
@@ -193,6 +205,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
           <>
             <div style={{ position: 'absolute', top: 20, left: 24, right: 24, zIndex: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
               <Glass as="button" aria-label={pins.includes(sel) ? t('msg.unpin') : t('msg.pin')} onClick={() => void togglePin()} style={{ width: 48, height: 48, borderRadius: 24, border: 0, padding: 0, cursor: 'pointer', pointerEvents: 'auto', color: pins.includes(sel) ? '#ff9f0a' : c.sub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ico d={D.pin} size={20} /></Glass>
+              <Glass as="button" aria-label={cur.group ? t('msg.leave') : blocked.includes(sel) ? t('msg.unblock') : t('msg.block')} onClick={() => void leaveOrBlock()} style={{ height: 48, borderRadius: 24, border: 0, padding: '0 16px', cursor: 'pointer', pointerEvents: 'auto', color: cur.group || !blocked.includes(sel) ? '#ff383c' : c.sub, fontSize: 15, fontWeight: 600 }}>{cur.group ? t('msg.leave') : blocked.includes(sel) ? t('msg.unblock') : t('msg.block')}</Glass>
               <Glass style={{ height: 52, borderRadius: 26, display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px 0 6px', pointerEvents: 'auto' }}>
                 {avatar(sel, titleOf(cur), 40, 15)}
                 <span style={{ fontSize: 17, fontWeight: 600 }}>{titleOf(cur)}</span>

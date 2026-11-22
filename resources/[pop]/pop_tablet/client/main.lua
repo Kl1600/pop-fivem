@@ -22,6 +22,27 @@ function C.LastOpen()
     return lastOpen
 end
 
+-- Jeton de session NUI : tiré à l'ouverture, remis seulement à la page principale par SendNUIMessage (`tablet:open`),
+-- exigé sur chaque appel NUI. Les cadres des applis API et du Navigateur ne le reçoivent jamais : un appel sans lui est refusé.
+local token = nil
+
+local function newToken()
+    local t = {}
+    math.randomseed((GetGameTimer and GetGameTimer() or 0) + os.time())
+    for i = 1, 32 do t[i] = ('%x'):format(math.random(0, 15)) end
+    return table.concat(t)
+end
+
+--- Jeton de la session ouverte, ou nil si la tablette est fermée.
+function C.Token()
+    return token
+end
+
+--- true si la charge d'un appel NUI porte le jeton de la session ouverte.
+function C.Authorized(data)
+    return token ~= nil and type(data) == 'table' and data.token == token
+end
+
 -- La mort ferme la tablette. Le handler n'existe que pendant l'ouverture : 0,00 ms fermée.
 local function watchDeath(enable)
     if enable and not deathHandler then
@@ -41,6 +62,7 @@ function C.Close(reason)
     if state == 'closed' then return end
     state = 'closed'
     lastOpen = nil
+    token = nil
     watchDeath(false)
     C.StopResync()
     if C.Camera then C.Camera.Stop() end
@@ -68,6 +90,7 @@ function C.Open(hint, openApp, silent)
             return
         end
         state = 'open'
+        token = newToken()
         SetNuiFocus(true, true)
         CreateThread(C.Anim.Start)
         watchDeath(true)
@@ -79,6 +102,7 @@ function C.Open(hint, openApp, silent)
             lang = Tablet.LanguageSet[lang] and lang or Config.Locale,
             shell = Config.Shell == true or nil, -- absent = pas de coque en jeu
             clock = C.ClockSnapshot(), weather = C.WeatherSnapshot(), app = openApp,
+            token = token,
         }
         C.Post('tablet:open', lastOpen)
     end, hint, C.GameStamp())
