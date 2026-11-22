@@ -86,6 +86,7 @@ function C.Open(hint, openApp, silent)
         if type(res) ~= 'table' or not res.ok then
             state = 'closed'
             local err = type(res) == 'table' and res.err or 'err_timeout'
+            print(('[pop_tablet] open refused: %s'):format(tostring(err))) -- visible dans F8, seulement en cas d'échec
             if not (silent and err == 'err_no_tablet') then Bridge.Notify(L(err), 'error') end
             return
         end

@@ -570,7 +570,14 @@ end
 -- Callbacks client -> serveur
 ------------------------------------------------------------------------
 
-Callback.Register('pop_tablet:device:open', function(src, hint, gameNow) return D.Open(src, hint, gameNow) end)
+Callback.Register('pop_tablet:device:open', function(src, hint, gameNow)
+    local r = D.Open(src, hint, gameNow)
+    -- Diagnostic à la demande : `set pop_tablet_debug 1` dans la console serveur.
+    if GetConvarInt and GetConvarInt('pop_tablet_debug', 0) == 1 then
+        print(('[pop_tablet] open src=%s hint=%s -> %s'):format(src, tostring(hint), r.ok and 'ok' or tostring(r.err)))
+    end
+    return r
+end)
 Callback.Register('pop_tablet:device:close', function(src) return D.Close(src) end)
 Callback.Register('pop_tablet:device:setup', function(src, data) return D.Setup(src, data) end)
 Callback.Register('pop_tablet:device:unlock', function(src, code) return D.Unlock(src, code) end)
