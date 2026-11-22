@@ -14,25 +14,54 @@ local function ShowSubtitleFallback(text, duration)
     EndTextCommandPrint(duration or 5000, 1)
 end
 
--- Étape 1 : Svetlana a donné la mission -> direction le showroom
+-- Étape 1 : Svetlana (ou /startheist) a donné la mission -> point + itinéraire vers le showroom
 local pendingId = nil
+local showroomBlip = nil
+
+local function RemoveShowroomRoute()
+    if showroomBlip and DoesBlipExist(showroomBlip) then
+        SetBlipRoute(showroomBlip, false)
+        RemoveBlip(showroomBlip)
+    end
+    showroomBlip = nil
+end
+
+local function ShowShowroomRoute()
+    RemoveShowroomRoute()
+    local pos = Config.ShowroomPos
+    showroomBlip = AddBlipForCoord(pos.x, pos.y, pos.z)
+    SetBlipSprite(showroomBlip, 225) -- voiture
+    SetBlipColour(showroomBlip, 5)   -- jaune
+    SetBlipScale(showroomBlip, 0.9)
+    SetBlipAsShortRange(showroomBlip, false)
+    BeginTextCommandSetBlipName("STRING")
+    AddTextComponentString(L('blip_showroom'))
+    EndTextCommandSetBlipName(showroomBlip)
+    SetBlipRoute(showroomBlip, true)
+    SetBlipRouteColour(showroomBlip, 5)
+end
+
 RegisterNetEvent('mission:client:pending')
 AddEventHandler('mission:client:pending', function(heistId, isOwner)
     if pendingId == heistId then return end
     pendingId = heistId
 
-    SetNewWaypoint(Config.ShowroomPos.x, Config.ShowroomPos.y)
+    ShowShowroomRoute()
     MissionNotify(L('go_showroom'), 8000)
 
-    if not isOwner then return end
     CreateThread(function()
-        while pendingId == heistId and not EnsureMissionSync().active do
-            if #(GetEntityCoords(PlayerPedId()) - Config.ShowroomPos) <= 100.0 then
-                TriggerServerEvent('mission:server:startHeist')
+        while pendingId == heistId do
+            local near = #(GetEntityCoords(PlayerPedId()) - Config.ShowroomPos) <= 100.0
+            if near then
+                RemoveShowroomRoute() -- arrivé : l'itinéraire disparaît
+                if isOwner and not EnsureMissionSync().active then
+                    TriggerServerEvent('mission:server:startHeist')
+                end
                 return
             end
             Wait(1000)
         end
+        RemoveShowroomRoute()
     end)
 end)
 
@@ -61,6 +90,7 @@ AddEventHandler('mission:client:reset', function(reason)
     MS.entities = {}
     MS.flags = {}
     pendingId = nil
+    RemoveShowroomRoute()
 
     TriggerEvent('mission:local:reset', reason)
 
@@ -256,4 +286,5 @@ AddEventHandler('onResourceStop', function(res)
         if DoesBlipExist(blip) then RemoveBlip(blip) end
     end
     TriggerEvent('mission:client:removeShowroomBlip')
+    RemoveShowroomRoute()
 end)

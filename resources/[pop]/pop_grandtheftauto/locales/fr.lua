@@ -65,6 +65,7 @@ Locales['fr'] = {
     prompt_pickup         = "RAMASSER",
     prompt_open           = "OUVRIR",
     keys_taken            = "Vous avez <span style='color:#ECA95D; font-weight:bold;'>récupéré les clés</span> de la porte de garage.",
+    blip_showroom         = "Showroom Benefactor",
     go_showroom           = "Rendez-vous au <span style='color:#ECA95D; font-weight:bold;'>showroom Benefactor</span> indiqué sur votre GPS.",
     heist_done            = "Le casse est <span style='color:#2ecc71; font-weight:bold;'>terminé</span>. Beau travail.",
     heist_timeout         = "Le casse a été <span style='color:#E74C3C; font-weight:bold;'>abandonné</span> (trop long).",
