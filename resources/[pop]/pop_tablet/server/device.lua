@@ -415,6 +415,7 @@ function D.Close(src)
     local s, err = Tablet.Guard(src, nil, { public = true, allowDead = true })
     if not s then return fail(err) end
     endUse(s)
+    if Tablet.Phone then Tablet.Phone.Forget(src) end -- fermer la tablette raccroche tout de suite (le contrôle de 20 s reste un filet)
     return { ok = true }
 end
 

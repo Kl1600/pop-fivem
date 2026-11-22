@@ -7,3 +7,4 @@ export * from './layout';
 export { AppIcon, ICON_IDS, setCustomIcon } from './AppIcon';
 export { NearbySheet, type ShareKind } from './NearbySheet';
 export { VirtualList, VIRTUALIZE_AFTER } from './VirtualList';
+export * from './comm';

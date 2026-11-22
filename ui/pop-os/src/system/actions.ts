@@ -292,6 +292,22 @@ export function handleMessage(action: string, data: unknown): void {
     case 'market':
       if (os.get().open) window.dispatchEvent(new CustomEvent('pop-market', { detail: data }));
       return;
+    case 'message': {
+      const d = data as { read?: string; from?: string; body?: string; vm?: boolean } | null;
+      if (!os.get().open || !d) return;
+      window.dispatchEvent(new CustomEvent('pop-message', { detail: d }));
+      if (!d.read && os.get().app !== 'messages') pushNotify({ app: d.vm ? 'telephone' : 'messages', title: d.from, text: d.body });
+      return;
+    }
+    case 'call': {
+      const d = data as { state?: string } | null;
+      if (!os.get().open || !d) return;
+      if (d.state === 'ring' && os.get().app !== 'telephone') {
+        if (os.get().screen === 'home') openApp('telephone', undefined, { ring: d });
+        else pendingApp = { app: 'telephone', data: { ring: d } };
+      } else window.dispatchEvent(new CustomEvent('pop-call', { detail: d }));
+      return;
+    }
     case 'waypoint':
       if (os.get().open) window.dispatchEvent(new CustomEvent('pop-waypoint', { detail: data }));
       return;
@@ -301,4 +317,12 @@ export function handleMessage(action: string, data: unknown): void {
     default:
       return;
   }
+}
+
+// Une appli (Messages, Contacts) demande à ouvrir une autre appli (Téléphone) : seulement tablette ouverte et écran d'accueil.
+if (typeof window !== 'undefined') {
+  window.addEventListener('pop-open-app', (e) => {
+    const d = (e as CustomEvent).detail as { app?: string; data?: unknown } | null;
+    if (d && typeof d.app === 'string' && os.get().open && os.get().screen === 'home') openApp(d.app, undefined, d.data);
+  });
 }

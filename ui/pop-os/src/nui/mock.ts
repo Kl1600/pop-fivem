@@ -52,6 +52,10 @@ export function mockOpen(over: Partial<OpenData> = {}): OpenData {
 let fails = 0;
 let blockedUntil = 0;
 let code = MOCK_CODE;
+// Messages, Téléphone et Contacts simulés : module chargé à la demande (hors du point d'entrée du bundle).
+let commFresh = true;
+const COMM_NAMES = new Set(['messages:threads', 'messages:thread', 'messages:send', 'messages:read', 'messages:pin', 'messages:group', 'messages:media',
+  'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history', 'phone:voicemail', 'phone:voicemails', 'contacts:list', 'contacts:save', 'contacts:delete']);
 let installed: string[] = [...MOCK_BOOT.apps];
 
 export function resetMock(): void {
@@ -59,6 +63,7 @@ export function resetMock(): void {
   seedProd();
   seedBoard();
   seedTools();
+  commFresh = true;
   installed = [...MOCK_BOOT.apps];
   fails = 0;
   blockedUntil = 0;
@@ -116,9 +121,12 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       if (d.data === 'reglages' || d.data === 'boutique') return { ok: false, err: 'err_app_system' };
       installed = installed.filter((x) => x !== d.data);
       return { ok: true, apps: installed };
-    case 'contacts:list':
-      return { ok: true, items: [{ id: 1, name: 'Sam Leroy', phone: '555-0101' }, { id: 2, name: 'Lina Costa', phone: '555-0102' }] };
     default:
+      if (COMM_NAMES.has(String(d.name))) {
+        const m = await import('./mock-comm');
+        if (commFresh) { m.seedComm(); commFresh = false; }
+        return m.commCall(String(d.name), d.data);
+      }
       return MEDIA_CALLS.has(String(d.name)) ? mediaCall(String(d.name), d.data) : PROD_CALLS.has(String(d.name)) ? prodCall(String(d.name), d.data) : BOARD_CALLS.has(String(d.name)) ? boardCall(String(d.name), d.data) : TOOLS_CALLS.has(String(d.name)) ? toolsCall(String(d.name), d.data) : { ok: false, err: 'err_unavailable' };
   }
 }

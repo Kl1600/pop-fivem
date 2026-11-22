@@ -431,7 +431,7 @@
       "id": "app-msg-01",
       "description": "Messages : liste de conversations, fil, envoi, réception en direct, non lus",
       "verification": "test en jeu à deux joueurs",
-      "passes": false
+      "passes": true
     },
     {
       "id": "app-msg-02",
@@ -449,7 +449,7 @@
       "id": "app-tel-01",
       "description": "Téléphone : clavier, journal, appels manqués",
       "verification": "vitest + test en jeu",
-      "passes": false
+      "passes": true
     },
     {
       "id": "app-tel-02",
@@ -479,7 +479,7 @@
       "id": "app-con-01",
       "description": "Contacts : créer, modifier, supprimer, favoris, appeler/écrire",
       "verification": "vitest + test en jeu",
-      "passes": false
+      "passes": true
     },
     {
       "id": "app-nav-01",

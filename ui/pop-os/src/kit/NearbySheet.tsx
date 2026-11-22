@@ -4,7 +4,7 @@ import { useDark, useNui, useT } from './context';
 import { palette } from './theme';
 import type { NuiResult } from './types';
 
-export type ShareKind = 'file' | 'photo' | 'note' | 'board';
+export type ShareKind = 'file' | 'photo' | 'note' | 'board' | 'contact';
 
 interface Near { id: number; name: string }
 

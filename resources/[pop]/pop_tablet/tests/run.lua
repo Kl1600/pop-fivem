@@ -1980,6 +1980,7 @@ do
         CON[#CON + 1] = { id = #CON + 1, serial = serial, name = c.name, phone = c.phone, mail = c.mail, note = c.note, favorite = c.favorite and 1 or 0 }
         return #CON
     end
+    DB.UpdateContact = function(serial, id, c) local r = DB.GetContact(serial, id) if not r then return false end r.name, r.phone, r.note, r.favorite = c.name, c.phone, c.note, c.favorite and 1 or 0 return true end
     DB.DeleteContact = function(serial, id)
         for i, c in ipairs(CON) do if c.id == id and c.serial == serial then table.remove(CON, i) return true end end
         return false
@@ -2098,6 +2099,15 @@ do
     Tablet.Device.DropSession(61)
     check('joueur parti pendant l\'appel : appel terminé', Tablet.Phone.ActiveCount() == 0 and CALLS[c4.callId].status == 'answered')
     tk()
+    tk()
+    local c5 = H['pop_tablet:phone:call'](60, { to = ph[62] })
+    tk() H['pop_tablet:phone:answer'](62, c5.callId)
+    tk() sent = {}
+    H['pop_tablet:device:close'](62)
+    local told = false
+    for _, m in ipairs(sent) do if m.src == 60 and m.data.state == 'end' then told = true end end
+    check('fermer la tablette pendant un appel : appel terminé tout de suite, l\'autre prévenu', c5.ok and Tablet.Phone.ActiveCount() == 0 and told)
+    tk()
     local vm = H['pop_tablet:phone:voicemail'](60, { to = ph[62], text = 'Rappelle-moi' })
     tk()
     check('messagerie vocale : déposée et listée', vm.ok and #H['pop_tablet:phone:voicemails'](62).items == 1)
@@ -2108,6 +2118,8 @@ do
     tk()
     local list = H['pop_tablet:contacts:list'](60)
     check('contacts:save + list : adresse, groupe et favori conservés', ct.ok and list.items[1].addr == '12 Vinewood' and list.items[1].grp == 'ami' and list.items[1].fav)
+    tk()
+    check('contacts:save : modification d\'un contact existant', H['pop_tablet:contacts:save'](60, { id = ct.id, name = 'Lina C.', phone = ph[61], grp = 'famille' }).ok and H['pop_tablet:contacts:list'](60).items[1].name == 'Lina C.')
     check('contacts:save : groupe inconnu refusé', err('contacts:save', 60, { name = 'X', phone = ph[61], grp = 'mafia' }) == 'err_payload')
     check('contacts:save : numéro invalide refusé', err('contacts:save', 60, { name = 'X', phone = 'abc' }) == 'err_payload')
     check('contacts:list : propre à chaque tablette', #(function() tk() return H['pop_tablet:contacts:list'](62).items end)() == 0)
