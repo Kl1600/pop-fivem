@@ -115,6 +115,7 @@ Config.GroundProps = {
   printer           = 'prop_cs_cardbox_01',
   sim_card          = 'prop_phone_ing',
   tpe               = 'prop_cs_tablet',
+  pop_tablet        = 'prop_cs_tablet',
   pcb               = 'prop_cs_cardbox_01',
   pager             = 'prop_phone_ing',
   retrophone        = 'prop_phone_ing',
@@ -584,6 +585,21 @@ Config.Items = {
     gradientColor = 'rgba(200, 200, 200, 0.4)',
     onUse = function(source, itemData, itemDef)
         TriggerClientEvent('pop_inventory:client:useTPE', source)
+        return false -- Ne pas consommer l'item
+    end,
+  },
+  -- Tablette POP Tab (ressource pop_tablet). Le serial de la tablette voyage dans les métadonnées de la pile.
+  pop_tablet = {
+    label = 'POP Tab',
+    weight = 0.5,
+    maxStack = 1,
+    icon = 'img/tpe.png',
+    usable = true,
+    tags = { 'tools' },
+    gradientColor = 'rgba(255, 46, 136, 0.4)',
+    onUse = function(source, itemData, itemDef)
+        local meta = type(itemData) == 'table' and itemData.metadata or nil
+        TriggerClientEvent('pop_tablet:client:use', source, type(meta) == 'table' and meta.serial or nil)
         return false -- Ne pas consommer l'item
     end,
   },
