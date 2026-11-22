@@ -208,6 +208,8 @@ AddEventHandler('ondeliveryblip', function()
     local destination = Config.DeliveryPos
     if deliveryBlip and DoesBlipExist(deliveryBlip) then return end
 
+    Guide.ClearRoute() -- un seul itinéraire à la fois
+    TriggerEvent('mission:local:guide', 'hacked')
     ClearGpsMultiRoute()
     SetWaypointOff()
 

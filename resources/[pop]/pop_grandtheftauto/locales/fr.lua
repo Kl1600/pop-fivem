@@ -84,4 +84,20 @@ Locales['fr'] = {
     paid                  = "Svetlana vous a payé <span style='color:#2ecc71; font-weight:bold;'>%d $</span>%s.",
     timer_title           = "TEMPS RESTANT",
     paid_bank_suffix      = " (sur votre compte en banque)",
+
+    -- Guidage (checklist, itinéraire, notifications d'étape)
+    guide_title           = "Vol de voitures",
+    guide_step1           = "Rejoindre le showroom",
+    guide_step2           = "Suivre M. Duggan",
+    guide_step3           = "Couper le courant",
+    guide_step4           = "Récupérer les clés et ouvrir le garage",
+    guide_step5           = "Pirater une voiture",
+    guide_step6           = "Livrer la voiture au camion",
+    guide_step7           = "Fin du casse",
+    guide_thornton        = "Rejoignez <span style='color:#ECA95D; font-weight:bold;'>M. Duggan</span> devant le showroom.",
+    guide_panel           = "Piratez le <span style='color:#ECA95D; font-weight:bold;'>panneau électrique</span> avec votre Flipper Zero.",
+    guide_keys            = "Récupérez les <span style='color:#ECA95D; font-weight:bold;'>clés du garage</span> dans le showroom.",
+    guide_door            = "Ouvrez la <span style='color:#ECA95D; font-weight:bold;'>porte du garage</span> avec les clés.",
+    guide_car             = "Posez votre module pirate sur une <span style='color:#ECA95D; font-weight:bold;'>sportive</span>.",
+    blip_garage           = "Porte du garage",
 }

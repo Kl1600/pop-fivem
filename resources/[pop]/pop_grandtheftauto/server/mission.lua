@@ -120,15 +120,25 @@ AddEventHandler('mission:server:registerEntity', function(key, payload)
             Wait(250)
         end
         if not GTA.Mission.active or GTA.Mission.id ~= id or GTA.Mission.entities[key] then return end
-        if ent == 0 or not DoesEntityExist(ent) then return end
-        if #(GetEntityCoords(ent) - Config.ShowroomPos) > 80.0 then return end
+        if ent == 0 or not DoesEntityExist(ent) then
+            GTA.Debug(('entité %s refusée : introuvable côté serveur (netId %s)'):format(key, netId))
+            return
+        end
+        if #(GetEntityCoords(ent) - Config.ShowroomPos) > 80.0 then
+            GTA.Debug(('entité %s refusée : trop loin du showroom'):format(key))
+            return
+        end
         local model, ok = GetEntityModel(ent), false
         for _, m in ipairs(expected) do
             if m and GetHashKey(m) == model then ok = true break end
         end
-        if not ok then return end
+        if not ok then
+            GTA.Debug(('entité %s refusée : modèle inattendu'):format(key))
+            return
+        end
 
         local clean = { netId = netId }
+        GTA.Debug(('entité %s enregistrée (netId %s)'):format(key, netId))
         if key:match('^showroom_car_%d$') then clean.idx = tonumber(key:match('%d$')) end
         GTA.Mission.entities[key] = (key == 'thornton') and netId or clean
         GTA.ToMembers('mission:client:entity', key, GTA.Mission.entities[key], GTA.Mission.id)

@@ -26,6 +26,7 @@ shared_scripts {
 client_scripts {
     'bridge/client.lua',
     'client/utils.lua',     -- outils communs (synchro coop, chargements, invites, minuteur)
+    'client/guide.lua',     -- guidage : checklist, itinéraire GPS, notifications d'étape
     'client/sync.lua',      -- synchro coop, police (GPS), fin de mission
     'client/lasers.lua',
     'client/scenario.lua',  -- Thornton (ShowSubtitle, npcHandle)

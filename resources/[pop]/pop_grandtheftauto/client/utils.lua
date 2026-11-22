@@ -37,6 +37,11 @@ function CheckItem(item, cb)
     Callback.Trigger('hasItem', function(hasItem) cb(hasItem == true) end, item)
 end
 
+-- Message console (F8) seulement si Config.Debug = true
+function Debug(msg)
+    if Config.Debug then print(('[pop_grandtheftauto] %s'):format(msg)) end
+end
+
 -- Notification de la mission (pop_notify via le bridge, même style qu'avant)
 function MissionNotify(message, duration)
     Bridge.Notify({ message = message, icon = Config.NotifyIcon, duration = duration or 7000 })

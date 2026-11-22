@@ -63,20 +63,23 @@ AddEventHandler('mission:server:delivered', function(netId, slotIndex)
     local src = source
     netId = tonumber(netId)
     slotIndex = tonumber(slotIndex)
-    local function reply(ok) TriggerClientEvent('mission:client:deliveredResult', src, slotIndex, ok) end
+    local function reply(ok, why)
+        if not ok then GTA.Debug(('livraison refusée pour %s : %s'):format(src, why or '?')) end
+        TriggerClientEvent('mission:client:deliveredResult', src, slotIndex, ok)
+    end
 
-    if not GTA.Mission.active or not GTA.IsMember(src) or not netId or not slotIndex then return reply(false) end
+    if not GTA.Mission.active or not GTA.IsMember(src) or not netId or not slotIndex then return reply(false, 'mission/membre') end
     local slotCfg = Config.DeliverySlots[slotIndex]
-    if not slotCfg then return reply(false) end
+    if not slotCfg then return reply(false, 'emplacement') end
 
     local veh = NetworkGetEntityFromNetworkId(netId)
-    if not veh or veh == 0 or not DoesEntityExist(veh) or GetEntityType(veh) ~= 2 then return reply(false) end
+    if not veh or veh == 0 or not DoesEntityExist(veh) or GetEntityType(veh) ~= 2 then return reply(false, 'véhicule') end
 
     local plate = (GetVehicleNumberPlateText(veh) or ''):match("^%s*(.-)%s*$")
-    if not GTA.ValidPlates[plate] or not GTA.HackCompleted[plate] or GTA.Mission.delivered[plate] then return reply(false) end
-    if GTA.CarNetIdForPlate(plate) ~= netId then return reply(false) end
-    if #(GetEntityCoords(veh) - slotCfg.pos) > 15.0 then return reply(false) end
-    if not Bridge.IsNear(src, slotCfg.pos, 40.0) then return reply(false) end
+    if not GTA.ValidPlates[plate] or not GTA.HackCompleted[plate] or GTA.Mission.delivered[plate] then return reply(false, 'plaque/état') end
+    if GTA.CarNetIdForPlate(plate) ~= netId then return reply(false, 'pas la voiture du showroom') end
+    if #(GetEntityCoords(veh) - slotCfg.pos) > 15.0 then return reply(false, 'voiture trop loin du camion') end
+    if not Bridge.IsNear(src, slotCfg.pos, 40.0) then return reply(false, 'joueur trop loin') end
 
     GTA.Mission.delivered[plate] = true
     GTA.Mission.deliveredCount = GTA.Mission.deliveredCount + 1
@@ -100,6 +103,8 @@ AddEventHandler('mission:server:delivered', function(netId, slotIndex)
             GTA.Notify(member, L('team_delivered'), 6000)
         end
     end
+    GTA.Debug(('voiture %s livrée par %s'):format(plate, src))
+    GTA.ToMembers('mission:client:carDelivered', plate)
     reply(true)
     CheckEnd()
 end)

@@ -10,6 +10,11 @@ for _, car in ipairs(Cars) do GTA.ValidPlates[car.plate] = true end
 -- OUTILS
 -- ============================================================
 
+-- Message console serveur seulement si Config.Debug = true
+function GTA.Debug(msg)
+    if Config.Debug then print(('[pop_grandtheftauto] %s'):format(msg)) end
+end
+
 function GTA.Notify(src, message, duration)
     Bridge.Notify(src, { message = message, icon = Config.NotifyIcon, duration = duration or 7000 })
 end
