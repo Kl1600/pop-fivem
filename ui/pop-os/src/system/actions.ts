@@ -286,6 +286,9 @@ export function handleMessage(action: string, data: unknown): void {
     case 'appEvent':
       if (os.get().open) window.dispatchEvent(new CustomEvent('pop-app-event', { detail: data }));
       return;
+    case 'share':
+      if (os.get().open) window.dispatchEvent(new CustomEvent('pop-share-offer', { detail: data }));
+      return;
     case 'weather':
       if (os.get().open && data) os.set({ weather: data as Weather });
       return;

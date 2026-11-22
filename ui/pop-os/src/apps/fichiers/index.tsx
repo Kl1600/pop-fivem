@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Field, Glass, Sheet, palette, useSettingsApi, type AppProps, type NuiResult } from '../../kit';
+import { Button, Field, Glass, NearbySheet, Sheet, palette, useSettingsApi, type AppProps, type NuiResult } from '../../kit';
 import { KIND_COLOR, KIND_EXT, TAGS, childCount, favFolders, fmtDate, kb, moveTargets, pathTo, tagColor, viewOf, type FileEntry, type FilesSel, type SortKey } from './model';
 
 const BLUE = '#0088ff';
@@ -51,6 +51,7 @@ export default function App(p: AppProps) {
   const [query, setQuery] = useState('');
   const [pv, setPv] = useState<Pv | null>(null);
   const [toast, setToast] = useState('');
+  const [near, setNear] = useState<{ kind: 'file' | 'photo' | 'board'; id: number } | null>(null);
   const [sheet, setSheet] = useState<'none' | 'new' | 'name' | 'pick' | 'link' | 'item' | 'move'>('none');
   const [newKind, setNewKind] = useState<Kind>('folder');
   const [name, setName] = useState('');
@@ -281,10 +282,14 @@ export default function App(p: AppProps) {
             {item.kind !== 'folder' && (item.shared
               ? <Button kind="plain" onClick={() => void act(() => nui.call('files:unshare', item.id))}>{t('fil.unshare')}</Button>
               : <Button kind="plain" onClick={() => { void share(item.id); setSheet('none'); }}>{t('fil.share')}</Button>)}
+            {(item.kind === 'doc' || item.kind === 'photo' || item.kind === 'board') && (item.kind === 'doc' || item.ref !== null) && (
+              <Button kind="plain" onClick={() => { setNear({ kind: item.kind === 'doc' ? 'file' : (item.kind as 'photo' | 'board'), id: item.kind === 'doc' ? item.id : (item.ref as number) }); setSheet('none'); }}>{t('share.nearby')}</Button>
+            )}
             <Button kind="plain" onClick={() => void act(() => nui.call('files:delete', item.id))} style={{ color: '#ff383c' }}>{t('fil.delete')}</Button>
           </div>
         )}
       </Sheet>
+      <NearbySheet open={near !== null} onClose={() => setNear(null)} kind={near?.kind ?? 'file'} rid={near?.id ?? null} />
       <Sheet open={sheet === 'move' && item !== null} onClose={() => setSheet('none')} title={t('fil.move_title')}>
         {item && (
           <div style={{ maxHeight: 340, overflowY: 'auto' }}>

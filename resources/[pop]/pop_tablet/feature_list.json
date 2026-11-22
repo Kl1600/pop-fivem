@@ -719,7 +719,7 @@
       "id": "arb-04",
       "description": "Dictaphone : repli mémo dicté (texte horodaté + synthèse vocale si disponible) quand le micro est refusé",
       "verification": "vitest sur le choix de mode + rendu de l écran dégradé",
-      "passes": false
+      "passes": true
     }
   ]
 }

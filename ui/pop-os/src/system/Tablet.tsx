@@ -7,6 +7,7 @@ import { fetchNui, nuiApi, onNuiMessage } from '../nui/bridge';
 import { handleMessage, power, pushNotify, renameDevice, requestClose, setInstalled, setLanguage, setSetting, volume } from './actions';
 import { gameMsNow } from './clock';
 import { Screen } from './Screen';
+import { ShareOffer } from './ShareOffer';
 import { setSchedule } from './schedule';
 import { useOS } from './store';
 
@@ -65,7 +66,7 @@ export function Tablet() {
 
   const a = safeAccent(accent);
   const vars = a ? ({ ['--accent' as string]: a } as React.CSSProperties) : undefined;
-  const screen = <Screen shell={shell} />;
+  const screen = <><Screen shell={shell} /><ShareOffer /></>;
   return (
     <LazyMotion features={domAnimation}><MotionConfig reducedMotion="user">
       <TContext.Provider value={t}>
