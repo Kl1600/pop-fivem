@@ -66,6 +66,10 @@ Config.Clock = { Source = 'game', MsPerGameMinute = 2000, Zones = {} }
 -- Photos : 'database' (défaut, aucun secret) ou 'remote' (clé en convar `set pop_tablet_photo_key`).
 Config.Photos = { Mode = 'database', Url = '', FormField = 'file', UrlPath = 'url', Max = 200 }
 
+-- Appareil photo : 'native' (CreateMobilePhone + CellCamActivate) ou 'scripted' (caméra scriptée CreateCam à la position de la
+-- tablette). Le choix se fait au test en jeu ; Zooms = champs de vision de la caméra scriptée pour 0,5x, 1x, 2x.
+Config.Camera = { mode = 'native', Fov = { 75.0, 50.0, 25.0 } }
+
 -- Partage de proximité (mètres).
 Config.Share = { Distance = 3.0 }
 

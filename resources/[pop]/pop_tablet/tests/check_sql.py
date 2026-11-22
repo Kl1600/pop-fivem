@@ -10,7 +10,7 @@ import re
 import sqlite3
 import sys
 
-EXPECTED = 17
+EXPECTED = 20
 src = open('sql/install.sql', encoding='utf-8').read()
 src = re.sub(r'--[^\n]*', '', src)
 statements = [s.strip() for s in src.split(';\n') if s.strip()]
@@ -46,7 +46,7 @@ assert len(tables) == EXPECTED, 'attendu %d tables, trouvé %d' % (EXPECTED, len
 assert len(set(tables)) == EXPECTED, 'table en double'
 
 # Chaque table liée à une tablette porte `serial` et une clé étrangère CASCADE vers pop_tablet_devices.
-no_serial = {'pop_tablet_devices', 'pop_tablet_messages', 'pop_tablet_calls', 'pop_tablet_market', 'pop_tablet_sites'}
+no_serial = {'pop_tablet_devices', 'pop_tablet_messages', 'pop_tablet_calls', 'pop_tablet_market', 'pop_tablet_sites', 'pop_tablet_photo_albums'}
 for t in tables:
     cols = [r[1] for r in conn.execute('PRAGMA table_info(`%s`)' % t)]
     if t in no_serial:
@@ -71,8 +71,14 @@ try:
     sys.exit('UNIQUE phone non appliqué')
 except sqlite3.IntegrityError:
     pass
+conn.execute("INSERT INTO pop_tablet_photos (id, serial) VALUES (1, 'PT-AAAAAAAAAA')")
+conn.execute("INSERT INTO pop_tablet_albums (id, serial) VALUES (1, 'PT-AAAAAAAAAA')")
+conn.execute("INSERT INTO pop_tablet_photo_albums (album_id, photo_id) VALUES (1, 1)")
+conn.execute("INSERT INTO pop_tablet_note_folders (id, serial) VALUES (1, 'PT-AAAAAAAAAA')")
+conn.execute("INSERT INTO pop_tablet_files (id, serial, parent_id) VALUES (1, 'PT-AAAAAAAAAA', NULL)")
+conn.execute("INSERT INTO pop_tablet_files (id, serial, parent_id) VALUES (2, 'PT-AAAAAAAAAA', 1)")
 conn.execute("DELETE FROM pop_tablet_devices WHERE serial = 'PT-AAAAAAAAAA'")
-for t in ('pop_tablet_notes', 'pop_tablet_reminder_lists', 'pop_tablet_reminders', 'pop_tablet_mailboxes'):
+for t in ('pop_tablet_photo_albums', 'pop_tablet_photos', 'pop_tablet_albums', 'pop_tablet_note_folders', 'pop_tablet_files', 'pop_tablet_notes', 'pop_tablet_reminder_lists', 'pop_tablet_reminders', 'pop_tablet_mailboxes'):
     n = conn.execute('SELECT COUNT(*) FROM `%s`' % t).fetchone()[0]
     assert n == 0, t + ' non vidée par la cascade'
 

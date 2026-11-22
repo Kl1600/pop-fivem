@@ -26,6 +26,19 @@ Tablet.Max = {
     page    = 30,    -- éléments par page de liste
     payload = 16384, -- charge NUI -> serveur
     board   = 131072, -- charge NUI -> serveur pour un tableau
+    doc     = 20000, -- document texte de Fichiers
+    folder  = 40,    -- nom de dossier de notes, d'album
+}
+
+-- Limites des applis Notes, Photos et Fichiers (comptes et formats).
+Tablet.Media = {
+    notes = 200, noteFolders = 10, albums = 20, files = 500, depth = 6,
+    trashDays = 30, thumbBytes = 24576,
+    noteBlocks = 40, todoItems = 50, todoText = 120, tableRows = 12, tableCols = 6, cellText = 60, textBlock = 10000,
+    photoKinds = { photo = true, square = true, portrait = true, pano = true },
+    photoFx = { none = true, vivid = true, mono = true, drama = true, sepia = true },
+    fileTags = { red = true, orange = true, yellow = true, green = true, blue = true },
+    fileKinds = { folder = true, doc = true, photo = true, audio = true, board = true },
 }
 
 -- Version du système et modèle affichés dans Réglages > Général > Informations.
@@ -86,13 +99,14 @@ local relayed = {
     'device:setup', 'device:unlock', 'device:changeCode', 'device:lock',
     'settings:save', 'settings:rename',
     'store:list', 'store:install', 'store:remove',
-    'notes:list', 'notes:get', 'notes:save', 'notes:delete',
+    'notes:list', 'notes:get', 'notes:save', 'notes:delete', 'notes:restore', 'notes:folderSave', 'notes:folderDelete',
     'calendar:list', 'calendar:save', 'calendar:delete',
     'reminders:list', 'reminders:save', 'reminders:delete', 'reminders:toggle', 'reminders:listSave',
-    'files:list', 'files:save', 'files:delete', 'files:move', 'files:share', 'files:open',
+    'files:list', 'files:get', 'files:save', 'files:delete', 'files:move', 'files:share', 'files:unshare', 'files:open',
     'board:list', 'board:get', 'board:save', 'board:delete',
     'clock:list', 'clock:saveAlarm', 'clock:deleteAlarm', 'clock:startTimer', 'clock:cancelTimer',
-    'photos:capture', 'photos:list', 'photos:get', 'photos:delete', 'photos:favorite',
+    'photos:capture', 'photos:list', 'photos:get', 'photos:delete', 'photos:favorite', 'photos:restore', 'photos:rate', 'photos:filter',
+    'photos:thumb', 'photos:albums', 'photos:albumSave', 'photos:albumDelete', 'photos:albumLink',
     'rec:save', 'rec:list', 'rec:delete',
     'messages:threads', 'messages:thread', 'messages:send', 'messages:read',
     'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history',

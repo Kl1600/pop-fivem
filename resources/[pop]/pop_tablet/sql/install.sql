@@ -31,16 +31,32 @@ CREATE TABLE IF NOT EXISTS `pop_tablet_mailboxes` (
   CONSTRAINT `fk_mailboxes_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `pop_tablet_note_folders` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `serial`     CHAR(13)        NOT NULL,
+  `name`       VARCHAR(40)     NOT NULL DEFAULT '',
+  `created_at` BIGINT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_note_folders_serial` (`serial`),
+  CONSTRAINT `fk_note_folders_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- body = blocs JSON (texte, liste à cocher, tableau, photo) ; excerpt = 120 premiers caractères du texte ; deleted_at = corbeille.
 CREATE TABLE IF NOT EXISTS `pop_tablet_notes` (
   `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `serial`     CHAR(13)        NOT NULL,
+  `folder_id`  BIGINT UNSIGNED NULL,
   `title`      VARCHAR(80)     NOT NULL DEFAULT '',
+  `excerpt`    VARCHAR(480)    NOT NULL DEFAULT '',
+  `hint`       VARCHAR(8)      NOT NULL DEFAULT '',
   `body`       TEXT            NULL,
   `pinned`     TINYINT(1)      NOT NULL DEFAULT 0,
+  `deleted_at` BIGINT          NULL,
   `updated_at` BIGINT          NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  KEY `idx_notes_serial` (`serial`, `pinned`, `updated_at`),
-  CONSTRAINT `fk_notes_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
+  KEY `idx_notes_serial` (`serial`, `deleted_at`, `pinned`, `updated_at`),
+  CONSTRAINT `fk_notes_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE,
+  CONSTRAINT `fk_notes_folder` FOREIGN KEY (`folder_id`) REFERENCES `pop_tablet_note_folders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `pop_tablet_events` (
@@ -95,6 +111,8 @@ CREATE TABLE IF NOT EXISTS `pop_tablet_files` (
   `ref_id`      BIGINT UNSIGNED NULL,
   `size`        INT UNSIGNED    NOT NULL DEFAULT 0,
   `share_token` CHAR(12)        NULL,
+  `tag`         VARCHAR(8)      NULL,
+  `fav`         TINYINT(1)      NOT NULL DEFAULT 0,
   `updated_at`  BIGINT          NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_files_share` (`share_token`),
@@ -114,19 +132,45 @@ CREATE TABLE IF NOT EXISTS `pop_tablet_boards` (
   CONSTRAINT `fk_boards_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- data et thumb = texte base64 (data URI webp) : MEDIUMTEXT et non BLOB, oxmysql rend les BLOB sous forme de tableau d'octets.
+-- kind = format de prise de vue ; fx = filtre d'affichage ; deleted_at = corbeille (30 jours).
 CREATE TABLE IF NOT EXISTS `pop_tablet_photos` (
-  `id`       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `serial`   CHAR(13)        NOT NULL,
-  `url`      VARCHAR(255)    NULL,
-  `data`     MEDIUMBLOB      NULL,
-  `w`        SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-  `h`        SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-  `place`    VARCHAR(80)     NOT NULL DEFAULT '',
-  `taken_at` BIGINT          NOT NULL DEFAULT 0,
-  `favorite` TINYINT(1)      NOT NULL DEFAULT 0,
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `serial`     CHAR(13)        NOT NULL,
+  `url`        VARCHAR(255)    NULL,
+  `data`       MEDIUMTEXT      NULL,
+  `thumb`      MEDIUMTEXT      NULL,
+  `kind`       VARCHAR(8)      NOT NULL DEFAULT 'photo',
+  `rating`     TINYINT         NOT NULL DEFAULT 0,
+  `fx`         VARCHAR(8)      NOT NULL DEFAULT 'none',
+  `w`          SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `h`          SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `place`      VARCHAR(80)     NOT NULL DEFAULT '',
+  `taken_at`   BIGINT          NOT NULL DEFAULT 0,
+  `favorite`   TINYINT(1)      NOT NULL DEFAULT 0,
+  `deleted_at` BIGINT          NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_photos_serial` (`serial`, `taken_at`),
+  KEY `idx_photos_serial` (`serial`, `deleted_at`, `taken_at`),
   CONSTRAINT `fk_photos_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `pop_tablet_albums` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `serial`     CHAR(13)        NOT NULL,
+  `name`       VARCHAR(40)     NOT NULL DEFAULT '',
+  `created_at` BIGINT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_albums_serial` (`serial`),
+  CONSTRAINT `fk_albums_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `pop_tablet_photo_albums` (
+  `album_id` BIGINT UNSIGNED NOT NULL,
+  `photo_id` BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (`album_id`, `photo_id`),
+  KEY `idx_photo_albums_photo` (`photo_id`),
+  CONSTRAINT `fk_pa_album` FOREIGN KEY (`album_id`) REFERENCES `pop_tablet_albums` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pa_photo` FOREIGN KEY (`photo_id`) REFERENCES `pop_tablet_photos` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `pop_tablet_recordings` (
