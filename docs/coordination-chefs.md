@@ -83,3 +83,6 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 
 ## Fichiers écrits par le serveur
 Un script qui écrit un fichier sur le serveur (SaveResourceFile, io.open) doit l'ajouter aux `--exclude-glob` de `.github/workflows/deploy.yml` (demander au Chef 1), sinon chaque déploiement l'écrase ou le supprime. Protégés aujourd'hui : bans.json, staff_characters.json, disconnect_logs.json, diag_save.log (pop_admin), plants.json (pop_weed), overrides.json, doors.json (pop_doorlock).
+
+## ESX et inventaire externe (22/11)
+ESX est réglé avec `Config.CustomInventory = true` (pop_inventory). ESX 1.16 ne gère ce mode qu'avec ox_inventory : sa sauvegarde plantait sur `getInventory(true)` (inventory.lua:112), donc banque, job et position n'étaient plus enregistrés et le joueur restait bloqué (« stale player entry »). Corrigé sur le serveur par l'action `fix_esx_save` de Server tools (copie de l'original : `inventory.lua.pop-backup`). **À refaire après chaque mise à jour d'ESX.** Ne jamais appeler `xPlayer.getInventory` / `addInventoryItem` d'ESX : passer par pop_inventory ou le bridge.
