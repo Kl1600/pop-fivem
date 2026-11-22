@@ -107,7 +107,8 @@ export function applyOpen(d: OpenData, lang: string): void {
     serial: d.serial ?? null,
     needSetup: d.needSetup === true,
     mailDomain: typeof d.mailDomain === 'string' && d.mailDomain ? d.mailDomain : 'pop.ls',
-    screen: d.needSetup ? 'setup' : 'lock',
+    // Le serveur décide : session encore déverrouillée (`locked:false` + boot) = accueil, sinon écran verrouillé.
+    screen: d.needSetup ? 'setup' : d.locked === false && boot ? 'home' : 'lock',
     on: true,
     weather: d.weather ?? null,
     clock: d.clock,

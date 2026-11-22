@@ -56,7 +56,7 @@ export default function App(p: AppProps) {
     setWhite(true);
     later(() => setWhite(false), flash ? 400 : 90);
     setShooting(false);
-    if (!r.ok || r.id === undefined) { setMsg(r.err ? t(r.err) : t('cam.err')); return; }
+    if (!r.ok || r.id === undefined) { setMsg(!r.err || r.err === 'err_unavailable' ? t('cam.err') : t(r.err)); return; }
     setMsg(t('cam.saved'));
     const g = await nui.call<GetRes>('photos:get', r.id);
     if (g.ok && g.photo) setThumb(g.photo.data);

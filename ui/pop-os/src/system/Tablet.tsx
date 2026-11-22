@@ -43,6 +43,7 @@ export function Tablet() {
   const boot = useOS((s) => s.boot);
   const weather = useOS((s) => s.weather);
   const apps = useOS((s) => s.apps);
+  const camera = useOS((s) => s.app === 'camera');
   const settingsApi: SettingsApi = useMemo(() => ({
     settings: st, name, serial: serial ?? '', battery, lang,
     set: setSetting,
@@ -81,7 +82,7 @@ export function Tablet() {
                 <div className={`pop ${dark ? 'dk' : ''}`} dir={rtl ? 'rtl' : 'ltr'} data-blur={st.blur === false ? 'off' : 'on'} data-bold={st.bold === true ? 'on' : 'off'} data-theme={dark ? 'dark' : 'light'} style={{ position: 'fixed', inset: 0, ...vars }}>
                   {shell ? (
                     <Fit w={SHELL_W} h={SHELL_H}>
-                      <Shell powerLabel={t('hw.power')} volUpLabel={t('hw.vol_up')} volDownLabel={t('hw.vol_down')} onPower={power} onVolUp={() => volume(8)} onVolDown={() => volume(-8)}>
+                      <Shell powerLabel={t('hw.power')} volUpLabel={t('hw.vol_up')} volDownLabel={t('hw.vol_down')} onPower={power} onVolUp={() => volume(8)} onVolDown={() => volume(-8)} clear={camera}>
                         {screen}
                       </Shell>
                     </Fit>

@@ -1,4 +1,4 @@
-import { fetchNui, nuiApi } from '../nui/bridge';
+import { fetchNui, nuiApi, onServerLocked } from '../nui/bridge';
 import { getApp } from '../apps/registry';
 import type { Boot, ClockSnap, NotifyMsg, OpenData, Settings, StoreItem, Weather } from '../nui/types';
 import { isLang, makeT } from '../i18n';
@@ -32,7 +32,23 @@ export function handleOpen(d: OpenData): void {
   clearTimers();
   pendingApp = d.app && typeof d.app.app === 'string' ? d.app : null;
   applyOpen(d, langOf(d));
+  if (os.get().screen === 'home') {
+    void syncSchedule();
+    if (pendingApp) {
+      const p = pendingApp;
+      pendingApp = null;
+      if (os.get().apps.includes(p.app)) openApp(p.app, undefined, p.data);
+    }
+  }
 }
+
+/** Le serveur a reverrouillé la session (inactivité) : retour à l'écran verrouillé, le code est redemandé. */
+export function relock(): void {
+  const s = os.get();
+  if (!s.open || s.screen === 'lock' || s.screen === 'code' || s.screen === 'setup') return;
+  os.set({ screen: 'code', codeError: null, app: null, appData: null, cc: false, nc: false, search: false, sw: false, edit: false, banner: null });
+}
+onServerLocked(relock);
 
 /** Fermeture : tout est remis à zéro, plus aucun minuteur ne reste. */
 export function closeTablet(): void {
