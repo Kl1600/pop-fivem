@@ -3,17 +3,20 @@
 #  - logs        : affiche les erreurs récentes de la console (txAdmin).
 #  - disable_esx : déplace les ressources esx_* inutiles hors de resources/
 #                  (dans esx_desactives/ à la racine du serveur, réversible).
+#  - fix_esx_save : corrige la sauvegarde ESX avec un inventaire externe (pop_inventory) :
+#                  getInventory(true) plantait (inventoryIndexes nil), donc ESX n'enregistrait plus
+#                  banque, job, position. Copie de l'original : inventory.lua.pop-backup (réversible).
 name: Server tools
 
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: "list, disable_esx ou logs"
+        description: "list, disable_esx, logs ou fix_esx_save"
         required: true
         default: list
         type: choice
-        options: [list, disable_esx, logs]
+        options: [list, disable_esx, logs, fix_esx_save]
 
 concurrency:
   group: server-tools
@@ -106,3 +109,35 @@ jobs:
           tail -n 4000 fx.log | sed 's/\x1b\[[0-9;]*m//g' \
             | grep -iE 'error|erreur|warn|failed|stale|save|dropped|es_extended|script:pop|oxmysql|stack|attempt to' \
             | grep -viE 'licensekey|password|mysql_connection_string|token' | tail -n 150
+
+      - name: Corriger la sauvegarde ESX (inventaire externe)
+        if: inputs.action == 'fix_esx_save'
+        run: |
+          RES='${{ steps.p.outputs.res }}'
+          DIR=$(grep -E '/es_extended/?$' tree.txt | head -1 | sed 's#/$##; s#^\./##')
+          if [ -z "$DIR" ]; then echo "es_extended introuvable dans resources/"; exit 1; fi
+          FILE="$RES/$DIR/server/classes/player/inventory.lua"
+          CONF="$RES/$DIR/shared/config/main.lua"
+          echo "Fichier : $FILE"
+          lftp -e "
+            set sftp:auto-confirm yes;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
+            get '$FILE' -o inventory.lua;
+            get '$CONF' -o config_main.lua;
+            bye
+          "
+          echo "== Réglage inventaire d'ESX :"; grep -nE 'CustomInventory|PlayerFunctionOverride' config_main.lua || true
+          OLD='for itemName, item in pairs(inventoryIndexes\[self\]) do'
+          if grep -q 'pairs(inventoryIndexes\[self\] or {})' inventory.lua; then echo "Déjà corrigé."; exit 0; fi
+          if ! grep -q "$OLD" inventory.lua; then echo "Ligne attendue absente : version d'ESX différente, rien n'est modifié."; exit 1; fi
+          cp inventory.lua inventory.orig.lua
+          sed -i 's/pairs(inventoryIndexes\[self\])/pairs(inventoryIndexes[self] or {})/g' inventory.lua
+          echo "== Modification :"; diff inventory.orig.lua inventory.lua || true
+          lftp -e "
+            set sftp:auto-confirm yes;
+            open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
+            put inventory.orig.lua -o '$FILE.pop-backup';
+            put inventory.lua -o '$FILE';
+            bye
+          "
+          echo "Corrigé. Redémarrer le serveur pour l'appliquer. Annuler : remettre $FILE.pop-backup à la place de inventory.lua."
