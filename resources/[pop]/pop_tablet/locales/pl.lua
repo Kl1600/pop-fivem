@@ -54,4 +54,8 @@ Locales['pl'] = {
     log_mode_owner      = 'Ekwipunek bez metadanych: jeden tablet na postać (tryb właściciela)',
     log_pepper_missing  = 'Zmienna pop_tablet_pepper nie jest ustawiona: losowy pepper jest zapisany w KVP serwera. Ustaw ją w server.cfg.',
     log_purged          = 'Usunięto %s starych wiadomości i %s starych połączeń',
+    err_not_found = 'Nie znaleziono',
+    err_limit = 'Osiągnięto limit',
+    err_depth = 'Foldery zagnieżdżone zbyt głęboko',
+    err_token = 'Nieprawidłowy link udostępniania',
 }

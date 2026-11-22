@@ -54,4 +54,8 @@ Locales['tr'] = {
     log_mode_owner      = 'Meta verisiz envanter: karakter başına bir tablet (sahip modu)',
     log_pepper_missing  = 'pop_tablet_pepper convar değeri ayarlı değil: rastgele bir pepper sunucunun KVP alanında saklanıyor. server.cfg içinde ayarla.',
     log_purged          = '%s eski mesaj ve %s eski arama silindi',
+    err_not_found = 'Bulunamadı',
+    err_limit = 'Sınıra ulaşıldı',
+    err_depth = 'Klasörler çok derin iç içe',
+    err_token = 'Geçersiz paylaşım bağlantısı',
 }

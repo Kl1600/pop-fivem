@@ -732,6 +732,271 @@ do
 end
 
 ------------------------------------------------------------------------
+section('Médias : Photos, Notes, Fichiers (app-pho, app-not, app-fil)')
+------------------------------------------------------------------------
+do
+    -- Base fictive en mémoire (même contrat que server/db.lua).
+    local P, A, PA, NO, NF, FI = {}, {}, {}, {}, {}, {}
+    Config.Photos.Max = 200
+    Config.Session.IdleLockSeconds = 1000000 -- le temps simulé avance de 5 s par appel
+    local seq = 0
+    local function nid() seq = seq + 1 return seq end
+    local store = {}
+    local realJson = json
+    def('json', { encode = function(v) local k = 'J' .. nid() store[k] = v return k end, decode = function(k) return store[k] end })
+    DB.ListPhotos = function(serial, scope, albumId, offset, limit)
+        local out = {}
+        for _, p in pairs(P) do
+            local inAlbum = scope ~= 'album' or PA[albumId .. ':' .. p.id]
+            local live = p.deleted_at == nil
+            if p.serial == serial and inAlbum and ((scope == 'trash') ~= live) and (scope ~= 'fav' or p.favorite == 1) then out[#out + 1] = p end
+        end
+        table.sort(out, function(a, b) return a.id > b.id end)
+        local page = {}
+        for i = offset + 1, math.min(#out, offset + limit) do page[#page + 1] = out[i] end
+        return page
+    end
+    DB.PhotoCounts = function(serial)
+        local c = { total = 0, fav = 0, trash = 0 }
+        for _, p in pairs(P) do
+            if p.serial == serial then
+                if p.deleted_at then c.trash = c.trash + 1 else c.total = c.total + 1 if p.favorite == 1 then c.fav = c.fav + 1 end end
+            end
+        end
+        return c
+    end
+    DB.GetPhoto = function(serial, id) local p = P[id] return p and p.serial == serial and p or nil end
+    DB.PhotoOwned = function(serial, id) return P[id] ~= nil and P[id].serial == serial end
+    DB.SetPhotoField = function(serial, id, f, v) if not DB.PhotoOwned(serial, id) then return false end P[id][f] = v return true end
+    DB.SetPhotoDeleted = function(serial, id, now) if not DB.PhotoOwned(serial, id) then return false end P[id].deleted_at = now return true end
+    DB.DeletePhoto = function(serial, id) if not DB.PhotoOwned(serial, id) then return false end P[id] = nil return true end
+    DB.PurgePhotoTrash = function() return 0 end
+    DB.ListAlbums = function(serial) local o = {} for _, a in pairs(A) do if a.serial == serial then o[#o + 1] = { id = a.id, name = a.name, n = 0 } end end return o end
+    DB.CountAlbums = function(serial) return #DB.ListAlbums(serial) end
+    DB.InsertAlbum = function(serial, name) local id = nid() A[id] = { id = id, serial = serial, name = name } return id end
+    DB.RenameAlbum = function(serial, id, name) if not A[id] or A[id].serial ~= serial then return false end A[id].name = name return true end
+    DB.DeleteAlbum = function(serial, id) if not A[id] or A[id].serial ~= serial then return false end A[id] = nil return true end
+    DB.AlbumOwned = function(serial, id) return A[id] ~= nil and A[id].serial == serial end
+    DB.AlbumLink = function(a, p, on) PA[a .. ':' .. p] = on or nil end
+    DB.PhotoAlbums = function() return {} end
+    DB.InsertPhoto = function(serial, data, now, kind) local id = nid() P[id] = { id = id, serial = serial, data = data, kind = kind, rating = 0, favorite = 0, fx = 'none', taken_at = now } return id end
+    DB.CountPhotos = function(serial) local n = 0 for _, p in pairs(P) do if p.serial == serial then n = n + 1 end end return n end
+
+    DB.ListNotes = function(serial) local o = {} for _, n in pairs(NO) do if n.serial == serial then o[#o + 1] = { id = n.id, folder_id = n.folder, title = n.title, excerpt = n.excerpt, hint = n.hint, pinned = n.pinned and 1 or 0, deleted_at = n.deleted_at, updated_at = n.updated } end end return o end
+    DB.CountNotes = function(serial) return #DB.ListNotes(serial) end
+    DB.GetNote = function(serial, id) local n = NO[id] if not n or n.serial ~= serial then return nil end return { id = id, folder_id = n.folder, title = n.title, body = n.body, pinned = n.pinned and 1 or 0, deleted_at = n.deleted_at, updated_at = n.updated } end
+    DB.InsertNote = function(serial, n, now) local id = nid() NO[id] = { id = id, serial = serial, folder = n.folder, title = n.title, excerpt = n.excerpt, hint = n.hint, body = n.body, pinned = n.pinned, updated = now } return id end
+    DB.UpdateNote = function(serial, id, n, now) local o = NO[id] if not o or o.serial ~= serial then return false end o.folder, o.title, o.excerpt, o.hint, o.body, o.pinned, o.updated = n.folder, n.title, n.excerpt, n.hint, n.body, n.pinned, now return true end
+    DB.SetNoteDeleted = function(serial, id, now) local o = NO[id] if not o or o.serial ~= serial then return false end o.deleted_at = now return true end
+    DB.DeleteNote = function(serial, id) if not NO[id] or NO[id].serial ~= serial then return false end NO[id] = nil return true end
+    DB.PurgeNoteTrash = function() return 0 end
+    DB.ListNoteFolders = function(serial) local o = {} for _, f in pairs(NF) do if f.serial == serial then o[#o + 1] = f end end return o end
+    DB.NoteFolderOwned = function(serial, id) return NF[id] ~= nil and NF[id].serial == serial end
+    DB.InsertNoteFolder = function(serial, name) local id = nid() NF[id] = { id = id, serial = serial, name = name } return id end
+    DB.RenameNoteFolder = function(serial, id, name) if not DB.NoteFolderOwned(serial, id) then return false end NF[id].name = name return true end
+    DB.DeleteNoteFolder = function(serial, id) if not DB.NoteFolderOwned(serial, id) then return false end NF[id] = nil for _, n in pairs(NO) do if n.folder == id then n.folder = nil end end return true end
+
+    DB.ListFiles = function(serial) local o = {} for _, f in pairs(FI) do if f.serial == serial then o[#o + 1] = f end end return o end
+    DB.GetFile = function(serial, id) local f = FI[id] return f and f.serial == serial and f or nil end
+    DB.InsertFile = function(serial, f, now) local id = nid() FI[id] = { id = id, serial = serial, parent_id = f.parent, kind = f.kind, name = f.name, body = f.body, ref_id = f.ref, size = f.size, tag = f.tag, fav = f.fav and 1 or 0, updated_at = now } return id end
+    DB.UpdateFile = function(_, id, f, now) local o = FI[id] if not o then return false end o.name, o.body, o.size, o.tag, o.fav, o.updated_at = f.name, f.body, f.size, f.tag, f.fav and 1 or 0, now return true end
+    DB.MoveFile = function(_, id, parent) FI[id].parent_id = parent return true end
+    DB.DeleteFile = function(serial, id)
+        if not FI[id] or FI[id].serial ~= serial then return false end
+        local function rm(i) for k, f in pairs(FI) do if f.parent_id == i then rm(k) end end FI[i] = nil end
+        rm(id)
+        return true
+    end
+    DB.SetShareToken = function(_, id, token) for _, f in pairs(FI) do if token and f.share_token == token then return false end end FI[id].share_token = token return true end
+    DB.FileByToken = function(token) for _, f in pairs(FI) do if f.share_token == token then return f end end end
+    DB.PhotoData = function(id) return P[id] and P[id].data end
+    DB.BoardOwned = function() return false end
+    DB.RecordingOwned = function() return false end
+    for _, f in ipairs({ 'notes', 'files' }) do dofile('server/apps/' .. f .. '.lua') end
+
+    players[30] = 'char30'
+    inv[30] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+    local function tk() clock = clock + 5 end
+    tk()
+    local o = handlers['pop_tablet:device:open'](30, nil, '2026-06-14 08:30')
+    tk()
+    handlers['pop_tablet:device:setup'](30, { code = '4321', name = 'Cam Tab', lang = 'fr', mail = 'cam.test' })
+    local serial = o.serial
+    players[31] = 'char31'
+    inv[31] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+    tk()
+    local o2 = handlers['pop_tablet:device:open'](31, nil, '2026-06-14 08:30')
+    tk()
+    handlers['pop_tablet:device:setup'](31, { code = '4321', name = 'Autre', lang = 'fr', mail = 'autre.test' })
+    local serial2 = o2.serial
+
+    -- Photos
+    local mine = DB.InsertPhoto(serial, 'data:image/webp;base64,AAAA', clock, 'photo')
+    local theirs = DB.InsertPhoto(serial2, 'data:image/webp;base64,BBBB', clock, 'photo')
+    for _ = 1, 31 do DB.InsertPhoto(serial, 'data:image/webp;base64,AAAA', clock, 'square') end
+    tk()
+    local r = handlers['pop_tablet:photos:list'](30, { scope = 'all' })
+    check('photos:list : 30 par page, compteurs et albums sur la première page', r.ok and #r.items == 30 and r.more and r.counts.total == 32 and r.albums ~= nil, r.err)
+    r = handlers['pop_tablet:photos:list'](30, { scope = 'all', offset = 30 })
+    check('photos:list : page 2 = le reste, sans compteurs', #r.items == 2 and not r.more and r.counts == nil)
+    check('photos:list : portée ou décalage invalides refusés', handlers['pop_tablet:photos:list'](30, { scope = 'x' }).err == 'err_payload'
+        and handlers['pop_tablet:photos:list'](30, { offset = -1 }).err == 'err_payload')
+    check('photos:get : la photo d\'une autre tablette est introuvable', handlers['pop_tablet:photos:get'](30, theirs).err == 'err_not_found'
+        and handlers['pop_tablet:photos:get'](30, mine).photo.data == 'data:image/webp;base64,AAAA')
+    tk()
+    r = handlers['pop_tablet:photos:favorite'](30, mine)
+    check('favori : bascule', r.ok and r.fav == true and handlers['pop_tablet:photos:list'](30, { scope = 'fav' }).counts.fav == 1)
+    check('favori : photo d\'autrui refusée', handlers['pop_tablet:photos:favorite'](30, theirs).err == 'err_not_found' and P[theirs].favorite == 0)
+    tk()
+    check('étoiles : 0 à 5, 6 refusé', handlers['pop_tablet:photos:rate'](30, { id = mine, rating = 4 }).ok and P[mine].rating == 4
+        and handlers['pop_tablet:photos:rate'](30, { id = mine, rating = 6 }).err == 'err_payload')
+    check('filtre : liste blanche', handlers['pop_tablet:photos:filter'](30, { id = mine, fx = 'sepia' }).ok and handlers['pop_tablet:photos:filter'](30, { id = mine, fx = 'evil' }).err == 'err_payload')
+    tk()
+    check('vignette : data URI image acceptée, texte quelconque et > 24 Ko refusés', handlers['pop_tablet:photos:thumb'](30, { id = mine, data = 'data:image/webp;base64,QUJD' }).ok
+        and handlers['pop_tablet:photos:thumb'](30, { id = mine, data = '<script>' }).err == 'err_payload'
+        and handlers['pop_tablet:photos:thumb'](30, { id = mine, data = 'data:image/webp;base64,' .. string.rep('A', 25000) }).err ~= nil)
+    tk()
+    r = handlers['pop_tablet:photos:albumSave'](30, { name = 'Garage' })
+    local album = r.id
+    check('album : création', r.ok and album ~= nil)
+    tk()
+    check('album : photo et album d\'autrui refusés', handlers['pop_tablet:photos:albumLink'](30, { albumId = album, photoId = theirs, on = true }).err == 'err_not_found'
+        and handlers['pop_tablet:photos:albumLink'](31, { albumId = album, photoId = theirs, on = true }).err == 'err_not_found'
+        and handlers['pop_tablet:photos:albumLink'](30, { albumId = album, photoId = mine, on = true }).ok)
+    tk()
+    check('album : liste de ses photos', #handlers['pop_tablet:photos:list'](30, { scope = 'album', albumId = album }).items == 1)
+    for i = 1, 25 do tk() handlers['pop_tablet:photos:albumSave'](30, { name = 'A' .. i }) end
+    tk()
+    check('albums : plafond 20', handlers['pop_tablet:photos:albumSave'](30, { name = 'Trop' }).err == 'err_limit')
+    -- Suppression : corbeille puis définitive ; fond d'écran remis en automatique
+    tk()
+    handlers['pop_tablet:settings:save'](30, { wall = 'photo:' .. theirs })
+    check('fond depuis la photo d\'autrui refusé', rows[serial].settings == nil or rows[serial].settings.wall ~= 'photo:' .. theirs)
+    tk()
+    check('fond depuis sa photo accepté', handlers['pop_tablet:settings:save'](30, { wall = 'photo:' .. mine }).ok and rows[serial].settings.wall == 'photo:' .. mine)
+    tk()
+    r = handlers['pop_tablet:photos:delete'](30, mine)
+    check('suppression : corbeille d\'abord', r.ok and r.permanent == false and handlers['pop_tablet:photos:list'](30, { scope = 'trash' }).counts.trash == 1)
+    tk()
+    check('restauration', handlers['pop_tablet:photos:restore'](30, mine).ok and P[mine].deleted_at == nil)
+    tk()
+    handlers['pop_tablet:photos:delete'](30, mine)
+    tk()
+    r = handlers['pop_tablet:photos:delete'](30, mine)
+    check('suppression définitive + fond d\'écran remis en automatique', r.permanent and r.wallReset and rows[serial].settings.wall == 'auto' and P[mine] == nil)
+    check('photo d\'autrui non supprimable', handlers['pop_tablet:photos:delete'](30, theirs).err == 'err_not_found' and P[theirs] ~= nil)
+    tk()
+    check('capture : format invalide refusé', handlers['pop_tablet:photos:capture'](30, { kind = 'video' }).err == 'err_payload')
+    tk()
+    r = handlers['pop_tablet:photos:capture'](30, { kind = 'pano' })
+    check('capture : format panorama enregistré', r.ok and P[r.id].kind == 'pano', r.err)
+
+    -- Notes
+    local note = handlers['pop_tablet:notes:save'](30, { title = 'Plaque', blocks = {
+        { type = 'text', value = 'Fourgon blanc\nplaque 42' }, { type = 'todo', items = { { t = 'Appeler', done = false } } },
+        { type = 'table', rows = { { 'a', 'b' }, { 'c', 'd' } } } } })
+    check('notes:save : création avec extrait', note.ok and note.excerpt == 'Fourgon blanc plaque 42' and note.hint == 'text', note.err)
+    tk()
+    local good = { { type = 'text', value = 'x' } }
+    local bads = {
+        type = { { type = 'script', value = 'x' } }, texte = { { type = 'text', value = 5 } }, ctrl = { { type = 'text', value = 'a\0b' } },
+        coches = { { type = 'todo', items = { { t = 'a', done = 'oui' } } } }, tableau = { { type = 'table', rows = { { 'a', 'b' }, { 'c' } } } },
+        large = { { type = 'table', rows = { { '1', '2', '3', '4', '5', '6', '7' } } } }, photoAutrui = { { type = 'photo', id = theirs } },
+        trop = (function() local t = {} for i = 1, 41 do t[i] = good[1] end return t end)(),
+    }
+    for name, b in pairs(bads) do
+        tk()
+        check('notes:save : refusé (' .. name .. ')', handlers['pop_tablet:notes:save'](30, { title = 't', blocks = b }).ok == false)
+    end
+    tk()
+    check('notes:save : titre 81 caractères refusé', handlers['pop_tablet:notes:save'](30, { title = string.rep('a', 81), blocks = good }).err == 'err_too_large')
+    tk()
+    check('notes:save : corps > 10 000 refusé', handlers['pop_tablet:notes:save'](30, { title = 't', blocks = { { type = 'text', value = string.rep('a', 10000) }, { type = 'text', value = string.rep('a', 100) } } }).err ~= nil)
+    tk()
+    local shot = DB.InsertPhoto(serial, 'data:image/webp;base64,AAAA', clock, 'photo')
+    check('notes:save : photo à soi acceptée', handlers['pop_tablet:notes:save'](30, { title = 'p', blocks = { { type = 'photo', id = shot } } }).hint == 'photo')
+    tk()
+    local got = handlers['pop_tablet:notes:get'](30, note.id)
+    check('notes:get : blocs relus', got.ok and #got.note.blocks == 3 and got.note.title == 'Plaque')
+    check('notes:get : note d\'autrui introuvable', handlers['pop_tablet:notes:get'](31, note.id).err == 'err_not_found')
+    tk()
+    check('notes:save : épinglée + modification', handlers['pop_tablet:notes:save'](30, { id = note.id, title = 'Plaque 2', blocks = good, pinned = true }).ok and NO[note.id].pinned == true)
+    check('notes:save : modifier la note d\'autrui refusé', handlers['pop_tablet:notes:save'](31, { id = note.id, title = 'x', blocks = good }).err == 'err_not_found' and NO[note.id].title == 'Plaque 2')
+    tk()
+    local f = handlers['pop_tablet:notes:folderSave'](30, { name = 'Travail' })
+    tk()
+    check('dossier de notes créé, note rangée dedans', f.ok and handlers['pop_tablet:notes:save'](30, { id = note.id, title = 'x', blocks = good, folder = f.id }).ok and NO[note.id].folder == f.id)
+    tk()
+    check('note dans le dossier d\'autrui refusée', handlers['pop_tablet:notes:save'](31, { title = 'x', blocks = good, folder = f.id }).err == 'err_not_found')
+    tk()
+    handlers['pop_tablet:notes:folderDelete'](30, f.id)
+    check('dossier supprimé : la note revient au dossier par défaut', NO[note.id].folder == nil)
+    tk()
+    check('notes : corbeille puis restauration', handlers['pop_tablet:notes:delete'](30, note.id).permanent == false and NO[note.id].deleted_at ~= nil
+        and handlers['pop_tablet:notes:restore'](30, note.id).ok and NO[note.id].deleted_at == nil)
+    tk()
+    handlers['pop_tablet:notes:delete'](30, note.id)
+    tk()
+    check('notes : deuxième suppression = définitive', handlers['pop_tablet:notes:delete'](30, note.id).permanent == true and NO[note.id] == nil)
+    for _ = 1, 200 do DB.InsertNote(serial, { title = 't', excerpt = '', hint = '', body = 'J0', pinned = false }, clock) end
+    tk()
+    check('notes : la 201e est refusée', handlers['pop_tablet:notes:save'](30, { title = 't', blocks = good }).err == 'err_limit')
+
+    -- Fichiers
+    tk()
+    local d1 = handlers['pop_tablet:files:save'](30, { kind = 'folder', name = 'Rapports' })
+    check('files : dossier créé', d1.ok)
+    tk()
+    local doc = handlers['pop_tablet:files:save'](30, { kind = 'doc', name = 'Note.txt', body = 'Bonjour', parentId = d1.id })
+    check('files : document dans le dossier', doc.ok and FI[doc.id].size == 7)
+    tk()
+    check('files : parent d\'autrui refusé', handlers['pop_tablet:files:save'](31, { kind = 'doc', name = 'x', parentId = d1.id }).err == 'err_not_found')
+    check('files : document trop long refusé', handlers['pop_tablet:files:save'](30, { kind = 'doc', name = 'x', body = string.rep('a', 20001) }).err ~= nil)
+    tk()
+    check('files : tag inconnu refusé', handlers['pop_tablet:files:save'](30, { kind = 'doc', name = 'x', tag = 'pink' }).err == 'err_payload')
+    tk()
+    check('files : raccourci photo : la photo doit être à soi', handlers['pop_tablet:files:save'](30, { kind = 'photo', name = 'p', refId = theirs }).err == 'err_not_found')
+    tk()
+    check('files : raccourci photo à soi accepté', handlers['pop_tablet:files:save'](30, { kind = 'photo', name = 'p', refId = shot }).ok)
+    tk()
+    check('files:get : corps relu, autrui refusé', handlers['pop_tablet:files:get'](30, doc.id).file.body == 'Bonjour' and handlers['pop_tablet:files:get'](31, doc.id).err == 'err_not_found')
+    tk()
+    check('files : modification (tag, favori)', handlers['pop_tablet:files:save'](30, { id = doc.id, name = 'Note.txt', body = 'Salut', tag = 'red', fav = true }).ok
+        and FI[doc.id].tag == 'red' and FI[doc.id].fav == 1 and FI[doc.id].size == 5)
+    local parent, depthErr = nil, nil
+    for i = 1, 7 do
+        tk()
+        local res = handlers['pop_tablet:files:save'](30, { kind = 'folder', name = 'n' .. i, parentId = parent })
+        if res.ok then parent = res.id else depthErr = res.err end
+    end
+    check('files : profondeur <= 6 (le 7e niveau est refusé)', depthErr == 'err_depth', depthErr)
+    tk()
+    check('files:move : dans soi-même ou un descendant refusé', handlers['pop_tablet:files:move'](30, { id = d1.id, parentId = d1.id }).err == 'err_depth')
+    tk()
+    check('files:move : un document vers un autre dossier', handlers['pop_tablet:files:move'](30, { id = doc.id, parentId = parent }).ok and FI[doc.id].parent_id == parent)
+    tk()
+    check('files:move : vers la racine', handlers['pop_tablet:files:move'](30, { id = doc.id }).ok and FI[doc.id].parent_id == nil)
+    tk()
+    local sh = handlers['pop_tablet:files:share'](30, doc.id)
+    check('files:share : jeton de 12 caractères', sh.ok and #sh.token == 12 and sh.token:match('^[A-Z2-9]+$') ~= nil)
+    tk()
+    check('files:share : un dossier ne se partage pas', handlers['pop_tablet:files:share'](30, d1.id).err == 'err_not_found')
+    tk()
+    local op = handlers['pop_tablet:files:open'](31, sh.token)
+    check('files:open : un autre joueur lit le document partagé', op.ok and op.file.body == 'Salut' and op.file.name == 'Note.txt')
+    tk()
+    check('files:open : jeton invalide refusé', handlers['pop_tablet:files:open'](31, 'AAAAAAAAAAAA').err == 'err_token' and handlers['pop_tablet:files:open'](31, 'abc').err == 'err_token')
+    tk()
+    handlers['pop_tablet:files:unshare'](30, doc.id)
+    tk()
+    check('files:unshare : le jeton ne marche plus', handlers['pop_tablet:files:open'](31, sh.token).err == 'err_token')
+    tk()
+    check('files:delete : un dossier emporte son contenu', handlers['pop_tablet:files:delete'](30, d1.id).ok and FI[d1.id] == nil)
+    check('files:delete : fichier d\'autrui refusé', handlers['pop_tablet:files:delete'](31, doc.id).err == 'err_not_found' and FI[doc.id] ~= nil)
+    def('json', realJson)
+end
+
+------------------------------------------------------------------------
 section('client : ouverture, focus, animation, relais, mort, arrêt')
 do
     local cmds, keymaps, netEvents, gameHandlers, nuiCb, nuiMsgs, focus = {}, {}, {}, {}, {}, {}, {}
@@ -795,7 +1060,13 @@ do
         end,
     }
     Config.Locale = 'en'
-    for _, f in ipairs({ 'locale', 'anim', 'device', 'scheduler', 'main', 'nui', 'api' }) do dofile('client/' .. f .. '.lua') end
+    local camCalls = {}
+    for _, n in ipairs({ 'CreateMobilePhone', 'CellCamActivate', 'CellCamActivateSelfieMode', 'DestroyMobilePhone', 'CreateCam', 'SetCamCoord',
+        'SetCamRot', 'SetCamFov', 'SetCamActive', 'RenderScriptCams', 'DestroyCam', 'SetGameplayCamRelativeHeading', 'SetGameplayCamRelativePitch',
+        'GetEntityHeading', 'GetPedBoneCoords' }) do
+        def(n, function(...) camCalls[#camCalls + 1] = n if n == 'CreateCam' then return 9 end if n == 'GetPedBoneCoords' then return { x = 0, y = 0, z = 0 } end if n == 'GetEntityHeading' then return 0.0 end end)
+    end
+    for _, f in ipairs({ 'locale', 'anim', 'camera', 'device', 'scheduler', 'main', 'nui', 'api' }) do dofile('client/' .. f .. '.lua') end
     loading = false
     local C = Tablet.Client
     local function triggered(name) for i = #triggers, 1, -1 do if triggers[i].name == name then return triggers[i] end end end
@@ -866,8 +1137,32 @@ do
     serverReply['pop_tablet:notes:save'] = nil
     nuiCb['tablet:call']({ name = 'notes:save', data = {} }, function(r) got = r end)
     check('relais : pas de réponse serveur -> err_timeout', got.err == 'err_timeout')
-    nuiCb['tablet:camera']({}, function(r) got = r end)
-    check('caméra/carte/micro : réponse propre en attendant les applis', got.ok == false and got.err == 'err_unavailable')
+    nuiCb['tablet:map']({}, function(r) got = r end)
+    check('carte/micro : réponse propre en attendant les applis', got.ok == false and got.err == 'err_unavailable')
+    -- Appareil photo : natives CellCam, repli scripté, fermeture sans fuite
+    camCalls = {}
+    nuiCb['tablet:camera']({ action = 'start' }, function(r) got = r end)
+    check('caméra native : CreateMobilePhone puis CellCamActivate, pas de zoom', got.ok and got.mode == 'native' and got.zoom == false
+        and camCalls[1] == 'CreateMobilePhone' and camCalls[2] == 'CellCamActivate' and C.Camera.Active())
+    nuiCb['tablet:camera']({ action = 'selfie', on = true }, function(r) got = r end)
+    check('caméra : selfie par CellCamActivateSelfieMode', got.ok and camCalls[#camCalls] == 'CellCamActivateSelfieMode')
+    nuiCb['tablet:camera']({ action = 'stop' }, function(r) got = r end)
+    check('caméra : arrêt = DestroyMobilePhone, plus active', camCalls[#camCalls] == 'DestroyMobilePhone' and not C.Camera.Active())
+    local n0 = #camCalls
+    C.Camera.Stop()
+    check('caméra : double arrêt sans effet', #camCalls == n0)
+    Config.Camera.mode = 'scripted'
+    camCalls = {}
+    nuiCb['tablet:camera']({ action = 'start' }, function(r) got = r end)
+    check('caméra scriptée : CreateCam + rendu, zoom possible', got.ok and got.mode == 'scripted' and got.zoom and camCalls[1] == 'CreateCam' and camCalls[#camCalls] == 'RenderScriptCams')
+    check('caméra scriptée : zoom et orientation acceptés, valeurs folles refusées', C.Camera.Zoom(3) and not C.Camera.Zoom(9) and C.Camera.Look(5, 5) and not C.Camera.Look('a', 1))
+    C.Close('key')
+    check('fermeture de la tablette : caméra scriptée détruite', not C.Camera.Active() and camCalls[#camCalls] == 'DestroyCam')
+    Config.Camera.mode = 'native'
+    nuiCb['tablet:camera']({ action = 'start' }, function(r) got = r end)
+    check('caméra : tablette fermée refusée', got.ok == false and got.err == 'err_session')
+    cmds.pop_tablet_toggle()
+    removedHandlers = 0
 
     -- Horloge et resynchronisation
     clientTimers = {}

@@ -54,4 +54,8 @@ Locales['fr'] = {
     log_mode_owner      = 'Inventaire sans métadonnées : une tablette par personnage (mode propriétaire)',
     log_pepper_missing  = "La convar pop_tablet_pepper n'est pas définie : un poivre aléatoire est conservé dans le KVP du serveur. Définissez-la dans server.cfg.",
     log_purged          = '%s anciens messages et %s anciens appels supprimés',
+    err_not_found = 'Introuvable',
+    err_limit = 'Limite atteinte',
+    err_depth = 'Dossiers trop imbriqués',
+    err_token = 'Lien de partage invalide',
 }

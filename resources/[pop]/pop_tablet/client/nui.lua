@@ -59,8 +59,20 @@ RegisterNUICallback('tablet:locale', function(data, cb)
     cb({ ok = true, locale = texts, rtl = texts._rtl })
 end)
 
--- Caméra, carte et micro : branchés avec les applis correspondantes (passages suivants).
-for _, name in ipairs({ 'tablet:camera', 'tablet:map', 'tablet:micro' }) do
+-- Appareil photo : start | stop | selfie | zoom | look. La capture passe par le relais `photos:capture` (serveur).
+RegisterNUICallback('tablet:camera', function(data, cb)
+    if not C.IsOpen() then return cb({ ok = false, err = 'err_session' }) end
+    local action = type(data) == 'table' and data.action or nil
+    if action == 'start' then return cb(C.Camera.Start()) end
+    if action == 'stop' then C.Camera.Stop() return cb({ ok = true }) end
+    if action == 'selfie' then return cb({ ok = C.Camera.Selfie(data.on) }) end
+    if action == 'zoom' then return cb({ ok = C.Camera.Zoom(data.level) }) end
+    if action == 'look' then return cb({ ok = C.Camera.Look(data.dx, data.dy) }) end
+    cb({ ok = false, err = 'err_payload' })
+end)
+
+-- Carte et micro : branchés avec les applis correspondantes (passages suivants).
+for _, name in ipairs({ 'tablet:map', 'tablet:micro' }) do
     RegisterNUICallback(name, function(_, cb)
         cb({ ok = false, err = 'err_unavailable' })
     end)

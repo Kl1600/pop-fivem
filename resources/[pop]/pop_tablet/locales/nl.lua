@@ -54,4 +54,8 @@ Locales['nl'] = {
     log_mode_owner      = 'Inventaris zonder metadata: één tablet per personage (eigenaarsmodus)',
     log_pepper_missing  = 'De convar pop_tablet_pepper is niet ingesteld: een willekeurige pepper wordt bewaard in de KVP van de server. Stel hem in via server.cfg.',
     log_purged          = '%s oude berichten en %s oude gesprekken verwijderd',
+    err_not_found = 'Niet gevonden',
+    err_limit = 'Limiet bereikt',
+    err_depth = 'Mappen te diep genest',
+    err_token = 'Ongeldige deellink',
 }

@@ -54,4 +54,8 @@ Locales['es'] = {
     log_mode_owner      = 'Inventario sin metadatos: una tablet por personaje (modo propietario)',
     log_pepper_missing  = 'La convar pop_tablet_pepper no está definida: se guarda un pepper aleatorio en el KVP del servidor. Defínela en server.cfg.',
     log_purged          = 'Se eliminaron %s mensajes antiguos y %s llamadas antiguas',
+    err_not_found = 'No encontrado',
+    err_limit = 'Límite alcanzado',
+    err_depth = 'Carpetas demasiado anidadas',
+    err_token = 'Enlace para compartir no válido',
 }

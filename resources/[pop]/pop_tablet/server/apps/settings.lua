@@ -36,6 +36,8 @@ function S.Validate(patch)
         elseif rule == 'wall' then
             local ok = value == 'auto'
             if type(value) == 'string' and value:match('^%d$') and tonumber(value) < Tablet.WallpaperCount then ok = true end
+            -- Fond tiré d'une photo : 'photo:<id>' ; la propriété de la photo est vérifiée à l'enregistrement.
+            if type(value) == 'string' and #value <= 17 and value:match('^photo:[1-9]%d*$') then ok = true end
             if not ok then return nil, 'err_payload' end
             out[key] = value
         elseif rule == 'notif' then
@@ -62,6 +64,9 @@ function S.Save(src, patch)
     if not s then return Tablet.Fail(err) end
     local clean, verr = S.Validate(patch)
     if not clean then return Tablet.Fail(verr) end
+    if type(clean.wall) == 'string' and clean.wall:sub(1, 6) == 'photo:' and not Tablet.DB.PhotoOwned(s.serial, tonumber(clean.wall:sub(7))) then
+        return Tablet.Fail('err_not_found')
+    end
     local merged = {}
     for k, v in pairs(s.settings or {}) do merged[k] = v end
     for k, v in pairs(clean) do merged[k] = v end

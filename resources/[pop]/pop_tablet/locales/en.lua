@@ -54,4 +54,8 @@ Locales['en'] = {
     log_mode_owner      = 'Inventory without metadata: one tablet per character (owner mode)',
     log_pepper_missing  = 'Convar pop_tablet_pepper is not set: a random pepper is stored in the server KVP. Set it in server.cfg.',
     log_purged          = 'Purged %s old messages and %s old calls',
+    err_not_found = 'Not found',
+    err_limit = 'Limit reached',
+    err_depth = 'Folders are nested too deeply',
+    err_token = 'Invalid share link',
 }

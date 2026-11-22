@@ -43,6 +43,7 @@ function C.Close(reason)
     lastOpen = nil
     watchDeath(false)
     C.StopResync()
+    if C.Camera then C.Camera.Stop() end
     SetNuiFocus(false, false)
     C.Post('tablet:close', { reason = reason })
     C.Anim.Stop()

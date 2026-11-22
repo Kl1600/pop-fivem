@@ -54,4 +54,8 @@ Locales['de'] = {
     log_mode_owner      = 'Inventar ohne Metadaten: ein Tablet pro Charakter (Besitzermodus)',
     log_pepper_missing  = 'Die Convar pop_tablet_pepper ist nicht gesetzt: Ein zufälliger Pepper wird im KVP des Servers gespeichert. Setze sie in der server.cfg.',
     log_purged          = '%s alte Nachrichten und %s alte Anrufe gelöscht',
+    err_not_found = 'Nicht gefunden',
+    err_limit = 'Limit erreicht',
+    err_depth = 'Ordner zu tief verschachtelt',
+    err_token = 'Ungültiger Freigabelink',
 }
