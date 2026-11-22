@@ -15,7 +15,7 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 
 ## Dépendances
 
-`pma_voice_challenge`, `ultra-voltlab`, `clm_ProgressBar`, `chHyperSound`, `interact-sound`, `pop_inventory`, `pop_notify`, `pop_v3dui`. `kq_lasers` facultatif (la mission marche sans).
+`pma_voice_challenge`, `ultra-voltlab`, `clm_ProgressBar`, `chHyperSound`, `interact-sound`, `pop_inventory`, `pop_notify`, `pop_v3dui`.
 
 ## Fichiers
 
@@ -26,7 +26,7 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 | `bridge/`, `shared/` | copies du modèle POP (ne pas modifier) |
 | `client/utils.lua` | synchro coop (`Relay`, `IsOwner`…), `CheckItem`, notifications, chargements, invites « E », coupure, minuteur, mini-jeu |
 | `client/sync.lua` | réception des évènements serveur (départ, entités, relais, fin), blips police |
-| `client/lasers.lua` | lasers kq_lasers |
+| `client/lasers.lua` | lasers de sécurité (dessin + détection, sans ressource externe) |
 | `client/scenario.lua` | Thornton et le test vocal |
 | `client/doors.lua` | portes du showroom, voiture de démo, GPS de livraison |
 | `client/spawn.lua` | voitures du showroom |
@@ -62,7 +62,7 @@ Touche E : interactions. Mini-jeu : flèches + Entrée, Retour arrière pour aba
 | `mission:server:delivered` | client → serveur | voiture livrée (netId + emplacement) |
 | `mission:client:pending` / `heistStart` / `reset` | serveur → équipe | étapes de la mission |
 | `grandtheftauto:usePCB` | serveur → client | objet pcb utilisé |
-| `grandtheftauto:alarme` | kq_lasers → client | laser déclenché |
+| `grandtheftauto:alarme` | local (lasers.lua) | laser touché : alarme + alerte police |
 
 ## Relancer
 

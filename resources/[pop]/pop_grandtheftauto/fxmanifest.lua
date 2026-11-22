@@ -17,7 +17,6 @@ dependencies {
     'pop_notify',
     'pop_v3dui',
 }
--- kq_lasers : facultatif (lasers de sécurité), la mission marche sans.
 
 shared_scripts {
     'config.lua',

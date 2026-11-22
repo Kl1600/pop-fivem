@@ -42,6 +42,10 @@ Restructuration selon `docs/gabarit-pop.md` (config.lua, locales/fr.lua, bridge/
 - pop_territories, pop_dealing : publiés. Zones dans `pop_territories/shared/zones.lua` (fichier propre au script, à garder si `shared/` est recopié). pop_dealing garde l'évènement `pop_dealing:notify` (écouté par la checklist de pop_territories) ; les réponses console de `dealing_list` restent visibles.
 - pop_grandtheftauto : restructuré (server/alert.lua découpé en common/mission/police/hack/delivery, crack.lua en hack.lua + pcb.lua, lasers à part, positions dans config.lua, 70 textes dans fr.lua). Audit de non-régression OK, publié. `/startheist` garde le contrôle ACE d'origine ; kit compté par licence. Callback interne `hasItem` à la place de `grandtheftauto:hasItem` (aucun autre script ne l'utilisait).
 
+### Lasers maison (22/11/2026)
+- kq_lasers (payant, licence absente : « You lack the required entitlement ») remplacé par nos lasers dans `pop_grandtheftauto/client/lasers.lua` : mêmes 23 segments, `DrawLine` rouge avec léger scintillement, dessin et détection seulement si actifs et à moins de 40 m du showroom (sinon veille `Wait(1000)`, boucle arrêtée quand les lasers sont éteints). Détection : distance pieds/bassin/tête – segment ≤ 0,25 m → `grandtheftauto:alarme` + 5 de dégâts, 10 s de délai. Mêmes évènements (startheist, mission:local:lasers, mission:local:reset, onResourceStop).
+- `resources/[pop]/kq_lasers` supprimé (le déploiement le retire du serveur), exclusion retirée de lint.yml, mentions retirées de coordination-chefs.md, analyse-structure.md et gabarit-pop.md.
+
 ### Reste
 - Tester la mission en jeu avec le client (après la restructuration).
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).
@@ -49,4 +53,3 @@ Restructuration selon `docs/gabarit-pop.md` (config.lua, locales/fr.lua, bridge/
 ### Bugs connus / à vérifier en jeu
 - Le test vocal de Thornton demande un micro (push-to-talk) ; en coop, seul le chef déclenche la scène.
 - Coordonnées des nouvelles zones de territoire et du point de location vélo à vérifier.
-- Si kq_lasers ne démarre pas (licence), la mission marche sans lasers.
