@@ -1,6 +1,6 @@
 # pop_death
 
-Mort du joueur : écran « Inconscient », appel des secours, réapparition à l'hôpital.
+Mort du joueur : écran « Vous êtes mort », appel des secours, réapparition à l'hôpital.
 
 ## Fonctionnement
 - À la mort, un écran discret s'affiche en bas : compte à rebours (5 min par défaut) et touche **[G] Appeler les secours**.

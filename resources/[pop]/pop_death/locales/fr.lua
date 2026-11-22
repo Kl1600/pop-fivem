@@ -18,8 +18,8 @@ Locales['fr'] = {
 
     -- Textes propres au script :
     keymap_call     = 'Mort : appeler les secours',
-    title           = 'Inconscient',
-    respawn_in      = "Transfert à l'hôpital à la fin du temps",
+    title           = 'Vous êtes mort',
+    respawn_in      = "Transfert à l'hôpital dans",
     call_key        = 'Appeler les secours',
     call_sent       = 'Secours appelés',
     notify_called   = 'Votre appel a été transmis aux secours.',
