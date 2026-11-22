@@ -261,6 +261,13 @@ function D.SessionCount()
     return n
 end
 
+--- Joueurs ayant une session (pour les envois à tous : catalogue d'applis modifié).
+function D.Sources()
+    local list = {}
+    for src in pairs(sessions) do list[#list + 1] = src end
+    return list
+end
+
 function D.SerialOf(src)
     local s = sessions[src]
     return s and s.serial or nil
@@ -322,6 +329,10 @@ function Tablet.Guard(src, serial, opts)
     if opts.payload ~= nil and not Tablet.Limits.Payload(opts.payload, opts.maxBytes or Tablet.Max.payload) then
         return nil, 'err_too_large'
     end
+    if opts.online and s.settings and (s.settings.air == true or s.settings.wifi == false) then
+        if Config.Debug then print(('[pop_tablet] %s refusé : mode avion ou Wi-Fi coupé'):format(tostring(opts.name or 'online'))) end
+        return nil, 'err_offline'
+    end
     if opts.rate and not Tablet.Limits.Rate(src, opts.name or 'guard', opts.rate) then return nil, 'err_rate' end
     s.last = t
     return s
@@ -338,6 +349,7 @@ local function decode(text, default)
     return ok and type(value) == 'table' and value or default
 end
 
+D.Decode = decode
 Tablet.BootHooks = {} -- fonctions(serial, boot) : ajoutent badges et données des applis
 
 --- Données de démarrage envoyées à l'interface une fois déverrouillée.
@@ -345,14 +357,17 @@ function D.Boot(row)
     local boot = {
         serial = row.serial, name = row.name, phone = row.phone, battery = row.battery,
         settings = decode(row.settings, {}), apps = decode(row.apps, {}), badges = {},
+        created = row.created_at, lastOpen = row.last_open_at, model = Tablet.Model, os = Tablet.OsVersion,
     }
     for _, hook in ipairs(Tablet.BootHooks) do pcall(hook, row.serial, boot) end
     return boot
 end
 
 --- pop_tablet:device:open
-function D.Open(src, hint)
+function D.Open(src, hint, gameNow)
     if not Bridge.GetPlayer(src) then return fail('err_no_player') end
+    -- Date du jeu 'AAAA-MM-JJ HH:MM' donnée par le client : sert seulement à filtrer les widgets (aucun droit).
+    if type(gameNow) ~= 'string' or not gameNow:match('^%d%d%d%d%-%d%d%-%d%d %d%d:%d%d$') then gameNow = nil end
     if Bridge.IsDead(src) then return fail('err_dead') end
     if not Tablet.Limits.Rate(src, 'open', 5) then return fail('err_rate') end
     if hint ~= nil and not D.SerialValid(hint) then hint = nil end
@@ -384,7 +399,7 @@ function D.Open(src, hint)
         serialSrc[serial] = src
     end
     if t - s.last > Config.Session.IdleLockSeconds then s.unlocked = false end
-    s.openedAt, s.last = t, t
+    s.openedAt, s.last, s.gameNow = t, t, gameNow
     DB().TouchOpen(serial, battery, t)
     row.battery = battery
 
@@ -442,7 +457,8 @@ function D.Setup(src, data)
     end
     local salt = newSalt()
     local settings = json.encode({ lang = data.lang, dark = false, mail = address })
-    if not DB().ClaimSetup(s.serial, hashCode(salt, data.code), salt, name, settings, '[]') then
+    local apps = json.encode(Tablet.Store and Tablet.Store.DefaultApps() or {})
+    if not DB().ClaimSetup(s.serial, hashCode(salt, data.code), salt, name, settings, apps) then
         DB().DeleteMailbox(address, s.serial)
         return fail('err_setup_done')
     end
@@ -529,7 +545,7 @@ end
 -- Callbacks client -> serveur
 ------------------------------------------------------------------------
 
-Callback.Register('pop_tablet:device:open', function(src, hint) return D.Open(src, hint) end)
+Callback.Register('pop_tablet:device:open', function(src, hint, gameNow) return D.Open(src, hint, gameNow) end)
 Callback.Register('pop_tablet:device:close', function(src) return D.Close(src) end)
 Callback.Register('pop_tablet:device:setup', function(src, data) return D.Setup(src, data) end)
 Callback.Register('pop_tablet:device:unlock', function(src, code) return D.Unlock(src, code) end)

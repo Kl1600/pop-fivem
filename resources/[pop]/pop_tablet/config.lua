@@ -72,5 +72,14 @@ Config.Share = { Distance = 3.0 }
 -- Applis optionnelles : 'on' | 'off' | 'auto'.
 Config.Apps = { dictaphone = 'on', translate = 'on' }
 
+-- Pages https autorisées pour les applis de l'API (RegisterApp) et pour le Navigateur : liste de noms d'hôte.
+Config.Browser = { AllowedHosts = {} }
+
+-- Météo : nom de ville affiché (nom propre, pas traduit). La température est déduite du type de météo du jeu et de l'heure.
+Config.Weather = { City = 'Los Santos' }
+
+-- Coque d'appareil autour de l'écran : réservée au navigateur de développement. Laisser false en jeu (plein écran).
+Config.Shell = false
+
 -- Messages et appels plus vieux que ce nombre de jours sont supprimés au démarrage du serveur (jamais en boucle).
 Config.Retention = { Days = 90 }

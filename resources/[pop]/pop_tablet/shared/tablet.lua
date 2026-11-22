@@ -28,10 +28,53 @@ Tablet.Max = {
     board   = 131072, -- charge NUI -> serveur pour un tableau
 }
 
+-- Version du système et modèle affichés dans Réglages > Général > Informations.
+Tablet.OsVersion = '1.0'
+Tablet.Model = 'POP Tab'
+
+-- Applis natives. Les identifiants sont ceux de l'interface (ui/pop-os/src/apps/*). `system` : non retirable.
+-- `cat` : catégorie de la Boutique ; `online` : coupée par Mode Avion et Wi-Fi coupé (SPEC section 0).
+Tablet.NativeApps = {
+    { id = 'reglages', cat = 'system', system = true },
+    { id = 'boutique', cat = 'system', system = true, online = true },
+    { id = 'camera', cat = 'media' },
+    { id = 'photos', cat = 'media' },
+    { id = 'musique', cat = 'media' },
+    { id = 'dictaphone', cat = 'media', option = 'dictaphone' },
+    { id = 'notes', cat = 'personal' },
+    { id = 'calendrier', cat = 'personal' },
+    { id = 'rappels', cat = 'personal' },
+    { id = 'fichiers', cat = 'personal' },
+    { id = 'tableau', cat = 'personal' },
+    { id = 'horloge', cat = 'tools' },
+    { id = 'calculette', cat = 'tools' },
+    { id = 'meteo', cat = 'tools' },
+    { id = 'plans', cat = 'tools' },
+    { id = 'traduire', cat = 'tools', option = 'translate' },
+    { id = 'bourse', cat = 'tools' },
+    { id = 'messages', cat = 'communication', online = true },
+    { id = 'telephone', cat = 'communication', online = true },
+    { id = 'mail', cat = 'communication', online = true },
+    { id = 'contacts', cat = 'communication' },
+    { id = 'navigateur', cat = 'communication', online = true },
+}
+
+Tablet.NativeById = {}
+for _, app in ipairs(Tablet.NativeApps) do Tablet.NativeById[app.id] = app end
+
+-- Réglages acceptés par `settings:save` (liste blanche). 'bool', ou { min, max } pour un entier, ou 'lang', 'wall', 'notif'.
+Tablet.SettingsSchema = {
+    lang = 'lang', dark = 'bool', glass = { 0, 100 }, bright = { 15, 100 }, wall = 'wall', blur = 'bool',
+    air = 'bool', wifi = 'bool', bt = 'bool', rot = 'bool', mirror = 'bool', share = 'bool', focus = 'bool',
+    bold = 'bool', vol = { 0, 100 }, ring = { 1, 5 }, notif = 'notif',
+}
+Tablet.WallpaperCount = 8 -- fonds 0 à 7, ou 'auto'
+Tablet.MaxSettingsBytes = 4096
+
 -- Events serveur -> client (push). Seuls ces noms sont acceptés par server/push.lua.
 Tablet.PushNames = {
     notify = true, message = true, mail = true, call = true, market = true,
-    share = true, open = true, forceClose = true, apps = true,
+    share = true, open = true, forceClose = true, apps = true, appEvent = true,
 }
 
 -- Taille maximale d'un paquet push, en octets.
@@ -58,7 +101,7 @@ local relayed = {
     'browser:sites', 'music:stations', 'translate:run',
     'stocks:subscribe', 'stocks:unsubscribe', 'stocks:watch',
     'share:nearby', 'share:send', 'share:accept', 'share:refuse',
-    'app:call',
+    'app:call', 'app:focus', 'music:state',
 }
 
 Tablet.RelaySet = {}

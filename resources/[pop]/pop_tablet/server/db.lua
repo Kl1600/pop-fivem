@@ -4,7 +4,7 @@ Tablet = Tablet or {}
 Tablet.DB = {}
 local DB = Tablet.DB
 
-local COLUMNS = 'serial, phone, code_hash, code_salt, fails, locked_until, name, settings, apps, battery, battery_at, owner_hint'
+local COLUMNS = 'serial, phone, code_hash, code_salt, fails, locked_until, name, settings, apps, battery, battery_at, owner_hint, created_at, last_open_at'
 
 --- Crée les tables manquantes (sql/install.sql, instructions séparées par « ;» en fin de ligne).
 function DB.Install()
@@ -65,6 +65,40 @@ end
 function DB.TouchOpen(serial, battery, now)
     MySQL.update.await('UPDATE pop_tablet_devices SET battery = ?, battery_at = ?, last_open_at = ? WHERE serial = ?',
         { battery, now, now, serial })
+end
+
+--- Réglages (table Lua, encodée ici), nom et liste d'applis installées : une requête chacun.
+function DB.SetSettings(serial, settings)
+    MySQL.update.await('UPDATE pop_tablet_devices SET settings = ? WHERE serial = ?', { json.encode(settings), serial })
+end
+
+function DB.SetName(serial, name)
+    MySQL.update.await('UPDATE pop_tablet_devices SET name = ? WHERE serial = ?', { name, serial })
+end
+
+function DB.SetApps(serial, apps)
+    MySQL.update.await('UPDATE pop_tablet_devices SET apps = ? WHERE serial = ?', { json.encode(apps), serial })
+end
+
+--- Widgets de l'accueil : les 3 prochains événements (fin >= date du jeu) et 4 rappels, index (serial, ...).
+function DB.WidgetEvents(serial, fromGame)
+    return MySQL.query.await(
+        'SELECT title, start_game, end_game, all_day, color FROM pop_tablet_events WHERE serial = ? AND end_game >= ? ORDER BY start_game LIMIT 3',
+        { serial, fromGame }) or {}
+end
+
+function DB.WidgetReminders(serial)
+    return MySQL.query.await(
+        'SELECT id, title, done FROM pop_tablet_reminders WHERE serial = ? ORDER BY done, id LIMIT 4', { serial }) or {}
+end
+
+--- Photos : nombre de photos d'une tablette et insertion (le texte base64 de la capture va dans `data`).
+function DB.CountPhotos(serial)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_photos WHERE serial = ?', { serial })) or 0
+end
+
+function DB.InsertPhoto(serial, data, now)
+    return MySQL.insert.await('INSERT INTO pop_tablet_photos (serial, data, taken_at) VALUES (?, ?, ?)', { serial, data, now })
 end
 
 --- Réserve une adresse mail (unique, une par tablette) ; false si prise ou si la tablette en a déjà une.

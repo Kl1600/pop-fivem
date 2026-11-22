@@ -75,10 +75,12 @@ function C.Open(hint, openApp, silent)
         lastOpen = {
             serial = res.serial, needSetup = res.needSetup, locked = res.locked, boot = res.boot,
             locale = texts, rtl = texts._rtl, accent = Config.AccentColor,
-            clock = C.ClockSnapshot(), app = openApp,
+            lang = Tablet.LanguageSet[lang] and lang or Config.Locale,
+            shell = Config.Shell == true or nil, -- absent = pas de coque en jeu
+            clock = C.ClockSnapshot(), weather = C.WeatherSnapshot(), app = openApp,
         }
         C.Post('tablet:open', lastOpen)
-    end, hint)
+    end, hint, C.GameStamp())
 end
 
 -- Touche réglable (F5 par défaut) : sans objet, le serveur refuse et la touche ne fait rien.
@@ -108,7 +110,7 @@ RegisterNetEvent('pop_tablet:client:open', function(data)
 end)
 
 -- Relais des push vers l'interface, seulement tablette ouverte (fermée : rien à afficher, 0,00 ms).
-for _, name in ipairs({ 'notify', 'message', 'mail', 'call', 'market', 'share', 'apps' }) do
+for _, name in ipairs({ 'notify', 'message', 'mail', 'call', 'market', 'share', 'apps', 'appEvent' }) do
     RegisterNetEvent('pop_tablet:client:' .. name, function(data)
         if state == 'open' then C.Post('tablet:' .. name, data) end
     end)

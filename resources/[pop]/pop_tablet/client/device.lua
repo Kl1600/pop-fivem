@@ -25,8 +25,50 @@ function C.ClockSnapshot()
     }
 end
 
+--- Date du jeu 'AAAA-MM-JJ HH:MM' envoyée au serveur à l'ouverture (filtre des widgets, aucun droit).
+function C.GameStamp()
+    local s = C.ClockSnapshot()
+    return ('%04d-%02d-%02d %02d:%02d'):format(s.y, s.mo, s.d, s.h, s.m)
+end
+
+-- Types de météo du jeu (noms de SET_WEATHER_TYPE_NOW) rangés dans les 6 familles de l'interface.
+local WEATHER_KINDS = {
+    EXTRASUNNY = 'clear', CLEAR = 'clear', NEUTRAL = 'clear', SMOG = 'fog', FOGGY = 'fog', OVERCAST = 'clouds',
+    CLOUDS = 'clouds', CLEARING = 'clouds', RAIN = 'rain', THUNDER = 'thunder', SNOW = 'snow', BLIZZARD = 'snow',
+    SNOWLIGHT = 'snow', XMAS = 'snow', HALLOWEEN = 'fog',
+}
+local BASE_TEMP = { clear = 27, clouds = 22, rain = 17, thunder = 16, fog = 15, snow = -1 }
+local TEMP_SWING = 4
+local byHash
+
+local function hashKind(hash)
+    if not byHash then
+        byHash = {}
+        for name, kind in pairs(WEATHER_KINDS) do byHash[joaat(name) & 0xFFFFFFFF] = kind end
+    end
+    return byHash[hash & 0xFFFFFFFF]
+end
+
+--- Température fictive : le jeu n'en donne pas. Base du type de météo + variation du jour (maximum à 15 h).
+function C.TempAt(kind, hour)
+    local base = BASE_TEMP[kind] or 22
+    return math.floor(base + TEMP_SWING * math.cos((hour - 15) / 24 * 2 * math.pi) + 0.5)
+end
+
+--- Météo du jeu : { temp, kind, hi, lo, city }. Type = météo suivante si la transition a dépassé la moitié, sinon la précédente.
+--- Natives : GetPrevWeatherTypeHashName, GetNextWeatherTypeHashName, GetWeatherTypeTransition, GetRainLevel (à valider en jeu).
+function C.WeatherSnapshot()
+    local prev, nxt = hashKind(GetPrevWeatherTypeHashName()), hashKind(GetNextWeatherTypeHashName())
+    local _, _, pct = GetWeatherTypeTransition()
+    local kind = ((tonumber(pct) or 1) >= 0.5 and nxt or prev) or nxt or prev or 'clear'
+    if kind == 'clear' and (GetRainLevel() or 0) > 0.3 then kind = 'rain' end
+    local base = BASE_TEMP[kind] or 22
+    return { temp = C.TempAt(kind, GetClockHours()), kind = kind, hi = base + TEMP_SWING, lo = base - TEMP_SWING, city = Config.Weather.City }
+end
+
 local function tick(mine)
     if mine ~= resyncGeneration or not resyncActive or not C.IsOpen() then return end
+    C.Post('tablet:weather', C.WeatherSnapshot())
     C.Post('tablet:clock', C.ClockSnapshot())
     SetTimeout(RESYNC_MS, function() tick(mine) end)
 end
@@ -37,6 +79,7 @@ function C.SetResync(active)
     resyncActive = active == true
     if resyncActive and C.IsOpen() then
         local mine = resyncGeneration
+        C.Post('tablet:weather', C.WeatherSnapshot())
         C.Post('tablet:clock', C.ClockSnapshot())
         SetTimeout(RESYNC_MS, function() tick(mine) end)
     end

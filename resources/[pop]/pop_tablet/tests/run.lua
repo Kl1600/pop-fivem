@@ -52,8 +52,11 @@ dofile('shared/locale.lua')
 for _, lang in ipairs({ 'en', 'fr', 'es', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 'ar' }) do
     dofile('locales/' .. lang .. '.lua')
 end
+local evHandlers, invoking, exportsApi = {}, 'pop_police', {}
+def('AddEventHandler', function(n, fn) evHandlers[n] = fn end)
+def('GetInvokingResource', function() return invoking end)
 for _, f in ipairs({ 'hash', 'limits', 'db', 'device', 'push', 'scheduler', 'api' }) do
-    def('exports', function() end)
+    def('exports', function(n, fn) exportsApi[n] = fn end)
     dofile('server/' .. f .. '.lua')
 end
 
@@ -474,6 +477,261 @@ end
 ------------------------------------------------------------------------
 -- Client : faux natives, vrai code de client/*.lua
 ------------------------------------------------------------------------
+section('Système : réglages, widgets, Boutique, API, photos (app-set, app-sto, api, arb)')
+------------------------------------------------------------------------
+do
+    -- Faux supplémentaires : base (réglages, applis, widgets, photos), métier, captures.
+    local hasJob, widgetEvents, widgetReminders, photos, setSettingsCalls = {}, {}, {}, 0, 0
+    local playerDropped = {}
+    Bridge.OnPlayerDropped = function(fn) playerDropped[#playerDropped + 1] = fn end
+    Bridge.HasJob = function(src) return hasJob[src] == true end
+    local notifiedGame = {}
+    Bridge.Notify = function(src, msg) notifiedGame[#notifiedGame + 1] = { src = src, msg = msg } end
+    DB.SetSettings = function(serial, t) setSettingsCalls = setSettingsCalls + 1 rows[serial].settings = t end
+    DB.SetName = function(serial, n) rows[serial].name = n end
+    DB.SetApps = function(serial, a) rows[serial].apps = a end
+    DB.WidgetEvents = function() return widgetEvents end
+    DB.WidgetReminders = function() return widgetReminders end
+    DB.CountPhotos = function() return photos end
+    DB.InsertPhoto = function() photos = photos + 1 return photos end
+    for _, f in ipairs({ 'settings', 'store', 'photos' }) do dofile('server/apps/' .. f .. '.lua') end
+    local Settings, Store, Api = Tablet.Settings, Tablet.Store, Tablet.Api
+    local function tick() clock = clock + 5 end
+
+    -- Joueur 20 : tablette configurée, session déverrouillée, date du jeu transmise.
+    players[20] = 'char20'
+    inv[20] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+    tick()
+    local o = handlers['pop_tablet:device:open'](20, nil, '2026-06-14 08:30')
+    tick()
+    local st = handlers['pop_tablet:device:setup'](20, { code = '4321', name = 'Bob Tab', lang = 'fr', mail = 'bob.test' })
+    local serial20 = o.serial
+    check('setup : applis par défaut = natives disponibles', st.ok and #st.boot.apps == #Store.DefaultApps() and #Store.DefaultApps() == 22, st.err)
+    check('boot : widgets et musique fournis', st.boot.widgets ~= nil and st.boot.widgets.events ~= nil and st.boot.widgets.reminders ~= nil and st.boot.music == nil)
+    check('boot : informations (modèle, système, créée)', st.boot.model == 'POP Tab' and st.boot.os == '1.0')
+
+    -- app-set : validation des réglages
+    local V = function(p) return Settings.Validate(p) end
+    local good = { lang = 'ar', dark = true, glass = 70, bright = 40, wall = '3', blur = false, air = false, wifi = true, bt = true,
+        rot = true, mirror = false, share = true, focus = true, bold = true, vol = 30, ring = 2, notif = { messages = false, police_mdt = true } }
+    check('réglages : patch complet valide accepté', V(good) ~= nil and V(good).glass == 70 and V(good).wall == '3')
+    check('réglages : wall auto accepté', V({ wall = 'auto' }).wall == 'auto')
+    for name, bad in pairs({
+        unknown = { evil = true }, langue = { lang = 'xx' }, type = { dark = 'oui' }, verre = { glass = 101 }, lum = { bright = 14 },
+        fond = { wall = '8' }, fond2 = { wall = '-1' }, vol = { vol = -1 }, ring = { ring = 6 }, notif = { notif = { ['A b'] = false } },
+        notif2 = { notif = { messages = 'x' } }, flottant = { glass = 50.5 }, nonTable = 'x',
+    }) do
+        check('réglages : refusé (' .. name .. ')', V(bad) == nil)
+    end
+    rows[serial20].settings = { lang = 'fr', dark = false }
+    Tablet.Device.GetSession(20).settings = { lang = 'fr', dark = false }
+    tick()
+    local r = handlers['pop_tablet:settings:save'](20, { glass = 80, dark = true })
+    check('settings:save : accepté et stocké fusionné', r.ok and rows[serial20].settings.glass == 80 and rows[serial20].settings.dark == true
+        and rows[serial20].settings.lang == 'fr')
+    local calls = setSettingsCalls
+    check('settings:save : clé inconnue refusée, rien écrit', handlers['pop_tablet:settings:save'](20, { evil = 1 }).err == 'err_payload' and setSettingsCalls == calls)
+    check('settings:save : charge > 4 Ko refusée', handlers['pop_tablet:settings:save'](20, { notif = (function()
+        local t = {} for i = 1, 700 do t['app_' .. i] = true end return t end)() }).err == 'err_too_large')
+    check('settings:save sans session refusé', handlers['pop_tablet:settings:save'](3, { dark = true }).err ~= nil)
+    tick()
+    check('rename : nom vide refusé', handlers['pop_tablet:settings:rename'](20, '  ').err == 'err_name_invalid')
+    tick()
+    check('rename : trop long refusé', handlers['pop_tablet:settings:rename'](20, string.rep('x', 33)).err == 'err_name_invalid')
+    tick()
+    r = handlers['pop_tablet:settings:rename'](20, ' Tablette de Bob ')
+    check('rename : accepté et rogné', r.ok and rows[serial20].name == 'Tablette de Bob')
+
+    -- widgets (événements et rappels du serveur)
+    widgetEvents = { { title = 'Patrouille', start_game = '2026-06-14 15:00', end_game = '2026-06-14 17:00', all_day = 0, color = '#0088ff' },
+        { title = 'Fête', start_game = '2026-06-15 00:00', end_game = '2026-06-15 23:59', all_day = 1, color = '' } }
+    widgetReminders = { { id = 1, title = 'Plein', done = 0 }, { id = 2, title = 'Rapport', done = 1 } }
+    local w = Settings.Widgets(serial20, '2026-06-14 08:30')
+    check('widgets : horaire, journée entière, rappels', w.events[1].time == '15:00 – 17:00' and w.events[1].color == '#0088ff'
+        and w.events[2].time == '' and w.events[2].color == nil and w.reminders[1].text == 'Plein' and w.reminders[2].done == true)
+    check('widgets : sans date du jeu, pas d\'événements', #Settings.Widgets(serial20, nil).events == 0)
+    tick()
+    local m = handlers['pop_tablet:music:state'](20, { title = 'Radio LS', artist = 'FM', playing = true })
+    check('music:state accepté', m.ok)
+    check('music:state titre trop long refusé', handlers['pop_tablet:music:state'](20, { title = string.rep('a', 200) }).err == 'err_payload')
+
+    -- arb-01 : Mode Avion et Wi-Fi coupé refusent les services en ligne
+    tick()
+    check('en ligne : Boutique accessible', handlers['pop_tablet:store:list'](20).ok)
+    tick()
+    handlers['pop_tablet:settings:save'](20, { air = true })
+    tick()
+    check('Mode Avion : Boutique refusée (err_offline)', handlers['pop_tablet:store:list'](20).err == 'err_offline')
+    check('Mode Avion : Réglages encore possibles', handlers['pop_tablet:settings:save'](20, { air = false, wifi = false }).ok)
+    tick()
+    check('Wi-Fi coupé : installation refusée', handlers['pop_tablet:store:install'](20, 'notes').err == 'err_offline')
+    check('Wi-Fi coupé : garde en ligne refusée, hors ligne acceptée',
+        select(2, Tablet.Guard(20, nil, { online = true })) == 'err_offline' and Tablet.Guard(20, nil, {}) ~= nil)
+    handlers['pop_tablet:settings:save'](20, { wifi = true })
+    tick()
+
+    -- app-sto : retirer et installer
+    r = handlers['pop_tablet:store:remove'](20, 'notes')
+    check('Boutique : retrait de Notes', r.ok and #r.apps == 21 and rows[serial20].apps ~= nil)
+    tick()
+    check('Boutique : appli système non retirable', handlers['pop_tablet:store:remove'](20, 'reglages').err == 'err_app_system')
+    check('Boutique : appli inconnue refusée', handlers['pop_tablet:store:remove'](20, 'zzzzzz').err == 'err_app_unknown')
+    check('Boutique : id invalide refusé', handlers['pop_tablet:store:install'](20, 'A b').err == 'err_payload')
+    tick()
+    local list = handlers['pop_tablet:store:list'](20)
+    local notesEntry
+    for _, it in ipairs(list.items) do if it.id == 'notes' then notesEntry = it end end
+    check('Boutique : catalogue marque Notes non installée', list.ok and notesEntry and notesEntry.installed == false)
+    tick()
+    r = handlers['pop_tablet:store:install'](20, 'notes')
+    check('Boutique : réinstallation de Notes', r.ok and #r.apps == 22)
+    tick()
+    local before = #r.apps
+    check('Boutique : installer deux fois ne duplique pas', #handlers['pop_tablet:store:install'](20, 'notes').apps == before)
+    Config.Apps.dictaphone = 'off'
+    check('Config.Apps off : Dictaphone retiré du catalogue', #Store.DefaultApps() == 21)
+    Config.Apps.dictaphone = 'on'
+
+    -- api-01 : RegisterApp
+    local reg = function(d, res) invoking = res or 'pop_police' return exportsApi.RegisterApp(d) end
+    local appDef = { id = 'police_mdt', nameKey = 'mdt_name', texts = { en = { mdt_name = 'Police MDT' }, fr = { mdt_name = 'MDT Police' } },
+        page = 'nui://pop_police/web/mdt.html', jobs = { 'police', sheriff = 2 }, color = '#0a84ff', category = 'work',
+        onCall = function(src, serial, action, data) if action == 'big' then return { s = string.rep('x', 20000) } end return { echo = data, serial = serial } end }
+    check('RegisterApp : valide', reg(appDef) == true)
+    check('RegisterApp : doublon d\'une autre ressource refusé', select(2, reg(appDef, 'autre')) == 'id_taken')
+    check('RegisterApp : id d\'une appli native refusé', select(2, reg({ id = 'notes', name = 'x', page = 'nui://pop_police/a.html' })) == 'id_taken')
+    check('RegisterApp : id invalide refusé', select(2, reg({ id = 'Ab', name = 'x', page = 'nui://pop_police/a.html' })) == 'bad_id')
+    check('RegisterApp : page d\'une autre ressource refusée', select(2, reg({ id = 'abc', name = 'x', page = 'nui://autre/a.html' })) == 'bad_page')
+    check('RegisterApp : page https hors liste refusée', select(2, reg({ id = 'abc', name = 'x', page = 'https://evil.example/a' })) == 'bad_page')
+    Config.Browser.AllowedHosts = { 'ok.example' }
+    check('RegisterApp : page https listée acceptée', reg({ id = 'web_app', name = 'Web', page = 'https://ok.example/a' }) == true)
+    Config.Browser.AllowedHosts = {}
+    check('RegisterApp : nom manquant refusé', select(2, reg({ id = 'abc', page = 'nui://pop_police/a.html' })) == 'bad_name')
+    check('RegisterApp : couleur invalide refusée', select(2, reg({ id = 'abc', name = 'x', page = 'nui://pop_police/a.html', color = 'red' })) == 'bad_color')
+    check('RegisterApp : jobs invalides refusés', select(2, reg({ id = 'abc', name = 'x', page = 'nui://pop_police/a.html', jobs = { 5 } })) == 'bad_jobs')
+    check('RegisterApp : nom résolu dans la langue de la tablette', Api.NameOf(Api.Get('police_mdt'), 'fr') == 'MDT Police'
+        and Api.NameOf(Api.Get('police_mdt'), 'de') == 'Police MDT')
+
+    -- api-02 : filtre par métier à l'installation, au catalogue, à l'appel
+    tick()
+    check('métier refusé à l\'installation', handlers['pop_tablet:store:install'](20, 'police_mdt').err == 'wrong_job')
+    tick()
+    local visible = false
+    for _, it in ipairs(handlers['pop_tablet:store:list'](20).items) do if it.id == 'police_mdt' then visible = true end end
+    check('métier refusé : appli absente du catalogue', not visible)
+    hasJob[20] = true
+    tick()
+    r = handlers['pop_tablet:store:install'](20, 'police_mdt')
+    check('bon métier : installation', r.ok)
+    tick()
+    local entryOk
+    for _, it in ipairs(handlers['pop_tablet:store:list'](20).items) do if it.id == 'police_mdt' then entryOk = it end end
+    check('catalogue : fiche API avec nom traduit et page', entryOk and entryOk.api and entryOk.installed and entryOk.name == 'MDT Police' and entryOk.page == 'nui://pop_police/web/mdt.html')
+
+    -- api-05 : app:call, focus, événements
+    tick()
+    local c = handlers['pop_tablet:app:call'](20, { appId = 'police_mdt', action = 'search', data = { q = 'x' } })
+    check('app:call : routé vers onCall avec le serial', c.ok and c.data.serial == serial20 and c.data.echo.q == 'x', c.err)
+    check('app:call : résultat > 16 Ko refusé', handlers['pop_tablet:app:call'](20, { appId = 'police_mdt', action = 'big' }).err == 'err_too_large')
+    check('app:call : action invalide refusée', handlers['pop_tablet:app:call'](20, { appId = 'police_mdt', action = 'a b' }).err == 'err_payload')
+    check('app:call : appli sans onCall / inconnue refusée', handlers['pop_tablet:app:call'](20, { appId = 'web_app', action = 'x' }).err == 'err_app_unknown')
+    check('app:call : charge > 4 Ko refusée', handlers['pop_tablet:app:call'](20, { appId = 'police_mdt', action = 'x', data = { s = string.rep('a', 5000) } }).err == 'err_too_large')
+    hasJob[20] = false
+    tick()
+    check('app:call : métier revérifié à chaque appel', handlers['pop_tablet:app:call'](20, { appId = 'police_mdt', action = 'x' }).err == 'wrong_job')
+    hasJob[20] = true
+    tick()
+    sent = {}
+    invoking = 'pop_police'
+    check('AppEvent : refusé si l\'appli n\'est pas au premier plan', exportsApi.AppEvent(20, 'police_mdt', 'alert', { a = 1 }) == false)
+    check('app:focus : accepté', handlers['pop_tablet:app:focus'](20, 'police_mdt').ok)
+    check('AppEvent : poussé à la page ouverte', exportsApi.AppEvent(20, 'police_mdt', 'alert', { a = 1 }) == true and lastPush().name == 'pop_tablet:client:appEvent')
+    invoking = 'autre'
+    check('AppEvent : refusé pour une autre ressource', exportsApi.AppEvent(20, 'police_mdt', 'alert', {}) == false)
+    invoking = 'pop_police'
+
+    -- api-03 : Notify
+    tick()
+    handlers['pop_tablet:settings:save'](20, { lang = 'fr' })
+    sent = {}
+    local ok1 = exportsApi.Notify(20, { app = 'police_mdt', titleKey = 'a', bodyKey = 'b', args = { 'Mission Row' },
+        texts = { fr = { a = 'Alerte', b = 'Vol à %s' }, en = { a = 'Alert', b = 'Theft at %s' } } })
+    check('Notify : texte traduit dans la langue de la tablette', ok1 == true and lastPush().data.title == 'Alerte' and lastPush().data.text == 'Vol à Mission Row'
+        and lastPush().src == 20)
+    check('Notify par serial', exportsApi.Notify(serial20, { app = 'police_mdt', title = 'T', body = 'B' }) == true)
+    check('Notify : serial inconnu refusé', exportsApi.Notify('PT-ZZZZZZZZZZ', { app = 'police_mdt', title = 'T' }) == false)
+    check('Notify : titre > 60 car. refusé', exportsApi.Notify(20, { app = 'police_mdt', title = string.rep('t', 61) }) == false)
+    check('Notify : corps > 200 car. refusé', exportsApi.Notify(20, { app = 'police_mdt', title = 't', body = string.rep('b', 201) }) == false)
+    invoking = 'autre'
+    check('Notify : appli d\'une autre ressource refusée', exportsApi.Notify(20, { app = 'police_mdt', title = 't' }) == false)
+    invoking = 'pop_police'
+    tick()
+    local passedN = 0
+    for _ = 1, 6 do if exportsApi.Notify(20, { app = 'police_mdt', title = 't', body = 'b' }) then passedN = passedN + 1 end end
+    check('Notify : 6 notifications dans la seconde, la 6e rejetée', passedN == 5, passedN)
+    tick()
+    handlers['pop_tablet:settings:save'](20, { notif = { police_mdt = false } })
+    check('Notify : appli désactivée dans Réglages > Notifications', exportsApi.Notify(20, { app = 'police_mdt', title = 't' }) == false)
+    handlers['pop_tablet:settings:save'](20, { notif = { police_mdt = true } })
+    players[21] = 'char21'
+    inv[21] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = { serial = 'PT-ABCDEFGH24' } } }
+    tick()
+    check('Notify : tablette fermée = notification du jeu', exportsApi.Notify(21, { app = 'police_mdt', title = 'Alerte', body = 'Vol' }) == true
+        and notifiedGame[#notifiedGame].msg == 'Alerte : Vol')
+
+    -- api-04 : OpenApp
+    sent = {}
+    check('OpenApp : appli du bon métier', exportsApi.OpenApp(20, 'police_mdt', { a = 1 }) == true and lastPush().name == 'pop_tablet:client:open')
+    hasJob[20] = false
+    check('OpenApp : mauvais métier refusé', exportsApi.OpenApp(20, 'police_mdt') == false)
+    check('OpenApp : appli inconnue refusée', exportsApi.OpenApp(20, 'inconnue_xx') == false)
+    check('OpenApp : native acceptée', exportsApi.OpenApp(20, 'notes') == true)
+    check('OpenApp : données > 2 Ko refusées', exportsApi.OpenApp(20, 'notes', { s = string.rep('x', 3000) }) == false)
+    check('GetSerial et GetApiVersion', exportsApi.GetSerial(20) == serial20 and exportsApi.GetApiVersion() == 1)
+
+    -- api-01 : arrêt de la ressource
+    sent = {}
+    evHandlers.onResourceStop('pop_police')
+    check('arrêt de la ressource : applis retirées, tablettes prévenues', Api.Get('police_mdt') == nil and lastPush().name == 'pop_tablet:client:apps')
+    tick()
+    check('applis retirées : absentes du démarrage', (function()
+        for _, id in ipairs(Store.Resolve(20, { 'police_mdt', 'notes' })) do if id == 'police_mdt' then return false end end
+        return true
+    end)())
+
+    -- arb-02 : capture de l'écran vers Photos
+    local shots, shotData = 0, 'data:image/webp;base64,AAAA'
+    Config.Photos.Max = 3
+    def('GetResourceState', function() return 'started' end)
+    def('promise', { new = function() local p = { v = nil } function p:resolve(x) if self.v == nil then self.v = x end end return p end })
+    def('Citizen', { Await = function(p) return p.v end })
+    def('exports', setmetatable({ screencapture = { serverCapture = function(_, _, opts, cb)
+        shots = shots + 1
+        check('capture : webp réduite (960)', opts.encoding == 'webp' and opts.maxWidth == 960)
+        cb(shotData)
+    end } }, { __call = function() end }))
+    tick()
+    r = handlers['pop_tablet:photos:capture'](20)
+    check('photos:capture : photo enregistrée', r.ok and photos == 1 and shots == 1, r.err)
+    check('photos:capture : 1 prise / 3 s', handlers['pop_tablet:photos:capture'](20).err == 'err_rate' and shots == 1)
+    clock = clock + 4
+    shotData = 'data:' .. string.rep('x', 160000)
+    check('photos:capture : > 150 Ko rejetée', handlers['pop_tablet:photos:capture'](20).err == 'err_too_large' and photos == 1)
+    clock = clock + 4
+    shotData = 'data:ok'
+    photos = 3
+    check('photos:capture : plafond Config.Photos.Max', handlers['pop_tablet:photos:capture'](20).err == 'err_photos_full')
+    photos = 0
+    clock = clock + 4
+    handlers['pop_tablet:settings:save'](20, { air = true })
+    check('photos:capture : hors ligne autorisée (capture locale)', handlers['pop_tablet:photos:capture'](20).ok)
+    handlers['pop_tablet:settings:save'](20, { air = false })
+    tick()
+    check('photos:capture sans session refusée', handlers['pop_tablet:photos:capture'](3).err ~= nil)
+    for _, fn in ipairs(playerDropped) do fn(20) end
+end
+
+------------------------------------------------------------------------
 section('client : ouverture, focus, animation, relais, mort, arrêt')
 do
     local cmds, keymaps, netEvents, gameHandlers, nuiCb, nuiMsgs, focus = {}, {}, {}, {}, {}, {}, {}
@@ -501,7 +759,12 @@ do
     def('RequestAnimDict', function() end)
     def('HasAnimDictLoaded', function() return true end)
     def('TaskPlayAnim', function() end)
-    def('joaat', function() return 1 end)
+    def('joaat', function(name) local h = 0 for i = 1, #name do h = (h * 31 + name:byte(i)) % 4294967296 end return h end)
+    local weatherPrev, weatherNext, weatherPct, rainLevel = 'CLEAR', 'RAIN', 0.8, 0.0
+    def('GetPrevWeatherTypeHashName', function() return joaat(weatherPrev) end)
+    def('GetNextWeatherTypeHashName', function() return joaat(weatherNext) end)
+    def('GetWeatherTypeTransition', function() return joaat(weatherPrev), joaat(weatherNext), weatherPct end)
+    def('GetRainLevel', function() return rainLevel end)
     def('RequestModel', function() end)
     def('HasModelLoaded', function() return true end)
     def('GetEntityCoords', function() return { x = 0, y = 0, z = 0 } end)
@@ -569,6 +832,16 @@ do
     check('ouverture : message tablet:open (locale, rtl, accent, horloge)', lastMsg().action == 'tablet:open'
         and lastMsg().data.rtl == true and lastMsg().data.accent == Config.AccentColor and lastMsg().data.clock.h == 8
         and lastMsg().data.locale.tablet_key == Locales.ar.tablet_key)
+    check('ouverture : langue, pas de coque, date du jeu envoyée au serveur', lastMsg().data.lang == 'ar' and lastMsg().data.shell == nil
+        and triggered('pop_tablet:device:open').args[2] == '2026-06-14 08:30')
+    local wx = lastMsg().data.weather
+    check('ouverture : météo {temp, kind, hi, lo, city} depuis les natives', wx and wx.kind == 'rain' and wx.temp == 16 and wx.hi == 21 and wx.lo == 13 and wx.city == 'Los Santos', wx and wx.temp)
+    weatherPct = 0.2
+    check('météo : transition < 50 % = type précédent', C.WeatherSnapshot().kind == 'clear')
+    rainLevel = 0.8
+    check('météo : ciel clair mais forte pluie = pluie', C.WeatherSnapshot().kind == 'rain')
+    rainLevel, weatherPct = 0.0, 0.8
+    check('température : maximum l après-midi, minimum la nuit', C.TempAt('clear', 15) == 31 and C.TempAt('clear', 3) == 23 and C.TempAt('snow', 15) == 3)
     check('animation : objet créé et gestionnaire de mort posé', created == 1 and C.Anim.HasProp() and #gameHandlers == 1)
 
     local replies = {}
