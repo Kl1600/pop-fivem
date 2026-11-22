@@ -1,11 +1,13 @@
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { DarkContext, LayoutContext, NotifyContext, NuiContext, SettingsContext, TContext, safeAccent, type SettingsApi } from '../kit';
+import { ClockContext, DarkContext, LayoutContext, NotifyContext, NuiContext, SettingsContext, TContext, safeAccent, type SettingsApi } from '../kit';
 import { Fit, SCREEN_H, SCREEN_W, SHELL_H, SHELL_W, Shell } from '../device/Shell';
 import { makeT } from '../i18n';
 import { fetchNui, nuiApi, onNuiMessage } from '../nui/bridge';
 import { handleMessage, power, pushNotify, renameDevice, requestClose, setInstalled, setLanguage, setSetting, volume } from './actions';
+import { gameMsNow } from './clock';
 import { Screen } from './Screen';
+import { setSchedule } from './schedule';
 import { useOS } from './store';
 
 /** Écoute permanente des messages du client : seul élément actif tablette fermée (un écouteur, aucun minuteur). */
@@ -47,6 +49,7 @@ export function Tablet() {
     uninstall: (id) => setInstalled(id, false),
     info: { phone: boot?.phone ?? '', model: boot?.model ?? '', os: boot?.os ?? '', created: boot?.created ?? 0, lastOpen: boot?.lastOpen ?? 0 },
   }), [st, name, serial, battery, lang, boot, apps]);
+  const clockApi = useMemo(() => ({ gameMs: gameMsNow, setSchedule: (kind: 'alarm' | 'event' | 'reminder', items: Array<{ id: number; minute: number }>) => setSchedule(kind, items.map((i) => ({ ...i, kind }))) }), []);
   const notify = useCallback((n: { app: string; title: string; body: string }) => pushNotify({ app: n.app, text: n.body, titleKey: undefined }), []);
 
   // Échap rend le focus au jeu (équivalent de `close` du kit). L'écouteur n'existe que tablette ouverte.
@@ -68,7 +71,7 @@ export function Tablet() {
       <TContext.Provider value={t}>
         <LayoutContext.Provider value="regular">
           <DarkContext.Provider value={dark}>
-            <NuiContext.Provider value={nuiApi}>
+            <NuiContext.Provider value={nuiApi}><ClockContext.Provider value={clockApi}>
               <NotifyContext.Provider value={notify}><SettingsContext.Provider value={settingsApi}>
                 <div className={`pop ${dark ? 'dk' : ''}`} dir={rtl ? 'rtl' : 'ltr'} data-blur={st.blur === false ? 'off' : 'on'} data-bold={st.bold === true ? 'on' : 'off'} data-theme={dark ? 'dark' : 'light'} style={{ position: 'fixed', inset: 0, ...vars }}>
                   {shell ? (
@@ -82,7 +85,7 @@ export function Tablet() {
                   )}
                 </div>
               </SettingsContext.Provider></NotifyContext.Provider>
-            </NuiContext.Provider>
+            </ClockContext.Provider></NuiContext.Provider>
           </DarkContext.Provider>
         </LayoutContext.Provider>
       </TContext.Provider>

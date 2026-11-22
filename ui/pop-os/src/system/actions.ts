@@ -2,6 +2,7 @@ import { fetchNui, nuiApi } from '../nui/bridge';
 import { getApp } from '../apps/registry';
 import type { Boot, ClockSnap, NotifyMsg, OpenData, Settings, StoreItem, Weather } from '../nui/types';
 import { isLang, makeT } from '../i18n';
+import { syncSchedule } from './schedule';
 import { applyApiApps, applyOpen, bootPatch, os, ONLINE_APPS, type Notif } from './store';
 
 // Actions du système : seuls endroits qui modifient le magasin. Les minuteurs ci-dessous sont courts (HUD, bannière)
@@ -95,6 +96,7 @@ export async function submitCode(code: string): Promise<UnlockResult> {
   const res = await nuiApi.call<{ ok: boolean; err?: string; wait?: number; boot?: Boot }>('device:unlock', code);
   if (res.ok && res.boot) {
     os.set({ screen: 'home', codeError: null, lockWait: 0, ...bootPatch(res.boot) });
+    void syncSchedule(); // alarmes, alertes et rappels : une seule minuterie côté client
     if (pendingApp) {
       const p = pendingApp;
       pendingApp = null;

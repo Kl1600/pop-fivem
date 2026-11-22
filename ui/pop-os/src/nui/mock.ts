@@ -1,4 +1,5 @@
 import { MEDIA_CALLS, mediaCall, seedMedia } from './mock-media';
+import { PROD_CALLS, prodCall, seedProd } from './mock-prod';
 import type { Boot, OpenData } from './types';
 
 // Mode simulé (navigateur de développement) : données fictives, aucune requête réseau.
@@ -53,6 +54,7 @@ let installed: string[] = [...MOCK_BOOT.apps];
 
 export function resetMock(): void {
   seedMedia();
+  seedProd();
   installed = [...MOCK_BOOT.apps];
   fails = 0;
   blockedUntil = 0;
@@ -111,9 +113,7 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       return { ok: true, apps: installed };
     case 'contacts:list':
       return { ok: true, items: [{ id: 1, name: 'Sam Leroy', phone: '555-0101' }, { id: 2, name: 'Lina Costa', phone: '555-0102' }] };
-    case 'reminders:toggle':
-      return { ok: true };
     default:
-      return MEDIA_CALLS.has(String(d.name)) ? mediaCall(String(d.name), d.data) : { ok: false, err: 'err_unavailable' };
+      return MEDIA_CALLS.has(String(d.name)) ? mediaCall(String(d.name), d.data) : PROD_CALLS.has(String(d.name)) ? prodCall(String(d.name), d.data) : { ok: false, err: 'err_unavailable' };
   }
 }

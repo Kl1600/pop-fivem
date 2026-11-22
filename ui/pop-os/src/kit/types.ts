@@ -105,3 +105,9 @@ export const LANGUAGES = ['en', 'fr', 'es', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 
 export const LANGUAGE_NAMES: Record<(typeof LANGUAGES)[number], string> = {
   en: 'English', fr: 'Français', es: 'Español', de: 'Deutsch', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe', ar: 'العربية',
 };
+
+/** Heure du jeu et échéances : fournies par l'appareil. `gameMs` = temps du jeu continu (ms, UTC sans fuseau). */
+export interface ClockApi {
+  gameMs: () => number;
+  setSchedule: (kind: 'alarm' | 'event' | 'reminder', items: Array<{ id: number; minute: number }>) => void;
+}

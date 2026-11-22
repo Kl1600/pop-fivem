@@ -20,6 +20,14 @@ export function gameDate(snap: ClockSnap | null, fromMs: number, nowMs: number):
   return new Date(base + elapsedGameMinutes(s, fromMs, nowMs) * 60_000);
 }
 
+/** Temps du jeu continu (ms, UTC sans fuseau) : avance de 60 000 ms par minute de jeu écoulée. */
+export function gameMsNow(): number {
+  const s = os.get();
+  const snap = s.clock ?? DEFAULT_SNAP;
+  const per = snap.msPerMin > 0 ? snap.msPerMin : 2000;
+  return Date.UTC(snap.y, snap.mo, snap.d, snap.h, snap.m, 0) + (Math.max(0, performance.now() - s.clockAt) / per) * 60_000;
+}
+
 /** Délai (ms réelles) jusqu'à la prochaine minute de jeu. */
 export function msToNextMinute(snap: ClockSnap | null, fromMs: number, nowMs: number): number {
   const per = snap && snap.msPerMin > 0 ? snap.msPerMin : 2000;

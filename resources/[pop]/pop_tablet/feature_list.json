@@ -365,7 +365,7 @@
       "id": "app-calc-01",
       "description": "Calculette : opérations, priorité, erreurs (division par zéro)",
       "verification": "vitest",
-      "passes": false
+      "passes": true
     },
     {
       "id": "app-met-01",
