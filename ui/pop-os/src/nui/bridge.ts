@@ -26,6 +26,13 @@ export function currentToken(): string | null {
   return sessionToken;
 }
 
+let lockedHandler: (() => void) | null = null;
+
+/** Le système s'abonne : un appel d'appli dit `err_locked` quand le serveur a reverrouillé la session (inactivité). */
+export function onServerLocked(fn: (() => void) | null): void {
+  lockedHandler = fn;
+}
+
 /** Appel d'un RegisterNUICallback côté Lua. Hors jeu : réponse simulée (aucun réseau). */
 export async function fetchNui<T = unknown>(name: string, data?: unknown): Promise<T | null> {
   if (!inGame()) {
@@ -68,6 +75,7 @@ export function onNuiMessage(handler: (action: string, data: unknown) => void): 
 export const nuiApi: NuiApi = {
   call: async <T extends NuiResult = NuiResult>(name: string, data?: unknown) => {
     const res = await fetchNui<T>('tablet:call', { name, data });
+    if (res && (res as NuiResult).err === 'err_locked' && lockedHandler) lockedHandler();
     return (res ?? { ok: false, err: 'err_timeout' }) as T;
   },
   post: (action, data) => fetchNui(action.startsWith('tablet:') ? action : `tablet:${action}`, data) as Promise<never>,

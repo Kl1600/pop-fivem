@@ -38,6 +38,8 @@ const de: Record<string, string> = {
   "setup.name": "Gerätename",
   "setup.mail": "E-Mail-Adresse",
   "setup.mail_hint": "name@beispiel.de",
+  "setup.mail_ph": "name",
+  "setup.mail_rules": "Wähle einen Namen mit 3 bis 32 Zeichen: Buchstaben, Ziffern, Punkt, Bindestrich oder Unterstrich. Deine Adresse lautet name@%s.",
   "setup.mismatch": "Die Codes stimmen nicht überein",
   "setup.next": "Weiter",
   "setup.back": "Zurück",

@@ -26,6 +26,7 @@ export interface OS {
   server: Record<string, unknown>;
   serial: string | null;
   needSetup: boolean;
+  mailDomain: string;
   screen: Screen;
   on: boolean;
   name: string;
@@ -55,7 +56,7 @@ export interface OS {
 }
 
 export const initialOS: OS = {
-  open: false, shell: false, lang: 'en', rtl: false, accent: null, server: {}, serial: null, needSetup: false,
+  open: false, shell: false, lang: 'en', rtl: false, accent: null, server: {}, serial: null, needSetup: false, mailDomain: 'pop.ls',
   screen: 'lock', on: true, name: '', battery: 100, boot: null, settings: {}, apps: [], badges: {}, weather: null,
   clock: null, clockAt: 0, app: null, appData: null, org: { x: 674, y: 509 }, recents: [],
   cc: false, nc: false, search: false, sw: false, edit: false, vol: 55, hud: false, banner: null, notifs: [],
@@ -105,7 +106,9 @@ export function applyOpen(d: OpenData, lang: string): void {
     server: (d.locale ?? {}) as Record<string, unknown>,
     serial: d.serial ?? null,
     needSetup: d.needSetup === true,
-    screen: d.needSetup ? 'setup' : 'lock',
+    mailDomain: typeof d.mailDomain === 'string' && d.mailDomain ? d.mailDomain : 'pop.ls',
+    // Le serveur décide : session encore déverrouillée (`locked:false` + boot) = accueil, sinon écran verrouillé.
+    screen: d.needSetup ? 'setup' : d.locked === false && boot ? 'home' : 'lock',
     on: true,
     weather: d.weather ?? null,
     clock: d.clock,

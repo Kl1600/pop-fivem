@@ -89,7 +89,7 @@ function RemindersWidget() {
   );
 }
 
-export function HomeLayer({ active, appVisible, overlay }: { active: boolean; appVisible: boolean; overlay: boolean }) {
+export function HomeLayer({ active, appVisible, overlay, hidden = false }: { active: boolean; appVisible: boolean; overlay: boolean; hidden?: boolean }) {
   const t = useT();
   const dark = useOS((s) => s.settings.dark === true);
   const apps = useOS((s) => s.apps);
@@ -133,7 +133,7 @@ export function HomeLayer({ active, appVisible, overlay }: { active: boolean; ap
   ) : null;
 
   return (
-    <div className="tr" data-layer="home" aria-hidden={!active || appVisible || overlay} inert={!active || appVisible || overlay} style={{ position: 'absolute', inset: 0, opacity: active ? 1 : 0, transform: active ? (appVisible ? 'scale(.92)' : 'none') : 'scale(1.12)', pointerEvents: active && !appVisible && !overlay ? 'auto' : 'none' }}>
+    <div className="tr" data-layer="home" aria-hidden={!active || appVisible || overlay} inert={!active || appVisible || overlay} style={{ position: 'absolute', inset: 0, visibility: hidden ? 'hidden' : 'visible', opacity: active ? 1 : 0, transform: active ? (appVisible ? 'scale(.92)' : 'none') : 'scale(1.12)', pointerEvents: active && !appVisible && !overlay ? 'auto' : 'none' }}>
       {edit && (
         <div style={{ position: 'absolute', top: 44, insetInline: 40, display: 'flex', justifyContent: 'flex-end', zIndex: 3 }}>
           <Glass kind="g" as="button" onClick={() => os.set({ edit: false })} style={{ padding: '9px 22px', borderRadius: 20, fontSize: 15, fontWeight: 600, color: dark ? '#fff' : '#000' }}>{t('home.done')}</Glass>

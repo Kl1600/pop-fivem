@@ -114,6 +114,8 @@ export function Screen({ shell }: { shell: boolean }) {
   const blurWall = s.screen === 'code' || s.screen === 'setup' || overlay;
   const home = s.screen === 'home';
   const appVisible = !!s.app;
+  // Appareil photo : l'image du jeu traverse l'écran, l'accueil et les écrans de verrouillage ne doivent pas rester dessous.
+  const camera = s.app === 'camera';
   const wallPhoto = useWallPhoto(s.st.wall, s.screen === 'lock' || s.screen === 'code' || s.screen === 'setup');
   const wall = wallPhoto ? `url("${wallPhoto}") center / cover` : wallpaper(s.st.wall, dark);
   const inLightApp = appVisible && !dark && !overlay;
@@ -123,14 +125,14 @@ export function Screen({ shell }: { shell: boolean }) {
   const bn = s.banner;
   const bannerApp = bn ? getApp(bn.app) : null;
   return (
-    <div data-screen="1" className={dark ? 'dk' : ''} style={{ position: 'relative', width: 1348, height: 1019, borderRadius: shell ? 30 : 0, overflow: 'hidden', background: '#000', color: '#fff', ['--ga' as string]: ga, ['--gad' as string]: gad }}>
+    <div data-screen="1" data-camera={camera ? '1' : undefined} className={dark ? 'dk' : ''} style={{ position: 'relative', width: 1348, height: 1019, borderRadius: shell ? 30 : 0, overflow: 'hidden', background: '#000', color: '#fff', ['--ga' as string]: ga, ['--gad' as string]: gad }}>
       <div aria-hidden="true" style={{ position: 'absolute', inset: -40, background: wall }} />
       <div aria-hidden="true" className="tr" style={{ position: 'absolute', inset: -40, background: wall, filter: 'blur(34px) saturate(140%)', transform: 'scale(1.08)', opacity: blurWall ? 1 : 0, transitionProperty: 'opacity' }} />
 
-      <LockLayer active={s.screen === 'lock'} toCode={s.screen === 'code'} />
+      <div style={{ display: 'contents', visibility: camera ? 'hidden' : 'visible' }} data-camera-hide="1"><LockLayer active={s.screen === 'lock'} toCode={s.screen === 'code'} />
       <CodeLayer active={s.screen === 'code'} />
-      <SetupLayer active={s.screen === 'setup'} />
-      <HomeLayer active={home} appVisible={appVisible} overlay={overlay} />
+      <SetupLayer active={s.screen === 'setup'} /></div>
+      <HomeLayer active={home} appVisible={appVisible} overlay={overlay} hidden={camera} />
       <AppLayer />
       <StatusBar light={inLightApp} appName={appName} />
 

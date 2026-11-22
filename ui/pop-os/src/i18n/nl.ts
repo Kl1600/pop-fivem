@@ -38,6 +38,8 @@ const nl: Record<string, string> = {
   "setup.name": "Apparaatnaam",
   "setup.mail": "E-mailadres",
   "setup.mail_hint": "naam@voorbeeld.nl",
+  "setup.mail_ph": "naam",
+  "setup.mail_rules": "Kies een naam van 3 tot 32 tekens: letters, cijfers, punt, streepje of underscore. Je adres wordt naam@%s.",
   "setup.mismatch": "De codes komen niet overeen",
   "setup.next": "Doorgaan",
   "setup.back": "Terug",

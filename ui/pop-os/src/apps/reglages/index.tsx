@@ -235,7 +235,7 @@ function Privacy({ p, s, c, goCode }: PaneProps & { goCode: () => void }) {
     <>
       <Section c={c}>
         <Row k={p.t('set.code')} c={c}><Button kind="plain" onClick={goCode}>{p.t('set.code_change')}</Button></Row>
-        <Row k={p.t('set.lock_now')} c={c} last><Button kind="plain" onClick={() => void p.nui.call('device:lock').then(() => p.close())}>{p.t('set.lock_now_do')}</Button></Row>
+        <Row k={p.t('set.lock_now')} c={c} last><Button kind="plain" onClick={() => void p.nui.call('device:lock').then((r) => { if (r.ok || r.err === 'err_locked') window.dispatchEvent(new CustomEvent('pop-device-locked')); })}>{p.t('set.lock_now_do')}</Button></Row>
       </Section>
       <Hint text={p.t('set.privacy_hint')} c={c} />
       <Toggle p={p} s={s} c={c} id="share" k="cc.share" />

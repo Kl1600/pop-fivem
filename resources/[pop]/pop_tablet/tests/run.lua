@@ -436,6 +436,46 @@ do
 end
 
 ------------------------------------------------------------------------
+section('verrouillage : réouverture, mauvais code, appel d\'appli après le code')
+------------------------------------------------------------------------
+do
+    local unlock = handlers['pop_tablet:device:unlock']
+    rows[serial1].fails, rows[serial1].locked_until = 0, 0
+    clock = clock + 10
+    check('session déverrouillée avant la fermeture', Tablet.Guard(1, nil, {}) ~= nil)
+    handlers['pop_tablet:device:close'](1)
+    clock = clock + 1
+    local quick = handlers['pop_tablet:device:open'](1)
+    -- L'interface suit `locked` : déverrouillée côté serveur = accueil direct (jamais un écran de code accepté sans contrôle).
+    check('réouverture rapide : le serveur annonce locked=false avec boot', quick.ok and quick.locked == false and quick.boot ~= nil, quick.locked)
+    handlers['pop_tablet:device:close'](1)
+    clock = clock + Config.Session.IdleLockSeconds + 1
+    local o = handlers['pop_tablet:device:open'](1)
+    check('réouverture après inactivité : verrouillée, sans boot', o.ok and o.locked == true and o.boot == nil, o.locked)
+    local s, err = Tablet.Guard(1, nil, {})
+    check('réouverture : appel d\'appli refusé tant que le code n\'est pas saisi', s == nil and err == 'err_locked', err)
+    clock = clock + 1
+    local bad = unlock(1, '0000')
+    check('réouverture : un mauvais code ne déverrouille pas', bad.ok ~= true and bad.err == 'err_code_wrong' and bad.boot == nil, bad.err)
+    s, err = Tablet.Guard(1, nil, {})
+    check('mauvais code : la session reste verrouillée', s == nil and err == 'err_locked', err)
+    clock = clock + 1
+    local good = unlock(1, '4321')
+    check('bon code : déverrouillé avec les données de démarrage', good.ok and good.boot ~= nil, good.err)
+    clock = clock + 1
+    s, err = Tablet.Guard(1, nil, { name = 'clockList' })
+    check('après le code : un appel d\'appli n\'est plus err_locked', s ~= nil and err == nil, err)
+    -- Verrouillage explicite (bouton d'allumage, Réglages) puis mauvais code : refusé, session verrouillée
+    check('lock : accepté', handlers['pop_tablet:device:lock'](1).ok)
+    clock = clock + 1
+    local afterLock = unlock(1, '0000')
+    check('lock puis mauvais code : err_code_wrong, pas déverrouillé', afterLock.ok ~= true and afterLock.err == 'err_code_wrong', afterLock.err)
+    s, err = Tablet.Guard(1, nil, {})
+    check('lock puis mauvais code : appel d\'appli toujours err_locked', s == nil and err == 'err_locked', err)
+    handlers['pop_tablet:device:close'](1)
+end
+
+------------------------------------------------------------------------
 section('socle-08 : nettoyage des sessions')
 ------------------------------------------------------------------------
 do
