@@ -12,6 +12,7 @@
 
 
 ## Gabarit POP (restructuration)
+- pop_doorlock : gabarit complet (client/doors, builder ; server/common, doors, builder), callbacks ESX → Callback, textes dans locales/fr.lua, README réécrit.
 - pop_affiche : gabarit complet (client/panels, editor, placement ; server/common, database, affiches), réglages VIP dans config.lua.
 - pop_boards : gabarit complet (client/panels, editor, placement, sync ; server/common, database, boards, sync), lib.callback → Callback, ox_lib retiré.
 - pop_emotes : gabarit (client/ aplati en emote, menu, events, crouch, favorites, radio_anim ; config, locales), évènements emotes:* renommés pop_emotes:*, aucune emote supprimée (en plus des 3 déjà retirées avec accord).

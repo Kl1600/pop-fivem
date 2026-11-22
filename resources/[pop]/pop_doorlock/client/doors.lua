@@ -1,25 +1,20 @@
--- TAB Doorlock | Doorbuilder edition --
+-- Portes : chargement (serveur autoritaire), synchronisation et options ox_target Verrouiller / Déverrouiller.
 
-local Doors = {}        -- doorId -> { model, coords(vec3), distance, item, jobs, state }
+Doorlock = {
+    doors = {},   -- doorId -> { model, coords(vec3), distance, item, key, jobs, state }
+}
 
--- =====================================================================
---  HELPERS
--- =====================================================================
-local function notify(text, kind, time)
-    -- esx_notify n'est pas installé : pop_notify d'abord, esx_notify seulement s'il tourne
-    if GetResourceState('pop_notify') == 'started' then
-        local icon = (kind == 'error') and 'fas fa-triangle-exclamation' or 'fas fa-key'
-        exports['pop_notify']:ShowNotify({ icon = icon, message = text, duration = time or 3000 })
-    elseif ESX and ESX.ShowNotification then
-        ESX.ShowNotification(text)
-    elseif Config.ESX_Notify and GetResourceState('esx_notify') == 'started' then
-        exports['esx_notify']:Notify(kind or 'info', time or 2000, text)
-    else
-        Config.Custom_Notify(text, time or 2000, kind or 'info')
-    end
+--- Notification au style d'origine (icône clé ou alerte). icon : icône pour une info.
+function Doorlock.Notify(text, kind, time, icon)
+    Bridge.Notify({
+        icon = (kind == 'error') and 'fas fa-triangle-exclamation' or (icon or 'fas fa-key'),
+        message = text,
+        type = kind or 'info',
+        duration = time or 3000,
+    })
 end
 
--- reconstruit un vector3 fiable (le réseau sérialise en table {x,y,z})
+-- vector3 fiable (le réseau sérialise en table {x,y,z})
 local function toVec3(c)
     if type(c) == 'vector3' then return c end
     return vector3(c.x + 0.0, c.y + 0.0, c.z + 0.0)
@@ -29,7 +24,7 @@ local ensureTargetModel  -- défini plus bas (section ox_target)
 
 local function applyDoor(d)
     local coords = toVec3(d.coords)
-    Doors[d.id] = {
+    Doorlock.doors[d.id] = {
         model    = d.model,
         coords   = coords,
         distance = d.distance or 2.5,
@@ -43,7 +38,7 @@ local function applyDoor(d)
     ensureTargetModel(d.model, d.distance or 2.5)
 end
 
--- Le joueur a-t-il accès à cette porte ? (feedback local ; le serveur revérifie)
+-- Le joueur a-t-il accès à cette porte ? (affichage local ; le serveur revérifie)
 local function hasAccess(d)
     if d.item and d.item ~= '' and d.item ~= false then
         local ok, count = pcall(function() return exports.pop_inventory:getItemCount(d.item) end)
@@ -52,7 +47,7 @@ local function hasAccess(d)
     local jobs = d.jobs
     if jobs == false or jobs == nil then return true, false end
     if jobs == true then return false, false end
-    local job = ESX.GetPlayerData().job
+    local job = Bridge.GetJob()
     if type(jobs) == 'table' then
         for _, j in ipairs(jobs) do
             if job and job.name == j then return true, false end
@@ -63,73 +58,73 @@ local function hasAccess(d)
 end
 
 local function playFob(ped)
-    ESX.Streaming.RequestAnimDict('anim@mp_player_intmenu@key_fob@', function()
-        if not IsPedInAnyVehicle(ped, true) then
-            TaskPlayAnim(ped, 'anim@mp_player_intmenu@key_fob@', 'fob_click_fp', 1.0, 1.0, -1, 48, 1, false, false, false)
-        end
-    end)
+    local dict = 'anim@mp_player_intmenu@key_fob@'
+    RequestAnimDict(dict)
+    local timeout = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < timeout do Wait(10) end
+    if HasAnimDictLoaded(dict) and not IsPedInAnyVehicle(ped, true) then
+        TaskPlayAnim(ped, dict, 'fob_click_fp', 1.0, 1.0, -1, 48, 1, false, false, false)
+    end
 end
 
--- =====================================================================
---  CHARGEMENT DES PORTES (serveur autoritaire)
--- =====================================================================
-CreateThread(function()
-    while not ESX or not ESX.IsPlayerLoaded() do Wait(250) end
-    ESX.TriggerServerCallback('pop_doorlock:getDoors', function(list)
-        for _, d in ipairs(list) do
+-- Chargement des portes (une fois, quand le personnage est chargé)
+local loaded = false
+Bridge.OnPlayerLoaded(function()
+    if loaded then return end
+    loaded = true
+    Callback.Trigger('pop_doorlock:getDoors', function(list)
+        for _, d in ipairs(list or {}) do
             applyDoor(d)
         end
     end)
 end)
 
--- ajout live des portes créées par le Doorbuilder (sans restart)
+-- Ajout live des portes créées par le Doorbuilder (sans restart)
 RegisterNetEvent('pop_doorlock:addDoors', function(created)
     for _, d in ipairs(created) do
         applyDoor(d)
     end
 end)
 
--- suppression live des portes supprimées via le Doorbuilder
+-- Suppression live des portes supprimées via le Doorbuilder
 RegisterNetEvent('pop_doorlock:removeDoors', function(ids)
     for _, id in ipairs(ids) do
-        if Doors[id] then
+        if Doorlock.doors[id] then
             RemoveDoorFromSystem(id)
-            Doors[id] = nil
+            Doorlock.doors[id] = nil
         end
     end
 end)
 
--- =====================================================================
---  SYNC ÉTAT
--- =====================================================================
 RegisterNetEvent('pop_doorlock:changeDoorState', function(doorId, state)
     DoorSystemSetDoorState(doorId, state and 1 or 0)
-    if Doors[doorId] then
-        Doors[doorId].state = state and 1 or 0
+    if Doorlock.doors[doorId] then
+        Doorlock.doors[doorId].state = state and 1 or 0
     end
 end)
 
--- confirmation serveur (le joueur avait le droit) : anim + notif
+-- Confirmation serveur (le joueur avait le droit) : anim + notif
 RegisterNetEvent('pop_doorlock:toggled', function(state)
     playFob(PlayerPedId())
-    notify(state and Config.Translate['closed_door'] or Config.Translate['opened_door'], 'info')
+    Doorlock.Notify(state and L('closed_door') or L('opened_door'), 'info')
 end)
 
--- refus serveur (pas la bonne clé / job)
+-- Refus serveur (pas la bonne clé / job)
 RegisterNetEvent('pop_doorlock:denied', function()
-    notify(Config.Translate['need_key'], 'error')
+    Doorlock.Notify(L('need_key'), 'error')
 end)
 
--- =====================================================================
---  ALT CLICK (ox_target) : verrouiller (rouge) / déverrouiller (vert)
--- =====================================================================
+------------------------------------------------------------------------
+-- ALT CLICK : verrouiller (rouge) / déverrouiller (vert)
+-- ox_target direct : les couleurs d'icône (iconColor) ne passent pas par le bridge.
+------------------------------------------------------------------------
 
--- retrouve la porte la plus proche de l'entité visée
+-- Porte la plus proche de l'entité visée
 local function findDoor(entity)
     if not entity or entity == 0 then return nil end
     local coords = GetEntityCoords(entity)
     local bestId, bestDist
-    for id, d in pairs(Doors) do
+    for id, d in pairs(Doorlock.doors) do
         local dist = #(coords - d.coords)
         if dist <= 1.5 and (not bestDist or dist < bestDist) then
             bestId, bestDist = id, dist
@@ -138,9 +133,7 @@ local function findDoor(entity)
     return bestId
 end
 
--- la porte est-elle interactive pour ce joueur ? (affichage de l'option)
--- portes à clé (meta) : on affiche toujours, le serveur valide (logique clé voiture).
--- portes job/item simple : on filtre côté client.
+-- Portes à clé (meta) : option toujours affichée, le serveur valide. Portes job/item : filtre local.
 local function canShow(d)
     if d.key and d.key ~= '' then return true end
     return (hasAccess(d))
@@ -158,12 +151,12 @@ local doorTargetOptions = {
         name        = 'tabdoor_lock',
         icon        = 'fa-solid fa-lock',
         iconColor   = '#ff4d4d',
-        label       = 'Verrouiller',
+        label       = L('target_lock'),
         distance    = 2.5,
         canInteract = function(entity)
             local id = findDoor(entity)
             if not id then return false end
-            local d = Doors[id]
+            local d = Doorlock.doors[id]
             return d.state == 0 and canShow(d)
         end,
         onSelect = function(data)
@@ -174,12 +167,12 @@ local doorTargetOptions = {
         name        = 'tabdoor_unlock',
         icon        = 'fa-solid fa-lock-open',
         iconColor   = '#4dff88',
-        label       = 'Déverrouiller',
+        label       = L('target_unlock'),
         distance    = 2.5,
         canInteract = function(entity)
             local id = findDoor(entity)
             if not id then return false end
-            local d = Doors[id]
+            local d = Doorlock.doors[id]
             return d.state == 1 and canShow(d)
         end,
         onSelect = function(data)
@@ -188,9 +181,8 @@ local doorTargetOptions = {
     },
 }
 
-local targetModels = {}   -- model -> true (pour ne pas enregistrer 2x)
+local targetModels = {}   -- model -> true (pas d'enregistrement en double)
 
--- forward declaration assignée ici (utilisée par applyDoor plus haut)
 ensureTargetModel = function(model, distance)
     if not model or targetModels[model] then return end
     targetModels[model] = true

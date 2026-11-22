@@ -1,12 +1,15 @@
--- TAB Doorlock | Doorbuilder edition (base: XD_Doorlock by LielXD) --
-
 fx_version 'cerulean'
-
 game 'gta5'
+lua54 'yes'
 
+name 'pop_doorlock'
 author 'KL'
+version '1.1.0'
 description 'POP Doorlock - doorlock + doorbuilder (clé item) pour ESX'
-version '1.0.0'
+
+dependencies {
+    'es_extended'
+}
 
 ui_page 'html/index.html'
 
@@ -16,18 +19,27 @@ files {
     'html/script.js'
 }
 
-client_scripts {
-	'@es_extended/imports.lua',
+shared_scripts {
     'config.lua',
-    'client/*.lua'
+    'shared/*.lua',
+    'locales/*.lua',
+}
+
+client_scripts {
+    'bridge/client.lua',
+    'client/doors.lua',
+    'client/builder.lua',
 }
 
 server_scripts {
-	'@es_extended/imports.lua',
-    'config.lua',
-    'server/*.lua'
+    'bridge/server.lua',
+    'server/common.lua',
+    'server/doors.lua',
+    'server/builder.lua',
 }
 
-dependencies {
-	'es_extended'
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
 }
