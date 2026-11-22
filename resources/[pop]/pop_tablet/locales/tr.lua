@@ -67,6 +67,7 @@ Locales['tr'] = {
     clock_timer_done = 'Zamanlayıcı bitti',
     msg_photo = 'Fotoğraf',
     msg_location = 'Paylaşılan konum',
+    msg_contact = 'Kişi',
     msg_notif = '%s kişisinden mesaj: %s',
     mail_notif = '%s kişisinden e-posta: %s',
     err_no_voice = 'Ses kullanılamıyor, aramalar devre dışı',

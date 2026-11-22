@@ -21,6 +21,11 @@ local function voice(src, channel)
     pcall(function() exports['pma-voice']:setPlayerCall(src, channel) end)
 end
 
+--- false si pma-voice n'est pas démarré : un appel sans voix est refusé avec une erreur claire.
+local function voiceReady()
+    return type(GetResourceState) ~= 'function' or GetResourceState('pma-voice') == 'started'
+end
+
 local function alive(src)
     local s = Tablet.Device.GetSession(src)
     return s ~= nil and Bridge.GetPlayer(src) ~= nil and Tablet.Device.Carries(src, s.serial)
@@ -78,6 +83,7 @@ function PH.Call(src, data)
     local s, err = Tablet.Guard(src, nil, { name = 'phoneCall', rate = 1, payload = data, maxBytes = 128, online = true })
     if not s then return Tablet.Fail(err) end
     if type(data) ~= 'table' or not phoneOk(data.to) then return Tablet.Fail('err_payload') end
+    if not voiceReady() then return Tablet.Fail('err_no_voice') end
     local me = P.PhoneOf(s)
     if data.to == me then return Tablet.Fail('err_payload') end
     local now = Tablet.Now()
@@ -173,7 +179,18 @@ function PH.History(src)
         local secs = r.answered_at and r.ended_at and math.max(0, r.ended_at - r.answered_at) or 0
         items[#items + 1] = { id = tonumber(r.id), peer = out and r.to_phone or r.from_phone, dir = dir, at = r.started_at, secs = secs }
     end
+    -- L'historique vu : les appels manqués jusqu'ici ne comptent plus dans le badge.
+    Tablet.AppData.Set(s.serial, 'phone', { seen = Tablet.Now() })
     return { ok = true, items = items }
+end
+
+--- Badge du Téléphone : appels manqués depuis la dernière consultation de l'historique.
+Tablet.BootHooks[#Tablet.BootHooks + 1] = function(serial, boot)
+    if not boot.phone then return end
+    local seen = tonumber(Tablet.AppData.Get(serial, 'phone', {}).seen) or 0
+    local n = Tablet.DB.MissedCalls(boot.phone, seen)
+    boot.badges = boot.badges or {}
+    if n > 0 then boot.badges.telephone = n end
 end
 
 --- pop_tablet:phone:voicemail  { to, text } : message vocal simple (texte) laissé à un numéro

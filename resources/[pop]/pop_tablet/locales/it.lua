@@ -67,6 +67,7 @@ Locales['it'] = {
     clock_timer_done = 'Timer terminato',
     msg_photo = 'Foto',
     msg_location = 'Posizione condivisa',
+    msg_contact = 'Contatto',
     msg_notif = 'Messaggio da %s: %s',
     mail_notif = 'Mail da %s: %s',
     err_no_voice = 'La voce non è disponibile, le chiamate sono disattivate',

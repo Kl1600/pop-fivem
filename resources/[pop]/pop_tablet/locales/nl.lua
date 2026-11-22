@@ -67,6 +67,7 @@ Locales['nl'] = {
     clock_timer_done = 'Timer afgelopen',
     msg_photo = 'Foto',
     msg_location = 'Gedeelde locatie',
+    msg_contact = 'Contact',
     msg_notif = 'Bericht van %s: %s',
     mail_notif = 'Mail van %s: %s',
     err_no_voice = 'Spraak is niet beschikbaar, bellen is uitgeschakeld',

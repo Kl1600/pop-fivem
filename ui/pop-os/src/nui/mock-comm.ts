@@ -76,7 +76,9 @@ export function commCall(name: string, raw: unknown): unknown {
       if (to !== ME && !PHONE.test(to) && !to.startsWith('g')) return { ok: false, err: 'err_payload' };
       const kind = String(a.kind ?? 'text');
       if (kind === 'text' && (typeof a.body !== 'string' || !a.body)) return { ok: false, err: 'err_payload' };
-      const msg: Msg = { id: ++seq, me: true, from: ME, kind, body: kind === 'text' ? String(a.body) : '', ref: kind === 'location' ? '441.0,-982.0' : a.ref == null ? null : String(a.ref), at: now(), read: false };
+      const ct = kind === 'contact' ? contacts.find((x) => x.id === Number(a.ref)) : undefined;
+      if (kind === 'contact' && !ct) return { ok: false, err: 'err_not_found' };
+      const msg: Msg = { id: ++seq, me: true, from: ME, kind, body: kind === 'text' ? String(a.body) : ct ? ct.name : '', ref: ct ? `${ct.phone}|${ct.mail}` : kind === 'location' ? '441.0,-982.0' : a.ref == null ? null : String(a.ref), at: now(), read: false };
       threads[to] = [...(threads[to] ?? []), msg];
       return { ok: true, msg };
     }

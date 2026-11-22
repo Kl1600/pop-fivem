@@ -55,6 +55,8 @@ let code = MOCK_CODE;
 // Messages, Téléphone et Contacts simulés : module chargé à la demande (hors du point d'entrée du bundle).
 let commFresh = true;
 let mailFresh = true;
+let navFresh = true;
+const NAV_NAMES = new Set(['browser:sites', 'browser:save', 'music:stations', 'music:save', 'music:state']);
 const MAIL_NAMES = new Set(['mail:folders', 'mail:list', 'mail:get', 'mail:send', 'mail:move', 'mail:flag', 'mail:delete']);
 const COMM_NAMES = new Set(['messages:threads', 'messages:thread', 'messages:send', 'messages:read', 'messages:pin', 'messages:group', 'messages:media',
   'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history', 'phone:voicemail', 'phone:voicemails', 'contacts:list', 'contacts:save', 'contacts:delete']);
@@ -67,6 +69,7 @@ export function resetMock(): void {
   seedTools();
   commFresh = true;
   mailFresh = true;
+  navFresh = true;
   installed = [...MOCK_BOOT.apps];
   fails = 0;
   blockedUntil = 0;
@@ -125,6 +128,11 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       installed = installed.filter((x) => x !== d.data);
       return { ok: true, apps: installed };
     default:
+      if (NAV_NAMES.has(String(d.name))) {
+        const m = await import('./mock-nav');
+        if (navFresh) { m.seedNav(); navFresh = false; }
+        return m.navCall(String(d.name), d.data);
+      }
       if (MAIL_NAMES.has(String(d.name))) {
         const m = await import('./mock-mail');
         if (mailFresh) { m.seedMail(); mailFresh = false; }

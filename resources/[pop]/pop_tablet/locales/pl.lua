@@ -67,6 +67,7 @@ Locales['pl'] = {
     clock_timer_done = 'Minutnik zakończony',
     msg_photo = 'Zdjęcie',
     msg_location = 'Udostępniona lokalizacja',
+    msg_contact = 'Kontakt',
     msg_notif = 'Wiadomość od %s: %s',
     mail_notif = 'Poczta od %s: %s',
     err_no_voice = 'Głos jest niedostępny, połączenia są wyłączone',

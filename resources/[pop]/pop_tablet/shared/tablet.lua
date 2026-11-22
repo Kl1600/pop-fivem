@@ -62,6 +62,9 @@ Tablet.Media.shareSeconds = 30
 Tablet.Comm = { contacts = 300, pins = 12, group = 8, groupName = 40, voicemail = 200, contactNote = 200, contactAddr = 60, contactNotes = 100, preview = 80 }
 -- Mail : mails par tablette, dossiers déplaçables.
 Tablet.MailBox = { max = 300, folders = { inbox = true, sent = true, draft = true, trash = true, archive = true }, movable = { inbox = true, archive = true, trash = true } }
+-- Navigateur (signets, historique par tablette) et Musique (favoris, listes de lecture par tablette).
+Tablet.Browser = { bookmarks = 50, history = 50, url = 120, title = 80 }
+Tablet.MusicLimits = { favs = 30, playlists = 10, perList = 50, name = 40, title = 80 }
 Tablet.ContactGroups = { famille = true, travail = true, lspd = true, ami = true }
 
 Tablet.Tools = { favPlaces = 12, recentPlaces = 5, translateFavs = 30, translateChars = 500, watch = 20 }
@@ -138,7 +141,7 @@ local relayed = {
     'mail:folders', 'mail:list', 'mail:get', 'mail:send', 'mail:move', 'mail:flag', 'mail:delete',
     'contacts:list', 'contacts:save', 'contacts:delete',
     'messages:pin', 'messages:group', 'messages:media', 'phone:voicemail', 'phone:voicemails',
-    'browser:sites', 'music:stations', 'translate:run',
+    'browser:sites', 'browser:save', 'music:stations', 'music:save', 'translate:run',
     'stocks:subscribe', 'stocks:unsubscribe', 'stocks:watch',
     'plans:state', 'plans:fav', 'plans:recent', 'translate:favs', 'translate:fav',
     'share:nearby', 'share:send', 'share:accept', 'share:refuse',

@@ -1,6 +1,6 @@
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { ClockContext, DarkContext, LayoutContext, NotifyContext, NuiContext, SettingsContext, TContext, WeatherContext, safeAccent, type SettingsApi } from '../kit';
+import { player, ClockContext, DarkContext, LayoutContext, NotifyContext, NuiContext, SettingsContext, TContext, WeatherContext, safeAccent, type SettingsApi } from '../kit';
 import { Fit, SCREEN_H, SCREEN_W, SHELL_H, SHELL_W, Shell } from '../device/Shell';
 import { makeT } from '../i18n';
 import { fetchNui, nuiApi, onNuiMessage } from '../nui/bridge';
@@ -14,6 +14,9 @@ import { useOS } from './store';
 /** Écoute permanente des messages du client : seul élément actif tablette fermée (un écouteur, aucun minuteur). */
 export function Host() {
   const open = useOS((s) => s.open);
+  const vol = useOS((s) => s.vol);
+  // Le volume des réglages règle aussi le lecteur de Musique.
+  useEffect(() => { player.setVolume(vol); }, [vol]);
   useEffect(() => {
     const off = onNuiMessage(handleMessage);
     // Équivalents de pop.js (non chargé) : `pop:ready` au démarrage ; `tablet:ready` pour recevoir l'ouverture en cours.

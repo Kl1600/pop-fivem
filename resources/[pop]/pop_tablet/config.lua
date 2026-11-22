@@ -79,6 +79,16 @@ Config.Apps = { dictaphone = 'on', translate = 'on' }
 -- Pages https autorisées pour les applis de l'API (RegisterApp) et pour le Navigateur : liste de noms d'hôte.
 Config.Browser = { AllowedHosts = {} }
 
+-- Musique : radios et flux lus par un élément audio dans la page de la tablette (https obligatoire).
+-- `name` : 40 caractères au plus ; `tag` : genre affiché (facultatif, 12 caractères). Remplacer par vos propres flux.
+Config.Music = {
+    Stations = {
+        { name = 'Groove Salad', tag = 'CHILL', url = 'https://ice1.somafm.com/groovesalad-128-mp3' },
+        { name = 'Secret Agent', tag = 'LOUNGE', url = 'https://ice1.somafm.com/secretagent-128-mp3' },
+        { name = 'Space Station', tag = 'ELECTRO', url = 'https://ice1.somafm.com/spacestation-128-mp3' },
+    },
+}
+
 -- Météo : nom de ville affiché (nom propre, pas traduit). La température est déduite du type de météo du jeu et de l'heure.
 Config.Weather = { City = 'Los Santos' }
 

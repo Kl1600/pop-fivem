@@ -67,6 +67,7 @@ Locales['en'] = {
     clock_timer_done = 'Timer finished',
     msg_photo = 'Photo',
     msg_location = 'Shared location',
+    msg_contact = 'Contact',
     msg_notif = 'Message from %s: %s',
     mail_notif = 'Mail from %s: %s',
     err_no_voice = 'Voice chat is unavailable, calls are disabled',

@@ -48,6 +48,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
   const [plus, setPlus] = useState(false);
+  const [pickContact, setPickContact] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [newTo, setNewTo] = useState('');
   const [picked, setPicked] = useState<string[]>([]);
@@ -93,7 +94,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
   }, [nui, refresh, open, data]);
 
   const titleOf = (th: Thread) => (th.group ? th.name || t('msg.group') : nameFor(contacts, th.id));
-  const previewOf = (th: Thread) => (!th.last ? t('msg.new_conv') : th.last.kind === 'photo' ? t('msg.photo_shared') : th.last.kind === 'location' ? t('msg.loc_shared') : th.last.body);
+  const previewOf = (th: Thread) => (!th.last ? t('msg.new_conv') : th.last.kind === 'photo' ? t('msg.photo_shared') : th.last.kind === 'location' ? t('msg.loc_shared') : th.last.kind === 'contact' ? t('msg.contact_shared') : th.last.body);
   const q = query.trim().toLowerCase();
   const match = (th: Thread) => !q || `${titleOf(th)} ${previewOf(th)}`.toLowerCase().includes(q);
   const pinned = threads.filter((x) => pins.includes(x.id) && match(x));
@@ -104,7 +105,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
     const body = draft.trim();
     if (!sel || (!extra && !body)) return;
     const r = await nui.call<SendRes>('messages:send', extra ? { to: sel, ...extra } : { to: sel, body });
-    if (r.ok && r.msg) { setMsgs((m) => [...m, r.msg!]); setDraft(''); setPlus(false); setPhotos(null); void refresh(); } else flash(r.err ? t(r.err) : t('msg.err'));
+    if (r.ok && r.msg) { setMsgs((m) => [...m, r.msg!]); setDraft(''); setPlus(false); setPickContact(false); setPhotos(null); void refresh(); } else flash(r.err ? t(r.err) : t('msg.err'));
   };
   const togglePin = async () => {
     if (!sel) return;
@@ -212,6 +213,12 @@ export default function App({ t, dark, nui, data }: AppProps) {
                         <div style={{ maxWidth: 460, boxSizing: 'border-box', borderRadius: 20, background: media ? 'transparent' : m.me ? BLUE : c.bubble, color: m.me ? '#fff' : c.fg, padding: media ? 0 : '8px 14px', fontSize: 17, lineHeight: 1.35 }}>
                           {m.kind === 'text' && <span>{m.body}</span>}
                           {m.kind === 'photo' && <MediaPhoto id={m.id} nui={nui} label={t('msg.photo_shared')} />}
+                          {m.kind === 'contact' && (
+                            <span style={{ display: 'block', minWidth: 220 }}>
+                              <b style={{ display: 'block' }}>{m.body}</b>
+                              <span style={{ fontSize: 15, opacity: 0.85 }}>{(m.ref ?? '').split('|')[0]}</span>
+                            </span>
+                          )}
                           {m.kind === 'location' && (
                             <span style={{ display: 'block', width: 300, borderRadius: 20, overflow: 'hidden', background: c.cell, color: c.fg }}>
                               <svg role="img" aria-label={t('msg.loc_shared')} width="300" height="150" viewBox="0 0 300 150"><rect width="300" height="150" fill={c.map} /><path d="M0 100h300M90 0v150M200 0l-60 150" stroke={c.road} strokeWidth="10" fill="none" /><path d="M150 112s-14-12-14-22a14 14 0 0 1 28 0c0 10-14 22-14 22z" fill="#ff3b30" /><circle cx="150" cy="90" r="5" fill="#fff" /></svg>
@@ -229,6 +236,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
             {plus && (
               <Glass style={{ position: 'absolute', left: 24, bottom: 84, width: 210, borderRadius: 18, padding: 6, zIndex: 6, display: 'flex', flexDirection: 'column' }}>
                 <button type="button" onClick={() => void askPhotos()} style={{ ...BTN, height: 44, padding: '0 12px', borderRadius: 12, fontSize: 17, display: 'flex', alignItems: 'center', gap: 10 }}><Ico d={D.photo} size={20} color={BLUE} />{t('msg.photo')}</button>
+                <button type="button" onClick={() => { setPlus(false); setPickContact(true); }} style={{ ...BTN, height: 44, padding: '0 12px', borderRadius: 12, fontSize: 17, display: 'flex', alignItems: 'center', gap: 10 }}><Ico d={D.call} size={20} color="#ff9f0a" />{t('msg.contact')}</button>
                 <button type="button" onClick={() => void send({ kind: 'location' })} style={{ ...BTN, height: 44, padding: '0 12px', borderRadius: 12, fontSize: 17, display: 'flex', alignItems: 'center', gap: 10 }}><Ico d={D.loc} size={20} color="#34c759" />{t('msg.loc')}</button>
               </Glass>
             )}
@@ -280,6 +288,16 @@ export default function App({ t, dark, nui, data }: AppProps) {
           {(photos ?? []).map((p) => (
             <button key={p.id} type="button" aria-label={t('msg.photo')} onClick={() => void send({ kind: 'photo', ref: p.id })} style={{ ...BTN, width: 96, height: 96, borderRadius: 12, overflow: 'hidden', background: c.fill }}>
               {p.thumb ? <img alt="" src={p.thumb} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+            </button>
+          ))}
+        </div>
+      </Sheet>
+      <Sheet open={pickContact} onClose={() => setPickContact(false)} title={t('msg.contact')}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 420, overflowY: 'auto' }}>
+          {contacts.length === 0 && <span style={{ color: c.sub }}>{t('msg.no_contacts')}</span>}
+          {contacts.map((u) => (
+            <button key={u.id} type="button" aria-label={u.name} onClick={() => void send({ kind: 'contact', ref: u.id })} style={{ ...BTN, padding: '10px 12px', borderRadius: 12, fontSize: 17, display: 'flex', justifyContent: 'space-between' }}>
+              <span>{u.name}</span><span style={{ color: c.sub }}>{u.phone}</span>
             </button>
           ))}
         </div>

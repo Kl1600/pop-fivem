@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Field, Glass, Sheet, palette, useSettingsApi, type AppProps, type NuiResult } from '../../kit';
+import { Button, Field, Glass, NearbySheet, Sheet, palette, useSettingsApi, type AppProps, type NuiResult } from '../../kit';
 import { FX, aspectOf, dateLabel, fxCss, groupPhotos, makeThumb, monthLabel, neighbour, type PhotoItem } from './model';
 
 const BLUE = '#0088ff';
@@ -62,6 +62,7 @@ export default function App(p: AppProps) {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<number | null>(null);
   const [full, setFull] = useState<Full | null>(null);
+  const [near, setNear] = useState(false);
   const [panel, setPanel] = useState<'none' | 'info' | 'edit'>('none');
   const [toast, setToast] = useState('');
   const [albumSheet, setAlbumSheet] = useState<'none' | 'new' | 'pick'>('none');
@@ -300,6 +301,7 @@ export default function App(p: AppProps) {
                 ))}
               </div>
             )}
+            <NearbySheet open={near} onClose={() => setNear(false)} kind="photo" rid={full?.id ?? null} />
             {full && (
               <Glass className="dk" style={{ position: 'absolute', bottom: 28, height: 60, borderRadius: 30, display: 'flex', alignItems: 'center', gap: 10, padding: '0 22px' }}>
                 {full.deleted ? (
@@ -310,6 +312,7 @@ export default function App(p: AppProps) {
                     {tool('info', t('pho.t_info'), D.info, '#fff', () => setPanel(panel === 'info' ? 'none' : 'info'), panel === 'info')}
                     {tool('album', t('pho.t_album'), D.albums, '#fff', () => setAlbumSheet('pick'))}
                     {tool('wall', t('pho.t_wall'), D.wall, '#fff', wallpaper)}
+                    {tool('share', t('share.nearby'), 'M12 15V4M8 8l4-4 4 4M6 12H5v8h14v-8h-1', '#fff', () => setNear(true))}
                     {tool('del', t('pho.t_del'), D.trash, '#ff6b6b', () => void remove())}
                     {tool('edit', t('pho.t_edit'), D.edit, '#fff', () => setPanel(panel === 'edit' ? 'none' : 'edit'), panel === 'edit')}
                   </>

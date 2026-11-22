@@ -1,6 +1,6 @@
 import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
-import { AppIcon, BlurLayer, Glass, useT } from '../kit';
+import { AppIcon, BlurLayer, Glass, player, usePlayer, useT } from '../kit';
 import { getApp } from '../apps/registry';
 import { nuiApi } from '../nui/bridge';
 import { formatDate, formatTime, useGameDate } from './clock';
@@ -115,7 +115,10 @@ export function ControlCenter() {
   const open = useOS((s) => s.cc);
   const st = useOS((s) => s.settings);
   const vol = useOS((s) => s.vol);
-  const music = useOS((s) => s.boot?.music ?? null);
+  const boot = useOS((s) => s.boot?.music ?? null);
+  const pl = usePlayer();
+  // Lecteur en cours d'abord ; sinon ce que le serveur a retenu à l'ouverture.
+  const music = pl.track ? { title: pl.track.title, artist: pl.track.artist, playing: pl.playing } : boot;
   const dark = st.dark === true;
   const on = (v: boolean | undefined, c: string) => (v ? c : 'rgba(255,255,255,.18)');
   const conn: Array<{ name: string; d: string; bg: string; toggle: () => void; pressed: boolean }> = [
@@ -159,6 +162,13 @@ export function ControlCenter() {
                   </span>
                 </div>
                 <div style={{ flexGrow: 1 }} />
+                {pl.track && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 22, marginBottom: 8 }}>
+                    <button aria-label={t('mus.prev')} onClick={() => player.skip(-1)} style={{ fontSize: 22 }}>⏮</button>
+                    <button aria-label={t(pl.playing ? 'mus.pause' : 'mus.play')} onClick={() => player.toggle()} style={{ fontSize: 22 }}>{pl.playing ? '⏸' : '▶'}</button>
+                    <button aria-label={t('mus.next')} onClick={() => player.skip(1)} style={{ fontSize: 22 }}>⏭</button>
+                  </div>
+                )}
                 <button aria-label={t('app.musique')} onClick={openFrom('musique')} style={{ alignSelf: 'center', fontSize: 15, fontWeight: 600, opacity: 0.9 }}>{t('cc.open_music')}</button>
               </Glass>
               <Glass kind="gw" style={{ gridColumn: 'span 2', borderRadius: 34, display: 'flex', alignItems: 'center', gap: 12, padding: '0 18px' }}>

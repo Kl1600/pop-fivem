@@ -2256,5 +2256,87 @@ do
     check('boot : badge de mails non lus', (badge.badges or {}).mail ~= nil and badge.badges.mail >= 1)
 end
 
+------------------------------------------------------------------------
+section('Navigateur, Musique, restes (app-nav, app-mus, app-msg-02, app-tel-03)')
+------------------------------------------------------------------------
+do
+    local keep, jstore, seq, AD = json, {}, 0, {}
+    def('json', { encode = function(v) seq = seq + 1 local k = 'J' .. seq jstore[k] = v return k end, decode = function(k) return jstore[k] end })
+    DB.GetAppData = function(serial, app) return AD[serial .. '|' .. app] end
+    DB.SetAppData = function(serial, app, data) AD[serial .. '|' .. app] = data end
+    dofile('server/apps/browser.lua')
+    dofile('server/apps/music.lua')
+    local H = handlers
+    local function tk() clock = clock + 6 end
+    local function err(name, src, data) tk() return H['pop_tablet:' .. name](src, data).err end
+    local B = Tablet.Browser
+    Config.Browser.AllowedHosts = { 'exemple.fr' }
+
+    check('RegisterSite : site nui:// de la ressource appelante accepté', B.RegisterSite({ domain = 'annuaire.pop', title = 'Annuaire', page = 'nui://pop_annuaire/web/index.html' }, 'pop_annuaire') == true)
+    check('RegisterSite : page d\'une autre ressource refusée', select(2, B.RegisterSite({ domain = 'autre.pop', title = 'X', page = 'nui://pop_police/web/index.html' }, 'pop_annuaire')) == 'bad_page')
+    check('RegisterSite : domaine pris par une autre ressource refusé', select(2, B.RegisterSite({ domain = 'annuaire.pop', title = 'Y', page = 'nui://pop_police/web/i.html' }, 'pop_police')) == 'domain_taken')
+    check('RegisterSite : domaine invalide refusé', select(2, B.RegisterSite({ domain = 'Mauvais Domaine', title = 'X', page = 'nui://a/b' }, 'a')) == 'bad_domain')
+    check('RegisterSite : https hors liste refusé, dans la liste accepté', select(2, B.RegisterSite({ domain = 'web.pop', title = 'W', page = 'https://pirate.example/x' }, 'pop_annuaire')) == 'bad_page'
+        and B.RegisterSite({ domain = 'web.pop', title = 'W', page = 'https://exemple.fr/x' }, 'pop_annuaire') == true)
+    tk()
+    local r = H['pop_tablet:browser:sites'](60)
+    check('browser:sites : sites en jeu et hôtes autorisés', r.ok and #r.sites == 2 and r.hosts[1] == 'exemple.fr' and #r.bookmarks == 0)
+    tk()
+    check('browser:save : signets et historique rangés par tablette', H['pop_tablet:browser:save'](60, { bookmarks = { { url = 'pop://annuaire.pop', title = 'Annuaire' }, { url = 'a"b' } }, history = { { url = 'weazelnews.com', title = 'W' } } }).ok)
+    tk()
+    local bsA, bsB = H['pop_tablet:browser:sites'](60), H['pop_tablet:browser:sites'](61)
+    check('browser:save : url douteuse écartée, autre tablette vide', #bsA.bookmarks == 1 and #bsA.history == 1 and #bsB.bookmarks == 0)
+    check('browser:save : charge invalide refusée', err('browser:save', 60, 'x') == 'err_payload')
+    B.UnregisterResource('pop_annuaire')
+    tk()
+    check('site retiré à l\'arrêt de la ressource', #H['pop_tablet:browser:sites'](60).sites == 0)
+
+    Config.Music = { Stations = { { name = 'Radio A', url = 'https://flux.exemple.fr/a.mp3', tag = 'ROCK' }, { name = 'Mauvaise', url = 'http://clair.exemple.fr/x' }, { name = 'Radio B', url = 'https://flux.exemple.fr/b' } } }
+    tk()
+    local m = H['pop_tablet:music:stations'](60)
+    check('music:stations : seulement les flux https valides, identifiant = rang config', m.ok and #m.stations == 2 and m.stations[1].id == 's1' and m.stations[2].id == 's3')
+    tk()
+    check('music:save : favoris et liste de lecture', H['pop_tablet:music:save'](60, { favs = { 's1', 's2', 'zz' }, playlists = { { name = 'Route', ids = { 's3', 's1', 's3' } } } }).ok)
+    tk()
+    local m2 = H['pop_tablet:music:stations'](60)
+    check('music:save : station inconnue écartée, doublons retirés', #m2.favs == 1 and m2.favs[1] == 's1' and #m2.playlists == 1 and #m2.playlists[1].ids == 2)
+    check('music:save : nom de liste vide refusé', err('music:save', 60, { playlists = { { name = '', ids = {} } } }) == 'err_payload')
+    tk()
+    check('music:stations : listes propres à la tablette', #H['pop_tablet:music:stations'](61).favs == 0)
+    tk()
+    check('music:state : retenu pour le centre de contrôle', H['pop_tablet:music:state'](60, { title = 'Radio A', artist = 'ROCK', playing = true }).ok and Tablet.Device.GetSession(60).music.title == 'Radio A')
+    local boot = {}
+    for _, h in ipairs(Tablet.BootHooks) do pcall(h, Tablet.Device.SerialOf(60), boot) end
+    check('boot : musique en cours fournie', boot.music and boot.music.playing == true)
+
+    -- Messages : contact joint (app-msg-02)
+    local ph = {}
+    for _, src in ipairs({ 60, 61 }) do ph[src] = rows[Tablet.Device.SerialOf(src)].phone end
+    DB.GetContact = function(serial, id) if id == 5 and serial == Tablet.Device.SerialOf(60) then return { id = 5, name = 'Lina C.', phone = '555-0101', mail = 'lina@pop.ls' } end end
+    tk()
+    local c = H['pop_tablet:messages:send'](60, { to = ph[61], kind = 'contact', ref = 5 })
+    check('messages:send contact : nom et numéro lus chez l\'expéditeur', c.ok and c.msg.body == 'Lina C.' and c.msg.ref == '555-0101|lina@pop.ls')
+    check('messages:send contact : contact d\'un autre refusé', err('messages:send', 61, { to = ph[60], kind = 'contact', ref = 5 }) == 'err_not_found')
+
+    -- Téléphone : sans pma-voice, erreur claire (app-tel-03)
+    def('GetResourceState', function() return 'stopped' end)
+    check('phone:call : sans pma-voice, erreur claire', err('phone:call', 60, { to = ph[61] }) == 'err_no_voice')
+    def('GetResourceState', function() return 'started' end)
+
+    -- Badge d'appels manqués
+    local missed = 2
+    DB.MissedCalls = function() return missed end
+    local b = { phone = ph[60], badges = {} }
+    for _, h in ipairs(Tablet.BootHooks) do pcall(h, Tablet.Device.SerialOf(60), b) end
+    check('boot : badge des appels manqués du Téléphone', b.badges.telephone == 2)
+    DB.CallHistory = function() return {} end
+    tk() H['pop_tablet:phone:history'](60)
+    missed = 0
+    local b2 = { phone = ph[60], badges = {} }
+    for _, h in ipairs(Tablet.BootHooks) do pcall(h, Tablet.Device.SerialOf(60), b2) end
+    check('phone:history : consultation enregistrée, badge retiré', b2.badges.telephone == nil)
+    def('json', keep)
+end
+
 print(('\n%d réussis, %d échecs'):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

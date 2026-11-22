@@ -67,6 +67,7 @@ Locales['de'] = {
     clock_timer_done = 'Timer abgelaufen',
     msg_photo = 'Foto',
     msg_location = 'Geteilter Standort',
+    msg_contact = 'Kontakt',
     msg_notif = 'Nachricht von %s: %s',
     mail_notif = 'Mail von %s: %s',
     err_no_voice = 'Sprachchat nicht verfügbar, Anrufe sind deaktiviert',

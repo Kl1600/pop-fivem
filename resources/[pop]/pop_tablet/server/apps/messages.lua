@@ -9,7 +9,7 @@ local P = Tablet.Peer
 local C = Tablet.Comm
 
 local BIG = 4294967295
-local KINDS = { text = true, photo = true, location = true }
+local KINDS = { text = true, photo = true, location = true, contact = true }
 
 local function phoneOk(p) return type(p) == 'string' and Tablet.Device.PhoneValid(p, Config.Phone.Format) end
 local function groupId(to)
@@ -25,6 +25,7 @@ end
 local function preview(kind, body)
     if kind == 'photo' then return L('msg_photo') end
     if kind == 'location' then return L('msg_location') end
+    if kind == 'contact' then return L('msg_contact') end
     return (body or ''):sub(1, C.preview)
 end
 
@@ -113,6 +114,13 @@ function M.Send(src, data)
         local pid = Tablet.Limits.Int(data.ref, 1, BIG)
         if not pid or not Tablet.DB.PhotoOwned(s.serial, pid) then return Tablet.Fail('err_not_found') end
         ref = tostring(pid)
+    elseif kind == 'contact' then
+        -- Contact joint : lu dans les contacts de l'expéditeur (jamais fourni par le client). body = nom, ref = numéro|mail.
+        local cid = Tablet.Limits.Int(data.ref, 1, BIG)
+        local c = cid and Tablet.DB.GetContact(s.serial, cid)
+        if not c then return Tablet.Fail('err_not_found') end
+        body = c.name
+        ref = ((c.phone or '') .. '|' .. (c.mail or '')):sub(1, 255)
     else
         local pos = Bridge.GetCoords(src)
         if not pos then return Tablet.Fail('err_not_found') end

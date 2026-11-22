@@ -715,3 +715,8 @@ end
 function DB.UnreadMail(serial)
     return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_mails WHERE serial = ? AND folder = \'inbox\' AND read_at IS NULL', { serial })) or 0
 end
+
+--- Appels manqués reçus par `phone` depuis `since` (badge du Téléphone).
+function DB.MissedCalls(phone, since)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_calls WHERE to_phone = ? AND status = \'missed\' AND started_at > ?', { phone, since })) or 0
+end

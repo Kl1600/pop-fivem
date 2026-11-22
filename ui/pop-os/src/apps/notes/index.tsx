@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Field, Glass, Sheet, palette, useSettingsApi, type AppProps, type NuiResult } from '../../kit';
+import { Button, Field, Glass, NearbySheet, Sheet, palette, useSettingsApi, type AppProps, type NuiResult } from '../../kit';
 import { countIn, emptyBlocks, emptyTable, groupNotes, longStamp, previewOf, stamp, visibleNotes, type Block, type Folder, type FolderSel, type NoteRow } from './model';
 
 const GOLD = '#ffa800';
@@ -41,6 +41,7 @@ export default function App(p: AppProps) {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [sel, setSel] = useState<FolderSel>('all');
   const [cur, setCur] = useState<Cur | null>(null);
+  const [near, setNear] = useState(false);
   const [query, setQuery] = useState('');
   const [big, setBig] = useState(false);
   const [error, setError] = useState('');
@@ -231,6 +232,7 @@ export default function App(p: AppProps) {
                   <Ico d={D.pin} size={18} fill={cur.pinned ? GOLD : 'none'} />{cur.pinned ? t('not.pinned_l') : t('not.pin')}
                 </Glass>
               )}
+              {!cur.deleted && <Glass as="button" aria-label={t('share.nearby')} onClick={() => setNear(true)} style={{ height: 40, padding: '0 16px', borderRadius: 20, display: 'flex', alignItems: 'center', fontSize: 15 }}>{t('share.nearby')}</Glass>}
               <Glass as="button" aria-label={cur.deleted ? t('not.delete_forever') : t('not.del')} onClick={() => void remove()} style={{ width: 40, height: 40, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff383c' }}><Ico d={D.trash} size={18} /></Glass>
             </div>
             <div className="scroll" style={{ flexGrow: 1, overflowY: 'auto', padding: '0 60px 120px' }}>
@@ -280,6 +282,7 @@ export default function App(p: AppProps) {
         )}
       </main>
 
+      <NearbySheet open={near} onClose={() => setNear(false)} kind="note" rid={cur?.id ?? null} />
       <Sheet open={folderSheet} onClose={() => setFolderSheet(false)} title={t('not.folder_new')}>
         <Field value={folderName} onChange={setFolderName} label={t('not.folder_name')} placeholder={t('not.folder_name')} maxLength={40} onEnter={() => void addFolder()} />
         <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}><Button disabled={!folderName.trim()} onClick={() => void addFolder()}>{t('not.create')}</Button></div>

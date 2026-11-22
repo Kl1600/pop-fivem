@@ -68,6 +68,7 @@ Locales['ar'] = {
     clock_timer_done = 'انتهى المؤقّت',
     msg_photo = 'صورة',
     msg_location = 'موقع مشترك',
+    msg_contact = 'جهة اتصال',
     msg_notif = 'رسالة من %s: %s',
     mail_notif = 'بريد من %s: %s',
     err_no_voice = 'الصوت غير متاح، المكالمات معطلة',
