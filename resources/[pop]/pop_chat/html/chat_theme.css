@@ -74,6 +74,7 @@
 }
 
 .chat-input > div {
+    position: relative !important; /* repère pour centrer l'icône */
     display: flex;
     align-items: center;
     background: rgba(10, 10, 12, .55) !important;
@@ -86,7 +87,11 @@
 }
 
 .chat-input .prefix {
-    position: static !important;
+    /* Centrée verticalement sur la barre, quelle que soit la hauteur de la saisie */
+    position: absolute !important;
+    top: 50% !important;
+    left: 8px !important;
+    transform: translateY(-50%);
     flex: 0 0 auto;
     display: flex;
     align-items: center;
@@ -94,7 +99,7 @@
     width: 20px !important;
     height: 20px !important;
     min-width: 20px;
-    margin: 0 8px 0 4px !important;
+    margin: 0 !important;
     padding: 0 !important;
     border-radius: 50%;
     background: #fff;
@@ -121,7 +126,7 @@
     outline: none !important;
     color: #fff !important;
     font-size: 13px !important;
-    padding: 6px 4px !important;
+    padding: 6px 4px 6px 34px !important; /* place pour l'icône à gauche */
     height: 30px !important;
     line-height: 18px !important;
     resize: none;

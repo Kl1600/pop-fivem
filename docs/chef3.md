@@ -81,6 +81,8 @@ Parcours complet (déclencheur → ce que voit le joueur → ce qui le guide ens
 
 - pop_chat : icône de la saisie refaite (rond blanc 20 px comme les notifications, chevron dessiné en CSS et centré à la place de la flèche « ➤ » du chat de base).
 
+- pop_chat : icône de la saisie centrée verticalement sur la barre (positionnée au milieu, quelle que soit la hauteur de la saisie).
+
 ### Reste
 - Tester la mission en jeu avec le client (après la restructuration).
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).
