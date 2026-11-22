@@ -16,6 +16,8 @@ export interface Tablet {
   /** Couche de l'appli ouverte. */
   app: Locator;
   home(): Promise<void>;
+  /** Erreurs console attendues (artefact du navigateur de dev, pas de la tablette) : ignorées pour ce scénario. */
+  ignoreErrors(re: RegExp): void;
   /** Écran de la tablette (coque exclue). */
   screen: Locator;
   /** Simule un message du jeu (`SendNUIMessage`) : `tablet:<action>`. */
@@ -25,6 +27,7 @@ export interface Tablet {
 export const test = base.extend<{ tab: Tablet }>({
   tab: async ({ page }, use) => {
     const errors: string[] = [];
+    const ignored: RegExp[] = [];
     page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url()}`); });
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     page.on('console', (m) => { if (m.type() === 'error') errors.push(`console.error: ${m.text()}`); });
@@ -38,6 +41,7 @@ export const test = base.extend<{ tab: Tablet }>({
       page,
       app,
       calls,
+      ignoreErrors: (re) => { ignored.push(re); },
       screen: page.locator('[data-screen="1"]'),
       async send(action, data) { await page.evaluate(([a, d]) => window.postMessage({ action: `tablet:${a}`, data: d }, '*'), [action, data] as const); },
       async open(opts = {}) {
@@ -68,7 +72,7 @@ export const test = base.extend<{ tab: Tablet }>({
       },
     };
     await use(tab);
-    expect(errors, 'erreurs console / pageerror pendant le scénario').toEqual([]);
+    expect(errors.filter((e) => !ignored.some((re) => re.test(e))), 'erreurs console / pageerror pendant le scénario').toEqual([]);
   },
 });
 
