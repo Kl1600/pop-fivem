@@ -467,6 +467,14 @@ function D.Setup(src, data)
     if not Tablet.Limits.Enum(data.lang, Tablet.LanguageSet) then return fail('err_lang_invalid') end
     local address = mailAddress(data.mail)
     if not address then return fail('err_mail_invalid') end
+    -- Apparence et fond choisis au premier allumage (facultatifs) : mêmes règles que settings:save, sans fond tiré d'une photo.
+    if data.dark ~= nil and type(data.dark) ~= 'boolean' then return fail('err_payload') end
+    local wall = data.wall
+    if wall ~= nil then
+        local valid = wall == 'auto' or (type(wall) == 'string' and wall:match('^%d$') ~= nil and tonumber(wall) < Tablet.WallpaperCount)
+        if not valid then return fail('err_payload') end
+    end
+    local cleanLook = { dark = data.dark, wall = wall }
 
     if not DB().ClaimMailbox(address, s.serial) then
         return fail(DB().MailboxOwner(address) == s.serial and 'err_setup_done' or 'err_mail_taken')
@@ -476,7 +484,7 @@ function D.Setup(src, data)
         return fail('err_rate')
     end
     local salt = newSalt()
-    local settings = json.encode({ lang = data.lang, dark = false, mail = address })
+    local settings = json.encode({ lang = data.lang, dark = cleanLook.dark == true, wall = cleanLook.wall, mail = address })
     local apps = json.encode(Tablet.Store and Tablet.Store.DefaultApps() or {})
     if not DB().ClaimSetup(s.serial, hashCode(salt, data.code), salt, name, settings, apps) then
         DB().DeleteMailbox(address, s.serial)

@@ -344,9 +344,16 @@ do
     check('langue inconnue refusée', setup(1, { code = '1234', name = 'T', lang = 'xx', mail = 'alex' }).err == 'err_lang_invalid')
     check('adresse invalide refusée', setup(1, { code = '1234', name = 'T', lang = 'fr', mail = 'a b' }).err == 'err_mail_invalid')
     check('nom vide refusé', setup(1, { code = '1234', name = '  ', lang = 'fr', mail = 'alex' }).err == 'err_name_invalid')
+    check('apparence non booléenne refusée', setup(1, { code = '1234', name = 'T', lang = 'fr', mail = 'alex', dark = 'oui' }).err == 'err_payload')
+    check('fond inconnu refusé', setup(1, { code = '1234', name = 'T', lang = 'fr', mail = 'alex', wall = '9' }).err == 'err_payload')
+    check('fond tiré d\'une photo refusé au premier allumage', setup(1, { code = '1234', name = 'T', lang = 'fr', mail = 'alex', wall = 'photo:1' }).err == 'err_payload')
+    check('refus d\'apparence : aucune adresse réservée', mailboxes['alex@pop.ls'] == nil)
     clock = clock + 1
-    local ok = setup(1, { code = '1234', name = 'Alex Tab', lang = 'fr', mail = 'Alex.Martin@pop.ls' })
+    local ok = setup(1, { code = '1234', name = 'Alex Tab', lang = 'fr', mail = 'Alex.Martin@pop.ls', dark = true, wall = '3' })
     check('premier allumage accepté', ok.ok and ok.boot ~= nil and ok.boot.name == 'Alex Tab', ok.err)
+    -- Le JSON du harnais est factice à la lecture : on vérifie le texte enregistré en base.
+    local stored = tostring(rows[serial1].settings)
+    check('premier allumage : apparence sombre et fond enregistrés', stored:find('"dark":true', 1, true) and stored:find('"wall":"3"', 1, true) and stored:find('"lang":"fr"', 1, true), stored)
     local row = rows[serial1]
     check('code stocké haché, jamais en clair', row.code_hash ~= '1234' and #row.code_hash == 64 and row.code_salt ~= '1234'
         and not tostring(row.code_hash):find('1234', 1, true))
