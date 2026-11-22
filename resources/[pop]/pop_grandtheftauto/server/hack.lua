@@ -4,12 +4,29 @@
 -- VERROUS DE PIRATAGE (PCB)
 -- ============================================================
 
+-- Après 3 erreurs (alarme), le joueur attend Config.Hack.retryDelay secondes avant de réessayer
+local RetryAfter = {} -- [src] = os.time()
+
+RegisterNetEvent('mission:server:hackFailed')
+AddEventHandler('mission:server:hackFailed', function(plate)
+    local src = source
+    if not GTA.Mission.active or not GTA.IsMember(src) then return end
+    RetryAfter[src] = os.time() + (Config.Hack.retryDelay or 20)
+    GTA.Debug(('piratage raté (alarme) sur %s par %s : nouvel essai dans %ds'):format(tostring(plate), src, Config.Hack.retryDelay or 20))
+end)
+
+AddEventHandler('playerDropped', function() RetryAfter[source] = nil end)
+
 RegisterNetEvent('mission:server:tryLockHack')
 AddEventHandler('mission:server:tryLockHack', function(plate)
     local src = source
     if type(plate) ~= 'string' or not GTA.ValidPlates[plate] then return end
     if not GTA.Mission.active or not GTA.IsMember(src) then
         TriggerClientEvent('mission:client:hackLockResult', src, plate, false, "nomission")
+        return
+    end
+    if RetryAfter[src] and os.time() < RetryAfter[src] then
+        TriggerClientEvent('mission:client:hackLockResult', src, plate, false, "cooldown")
         return
     end
     if GTA.HackCompleted[plate] then

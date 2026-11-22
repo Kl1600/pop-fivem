@@ -7,15 +7,15 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 1. **Svetlana** (docks) : [E] PARLER. Le serveur crée la mission ; les joueurs à 15 m font partie de l'équipe (4 max) et reçoivent 1 flipper + 1 module pirate s'ils n'en ont pas (une fois par période de cooldown). Un joueur peut rejoindre l'équipe en lui parlant tant que le casse n'a pas commencé.
 2. **GPS vers le showroom.** À 100 m, le chef lance le casse : Thornton, voitures du showroom, voiture de démo, portes fermées, lasers allumés.
 3. **Thornton** : le chef s'approche, la caméra zoome sur lui, il accepte, ouvre le capot de la démo puis part dans sa voiture.
-4. **Panneau électrique** : [E] PIRATER avec un flipper → mini-jeu ultra-voltlab. Réussi : coupure de courant, portes ouvertes, lasers éteints, minuteur de 4 min, blip des clés.
+4. **Panneau électrique** : [E] PIRATER avec un flipper → mini-jeu « stop au bon moment ». Réussi : coupure de courant, portes ouvertes, lasers éteints, minuteur de 4 min, blip des clés.
 5. **Clés** puis **porte de garage** ([E] RAMASSER, [E] OUVRIR).
-6. **Module pirate** sur une voiture (glisser-déposer depuis l'inventaire, utiliser l'objet ou `/voler_auto`) : placement du module à la souris, [E] FIXER LE MODULE → mini-jeu. Le serveur vérifie la voiture et consomme le pcb à la réussite, puis déverrouille la voiture. Alerte police + suivi GPS des voitures pendant 100 s.
+6. **Module pirate** sur une voiture : près du capot, [E] BRANCHER LE MODULE (ou glisser le pcb sur la voiture, utiliser l'objet, `/voler_auto`) → capot ouvert, 3 s d'animation (barre annulable [X]) → fenêtre de piratage : 3 manches « stop au bon moment » ([E] Valider, [Échap] Abandonner). Une manche ratée recommence ; 3 erreurs = alarme, module non consommé, nouvel essai après 20 s. Le serveur vérifie la voiture et consomme le pcb à la réussite, puis déverrouille la voiture. Alerte police + suivi GPS des voitures pendant 100 s.
 7. **Livraison** : GPS vers les docks, un camion apparaît ; reculer la voiture dans le camion. Le serveur vérifie la voiture et paie `Config.RewardPerCar` en liquide (objet cash, banque en repli). Un coéquipier qui prend le volant d'une voiture piratée reçoit aussi le GPS et son camion.
 8. **Fin** : toutes les voitures livrées, ou 5 min sans nouvelle voiture après la dernière livraison, ou 45 min, ou départ du chef. Le serveur supprime les entités, remet tout à zéro chez l'équipe ; nouveau casse possible après `Config.Cooldown`.
 
 ## Dépendances
 
-`ultra-voltlab`, `clm_ProgressBar`, `chHyperSound`, `interact-sound`, `pop_inventory`, `pop_notify`, `pop_v3dui`.
+`clm_ProgressBar`, `chHyperSound`, `interact-sound`, `pop_inventory`, `pop_notify`, `pop_v3dui`.
 
 ## Fichiers
 
@@ -23,8 +23,9 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 |---|---|
 | `config.lua` | réglages communs POP + positions, équipe, délais, récompense, voitures (`Cars`) |
 | `locales/fr.lua` | tous les textes affichés |
+| `html/` | fenêtre de piratage (style pop_notify) + kit POP (barre de progression) |
 | `bridge/`, `shared/` | copies du modèle POP (ne pas modifier) |
-| `client/utils.lua` | synchro coop (`Relay`, `IsOwner`…), `CheckItem`, notifications, chargements, invites « E », coupure, minuteur, mini-jeu |
+| `client/utils.lua` | synchro coop (`Relay`, `IsOwner`…), `CheckItem`, notifications, chargements, invites « E », coupure, minuteur |
 | `client/sync.lua` | réception des évènements serveur (départ, entités, relais, fin), blips police |
 | `client/lasers.lua` | lasers de sécurité (dessin + détection, sans ressource externe) |
 | `client/scenario.lua` | Thornton (dialogue, capot, départ) |
@@ -32,7 +33,7 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 | `client/spawn.lua` | voitures du showroom |
 | `client/blips.lua` | blip du panneau, PNJ de décor |
 | `client/interact.lua` | Svetlana, panneau électrique, clés, porte de garage, voiture de Thornton |
-| `client/hack.lua` | piratage d'une voiture (verrou, caméra, mini-jeu, fin validée) |
+| `client/hack.lua` | piratage d'une voiture (verrou, branchement, mini-jeu `RunHackGame`, fin validée) |
 | `client/pcb.lua` | `/voler_auto`, objet pcb, glisser-déposer, livraison du coéquipier |
 | `client/delivery.lua` | camions de livraison |
 | `server/common.lua` | état de la mission (`GTA`), outils, fin de mission, kit |
@@ -49,7 +50,7 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 | `/voler_auto` | tous | pose le module pirate sur la voiture Benefactor la plus proche (il faut un pcb) |
 | `/startheist` | admin (`command.startheist` ou `pop.admin`) | lance un casse tout de suite (même chemin que Svetlana) |
 
-Touche E : interactions. Mini-jeu : flèches + Entrée, Retour arrière pour abandonner. Placement du module : souris (clic gauche tourner, clic droit déplacer, molette avant/arrière), Échap/Retour arrière pour annuler.
+Touche E : interactions et « Valider » dans le mini-jeu. Échap (ou Retour arrière) : abandonner le mini-jeu. X : annuler le branchement. Réglages du mini-jeu : `Config.Hack`.
 
 ## Évènements
 

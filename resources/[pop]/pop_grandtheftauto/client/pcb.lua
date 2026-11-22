@@ -3,7 +3,7 @@
 
 RegisterCommand("voler_auto", function()
     local ped = PlayerPedId()
-    if PCB.Active[ped] then return end
+    if PCB.IsBusy() then return end
 
     local veh = PCB.FindVehicle(PCB.PATTERN)
     if not veh then return end
@@ -59,7 +59,7 @@ CreateThread(function()
                         ExecuteCommand('pop_inventory') -- Force la fermeture de l'inventaire
 
                         local playerPed = PlayerPedId()
-                        if PCB.Active[playerPed] then return end
+                        if PCB.IsBusy() then return end
 
                         CheckItem('pcb', function(hasItem) CreateThread(function()
                             if hasItem then

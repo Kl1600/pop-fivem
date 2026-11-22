@@ -232,7 +232,7 @@ Citizen.CreateThread(function()
                             CreateThread(function()
                                 if not hasItem then
                                     MissionNotify(L('need_flipper'), 5000)
-                                elseif RunVoltlab(40) then
+                                elseif RunHackGame(L('hack_panel_title')) == 'success' then
                                     if canHack then OnPanelHacked() end
                                 else
                                     MissionNotify(L('hack_failed'), 5000)

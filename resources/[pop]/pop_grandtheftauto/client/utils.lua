@@ -123,23 +123,7 @@ function Blackout(state)
 end
 AddEventHandler('mission:local:blackout', function(state) Blackout(state) end)
 
--- ==========================================
--- MINI-JEU (ultra-voltlab)
--- ==========================================
--- Lance le mini-jeu et attend le résultat. Renvoie true si réussi.
--- (Le rappel n'appelle pas Wait : on attend ici, dans notre propre thread.)
-function RunVoltlab(seconds)
-    if GetResourceState('ultra-voltlab') ~= 'started' then
-        MissionNotify(L('voltlab_missing'), 5000)
-        return false
-    end
-    local p = promise.new()
-    TriggerEvent('ultra-voltlab', seconds or 40, function(outcome)
-        p:resolve(outcome)
-    end)
-    local outcome = Citizen.Await(p)
-    return outcome == 1
-end
+-- (Mini-jeu : RunHackGame, dans client/hack.lua — fenêtre NUI, plus d'ultra-voltlab.)
 
 -- ==========================================
 -- MINUTEUR (après la coupure de courant)

@@ -9,7 +9,7 @@ Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
 Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
 Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
 Config.Notify    = 'auto' -- pop_notify s'il est lancé
-Config.AccentColor = '#ffffff'
+Config.AccentColor = '#5d90ec' -- bleu POP (barre de progression, fenêtre de piratage)
 Config.CashItem = 'cash'
 Config.Keys = {
     Interact = { control = 38, label = 'E' },
@@ -29,6 +29,18 @@ Config.NotifyIcon = 'fas fa-info' -- icône des notifications de la mission
 Config.SvetlanaPos  = vector3(-51.8229, -2523.5183, 7.4012)  -- donneuse de mission (docks)
 Config.ShowroomPos  = vector3(-69.0, 64.0, 71.9)             -- showroom Benefactor
 Config.DeliveryPos  = vector3(-462.1116, -2805.2249, 5.9963) -- zone de livraison
+
+-- Piratage (module sur une voiture, panneau électrique) : « stop au bon moment »
+Config.Hack = {
+    rounds     = 3,    -- manches à réussir
+    zoneStart  = 0.22, -- largeur de la zone bleue à la 1re manche (part de la barre)
+    zoneShrink = 0.04, -- la zone rétrécit de tant à chaque manche
+    speedStart = 1.0,  -- allers simples du curseur par seconde à la 1re manche
+    speedStep  = 0.25, -- accélération à chaque manche
+    maxFails   = 3,    -- erreurs au total avant l'alarme
+    retryDelay = 20,   -- secondes avant de pouvoir réessayer après l'alarme
+    plugTime   = 3000, -- ms pour brancher le module (barre annulable)
+}
 
 -- Points du showroom et de la scène
 Config.Positions = {

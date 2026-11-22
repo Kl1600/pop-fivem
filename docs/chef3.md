@@ -68,6 +68,13 @@ Parcours complet (déclencheur → ce que voit le joueur → ce qui le guide ens
 6. **Livrer au camion** — piratage réussi → étape 5 cochée chez toute l'équipe, notification « rendez-vous au point indiqué sur votre GPS » → point jaune « Livraison » + itinéraire (pirate, conducteur, et coéquipiers). À 150 m : camion → « Un camion vous attend… Reculez la voiture » → itinéraire vers le camion. Voiture reculée derrière le camion → paiement.
 7. **Fin** — livraison → étape 6 cochée pour l'équipe, « Svetlana vous a payé… » ; « le casse se termine dans 5 min » si plus de voiture → fin : « Le casse est terminé », étape 7 cochée, checklist retirée après 6 s. Échec (45 min, chef parti) : message + checklist et itinéraire retirés tout de suite.
 
+### Nouveau piratage (22/11/2026)
+- Placement 3D à la souris supprimé. Nouveau déroulé : [E] « BRANCHER LE MODULE » près du capot → capot ouvert, 3 s d'animation (`Bridge.Progress`, annulable [X]) → fenêtre NUI « stop au bon moment » en bas au centre (style pop_notify : verre sombre flouté, TT Firs Neue, rond blanc, accent #5d90ec) : 3 manches, la zone rétrécit et le curseur accélère, manche ratée = on la recommence, 3 erreurs = `grandtheftauto:alarme`, module non consommé, nouvel essai après 20 s (vérifié aussi côté serveur : `mission:server:hackFailed` → refus `cooldown` du verrou). Réussite : même suite (finalizeHack serveur, pcb consommé, voiture déverrouillée, police, guidage livraison).
+- Mini-jeu sans focus NUI : le jeu lit [E] et [Échap] (pas de focus bloqué). Le serveur reste seul juge (distance, plaque, mission, verrou, pcb).
+- Panneau électrique : même mini-jeu (titre « Piratage du panneau ») à la place d'ultra-voltlab.
+- `html/` : kit POP copié (`html/kit/`, nécessaire pour la barre `Bridge.Progress`) + fenêtre de piratage. `Config.AccentColor = '#5d90ec'`, réglages `Config.Hack`.
+- ultra-voltlab plus utilisé : supprimé du dépôt (le déploiement le retire du serveur), retiré du manifest, de coordination-chefs.md et de gabarit-pop.md.
+
 ### Reste
 - Tester la mission en jeu avec le client (après la restructuration).
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).
