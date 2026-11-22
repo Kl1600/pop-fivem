@@ -43,7 +43,7 @@ exports.pop_tablet:Notify(target, {
 
 - `target` : un `source` (joueur) **ou** un `serial` de tablette (`'PT-...'`). Un source est notifié seulement s'il porte une tablette (la première) ; un serial seulement si son porteur est en ligne.
 - Retour : `true` si une tablette a été notifiée, `false` sinon.
-- Les textes sont des clés : la **tablette** les traduit dans sa langue. Les clés doivent exister dans `Locales[<langue>]` de la ressource appelante ; l'appelante envoie aussi ses textes via `texts = { en = '...', fr = '...' }` si elle n'a pas de locales partagées avec la tablette (repli : `title`/`body` en texte brut).
+- Les textes sont des clés : la **tablette** les traduit dans sa langue. Les clés doivent exister dans `Locales[<langue>]` de la ressource appelante ; l'appelante envoie ses textes via `texts = { en = { cle = '...' }, fr = { cle = '...' } }` (la tablette n'a pas accès aux locales d'une autre ressource ; repli : `title`/`body` en texte brut). Le même `texts` sert à `RegisterApp` pour résoudre `nameKey`. Tablette fermée : notification du jeu à la place.
 - Limites : titre <= 60 car., corps <= 200 car. ; 5 notifications par seconde et par ressource ; au-delà, rejet silencieux (journal en `Config.Debug`).
 
 ## 3. Ouvrir une appli : `OpenApp`
@@ -68,7 +68,7 @@ window.parent.postMessage({ type: 'pop-app:call', appId: 'police_mdt', action: '
 ```
 
 La tablette relaie vers `pop_tablet:app:call` (7.2 de SPEC) puis exécute `onCall(src, serial, action, data)` côté serveur. Contrôles faits par POP avant `onCall` : objet porté, session déverrouillée, appli installée, job, taille <= 4 Ko, anti-spam. **`onCall` doit revérifier ses propres règles** (permissions métier, distance). `onCall` retourne une table <= 16 Ko, sinon rejet.
-La page peut aussi recevoir : `{ type: 'pop-app:event', name, data }` (push de la ressource via `exports.pop_tablet:AppEvent(src, appId, name, data)`, <= 2 Ko, seulement si l'appli est ouverte).
+La page peut aussi recevoir : `{ type: 'pop-app:event', name, data }` (push de la ressource via `exports.pop_tablet:AppEvent(src, appId, name, data)`, <= 1 Ko, seulement si l'appli est au premier plan).
 
 ## 5. Contexte donné à la page de l'appli
 

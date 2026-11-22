@@ -61,8 +61,16 @@ interface Props {
   label?: string;
 }
 
+const CUSTOM = new Map<string, Def>();
+
+/** Icône générique d'une appli d'une autre ressource : pastille de couleur et première lettre du nom. */
+export function setCustomIcon(id: string, name: string, color?: string): void {
+  const c = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#5e5ce6';
+  CUSTOM.set(id, { bg: [c, c], shapes: [], texts: [{ s: (name.trim()[0] ?? '?').toUpperCase(), y: 68, size: 56, weight: 700, f: 'W' }] });
+}
+
 export const AppIcon = memo(function AppIcon({ appId, size = 120, dark = false, label }: Props) {
-  const def = ICONS[appId] ?? ICONS.reglages!;
+  const def = ICONS[appId] ?? CUSTOM.get(appId) ?? ICONS.reglages!;
   const tint = def.bg[1];
   const whiteTile = def.bg[0] === '#ffffff';
   const bg = dark ? 'linear-gradient(180deg,#3a3a3e,#1c1c1f)' : `linear-gradient(180deg,${def.bg[0]},${def.bg[1]})`;

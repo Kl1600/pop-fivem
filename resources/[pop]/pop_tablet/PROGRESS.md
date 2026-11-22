@@ -3,7 +3,7 @@
 Journal court. À relire au début de chaque session, avec `feature_list.json` et `SPEC.md`.
 
 ## État
-- Fonctions validées : 12 / 120 (dont ui-01 à ui-05 et ui-17)
+- Fonctions validées : 14 / 120 (dont ui-01 à ui-05, ui-17, arb-01, arb-02)
 - Prochaine fonction : socle-02
 - Plafond de tours : 20 par session (par domaine : socle serveur, socle client, socle interface, puis applis)
 
@@ -66,3 +66,12 @@ Preuve commune (ui/pop-os) : `pnpm typecheck` OK ; `pnpm test` = 39 réussis / 0
 - **Restent false** : ui-06 (test en jeu, console NUI vide), ui-07 à ui-15 (code et tests vitest faits, mais « capture comparée à la maquette » impossible : `support.js` de la maquette absent de ui/pop-os/design, elle ne se rend pas ; seul le portage du code a été fait ; ui-09, 10, 13 demandent aussi un test en jeu), ui-16 (relevé de profil NUI en jeu).
 - **Écarts SPEC** : `src/kit/` au lieu de `src/sdk/` (demande) ; écran de référence 1348x1019 mis à l'échelle (transform) au lieu de vh/vw ; flou : un backdrop-filter par couche surchargée (panneaux dans un centre/recherche à plat), mais plusieurs sur l'accueil (widgets, dock) ; Wi-Fi/Bluetooth/rotation/recopie gardés (section 0 prime sur 6.3) ; « + Ajouter un widget » et pastilles de page du centre de contrôle retirés (sans fonction) ; flou animé (filter) remplacé par un fond flouté en fondu d'opacité.
 - **Contrat à compléter côté client/serveur** : `tablet:open` doit porter `lang` (écran verrouillé sans `boot`) et `shell` (absent = pas de coque) ; clés de `settings:save` à autoriser : lang, dark, glass, bright, wall, blur, air, wifi, bt, rot, mirror, share, focus ; `boot.widgets` ({events, reminders}) et `boot.music` à fournir ; `tablet:weather` {temp, kind, hi, lo, city} ; les textes de l'interface sont dans le bundle (la table Lua ne contient pas ces clés).
+
+## Session 3 - 2026-11-22 (Système + API : contrat, Réglages, Boutique, API, arb-01/02)
+Preuve commune : `lua tests/run.lua` = 284 réussis / 0 échec ; luacheck pop_tablet + templates = 0/0 sur 54 fichiers ; `luac -p` sur tous les .lua ; ui/pop-os : `pnpm typecheck` OK, `pnpm test` = 51 réussis (3 fichiers), `pnpm check` OK, `pnpm build` OK (dist JS 418,2 Ko), `pnpm verify` OK.
+- **Contrat aligné** (SPEC 7.2, 7.3, 8 mis à jour) : `tablet:open` porte `lang`, `weather`, `shell` (seulement si `Config.Shell`) ; `settings:save` valide et stocke 17 clés ; `boot.widgets`, `boot.music`, `boot.apiApps`, informations de l'appareil ; `tablet:weather` {temp, kind, hi, lo, city}.
+- **arb-01 OK** : vitest (Mode Avion et Wi-Fi coupé remplacent Boutique, Messages, Téléphone, Mail, Navigateur) + test Lua (`store:*` refusé `err_offline`, Réglages encore possibles, option `online` de la garde).
+- **arb-02 OK (chemin serveur)** : `photos:capture` (faux `screencapture`) : photo enregistrée, 1 prise / 3 s, > 150 Ko rejetée, plafond `Config.Photos.Max`. Il reste à voir en jeu que la capture contient bien l'écran voulu.
+- **Restent false** : app-set-01 et app-set-02 (code et vitest faits, pas de capture comparée à la maquette ni de test en jeu), app-sto-01, api-01 à api-05 (logique prouvée avec faux Bridge/DB, test en jeu avec une vraie ressource manquant), api-06 (`RegisterSite` et `MarketShock` non faits : Navigateur et Bourse pas construits), api-07 (aucun exemple d'appli API écrit).
+- **À valider en jeu** : natives météo (`GetWeatherTypeTransition` renvoie bien 3 valeurs en Lua), iframe `nui://` d'une autre ressource, `SetNuiFocus`, usage de l'objet via pop_inventory (`onUse`), `screencapture` hors NUI.
+- **Décisions** : voir SPEC section 15 bis (ids d'applis français, Notify tablette fermée = notification du jeu, `texts` par langue, rubriques de Réglages sans fonction retirées).

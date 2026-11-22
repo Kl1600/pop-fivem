@@ -49,3 +49,6 @@ button{cursor:pointer}
   .jig,.jig2,.shake{animation:none!important}
 }
 [data-motion="off"] .tr,[data-motion="off"] .fade{transition-duration:.01s!important}
+
+/* Accessibilité : texte en gras (Réglages). */
+.pop[data-bold='on'] { font-weight: 600; }

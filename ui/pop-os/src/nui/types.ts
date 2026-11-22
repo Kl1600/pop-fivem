@@ -1,4 +1,4 @@
-import type { DeviceSettings } from '../kit';
+import type { DeviceSettings, StoreEntry } from '../kit';
 // Contrat NUI <-> client (SPEC section 8). Seuls ces types décrivent ce que Lua envoie.
 export interface ClockSnap {
   h: number;
@@ -27,6 +27,10 @@ export interface WidgetData {
   reminders?: Array<{ id: number | string; text: string; done: boolean }>;
 }
 
+/** Fiche d'une appli (catalogue de la Boutique, `store:list`). Les applis natives n'ont que id, cat, system, installed. */
+export type StoreItem = StoreEntry;
+export type ApiAppInfo = StoreItem & { api: true; name: string; page: string };
+
 export interface Boot {
   serial: string;
   name: string;
@@ -36,6 +40,13 @@ export interface Boot {
   /** Identifiants des applis installées. */
   apps: string[];
   badges: Record<string, number>;
+  /** Informations de l'appareil. */
+  model?: string;
+  os?: string;
+  created?: number;
+  lastOpen?: number;
+  /** Fiches des applis d'autres ressources (RegisterApp) installées. */
+  apiApps?: ApiAppInfo[];
   widgets?: WidgetData;
   music?: { title: string; artist: string; playing: boolean } | null;
 }
@@ -59,6 +70,7 @@ export interface OpenData {
 
 export interface NotifyMsg {
   app: string;
+  title?: string;
   titleKey?: string;
   bodyKey?: string;
   args?: Array<string | number>;

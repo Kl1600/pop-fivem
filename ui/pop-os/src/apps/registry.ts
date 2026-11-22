@@ -1,4 +1,5 @@
 import type { AppManifest } from '../kit';
+import { setApiPage } from './api/pages';
 import { manifest as m_bourse } from './bourse/manifest';
 import { manifest as m_boutique } from './boutique/manifest';
 import { manifest as m_calculette } from './calculette/manifest';
@@ -26,10 +27,24 @@ import { manifest as m_traduire } from './traduire/manifest';
 export const NATIVE_APPS: AppManifest[] = [m_bourse, m_boutique, m_calculette, m_calendrier, m_camera, m_contacts, m_dictaphone, m_fichiers, m_horloge, m_mail, m_messages, m_meteo, m_musique, m_navigateur, m_notes, m_photos, m_plans, m_rappels, m_reglages, m_tableau, m_telephone, m_traduire];
 
 const apiApps = new Map<string, AppManifest>();
+/** Ids posés par `setApiApps` (le serveur) : seuls ceux-là sont remplacés à chaque mise à jour. */
+const fromServer = new Set<string>();
+export { setApiPage, apiPage } from './api/pages';
 
 /** Applis ajoutées par d'autres ressources (catalogue envoyé par `tablet:apps`). */
 export function registerApiApp(m: AppManifest): void {
   apiApps.set(m.id, m);
+}
+
+/** Remplace l'ensemble des applis API par les fiches reçues du serveur (démarrage, `tablet:apps`). */
+export function setApiApps(items: ReadonlyArray<{ id: string; name: string; page: string; color?: string; icon?: string }>): void {
+  for (const id of fromServer) apiApps.delete(id);
+  fromServer.clear();
+  for (const it of items) {
+    setApiPage(it.id, { page: it.page, name: it.name, color: it.color, icon: it.icon });
+    fromServer.add(it.id);
+    apiApps.set(it.id, { id: it.id, nameKey: `api.${it.id}`, domain: 'api', online: false, load: () => import('./api/index') });
+  }
 }
 
 export function getApp(id: string): AppManifest | undefined {

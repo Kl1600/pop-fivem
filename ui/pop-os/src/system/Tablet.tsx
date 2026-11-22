@@ -4,7 +4,7 @@ import { DarkContext, LayoutContext, NotifyContext, NuiContext, SettingsContext,
 import { Fit, SCREEN_H, SCREEN_W, SHELL_H, SHELL_W, Shell } from '../device/Shell';
 import { makeT } from '../i18n';
 import { fetchNui, nuiApi, onNuiMessage } from '../nui/bridge';
-import { handleMessage, power, pushNotify, requestClose, setLanguage, setSetting, volume } from './actions';
+import { handleMessage, power, pushNotify, renameDevice, requestClose, setInstalled, setLanguage, setSetting, volume } from './actions';
 import { Screen } from './Screen';
 import { useOS } from './store';
 
@@ -34,12 +34,19 @@ export function Tablet() {
   const name = useOS((s) => s.name);
   const serial = useOS((s) => s.serial);
   const battery = useOS((s) => s.battery);
+  const boot = useOS((s) => s.boot);
+  const apps = useOS((s) => s.apps);
   const settingsApi: SettingsApi = useMemo(() => ({
     settings: st, name, serial: serial ?? '', battery, lang,
     set: setSetting,
     setLang: (l) => void setLanguage(l),
     changeCode: async (o, n) => { const r = await nuiApi.call('device:changeCode', { old: o, new: n }); return { ok: r.ok, err: r.err }; },
-  }), [st, name, serial, battery, lang]);
+    rename: renameDevice,
+    apps,
+    install: (item) => setInstalled(item.id, true, item),
+    uninstall: (id) => setInstalled(id, false),
+    info: { phone: boot?.phone ?? '', model: boot?.model ?? '', os: boot?.os ?? '', created: boot?.created ?? 0, lastOpen: boot?.lastOpen ?? 0 },
+  }), [st, name, serial, battery, lang, boot, apps]);
   const notify = useCallback((n: { app: string; title: string; body: string }) => pushNotify({ app: n.app, text: n.body, titleKey: undefined }), []);
 
   // Échap rend le focus au jeu (équivalent de `close` du kit). L'écouteur n'existe que tablette ouverte.
@@ -63,7 +70,7 @@ export function Tablet() {
           <DarkContext.Provider value={dark}>
             <NuiContext.Provider value={nuiApi}>
               <NotifyContext.Provider value={notify}><SettingsContext.Provider value={settingsApi}>
-                <div className={`pop ${dark ? 'dk' : ''}`} dir={rtl ? 'rtl' : 'ltr'} data-blur={st.blur === false ? 'off' : 'on'} data-theme={dark ? 'dark' : 'light'} style={{ position: 'fixed', inset: 0, ...vars }}>
+                <div className={`pop ${dark ? 'dk' : ''}`} dir={rtl ? 'rtl' : 'ltr'} data-blur={st.blur === false ? 'off' : 'on'} data-bold={st.bold === true ? 'on' : 'off'} data-theme={dark ? 'dark' : 'light'} style={{ position: 'fixed', inset: 0, ...vars }}>
                   {shell ? (
                     <Fit w={SHELL_W} h={SHELL_H}>
                       <Shell powerLabel={t('hw.power')} volUpLabel={t('hw.vol_up')} volDownLabel={t('hw.vol_down')} onPower={power} onVolUp={() => volume(8)} onVolDown={() => volume(-8)}>

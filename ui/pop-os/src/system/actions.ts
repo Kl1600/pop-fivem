@@ -1,7 +1,8 @@
 import { fetchNui, nuiApi } from '../nui/bridge';
-import type { Boot, ClockSnap, NotifyMsg, OpenData, Settings, Weather } from '../nui/types';
+import { getApp } from '../apps/registry';
+import type { Boot, ClockSnap, NotifyMsg, OpenData, Settings, StoreItem, Weather } from '../nui/types';
 import { isLang, makeT } from '../i18n';
-import { applyOpen, bootPatch, os, ONLINE_APPS, type Notif } from './store';
+import { applyApiApps, applyOpen, bootPatch, os, ONLINE_APPS, type Notif } from './store';
 
 // Actions du système : seuls endroits qui modifient le magasin. Les minuteurs ci-dessous sont courts (HUD, bannière)
 // et tous annulés à la fermeture de la tablette.
@@ -97,7 +98,7 @@ export async function submitCode(code: string): Promise<UnlockResult> {
     if (pendingApp) {
       const p = pendingApp;
       pendingApp = null;
-      openApp(p.app, undefined, p.data);
+      if (os.get().apps.includes(p.app)) openApp(p.app, undefined, p.data);
     }
     return { ok: true };
   }
@@ -159,11 +160,57 @@ export function removeApp(id: string): void {
   void nuiApi.call('store:remove', id);
 }
 
+export type StoreResult = { ok: boolean; err?: string; items?: StoreItem[] };
+
+/** Catalogue de la Boutique (natives + applis des autres ressources visibles pour le métier). Refusé hors ligne. */
+export async function loadStore(): Promise<StoreResult> {
+  const res = await nuiApi.call<{ ok: boolean; err?: string; items?: StoreItem[] }>('store:list');
+  return res.ok ? { ok: true, items: res.items ?? [] } : { ok: false, err: res.err };
+}
+
+function applyInstalled(ids: string[], api?: StoreItem[]): void {
+  if (api) applyApiApps(api.filter((a): a is StoreItem & { name: string; page: string } => a.api === true && typeof a.name === 'string' && typeof a.page === 'string'));
+  os.set({ apps: ids });
+}
+
+/** Installe ou retire une appli : le serveur décide (métier, appli système, hors ligne) ; l'accueil suit sa réponse. */
+export async function setInstalled(id: string, install: boolean, item?: StoreItem): Promise<{ ok: boolean; err?: string }> {
+  const res = await nuiApi.call<{ ok: boolean; err?: string; apps?: string[] }>(install ? 'store:install' : 'store:remove', id);
+  if (!res.ok || !res.apps) return { ok: false, err: res.err };
+  if (install && item?.api && item.name && item.page) {
+    const cur = os.get().boot?.apiApps ?? [];
+    const infos = [...cur.filter((a) => a.id !== id), { ...item, installed: true } as NonNullable<typeof cur>[number]];
+    os.set({ boot: os.get().boot ? { ...os.get().boot!, apiApps: infos } : null });
+    applyInstalled(res.apps, infos);
+  } else {
+    applyInstalled(res.apps);
+  }
+  return { ok: true };
+}
+
+/** `tablet:apps` : le catalogue a changé (une ressource démarre ou s'arrête) : l'accueil relit la liste installée. */
+export async function refreshApps(): Promise<void> {
+  const r = await loadStore();
+  if (!r.ok || !r.items) return;
+  const items = r.items;
+  const infos = items.filter((i) => i.api && i.installed) as NonNullable<Boot['apiApps']>;
+  const boot = os.get().boot;
+  applyApiApps(infos);
+  os.set({ apps: items.filter((i) => i.installed).map((i) => i.id), boot: boot ? { ...boot, apiApps: infos } : boot });
+}
+
 /** Applique un réglage tout de suite, puis le fait enregistrer (un échec serveur n'annule pas l'effet local). */
 export function setSetting(patch: Settings): void {
   const s = os.get();
   os.set({ settings: { ...s.settings, ...patch } });
   void nuiApi.call('settings:save', patch);
+}
+
+/** Renomme l'appareil : le serveur valide (1 à 32 caractères). */
+export async function renameDevice(name: string): Promise<{ ok: boolean; err?: string }> {
+  const res = await nuiApi.call<{ ok: boolean; err?: string; name?: string }>('settings:rename', name);
+  if (res.ok) os.set({ name: res.name ?? name });
+  return { ok: res.ok, err: res.err };
 }
 
 export async function setLanguage(lang: string): Promise<void> {
@@ -185,8 +232,9 @@ export function isOnlineApp(id: string): boolean {
 export function pushNotify(m: NotifyMsg): void {
   const s = os.get();
   const t = makeT(s.lang, s.server);
-  const title = m.titleKey ? t(m.titleKey, ...(m.args ?? [])) : t(`app.${m.app}`);
+  const title = m.title ?? (m.titleKey ? t(m.titleKey, ...(m.args ?? [])) : getApp(m.app)?.domain === 'api' ? t(`api.${m.app}`) : t(`app.${m.app}`));
   const body = m.text ?? (m.bodyKey ? t(m.bodyKey, ...(m.args ?? [])) : '');
+  if (s.settings.notif?.[m.app] === false) return;
   const n: Notif = { id: notifId++, app: m.app, title, body, at: Date.now() };
   const focus = s.settings.focus === true;
   const showBanner = !focus && s.on && s.screen === 'home';
@@ -229,6 +277,12 @@ export function handleMessage(action: string, data: unknown): void {
       return;
     case 'clock':
       if (os.get().open && data) os.set({ clock: data as ClockSnap, clockAt: performance.now() });
+      return;
+    case 'apps':
+      if (os.get().open && os.get().screen === 'home') void refreshApps();
+      return;
+    case 'appEvent':
+      if (os.get().open) window.dispatchEvent(new CustomEvent('pop-app-event', { detail: data }));
       return;
     case 'weather':
       if (os.get().open && data) os.set({ weather: data as Weather });

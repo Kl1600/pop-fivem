@@ -4,5 +4,5 @@ export * from './context';
 export * from './theme';
 export * from './components';
 export * from './layout';
-export { AppIcon, ICON_IDS } from './AppIcon';
+export { AppIcon, ICON_IDS, setCustomIcon } from './AppIcon';
 export { VirtualList, VIRTUALIZE_AFTER } from './VirtualList';

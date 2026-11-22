@@ -48,8 +48,10 @@ export function mockOpen(over: Partial<OpenData> = {}): OpenData {
 let fails = 0;
 let blockedUntil = 0;
 let code = MOCK_CODE;
+let installed: string[] = [...MOCK_BOOT.apps];
 
 export function resetMock(): void {
+  installed = [...MOCK_BOOT.apps];
   fails = 0;
   blockedUntil = 0;
   code = MOCK_CODE;
@@ -91,9 +93,20 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       return { ok: true };
     case 'device:lock':
     case 'settings:save':
-    case 'settings:rename':
-    case 'store:remove':
+    case 'app:focus':
       return { ok: true };
+    case 'settings:rename':
+      return { ok: true, name: String(d.data ?? '') };
+    case 'store:list':
+      return { ok: true, items: installed.map((id) => ({ id, cat: 'tools', system: id === 'reglages' || id === 'boutique', installed: true })).concat(
+        [{ id: 'police_mdt', cat: 'work', system: false, installed: false, api: true, name: 'Police MDT', page: 'nui://pop_police/web/mdt.html' } as never]) };
+    case 'store:install':
+      if (!installed.includes(String(d.data))) installed = [...installed, String(d.data)];
+      return { ok: true, apps: installed };
+    case 'store:remove':
+      if (d.data === 'reglages' || d.data === 'boutique') return { ok: false, err: 'err_app_system' };
+      installed = installed.filter((x) => x !== d.data);
+      return { ok: true, apps: installed };
     case 'contacts:list':
       return { ok: true, items: [{ id: 1, name: 'Sam Leroy', phone: '555-0101' }, { id: 2, name: 'Lina Costa', phone: '555-0102' }] };
     case 'notes:list':

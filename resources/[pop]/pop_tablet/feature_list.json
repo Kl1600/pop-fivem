@@ -701,13 +701,13 @@
       "id": "arb-01",
       "description": "Centre de contrôle : Mode Avion et Wi-Fi coupent réellement SMS, appels, mails, Navigateur, Boutique ; Bluetooth, rotation, recopie mémorisés",
       "verification": "test vitest de la logique réseau + appel serveur refusé quand mode avion (log)",
-      "passes": false
+      "passes": true
     },
     {
       "id": "arb-02",
       "description": "Enregistrement d écran depuis le centre de contrôle : photo de l écran ajoutée à Photos",
       "verification": "capture en jeu ou chemin serveur testé",
-      "passes": false
+      "passes": true
     },
     {
       "id": "arb-03",

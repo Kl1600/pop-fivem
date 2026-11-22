@@ -31,6 +31,12 @@ export function isLang(v: unknown): v is Lang {
  * Ordre : table de l'interface dans la langue, textes envoyés par le client (client/locale.lua), anglais, clé brute.
  * `%s` et `%d` sont remplacés dans l'ordre.
  */
+/** Textes ajoutés à l'exécution (noms des applis d'autres ressources : `api.<id>`). */
+const EXTRA = new Map<string, string>();
+export function setExtraText(key: string, text: string): void {
+  EXTRA.set(key, text);
+}
+
 export function makeT(lang: string, server: Record<string, unknown> = {}): TFn {
   const own = isLang(lang) ? TABLES[lang] : en;
   return (key, ...args) => {
@@ -39,6 +45,7 @@ export function makeT(lang: string, server: Record<string, unknown> = {}): TFn {
       const s = server[key];
       if (typeof s === 'string') text = s;
     }
+    if (text === undefined) text = EXTRA.get(key);
     if (text === undefined) text = en[key];
     if (text === undefined) return key;
     let i = 0;

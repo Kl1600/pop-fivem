@@ -189,10 +189,12 @@ Réponse standard : `{ ok = true, ... }` ou `{ ok = false, err = 'cle_locale' }`
 | `pop_tablet:device:unlock` | `code` | `{ ok, boot }` ou `{ ok=false, err, wait }` | 5 échecs -> blocage 60 s, puis x2 (max 1 h) ; comparaison à temps constant ; `Config.CallbackRateLimit` 2 |
 | `pop_tablet:device:changeCode` | `old, new` | `{ ok }` | ancien code vérifié ; mêmes limites que le déverrouillage |
 | `pop_tablet:device:lock` | | verrouille la session | |
-| `pop_tablet:settings:save` | `patch` (clés blanches uniquement) | `{ ok }` | taille <= 4 Ko ; valeurs énumérées (langue parmi les 10, fond parmi la liste) |
-| `pop_tablet:settings:rename` | `name` | | <= 32 caractères |
-| `pop_tablet:store:list` | | catalogue : natives + applis API visibles par job (`Bridge.HasJob`) | |
-| `pop_tablet:store:install` / `:remove` | `appId` | met à jour `apps` | id connu, appli système non retirable, job autorisé |
+| `pop_tablet:settings:save` | `patch` | `{ ok }` | taille <= 4 Ko ; clés blanches `Tablet.SettingsSchema` : `lang` (10), `dark`, `glass` 0-100, `bright` 15-100, `wall` (`auto` ou 0-7), `blur`, `air`, `wifi`, `bt`, `rot`, `mirror`, `share`, `focus`, `bold`, `vol` 0-100, `ring` 1-5, `notif` (table appli -> booléen, <= 60). Clé inconnue ou valeur hors bornes : tout le patch est refusé ; fusion avec les réglages stockés |
+| `pop_tablet:settings:rename` | `name` | `{ ok, name }` | 1 à 32 caractères, rogné |
+| `pop_tablet:music:state` | `{ title?, artist?, playing }` | `{ ok }` | mémoire serveur seulement (fournit `boot.music`), vidée au départ du joueur |
+| `pop_tablet:app:focus` | `appId?` | `{ ok }` | appli API au premier plan (condition de `AppEvent`) |
+| `pop_tablet:store:list` | | `{ ok, items }` : natives `{ id, cat, system, installed }` + applis API `{ id, api, name, icon, color, page, cat, installed }` visibles par job (`Bridge.HasJob`) | refusé hors ligne (`err_offline`) |
+| `pop_tablet:store:install` / `:remove` | `appId` | `{ ok, apps }` ; met à jour `apps` (<= 60) | id connu (`err_app_unknown`), appli système ou `store = false` non retirable (`err_app_system`), job autorisé (`wrong_job`), refusé hors ligne |
 | `pop_tablet:notes:list` / `:save` / `:delete` | `{ id?, title, body, pinned }` / `id` | liste (titres + extrait 120 car.) ; `:get` renvoie le corps | <= 200 notes, corps <= 10 000 |
 | `pop_tablet:calendar:list` | `{ from, to }` (dates jeu) | événements de la plage (<= 90 jours) | |
 | `pop_tablet:calendar:save` / `:delete` | | | <= 500 événements |
@@ -239,7 +241,8 @@ Callbacks serveur -> client (`Callback.Await` côté serveur) : `pop_tablet:clie
 | `pop_tablet:client:share` | `{ offerId, kind, name }` | proposition reçue |
 | `pop_tablet:client:open` | `{ app?, data? }` | `OpenApp` de l'API |
 | `pop_tablet:client:forceClose` | `{ reason }` | objet perdu, joueur mort, tablette volée en cours d'usage |
-| `pop_tablet:client:apps` | | catalogue d'applis API modifié (démarrage/arrêt d'une ressource) |
+| `pop_tablet:client:apps` | | catalogue d'applis API modifié (démarrage/arrêt d'une ressource) : l'interface relit `store:list` |
+| `pop_tablet:client:appEvent` | `{ appId, name, data }` | `AppEvent` de l'API, seulement si l'appli est au premier plan (<= 1 Ko) |
 
 Chaque `notify` et `message` est un petit paquet (< 1 Ko). Aucun paquet n'est envoyé à un joueur dont la tablette n'est pas dans sa session (hors `notify` ciblé par numéro/serial).
 
@@ -257,12 +260,12 @@ Lua -> NUI : `SendNUIMessage({ action = 'tablet:<nom>', data = ... })`. NUI -> L
 
 | Sens | Nom | Données |
 |---|---|---|
-| Lua -> NUI | `tablet:open` | `{ boot, locale = { ...table }, rtl, accent, clock = { h, m, d, mo, y, msPerMin }, weather, player = { coords, street } }` |
+| Lua -> NUI | `tablet:open` | `{ serial, needSetup, locked, boot, locale = { ...table }, rtl, accent, lang, shell?, clock = { h, m, d, mo, y, msPerMin }, weather = { temp, kind, hi, lo, city }, app? }`. `lang` : langue de la tablette (écran verrouillé sans `boot`). `shell` : présent seulement si `Config.Shell` est vrai (navigateur de développement) ; absent = pas de coque, plein écran en jeu. `boot` (après déverrouillage) : `{ serial, name, phone, battery, settings, apps, apiApps, badges, widgets = { events = { { title, time, color } }, reminders = { { id, text, done } } }, music = { title, artist, playing } ou nil, model, os, created, lastOpen }`. `widgets.events` : 3 prochains événements d'après la date du jeu envoyée par le client en 2e argument de `device:open` (filtre d'affichage, aucun droit) ; `widgets.reminders` : 4 rappels |
 | Lua -> NUI | `tablet:close` | (animation de fermeture) |
 | Lua -> NUI | `tablet:notify` | relais de `pop_tablet:client:notify` |
 | Lua -> NUI | `tablet:message` / `:mail` / `:call` / `:market` / `:share` | relais des events 7.3 |
 | Lua -> NUI | `tablet:clock` | resynchronisation (voir 11) |
-| Lua -> NUI | `tablet:weather` | idem |
+| Lua -> NUI | `tablet:weather` | `{ temp, kind, hi, lo, city }` : `kind` = `clear`, `clouds`, `rain`, `thunder`, `fog` ou `snow`, déduit de `GetPrevWeatherTypeHashName`, `GetNextWeatherTypeHashName`, `GetWeatherTypeTransition` (suivante si transition >= 50 %) et `GetRainLevel` ; `temp`, `hi`, `lo` sont **déduits** du type de météo et de l'heure du jeu (le jeu ne fournit aucune température) ; `city` = `Config.Weather.City`. Envoyé à l'ouverture et à chaque resynchronisation Horloge/Météo |
 | Lua -> NUI | `tablet:camera` | `{ state = 'on' | 'off' | 'flash' }` |
 | Lua -> NUI | `tablet:apps` | catalogue |
 | NUI -> Lua | `tablet:call` | `{ name, data }` : relais **générique** vers le callback serveur `pop_tablet:<name>` (liste blanche des noms de la section 7.2 ; sinon rejet). Réponse `{ ok, ... }` |
@@ -428,6 +431,16 @@ node --check sur tout script .js de tooling éventuel
 
 Note d'environnement relevée : sur ce poste `luac5.4` n'est pas dans le PATH (seuls `lua` et `luacheck` le sont) : installer `luac5.4` ou utiliser `lua -e "loadfile(...)"` à défaut ; à régler avant le premier `luac5.4 -p`.
 `node --check` ne vérifie pas les `.tsx` : c'est `tsc --noEmit` qui les couvre.
+
+## 15 bis. Écarts décidés au passage Système + API (22/11/2026)
+
+- Identifiants d'applis : ceux de l'interface (`reglages`, `boutique`, `notes`, `calendrier`...), pas les identifiants anglais de la section 9.
+- `Notify` sur une tablette fermée (aucune session) : notification du jeu (`Bridge.Notify`), car l'interface fermée ne peut rien afficher.
+- `Notify` et `RegisterApp` reçoivent leurs textes par `texts = { [langue] = { [clé] = texte } }` ; la tablette traduit dans la langue de la tablette cible.
+- `OpenApp` vérifie que l'appli existe et que le métier est permis ; l'installation est revérifiée par l'interface et par `app:call`.
+- Mode Avion et Wi-Fi coupé : le serveur refuse `store:*` avec `err_offline` (option `online` de `Tablet.Guard`). Les rappels SMS, appels et mails reprendront cette option à leur création.
+- Rubriques de la maquette Réglages retirées faute de fonction réelle : Temps d'écran, Écran d'accueil et multitâche, Rechercher et demander. « Automatique » (thème) non fait.
+- `photos:capture` : mode `database` seulement (le mode `remote` renvoie `err_unavailable`).
 
 ## 16. Contradictions et points ouverts (à décider)
 

@@ -1,4 +1,7 @@
 import { useSyncExternalStore } from 'react';
+import { setApiApps } from '../apps/registry';
+import { setExtraText } from '../i18n';
+import { setCustomIcon } from '../kit';
 import type { Boot, ClockSnap, OpenData, Settings, Weather } from '../nui/types';
 
 // État du système, hors React : un seul magasin, aucun timer. Il est remis à zéro à la fermeture de la tablette.
@@ -114,7 +117,17 @@ export function applyOpen(d: OpenData, lang: string): void {
   });
 }
 
+/** Enregistre les applis d'autres ressources : registre, nom traduisible (`api.<id>`) et icône générique. */
+export function applyApiApps(items: ReadonlyArray<{ id: string; name: string; page: string; color?: string }>): void {
+  for (const it of items) {
+    setExtraText(`api.${it.id}`, it.name);
+    setCustomIcon(it.id, it.name, it.color);
+  }
+  setApiApps(items);
+}
+
 export function bootPatch(boot: Boot): Partial<OS> {
+  applyApiApps((boot.apiApps ?? []).filter((a) => a.installed !== false));
   return {
     boot, name: boot.name, battery: boot.battery, settings: boot.settings ?? {},
     apps: boot.apps && boot.apps.length ? boot.apps : DEFAULT_APPS, badges: boot.badges ?? {},

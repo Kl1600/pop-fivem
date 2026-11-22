@@ -60,6 +60,24 @@ export interface DeviceSettings {
   mirror?: boolean;
   share?: boolean;
   focus?: boolean;
+  bold?: boolean;
+  vol?: number;
+  ring?: number;
+  /** Notifications par appli : `false` = coupées. */
+  notif?: Record<string, boolean>;
+}
+
+/** Fiche de la Boutique (réponse de `store:list`). Les applis natives n'ont que id, cat, system, installed. */
+export interface StoreEntry {
+  id: string;
+  cat?: string;
+  system?: boolean;
+  installed: boolean;
+  api?: boolean;
+  name?: string;
+  icon?: string;
+  color?: string;
+  page?: string;
 }
 
 export interface SettingsApi {
@@ -72,6 +90,15 @@ export interface SettingsApi {
   set: (patch: DeviceSettings) => void;
   setLang: (lang: string) => void;
   changeCode: (oldCode: string, newCode: string) => Promise<{ ok: boolean; err?: string }>;
+  /** Identifiants des applis installées. */
+  apps: string[];
+  /** Retire une appli (le serveur refuse les applis système). */
+  /** Installe une appli (le serveur vérifie le métier et le réseau). */
+  install: (item: StoreEntry) => Promise<{ ok: boolean; err?: string }>;
+  uninstall: (id: string) => Promise<{ ok: boolean; err?: string }>;
+  rename: (name: string) => Promise<{ ok: boolean; err?: string }>;
+  /** Informations de l'appareil (numéro, modèle, système, dates en secondes). */
+  info: { phone: string; model: string; os: string; created: number; lastOpen: number };
 }
 
 export const LANGUAGES = ['en', 'fr', 'es', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 'ar'] as const;
