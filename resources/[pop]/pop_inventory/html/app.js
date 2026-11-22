@@ -606,7 +606,6 @@
                  item.defId === 'pistolet_peinture' || 
                  item.defId === 'smg' || 
                  item.defId === 'carabine');
-    console.log('[POP_INVENTORY] isLongWeaponItem item=' + item.defId + ' result=' + res);
     return res;
   };
 
