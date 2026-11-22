@@ -7,7 +7,6 @@ import { formatDate, formatTime, useGameDate } from './clock';
 import { closeApp, dismissBanner, homeBar, isOnlineApp, openApp, power, toggleOverlay } from './actions';
 import { CodeLayer, LockLayer, SetupLayer } from './Lock';
 import { HomeLayer, originOf } from './Home';
-import { ControlCenter, NotificationCenter, SearchOverlay, Switcher } from './Overlays';
 import { useOS } from './store';
 
 const lazyCache = new Map<string, ComponentType<AppProps>>();
@@ -97,6 +96,8 @@ function AppLayer() {
   );
 }
 
+const OverlayLayer = lazy(() => import('./OverlayLayer'));
+
 export function Screen({ shell }: { shell: boolean }) {
   const t = useT();
   const s = {
@@ -107,6 +108,9 @@ export function Screen({ shell }: { shell: boolean }) {
   const dark = s.st.dark === true;
   const { ga, gad } = glassVars(s.st.glass ?? 50);
   const overlay = s.cc || s.nc || s.search || s.sw;
+  // Centres, recherche et multitâche : chargés à la première ouverture, puis gardés montés (animation de sortie).
+  const [overlaySeen, setOverlaySeen] = useState(false);
+  if (overlay && !overlaySeen) setOverlaySeen(true);
   const blurWall = s.screen === 'code' || s.screen === 'setup' || overlay;
   const home = s.screen === 'home';
   const appVisible = !!s.app;
@@ -142,10 +146,7 @@ export function Screen({ shell }: { shell: boolean }) {
         )}
       </AnimatePresence>
 
-      <NotificationCenter />
-      <ControlCenter />
-      <SearchOverlay />
-      <Switcher />
+      {overlaySeen && <Suspense fallback={null}><OverlayLayer /></Suspense>}
 
       <AnimatePresence>
         {s.hud && (

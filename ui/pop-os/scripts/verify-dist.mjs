@@ -1,4 +1,4 @@
-// Contrôle du build (ui-01) : point d'entrée JS <= 450 Ko, total JS <= 2 Mo (applis chargées à la demande),
+// Contrôle du build (ui-01) : point d'entrée JS <= 380 Ko, total JS <= 2 Mo (applis chargées à la demande),
 // `node --check` sur chaque fichier JS, aucune URL externe.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../../resources/[pop]/pop_tablet/web/dist');
-const MAX_ENTRY = 450 * 1024;
+const MAX_ENTRY = 380 * 1024;
 const MAX_TOTAL = 2 * 1024 * 1024;
 const walk = (d) => readdirSync(d).flatMap((n) => (statSync(join(d, n)).isDirectory() ? walk(join(d, n)) : [join(d, n)]));
 const files = walk(dist);

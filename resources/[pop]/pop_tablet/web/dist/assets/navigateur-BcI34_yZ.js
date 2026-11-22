@@ -1,1 +1,0 @@
-import{f as e,r as t}from"./index-xpMKPdNF.js";var n=e();function r(e){return(0,n.jsx)(t,{...e})}export{r as default};

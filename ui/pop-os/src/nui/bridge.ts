@@ -1,6 +1,5 @@
 import type { NuiApi, NuiResult } from '../kit';
 import type { NuiEnvelope } from './types';
-import { simulate } from './mock';
 
 declare global {
   interface Window {
@@ -13,7 +12,11 @@ export const inGame = (): boolean => typeof window !== 'undefined' && typeof win
 
 /** Appel d'un RegisterNUICallback côté Lua. Hors jeu : réponse simulée (aucun réseau). */
 export async function fetchNui<T = unknown>(name: string, data?: unknown): Promise<T | null> {
-  if (!inGame()) return (await simulate(name, data)) as T | null;
+  if (!inGame()) {
+    // Simulation chargée à la demande : hors de l'entrée du bundle, jamais téléchargée en jeu.
+    const { simulate } = await import('./mock');
+    return (await simulate(name, data)) as T | null;
+  }
   try {
     const res = await fetch(`https://${window.GetParentResourceName!()}/${name}`, {
       method: 'POST',

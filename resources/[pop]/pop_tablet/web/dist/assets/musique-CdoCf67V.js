@@ -1,0 +1,1 @@
+import{r as e}from"./kit-CcO7ElNv.js";import{t}from"./jsx-runtime-DyZJNswf.js";var n=t();function r(t){return(0,n.jsx)(e,{...t})}export{r as default};

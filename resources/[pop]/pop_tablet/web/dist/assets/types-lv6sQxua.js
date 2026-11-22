@@ -1,0 +1,1 @@
+var e=[`en`,`fr`,`es`,`de`,`it`,`pt`,`nl`,`pl`,`tr`,`ar`],t={en:`English`,fr:`Français`,es:`Español`,de:`Deutsch`,it:`Italiano`,pt:`Português`,nl:`Nederlands`,pl:`Polski`,tr:`Türkçe`,ar:`العربية`};export{t as n,e as t};
