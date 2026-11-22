@@ -26,6 +26,7 @@ const en: Record<string, string> = {
   'search.placeholder': 'Search or ask', 'search.results': 'Results', 'search.suggestions': 'Suggestions', 'search.none': 'No result',
   'sw.empty': 'No open apps', 'sw.close_hint': 'Swipe up to close',
   'net.offline': 'No connection', 'net.offline_hint': 'Turn off Airplane mode or turn Wi-Fi on to use this app.',
+  'app.crashed': 'This app ran into a problem', 'app.crashed_close': 'Close',
   'set.appearance': 'Appearance', 'set.light': 'Light', 'set.dark': 'Dark', 'set.glass': 'Liquid glass', 'set.glass_clear': 'Clear', 'set.glass_tinted': 'Tinted',
   'set.glass_hint': 'Choose the look of the glass across the interface, from clear to tinted.', 'set.blur': 'Glass blur', 'set.brightness': 'Brightness',
   'set.wall': 'Wallpaper', 'set.wall_auto': 'Automatic (follows the theme)', 'set.wall_collection': 'POP collection',

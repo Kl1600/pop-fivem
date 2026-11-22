@@ -7,6 +7,7 @@ import { formatDate, formatTime, useGameDate } from './clock';
 import { closeApp, dismissBanner, homeBar, isOnlineApp, openApp, power, toggleOverlay } from './actions';
 import { CodeLayer, LockLayer } from './Lock';
 import { SetupLayer } from './setup/SetupLayer';
+import { ErrorBoundary } from './ErrorBoundary';
 import { HomeLayer, originOf } from './Home';
 import { useOS } from './store';
 
@@ -90,7 +91,7 @@ function AppLayer() {
           transition={{ duration: 0.5, ease: [0.2, 0.9, 0.25, 1.02] }}
           style={{ position: 'absolute', inset: 0, borderRadius: 30, overflow: 'hidden', background: appBackground(dark), zIndex: 2 }}
         >
-          {off && isOnlineApp(app) ? <Offline id={app} dark={dark} /> : <Suspense fallback={null}><Comp {...props} /></Suspense>}
+          {off && isOnlineApp(app) ? <Offline id={app} dark={dark} /> : <ErrorBoundary key={app} label={`appli ${app}`} onClose={closeApp}><Suspense fallback={null}><Comp {...props} /></Suspense></ErrorBoundary>}
         </m.div>
       )}
     </AnimatePresence>

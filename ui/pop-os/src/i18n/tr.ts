@@ -110,6 +110,8 @@ const tr: Record<string, string> = {
   "sw.close_hint": "Kapatmak için yukarı kaydır",
   "net.offline": "Bağlantı yok",
   "net.offline_hint": "Bu uygulamayı kullanmak için uçak modunu kapat veya Wi-Fi'ı aç.",
+  "app.crashed": "Bu uygulamada bir sorun oluştu",
+  "app.crashed_close": "Kapat",
   "set.appearance": "Görünüm",
   "set.light": "Açık",
   "set.dark": "Koyu",

@@ -33,15 +33,17 @@ export default function App({ t, dark, nui }: AppProps) {
   const reload = useCallback(async () => {
     const r = await nui.call<ListRes>('reminders:list');
     if (!r.ok) return fail(r);
-    let ls = r.lists ?? [];
+    // Le serveur Lua n'envoie pas `due` quand la colonne est NULL : on rétablit `null`.
+    const got = (Array.isArray(r.items) ? r.items : []).map((x) => ({ ...x, due: x.due ?? null }));
+    let ls = Array.isArray(r.lists) ? r.lists : [];
     if (ls.length === 0) {
       // Première ouverture : une liste par défaut, pour pouvoir ajouter tout de suite.
       const made = await nui.call<NuiResult & { id?: number; name?: string; color?: string }>('reminders:listSave', { name: t('rem.list_default'), color: LIST_COLORS[1] });
       if (made.ok && made.id !== undefined) ls = [{ id: made.id, name: made.name ?? '', color: made.color ?? LIST_COLORS[1] }];
     }
     setLists(ls);
-    setItems(r.items ?? []);
-    publish(r.items ?? []);
+    setItems(got);
+    publish(got);
   }, [nui, fail, publish, t]);
   useEffect(() => { void reload(); }, [reload]);
 
@@ -162,7 +164,7 @@ export default function App({ t, dark, nui }: AppProps) {
         </div>
         {error ? <div role="alert" style={{ color: '#ff383c', fontSize: 15, paddingBottom: 8 }}>{error}</div> : null}
         {rows.map((r) => {
-          const late = r.due !== null && dayDiff(r.due, today.key) < 0 && !r.done;
+          const late = !!r.due && dayDiff(r.due, today.key) < 0 && !r.done;
           return (
             <div key={r.id} style={{ padding: '8px 0', borderBottom: `1px solid ${c.sep}` }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>

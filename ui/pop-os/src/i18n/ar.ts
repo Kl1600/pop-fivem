@@ -110,6 +110,8 @@ const ar: Record<string, string> = {
   "sw.close_hint": "اسحب للأعلى للإغلاق",
   "net.offline": "لا يوجد اتصال",
   "net.offline_hint": "أوقف وضع الطيران أو شغّل Wi-Fi لاستخدام هذا التطبيق.",
+  "app.crashed": "واجه هذا التطبيق مشكلة",
+  "app.crashed_close": "إغلاق",
   "set.appearance": "المظهر",
   "set.light": "فاتح",
   "set.dark": "داكن",

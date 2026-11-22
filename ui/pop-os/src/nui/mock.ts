@@ -2,6 +2,7 @@ import { MEDIA_CALLS, mediaCall, seedMedia } from './mock-media';
 import { BOARD_CALLS, boardCall, seedBoard } from './mock-board';
 import { TOOLS_CALLS, mapCall, seedTools, toolsCall } from './mock-tools';
 import { PROD_CALLS, prodCall, seedProd } from './mock-prod';
+import { luaJson } from './lua-json';
 import type { Boot, OpenData } from './types';
 
 // Mode simulé (navigateur de développement) : données fictives, aucune requête réseau.
@@ -94,8 +95,12 @@ export function resetMock(): void {
 
 type Json = Record<string, unknown>;
 
-/** Réponses simulées des callbacks NUI. */
+/** Réponses simulées des callbacks NUI, avec le comportement du JSON Lua du vrai serveur (clés nil absentes, table vide en `[]`). */
 export async function simulate(name: string, data?: unknown): Promise<unknown> {
+  return luaJson(await simulateRaw(name, data));
+}
+
+async function simulateRaw(name: string, data?: unknown): Promise<unknown> {
   const d = (data ?? {}) as Json;
   if (name === 'pop:ready') return { accent: undefined, locale: {} };
   if (name === 'tablet:ready' || name === 'tablet:close' || name === 'close' || name === 'tablet:schedule' || name === 'tablet:micro') return { ok: true };

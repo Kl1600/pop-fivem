@@ -110,6 +110,8 @@ const es: Record<string, string> = {
   "sw.close_hint": "Desliza hacia arriba para cerrar",
   "net.offline": "Sin conexión",
   "net.offline_hint": "Desactiva el modo avión o activa el Wi-Fi para usar esta app.",
+  "app.crashed": "Esta app ha tenido un problema",
+  "app.crashed_close": "Cerrar",
   "set.appearance": "Apariencia",
   "set.light": "Claro",
   "set.dark": "Oscuro",

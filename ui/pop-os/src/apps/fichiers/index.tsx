@@ -62,7 +62,8 @@ export default function App(p: AppProps) {
   const fail = useCallback((r: NuiResult) => setToast(r.err ? t(r.err) : t('fil.err')), [t]);
   const reload = useCallback(async () => {
     const r = await nui.call<ListRes>('files:list');
-    if (r.ok) setAll(r.items ?? []); else fail(r);
+    // Le serveur Lua n'envoie pas les champs nil (parent, ref, tag, token) : on rétablit `null`.
+    if (r.ok) setAll((Array.isArray(r.items) ? r.items : []).map((e) => ({ ...e, parent: e.parent ?? null, ref: e.ref ?? null, tag: e.tag ?? null, token: e.token ?? null }))); else fail(r);
   }, [nui, fail]);
   useEffect(() => { void reload(); }, [reload]);
 

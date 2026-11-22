@@ -23,7 +23,7 @@ export function inSel(r: Reminder, sel: Sel, today: string): boolean {
   if (r.done) return false;
   if (sel === 'all') return true;
   if (sel === 'flag') return r.flag;
-  if (r.due === null) return false;
+  if (!r.due) return false;
   return sel === 'sched' ? true : dayOf(r.due) <= today;
 }
 

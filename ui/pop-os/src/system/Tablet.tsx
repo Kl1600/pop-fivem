@@ -6,6 +6,7 @@ import { makeT } from '../i18n';
 import { fetchNui, nuiApi, onNuiMessage } from '../nui/bridge';
 import { handleMessage, power, pushNotify, renameDevice, requestClose, setInstalled, setLanguage, setSetting, volume } from './actions';
 import { gameMsNow } from './clock';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Screen } from './Screen';
 import { ShareOffer } from './ShareOffer';
 import { setSchedule } from './schedule';
@@ -24,7 +25,8 @@ export function Host() {
     void fetchNui('tablet:ready');
     return off;
   }, []);
-  return open ? <Tablet /> : null;
+  // Filet racine : si la tablette plante, écran de secours ; Échap ou Fermer la ferme, et la boundary est démontée avec elle (la réouverture repart propre).
+  return open ? <ErrorBoundary label="la tablette" onClose={() => void requestClose()} escape><Tablet /></ErrorBoundary> : null;
 }
 
 /** Tablette ouverte : fournisseurs, mise à l'échelle, coque (développement) et écran. */

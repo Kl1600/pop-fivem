@@ -26,6 +26,7 @@ const fr: Record<string, string> = {
   'search.placeholder': 'Rechercher ou demander', 'search.results': 'Résultats', 'search.suggestions': 'Suggestions', 'search.none': 'Aucun résultat',
   'sw.empty': 'Aucune appli ouverte', 'sw.close_hint': 'Glisser vers le haut pour fermer',
   'net.offline': 'Pas de connexion', 'net.offline_hint': "Désactivez le mode avion ou activez le Wi-Fi pour utiliser cette appli.",
+  'app.crashed': 'Cette app a rencontré un problème', 'app.crashed_close': 'Fermer',
   'set.appearance': 'Apparence', 'set.light': 'Clair', 'set.dark': 'Sombre', 'set.glass': 'Verre liquide', 'set.glass_clear': 'Clair', 'set.glass_tinted': 'Teinté',
   'set.glass_hint': "Choisissez l'aspect du verre dans toute l'interface, de transparent à teinté.", 'set.blur': 'Flou du verre', 'set.brightness': 'Luminosité',
   'set.wall': "Fond d'écran", 'set.wall_auto': 'Automatique (suit le thème)', 'set.wall_collection': 'Collection POP',

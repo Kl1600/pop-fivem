@@ -110,6 +110,8 @@ const nl: Record<string, string> = {
   "sw.close_hint": "Veeg omhoog om te sluiten",
   "net.offline": "Geen verbinding",
   "net.offline_hint": "Zet de vliegtuigmodus uit of wifi aan om deze app te gebruiken.",
+  "app.crashed": "Er is een probleem opgetreden in deze app",
+  "app.crashed_close": "Sluiten",
   "set.appearance": "Weergave",
   "set.light": "Licht",
   "set.dark": "Donker",
