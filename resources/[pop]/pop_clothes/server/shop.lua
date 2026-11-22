@@ -62,9 +62,9 @@ AddEventHandler('clothes:buy_all', function(data)
         totalCost = 0
     end
 
-    local success, method, finalCost = Clothes.ChargePlayer(src, totalCost)
+    local success, method, finalCost = Clothes.ChargePlayer(src, totalCost, data.currency)
     if not success then
-        Clothes.Notify(src, L('shop_no_money'))
+        Clothes.Notify(src, L(method == 'cash' and 'shop_no_money_cash' or method == 'bank' and 'shop_no_money_bank' or 'shop_no_money'))
         return
     end
 

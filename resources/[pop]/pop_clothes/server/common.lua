@@ -62,22 +62,24 @@ function Clothes.ToInt(v, min, max)
 end
 
 -- Cash = objet 'cash' de pop_inventory (via le bridge), banque = compte ESX 'bank'.
-function Clothes.ChargePlayer(src, totalCost)
+-- method 'cash' ou 'bank' : choisi par le joueur dans le magasin ; sinon cash puis banque.
+function Clothes.ChargePlayer(src, totalCost, method)
     if totalCost <= 0 then return true, 'free', 0 end
+    if method ~= 'cash' and method ~= 'bank' then method = nil end
     local tvaRate = GlobalState.tva or 20
     local taxAmount = math.floor(totalCost * (tvaRate / 100))
     local finalCost = totalCost + taxAmount
 
-    if Bridge.GetMoney(src, 'cash') >= finalCost then
+    if method ~= 'bank' and Bridge.GetMoney(src, 'cash') >= finalCost then
         local success = Bridge.RemoveMoney(src, 'cash', finalCost, 'pop_clothes')
         if success then payTax(taxAmount) end
         return success, 'cash', finalCost
     end
 
-    if Bridge.GetMoney(src, 'bank') >= finalCost then
+    if method ~= 'cash' and Bridge.GetMoney(src, 'bank') >= finalCost then
         Bridge.RemoveMoney(src, 'bank', finalCost, 'pop_clothes')
         payTax(taxAmount)
         return true, 'bank', finalCost
     end
-    return false, nil, 0
+    return false, method, 0
 end
