@@ -119,6 +119,11 @@ end)
 -- =====================================================================
 local openMenu
 
+-- Utilisé par pop_chat pour cacher le chat quand le menu admin est ouvert.
+exports('IsMenuOpen', function()
+    return Admin.open == true and not Admin.minimized
+end)
+
 RegisterNetEvent('pop_admin:setAccess', function(allowed, openAfter)
     Admin.isAdmin = allowed == true
     if openAfter then

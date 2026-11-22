@@ -70,3 +70,41 @@ end, false)
 TriggerEvent('chat:addSuggestion', '/me', L('me_suggestion'), {
     { name = L('me_suggestion_arg'), help = L('me_suggestion_help') }
 })
+
+-- =====================================================================
+--  Le chat se cache quand un menu s'ouvre devant lui
+-- =====================================================================
+-- Menu = une interface qui prend la souris (sauf la saisie du chat elle-même),
+-- le menu admin, ou tout script qui met LocalPlayer.state.popMenuOpen à true.
+CreateThread(function()
+    local hidden, typing, typingFocused, typingSince = false, false, false, 0
+
+    while true do
+        Wait(100)
+        local focused = IsNuiFocused()
+
+        -- Touche T : c'est la saisie du chat qui va prendre la souris, pas un menu.
+        if not typing and not focused and IsControlPressed(0, 245) then
+            typing, typingFocused, typingSince = true, false, GetGameTimer()
+        end
+        if typing then
+            if focused then
+                typingFocused = true
+            elseif typingFocused or GetGameTimer() - typingSince > 2000 then
+                typing = false
+            end
+        end
+
+        local adminOpen = false
+        if GetResourceState('pop_admin') == 'started' then
+            local ok, open = pcall(function() return exports.pop_admin:IsMenuOpen() end)
+            adminOpen = ok and open == true
+        end
+
+        local menuOpen = (focused and not typing) or adminOpen or LocalPlayer.state.popMenuOpen == true
+        if menuOpen ~= hidden then
+            hidden = menuOpen
+            ExecuteCommand(menuOpen and 'toggleChat hidden' or 'toggleChat whenactive')
+        end
+    end
+end)
