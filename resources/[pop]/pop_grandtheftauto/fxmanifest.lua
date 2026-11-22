@@ -8,7 +8,6 @@ version '1.1.0'
 description 'Casse de la concession Benefactor (Vinewood ouest) : vol de sportives en équipe'
 
 dependencies {
-    'pma_voice_challenge',
     'clm_ProgressBar',
     'chHyperSound',
     'ultra-voltlab',
@@ -17,7 +16,6 @@ dependencies {
     'pop_notify',
     'pop_v3dui',
 }
--- kq_lasers : facultatif (lasers de sécurité), la mission marche sans.
 
 shared_scripts {
     'config.lua',
@@ -28,6 +26,7 @@ shared_scripts {
 client_scripts {
     'bridge/client.lua',
     'client/utils.lua',     -- outils communs (synchro coop, chargements, invites, minuteur)
+    'client/guide.lua',     -- guidage : checklist, itinéraire GPS, notifications d'étape
     'client/sync.lua',      -- synchro coop, police (GPS), fin de mission
     'client/lasers.lua',
     'client/scenario.lua',  -- Thornton (ShowSubtitle, npcHandle)

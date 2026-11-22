@@ -1,0 +1,35 @@
+-- Français
+Locales['fr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuler',
+    confirm            = 'Confirmer',
+    close              = 'Fermer',
+    interact           = 'Interagir',
+    progress_cancelled = 'Action annulée',
+    no_permission      = "Vous n'avez pas la permission",
+    wrong_job          = "Vous n'avez pas le métier requis",
+    too_far            = 'Vous êtes trop loin',
+    not_enough_money   = "Pas assez d'argent",
+    missing_item       = 'Il vous faut : %s',
+    inventory_full     = 'Votre inventaire est plein',
+    cooldown           = 'Patientez encore %s s',
+    busy               = 'Vous êtes déjà occupé',
+    error              = 'Une erreur est survenue',
+
+    -- Textes propres au script :
+    blip_name        = 'Station-service',
+    target_refuel    = 'Faire le plein',
+    title            = 'Station-service',
+    no_vehicle       = 'Aucun véhicule à côté de la pompe.',
+    engine_on        = "Coupez le moteur avant de faire le plein.",
+    already_full     = 'Le réservoir est déjà plein.',
+    electric         = 'Ce véhicule est électrique.',
+    total            = 'Total',
+    pay_cash         = 'Espèces',
+    pay_card         = 'Carte',
+    refueling        = 'Remplissage du réservoir',
+    no_money_cash    = "Pas assez d'espèces sur vous.",
+    no_money_bank    = "Pas assez d'argent sur votre compte bancaire.",
+    refuel_done      = 'Plein effectué : %s L pour %s $.',
+    refuel_failed    = 'Le plein a échoué.',
+}

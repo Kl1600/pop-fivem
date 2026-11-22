@@ -18,11 +18,11 @@ Config.GroundProps = {
 
   -- EMS Props
   civiere = 'combicarrier2',
-  bequille = 'crutch',
+  bequille = 'prop_cs_walking_stick', -- 'crutch' (modèle custom absent)
   defib = 'lifepak15',
   lucas = 'lucas3',
   brancard = 'strykergurney',
-  fauteuil = 'iak_wheelchair',
+  fauteuil = 'prop_wheelchair_01', -- 'iak_wheelchair' (modèle custom absent)
   aed = 'lifepak15',
   kitsoins = 'prop_ld_case_01',
   repakit = 'prop_ld_case_01',
@@ -78,9 +78,9 @@ Config.GroundProps = {
   -- Drogues / chimie
   pot               = 'prop_meth_bag_01',
   grainecana        = 'prop_meth_bag_01',
-  weed              = 'bkr_prop_weed_bag_01',
+  weed              = 'bkr_prop_weed_bag_01a',
   pochon            = 'prop_meth_bag_01',
-  pochonweed        = 'bkr_prop_weed_bag_01',
+  pochonweed        = 'bkr_prop_weed_bag_01a',
   empty_baggy       = 'prop_meth_bag_01',
   cocaine_powder    = 'prop_meth_bag_01',
   baking_soda       = 'prop_meth_bag_01',

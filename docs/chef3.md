@@ -42,6 +42,32 @@ Restructuration selon `docs/gabarit-pop.md` (config.lua, locales/fr.lua, bridge/
 - pop_territories, pop_dealing : publiés. Zones dans `pop_territories/shared/zones.lua` (fichier propre au script, à garder si `shared/` est recopié). pop_dealing garde l'évènement `pop_dealing:notify` (écouté par la checklist de pop_territories) ; les réponses console de `dealing_list` restent visibles.
 - pop_grandtheftauto : restructuré (server/alert.lua découpé en common/mission/police/hack/delivery, crack.lua en hack.lua + pcb.lua, lasers à part, positions dans config.lua, 70 textes dans fr.lua). Audit de non-régression OK, publié. `/startheist` garde le contrôle ACE d'origine ; kit compté par licence. Callback interne `hasItem` à la place de `grandtheftauto:hasItem` (aucun autre script ne l'utilisait).
 
+### Lasers maison (22/11/2026)
+- kq_lasers (payant, licence absente : « You lack the required entitlement ») remplacé par nos lasers dans `pop_grandtheftauto/client/lasers.lua` : mêmes 23 segments, `DrawLine` rouge avec léger scintillement, dessin et détection seulement si actifs et à moins de 40 m du showroom (sinon veille `Wait(1000)`, boucle arrêtée quand les lasers sont éteints). Détection : distance pieds/bassin/tête – segment ≤ 0,25 m → `grandtheftauto:alarme` + 5 de dégâts, 10 s de délai. Mêmes évènements (startheist, mission:local:lasers, mission:local:reset, onResourceStop).
+- `resources/[pop]/kq_lasers` supprimé (le déploiement le retire du serveur), exclusion retirée de lint.yml, mentions retirées de coordination-chefs.md, analyse-structure.md et gabarit-pop.md.
+
+### Retours F8 du client (22/11/2026)
+- pop_grandtheftauto : `/startheist` bloquée en mode production (commande client « restricted ») → `RegisterCommand(..., false)`, le serveur vérifie déjà l'ACE (`command.startheist` ou `pop.admin`). Suggestion de chat ajoutée.
+- pop_crew : avertissement ox_target « Replacing existing target option 'pop_crew_recruit' » → option retirée (`removeGlobalPlayer`) avant d'être remise, et retirée à l'arrêt de la ressource.
+- pop_grandtheftauto : au départ de la mission (Svetlana ou `/startheist`), point jaune « Showroom Benefactor » + itinéraire GPS ; retiré à 100 m du showroom, à la fin ou à l'arrêt.
+- pop_grandtheftauto : test vocal « Inventez un mensonge » (pma_voice_challenge) retiré à la demande du client ; Thornton accepte directement après le plan caméra. pma_voice_challenge n'est plus une dépendance de la mission (ressource laissée dans le dépôt, plus utilisée).
+
+### Guidage, piratage, Thornton (22/11/2026, retour du test en jeu)
+Corrections :
+- Thornton : `TaskGoStraightToCoord` (ligne droite dans les murs / portes gelées du showroom) → `TaskFollowNavMeshToCoord` ; s'il est bloqué plus de 8 s (30 s au total), il est placé au point d'arrivée avec un fondu. Aucune porte de pop_doorlock dans la zone (vérifié).
+- Piratage : plus de focus NUI pendant le placement du module (la souris est lue par les contrôles du jeu) et `SetNuiFocusKeepInput(false)` à l'arrêt ; annulation par Échap ou Retour arrière, menu pause bloqué pendant le placement ; « DÉMARRER » reprend le verrou serveur avant le mini-jeu (avant, verrou expiré = refus sans fin) ; un refus du serveur à la fin du piratage rend le verrou ; la voiture attend le contrôle réseau avant d'être ouverte (le serveur la déverrouille aussi).
+- Messages console derrière `Config.Debug` (client et serveur) : verrou pris/refusé/libéré, module placé, mini-jeu raté, fin du piratage acceptée/refusée avec la raison, entités du showroom enregistrées/refusées, livraison refusée avec la raison, camion prêt, Thornton bloqué.
+- Guidage (nouveau `client/guide.lua`) : checklist pop_notify « Vol de voitures » (7 étapes), un seul point jaune avec itinéraire vers la prochaine destination, une notification courte par étape. Checklist et itinéraire retirés à la fin (après 6 s), à l'échec et au reset. Nouvel évènement serveur → équipe `mission:client:carDelivered`.
+
+Parcours complet (déclencheur → ce que voit le joueur → ce qui le guide ensuite) :
+1. **Rejoindre le showroom** — Svetlana [E] ou `/startheist` → kit flipper + pcb, notification « Rendez-vous au showroom », checklist affichée → point jaune « Showroom Benefactor » + itinéraire.
+2. **Suivre M. Duggan** — à 100 m du showroom, le chef lance le casse (Thornton, voitures, portes, lasers) → étape 1 cochée, notification « Rejoignez M. Duggan » → point jaune + itinéraire vers Thornton (et son blip). À 4 m : dialogue, caméra, il marche vers la voiture de démo, ouvre le capot, repart.
+3. **Couper le courant** — Thornton parti (`mission:setupBlips`) → étape 2 cochée, sous-titre « Piratez les verrous électriques », notification « Piratez le panneau électrique » → point jaune + itinéraire vers le panneau (+ marqueur rouge et [E] PIRATER à 10 m). Flipper + mini-jeu.
+4. **Clés et garage** — panneau réussi → coupure, portes ouvertes, lasers éteints, minuteur 4 min, étape 3 cochée, notification « Récupérez les clés » → point jaune + itinéraire vers les clés (flèche verte, [E] RAMASSER) ; clés prises → notification « Ouvrez la porte du garage » → point jaune vers la porte ([E] OUVRIR).
+5. **Pirater une voiture** — porte ouverte → étape 4 cochée, notification « Posez votre module pirate sur une sportive » → point jaune vers la sportive non piratée la plus proche (+ blips verts des 4 voitures). Module glissé sur la voiture / objet utilisé / `/voler_auto` → placement à la souris → [E] FIXER LE MODULE → mini-jeu → serveur valide (pcb consommé, voiture déverrouillée). En cas d'échec : « Revenez au véhicule pour le démarrer » → [E] DÉMARRER sur la voiture.
+6. **Livrer au camion** — piratage réussi → étape 5 cochée chez toute l'équipe, notification « rendez-vous au point indiqué sur votre GPS » → point jaune « Livraison » + itinéraire (pirate, conducteur, et coéquipiers). À 150 m : camion → « Un camion vous attend… Reculez la voiture » → itinéraire vers le camion. Voiture reculée derrière le camion → paiement.
+7. **Fin** — livraison → étape 6 cochée pour l'équipe, « Svetlana vous a payé… » ; « le casse se termine dans 5 min » si plus de voiture → fin : « Le casse est terminé », étape 7 cochée, checklist retirée après 6 s. Échec (45 min, chef parti) : message + checklist et itinéraire retirés tout de suite.
+
 ### Reste
 - Tester la mission en jeu avec le client (après la restructuration).
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).
@@ -49,4 +75,3 @@ Restructuration selon `docs/gabarit-pop.md` (config.lua, locales/fr.lua, bridge/
 ### Bugs connus / à vérifier en jeu
 - Le test vocal de Thornton demande un micro (push-to-talk) ; en coop, seul le chef déclenche la scène.
 - Coordonnées des nouvelles zones de territoire et du point de location vélo à vérifier.
-- Si kq_lasers ne démarre pas (licence), la mission marche sans lasers.

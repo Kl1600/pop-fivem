@@ -32,3 +32,12 @@ Aucune obligatoire (framework détecté par le bridge). `chat` pour l'affichage 
 
 ## Relancer
 `restart pop_chat`
+
+## Chat staff
+- `/staff message` (ou `/sc message`) : message visible **uniquement par le staff** (même règle que le menu admin : groupes admin, ACE, identifiants listés). Affiché en bleu : `[STAFF] KL : message`. Aussi écrit dans la console du serveur. Depuis la console : `staff message`.
+- Les actions du menu admin sont annoncées au staff en gris : `[STAFF] KL a réanimé Dano` (tp, amener, geler, soigner, réanimer, tuer, kick, ban, argent, job, groupe, give, heure, météo, suppression de véhicule).
+- Pour annoncer une action depuis un autre script : `exports.pop_chat:StaffLog(src, 'a fait ...')` (serveur).
+- Réglages : `Config.StaffCommands`, `Config.StaffColor`, `Config.StaffLogColor`.
+
+## Thème du chat
+Le chat FiveM (ressource `chat`) prend le style du serveur grâce au `chat_theme 'pop'` déclaré dans le manifeste : cartes en verre sombre, police TT Firs Neue, saisie avec rond blanc, suggestions dans une carte. Fichier : `html/chat_theme.css`. Rien n'est modifié dans la ressource `chat` elle-même.

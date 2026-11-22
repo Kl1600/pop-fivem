@@ -260,6 +260,33 @@ end)
 -- =====================================================================
 --  SOINS / RÉANIMATION (déclenchés serveur sur la cible)
 -- =====================================================================
+-- Godmode : l'invincibilité GTA ne bloque pas la vie retirée par la faim / la soif (esx_basicneeds)
+-- ni un changement de ped (skin). Tant qu'il est actif : invincible, vie au max, faim et soif pleines.
+local godmodeRunning = false
+function AdminStartGodmode()
+    if godmodeRunning then return end
+    godmodeRunning = true
+    CreateThread(function()
+        local tick = 0
+        while Admin.godmode do
+            local ped = PlayerPedId()
+            SetEntityInvincible(ped, true)
+            SetPlayerInvincible(PlayerId(), true)
+            local maxHealth = GetEntityMaxHealth(ped)
+            if GetEntityHealth(ped) < maxHealth then SetEntityHealth(ped, maxHealth) end
+            tick = tick + 1
+            if tick % 10 == 1 then -- toutes les ~5 s
+                TriggerEvent('esx_status:set', 'hunger', 1000000)
+                TriggerEvent('esx_status:set', 'thirst', 1000000)
+            end
+            Wait(500)
+        end
+        SetEntityInvincible(PlayerPedId(), false)
+        SetPlayerInvincible(PlayerId(), false)
+        godmodeRunning = false
+    end)
+end
+
 RegisterNetEvent('pop_admin:heal', function()
     local ped = PlayerPedId()
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
@@ -289,6 +316,7 @@ RegisterNUICallback('quickAction', function(data, cb)
         Admin.godmode = not Admin.godmode
         SetEntityInvincible(PlayerPedId(), Admin.godmode)
         SetPlayerInvincible(PlayerId(), Admin.godmode)
+        if Admin.godmode then AdminStartGodmode() end
         AdminNotify(Admin.godmode and 'Godmode activé' or 'Godmode désactivé', 'success')
     elseif id == 'invisible' then
         Admin.invisible = not Admin.invisible

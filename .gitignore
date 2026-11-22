@@ -6,3 +6,9 @@ node_modules/
 luac.out
 ui/pop-os/e2e/.sortie/
 ui/pop-os/playwright-report/
+
+# Données écrites par le serveur (protégées dans deploy.yml)
+resources/[pop]/pop_admin/disconnect_logs.json
+resources/[pop]/pop_admin/staff_characters.json
+resources/[pop]/pop_doorlock/overrides.json
+resources/[pop]/pop_doorlock/doors.json

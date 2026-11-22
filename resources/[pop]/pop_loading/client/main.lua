@@ -131,8 +131,7 @@ RegisterNUICallback('closeUI', function(data, cb)
 end)
 
 Citizen.CreateThread(function()
-    -- Activer le contrôle manuel et le routage NUI pour l'écran de chargement natif
-    SetManualShutdownLoadingScreenNui(true)
+    -- Contrôle manuel de l'écran de chargement : loadscreen_manual_shutdown 'yes' dans fxmanifest.lua
 
     -- Désactive l'auto-spawn de spawnmanager pour attendre le clic du joueur
     local state = GetResourceState('spawnmanager')
@@ -158,10 +157,12 @@ Citizen.CreateThread(function()
         SendNUIMessage({
             action = "clientReady"
         })
-        -- Pour l'écran de chargement natif (loadscreen)
-        SendLoadingScreenMessage(json.encode({
-            action = "clientReady"
-        }))
+        -- Pour l'écran de chargement natif (loadscreen), seulement tant qu'il est affiché
+        if GetIsLoadingScreenActive() then
+            SendLoadingScreenMessage(json.encode({
+                action = "clientReady"
+            }))
+        end
         Citizen.Wait(1000)
     end
 end)

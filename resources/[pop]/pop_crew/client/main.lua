@@ -95,6 +95,9 @@ end)
 
 AddEventHandler('onClientResourceStart', function(resourceName)
     if resourceName ~= 'ox_target' and resourceName ~= GetCurrentResourceName() then return end
+    if GetResourceState('ox_target') ~= 'started' then return end
+    -- Retirée avant d'être remise : évite le doublon « Replacing existing target option »
+    pcall(function() exports.ox_target:removeGlobalPlayer('pop_crew_recruit') end)
     exports.ox_target:addGlobalPlayer({
         {
             name = 'pop_crew_recruit',
@@ -124,4 +127,9 @@ end)
 
 Bridge.OnPlayerLoaded(function()
     refreshState()
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() or GetResourceState('ox_target') ~= 'started' then return end
+    pcall(function() exports.ox_target:removeGlobalPlayer('pop_crew_recruit') end)
 end)

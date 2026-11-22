@@ -18,10 +18,12 @@ AddEventHandler('mission:server:tryLockHack', function(plate)
     end
     local lock = GTA.HackLocks[plate]
     if lock and not GTA.IsLockExpired(lock) and lock.holder ~= src then
+        GTA.Debug(('verrou %s refusé à %s : déjà pris par %s'):format(plate, src, lock.holder))
         TriggerClientEvent('mission:client:hackLockResult', src, plate, false, "locked")
         return
     end
     GTA.HackLocks[plate] = { holder = src, t = os.time() }
+    GTA.Debug(('verrou %s pris par %s'):format(plate, src))
     TriggerClientEvent('mission:client:hackLockResult', src, plate, true, "ok")
     GTA.ToMembers('mission:client:hackState', plate, false, src)
 end)
@@ -31,6 +33,7 @@ AddEventHandler('mission:server:releaseHackLock', function(plate)
     local src = source
     local lock = GTA.HackLocks[plate]
     if lock and (lock.holder == src or GTA.IsLockExpired(lock)) then
+        GTA.Debug(('verrou %s libéré par %s'):format(tostring(plate), src))
         GTA.HackLocks[plate] = nil
         GTA.ToMembers('mission:client:hackState', plate, false, nil)
     end
@@ -41,7 +44,10 @@ RegisterNetEvent('mission:server:finalizeHack')
 AddEventHandler('mission:server:finalizeHack', function(plate, netId)
     local src = source
     if type(plate) ~= 'string' or not GTA.ValidPlates[plate] then return end
-    local function reply(ok, reason) TriggerClientEvent('mission:client:finalizeResult', src, plate, ok, reason) end
+    local function reply(ok, reason)
+        GTA.Debug(('finalizeHack %s par %s : %s'):format(plate, src, ok and 'accepté' or ('refusé (' .. tostring(reason) .. ')')))
+        TriggerClientEvent('mission:client:finalizeResult', src, plate, ok, reason)
+    end
 
     if not GTA.Mission.active or not GTA.IsMember(src) then return reply(false, 'nomission') end
     if GTA.HackCompleted[plate] then return reply(false, 'completed') end

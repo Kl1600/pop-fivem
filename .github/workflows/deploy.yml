@@ -52,6 +52,8 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
+      # Données écrites par le serveur lui-même (bans, logs, plantes, portes) : jamais
+      # envoyées ni supprimées par le déploiement, sinon elles seraient écrasées à chaque push.
       - name: Upload via SFTP
         if: steps.check.outputs.skip != 'true'
         env:
@@ -68,6 +70,6 @@ jobs:
             open --env-password -u '$SFTP_USER' -p ${SFTP_PORT:-22} sftp://$SFTP_HOST;
             mkdir -p -f '$SFTP_REMOTE_PATH';
             lcd 'resources/[pop]';
-            mirror -R --parallel=8 --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md --exclude-glob diag_save.log . '$SFTP_REMOTE_PATH';
+            mirror -R --parallel=8 --verbose --delete --exclude-glob .gitkeep --exclude-glob SPEC.md --exclude-glob diag_save.log --exclude-glob bans.json --exclude-glob staff_characters.json --exclude-glob disconnect_logs.json --exclude-glob plants.json --exclude-glob overrides.json --exclude-glob doors.json . '$SFTP_REMOTE_PATH';
             bye
           "

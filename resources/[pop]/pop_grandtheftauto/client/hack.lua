@@ -212,6 +212,7 @@ local function StopHack(inst)
 
     FreezeEntityPosition(inst.ped, false)
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
 
     if buttonsScaleform then
         SetScaleformMovieAsNoLongerNeeded(buttonsScaleform)
@@ -222,6 +223,7 @@ local function StopHack(inst)
 
     if inst.lockPlate and not inst.success then
         ReleaseHackLock(inst.lockPlate)
+        Debug(('piratage annulé (%s) : verrou libéré'):format(inst.lockPlate))
     end
 end
 
@@ -236,7 +238,11 @@ local function FinalizeHack(veh)
     local res = PendingFinalize[plate]
     PendingFinalize[plate] = nil
     if not res or not res.ok then
-        local reason = res and res.reason
+        local reason = res and res.reason or 'timeout'
+        Debug(('fin du piratage refusée par le serveur (%s) : %s'):format(plate, reason))
+        -- Le verrou est rendu : le joueur peut réessayer (DÉMARRER) sans rester bloqué
+        ReleaseHackLock(plate)
+        if reason == 'completed' then HackedVehicles[plate] = nil end
         if reason == 'nopcb' then
             MissionNotify(L('need_pcb'), 5000)
         elseif reason == 'completed' then
@@ -247,7 +253,10 @@ local function FinalizeHack(veh)
         return
     end
 
+    Debug(('piratage réussi (%s) : voiture déverrouillée par le serveur'):format(plate))
     NetworkRequestControlOfEntity(veh)
+    local ctrlLimit = GetGameTimer() + 1000
+    while not NetworkHasControlOfEntity(veh) and GetGameTimer() < ctrlLimit do Wait(10) end
     SetVehicleDoorOpen(veh, 4, false, true)
 
     HackedVehicles[plate] = nil
@@ -323,8 +332,8 @@ local function StartCableHack(veh)
 
     SetCamActive(inst.cam, true)
     RenderScriptCams(true, true, 800, true, true)
-    SetNuiFocus(true, true)
-    SetNuiFocusKeepInput(true)
+    -- Pas de focus NUI : la souris est lue par les contrôles du jeu (plus d'Échap ou de focus bloqué)
+    Debug(('placement du module commencé (%s)'):format(inst.lockPlate))
 end
 
 local function StartCableHackCoop(veh)
@@ -335,6 +344,7 @@ local function StartCableHackCoop(veh)
     end
 
     local ok, reason = RequestHackLock(plate)
+    Debug(('verrou %s : %s (%s)'):format(plate, ok and 'obtenu' or 'refusé', tostring(reason)))
     if not ok then
         if reason == 'completed' then
             MissionNotify(L('already_hacked'), 7000)
@@ -363,7 +373,13 @@ CreateThread(function()
             for _, inst in pairs(ActiveHacks) do
                 wait = 0
                 DisableAllControlActions(0)
-                if IsDisabledControlJustPressed(0, 322) then StopHack(inst) break end
+                DisableControlAction(0, 199, true) -- pas de menu pause pendant le placement
+                DisableControlAction(0, 200, true)
+                if IsDisabledControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 177) then
+                    HidePrompt("fix_module_"..tostring(inst.ped))
+                    StopHack(inst)
+                    break
+                end
 
                 DrawHackControls()
 
@@ -396,6 +412,7 @@ CreateThread(function()
                         inst.success = true
                         local plate = trim(GetVehicleNumberPlateText(inst.veh))
                         HackedVehicles[plate] = true
+                        Debug(('module placé (%s)'):format(plate))
                         PlaySoundFrontend(-1, "Challenge_Unlock", "HUD_AWARDS", true)
                         HidePrompt("fix_module_"..tostring(inst.ped))
                     end
@@ -410,6 +427,7 @@ CreateThread(function()
                             if RunVoltlab(30) then
                                 FinalizeHack(v)
                             else
+                                Debug('mini-jeu du module raté ou abandonné')
                                 MissionNotify(L('hack_failed_restart'), 5000)
                             end
                         end)
@@ -431,7 +449,19 @@ CreateThread(function()
                             HidePrompt("start_module")
                             startBusy = true
                             CreateThread(function()
-                                if RunVoltlab(30) then
+                                -- Le verrou a pu expirer ou être rendu : on le reprend avant le mini-jeu
+                                local ok, reason = RequestHackLock(plate)
+                                Debug(('DÉMARRER %s : verrou %s (%s)'):format(plate, ok and 'obtenu' or 'refusé', tostring(reason)))
+                                if not ok then
+                                    if reason == 'completed' then
+                                        HackedVehicles[plate] = nil
+                                        MissionNotify(L('already_hacked'), 7000)
+                                    elseif reason == 'locked' then
+                                        MissionNotify(L('being_hacked'), 7000)
+                                    else
+                                        MissionNotify(L('hack_failed_retry'), 5000)
+                                    end
+                                elseif RunVoltlab(30) then
                                     FinalizeHack(veh)
                                 else
                                     MissionNotify(L('hack_failed'), 5000)

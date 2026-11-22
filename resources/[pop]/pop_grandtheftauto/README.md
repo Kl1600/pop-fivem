@@ -6,7 +6,7 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 
 1. **Svetlana** (docks) : [E] PARLER. Le serveur crée la mission ; les joueurs à 15 m font partie de l'équipe (4 max) et reçoivent 1 flipper + 1 module pirate s'ils n'en ont pas (une fois par période de cooldown). Un joueur peut rejoindre l'équipe en lui parlant tant que le casse n'a pas commencé.
 2. **GPS vers le showroom.** À 100 m, le chef lance le casse : Thornton, voitures du showroom, voiture de démo, portes fermées, lasers allumés.
-3. **Thornton** : le chef s'approche, la caméra zoome et il faut parler au micro (pma_voice_challenge). Sans micro, Thornton accepte au 3e essai. Il ouvre le capot de la démo puis part dans sa voiture.
+3. **Thornton** : le chef s'approche, la caméra zoome sur lui, il accepte, ouvre le capot de la démo puis part dans sa voiture.
 4. **Panneau électrique** : [E] PIRATER avec un flipper → mini-jeu ultra-voltlab. Réussi : coupure de courant, portes ouvertes, lasers éteints, minuteur de 4 min, blip des clés.
 5. **Clés** puis **porte de garage** ([E] RAMASSER, [E] OUVRIR).
 6. **Module pirate** sur une voiture (glisser-déposer depuis l'inventaire, utiliser l'objet ou `/voler_auto`) : placement du module à la souris, [E] FIXER LE MODULE → mini-jeu. Le serveur vérifie la voiture et consomme le pcb à la réussite, puis déverrouille la voiture. Alerte police + suivi GPS des voitures pendant 100 s.
@@ -15,7 +15,7 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 
 ## Dépendances
 
-`pma_voice_challenge`, `ultra-voltlab`, `clm_ProgressBar`, `chHyperSound`, `interact-sound`, `pop_inventory`, `pop_notify`, `pop_v3dui`. `kq_lasers` facultatif (la mission marche sans).
+`ultra-voltlab`, `clm_ProgressBar`, `chHyperSound`, `interact-sound`, `pop_inventory`, `pop_notify`, `pop_v3dui`.
 
 ## Fichiers
 
@@ -26,8 +26,8 @@ Casse de la concession Benefactor (Vinewood ouest) : une équipe vole des sporti
 | `bridge/`, `shared/` | copies du modèle POP (ne pas modifier) |
 | `client/utils.lua` | synchro coop (`Relay`, `IsOwner`…), `CheckItem`, notifications, chargements, invites « E », coupure, minuteur, mini-jeu |
 | `client/sync.lua` | réception des évènements serveur (départ, entités, relais, fin), blips police |
-| `client/lasers.lua` | lasers kq_lasers |
-| `client/scenario.lua` | Thornton et le test vocal |
+| `client/lasers.lua` | lasers de sécurité (dessin + détection, sans ressource externe) |
+| `client/scenario.lua` | Thornton (dialogue, capot, départ) |
 | `client/doors.lua` | portes du showroom, voiture de démo, GPS de livraison |
 | `client/spawn.lua` | voitures du showroom |
 | `client/blips.lua` | blip du panneau, PNJ de décor |
@@ -62,7 +62,7 @@ Touche E : interactions. Mini-jeu : flèches + Entrée, Retour arrière pour aba
 | `mission:server:delivered` | client → serveur | voiture livrée (netId + emplacement) |
 | `mission:client:pending` / `heistStart` / `reset` | serveur → équipe | étapes de la mission |
 | `grandtheftauto:usePCB` | serveur → client | objet pcb utilisé |
-| `grandtheftauto:alarme` | kq_lasers → client | laser déclenché |
+| `grandtheftauto:alarme` | local (lasers.lua) | laser touché : alarme + alerte police |
 
 ## Relancer
 

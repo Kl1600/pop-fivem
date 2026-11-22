@@ -3,7 +3,6 @@ local npcBlip = nil
 local missionTerminee = false
 local challengeStarted = false
 local challengeDone = false
-local challengeFails = 0
 
 local pedModel = GetHashKey('ig_thornton')
 local startPos = Config.Positions.ThorntonStart
@@ -69,14 +68,37 @@ local function playArrestAnim(ped)
     TaskPlayAnim(ped, animDict, animName, 8.0, -8.0, -1, 2, 0, false, false, false)
 end
 
--- Attend que le PNJ soit arrivé, avec un délai max (sinon on le place directement)
-local function WaitArrival(ped, pos, radius, timeoutMs)
-    local limit = GetGameTimer() + timeoutMs
-    while DoesEntityExist(ped) and #(GetEntityCoords(ped) - pos) >= radius do
-        if GetGameTimer() > limit then return false end
-        Wait(500)
-    end
-    return true
+-- Fait marcher le PNJ en contournant les obstacles (navmesh). S'il est bloqué plus de 8 s
+-- (ou 30 s au total), il est placé au point d'arrivée avec un fondu. Renvoie un état à attendre.
+local function WalkTo(ped, pos, heading)
+    local state = { done = false }
+    if not DoesEntityExist(ped) then state.done = true return state end
+    TaskFollowNavMeshToCoord(ped, pos.x, pos.y, pos.z, 1.0, -1, 0.5, 0, heading)
+    CreateThread(function()
+        local lastPos, lastMove = GetEntityCoords(ped), GetGameTimer()
+        local hardLimit = GetGameTimer() + 30000
+        while DoesEntityExist(ped) do
+            Wait(500)
+            local c = GetEntityCoords(ped)
+            if #(c - pos) < 1.2 then break end
+            if #(c - lastPos) > 0.3 then lastPos, lastMove = c, GetGameTimer() end
+            if GetGameTimer() - lastMove > 8000 or GetGameTimer() > hardLimit then
+                Debug('Thornton bloqué : placé au point d\'arrivée')
+                NetworkFadeOutEntity(ped, false, false)
+                Wait(600)
+                SetEntityCoords(ped, pos.x, pos.y, pos.z - 1.0, false, false, false, true)
+                NetworkFadeInEntity(ped, false)
+                break
+            end
+        end
+        if DoesEntityExist(ped) then SetEntityHeading(ped, heading) end
+        state.done = true
+    end)
+    return state
+end
+
+local function WaitWalk(state)
+    while not state.done do Wait(200) end
 end
 
 function ShowSubtitle(text, duration)
@@ -117,7 +139,6 @@ end)
 
 AddEventHandler('startheist', function(ownerServerId, heistId)
     challengeStarted, challengeDone, missionTerminee = false, false, false
-    challengeFails = 0
     if IsCoopActive() and not IsOwner() then
         return
     end
@@ -202,30 +223,9 @@ Citizen.CreateThread(function()
                 SetCamActive(cam, true)
                 RenderScriptCams(true, true, 1000, true, true)
 
-                -- --- VOICE CHALLENGE (parlez au micro pour convaincre Thornton) --- --
-                local finishedChallenge = false
-                local successChallenge = false
-
-                if GetResourceState('pma_voice_challenge') == 'started' then
-                    local challengeListener = AddEventHandler('pma_voice_challenge:finished', function(res)
-                        successChallenge = res == true
-                        finishedChallenge = true
-                    end)
-                    exports['pma_voice_challenge']:StartChallenge()
-                    ShowSubtitle(L('voice_hint'), 6000)
-
-                    local limit = GetGameTimer() + 20000
-                    while not finishedChallenge and GetGameTimer() < limit do Wait(100) end
-                    RemoveEventHandler(challengeListener)
-
-                    -- Sans micro, on ne bloque pas le joueur : au 3e essai, Thornton se laisse convaincre
-                    if not successChallenge then
-                        challengeFails = challengeFails + 1
-                        if challengeFails >= 3 then successChallenge = true end
-                    end
-                else
-                    successChallenge = true -- ressource absente : on ne bloque pas la mission
-                end
+                -- (Test vocal « mensonge » retiré à la demande du client : Thornton accepte directement.)
+                Wait(1500)
+                local successChallenge = true
 
                 if successChallenge then
                     challengeDone = true
@@ -234,8 +234,8 @@ Citizen.CreateThread(function()
 
                     -- --- PARCOURS NORMAL (Après victoire) --- --
 
-                    -- 1. Il marche vers la voiture
-                    TaskGoStraightToCoord(npcHandle, targetPos.x, targetPos.y, targetPos.z, 1.0, -1, targetHeading, 0.5)
+                    -- 1. Il marche vers la voiture (en contournant les murs)
+                    local walk = WalkTo(npcHandle, targetPos, targetHeading)
 
                     MS_PlayHyper(currentNetId, '2t', 15.0)
                     MS_ShowSubtitle(L('thornton_2'), 4000)
@@ -247,11 +247,10 @@ Citizen.CreateThread(function()
                     MS_ShowSubtitle(L('thornton_3b'), 2500)
                     ThorntonParle(2500)
 
-                    -- Attendre qu'il arrive à la voiture (20 s max)
-                    WaitArrival(npcHandle, targetPos, 1.2, 20000)
+                    -- Attendre qu'il arrive à la voiture
+                    WaitWalk(walk)
 
                     ClearPedTasks(npcHandle)
-                    SetEntityCoords(npcHandle, targetPos.x, targetPos.y, targetPos.z - 1.0, false, false, false, true)
                     SetEntityHeading(npcHandle, targetHeading)
 
                     playArrestAnim(npcHandle)
@@ -269,7 +268,7 @@ Citizen.CreateThread(function()
                     Wait(1000)
 
                     -- 2. Il retourne à son point de départ pour s'en aller
-                    TaskGoStraightToCoord(npcHandle, startPos.x, startPos.y, startPos.z, 1.0, -1, startPos.w, 0.5)
+                    local walkBack = WalkTo(npcHandle, vector3(startPos.x, startPos.y, startPos.z), startPos.w)
 
                     MS_PlayHyper(currentNetId, '5t', 15.0)
                     MS_ShowSubtitle(L('thornton_5'), 3000)
@@ -282,8 +281,8 @@ Citizen.CreateThread(function()
                     MS_ShowSubtitle(L('wait_thornton'), 6000)
                     Wait(6000)
 
-                    -- Il rentre à sa voiture (30 s max), puis s'en va
-                    WaitArrival(npcHandle, vector3(startPos.x, startPos.y, startPos.z), 1.5, 30000)
+                    -- Il rentre à sa voiture, puis s'en va
+                    WaitWalk(walkBack)
                     missionTerminee = true
                     if DoesEntityExist(npcHandle) then
                         EntrerVoiture(npcHandle)
@@ -320,7 +319,6 @@ end)
 -- ============================================================
 AddEventHandler('mission:local:reset', function()
     challengeStarted, challengeDone, missionTerminee = false, false, false
-    challengeFails = 0
     if npcBlip and DoesBlipExist(npcBlip) then RemoveBlip(npcBlip) end
     npcBlip = nil
     npcHandle = nil

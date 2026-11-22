@@ -13,7 +13,7 @@ Ce document est la référence commune : à lire en entier avant de commencer.
   - Pas de multi-framework ni de traductions pour l'instant.
 - Auteur dans chaque `fxmanifest.lua` : `author 'KL'`. Pas de mention tab, Tabernac ou Vanguard dans les noms, descriptions ou commandes.
 - Dépendances tierces dans `resources/[pop]/` (noms d'origine, ne pas renommer) :
-  `utility_lib`, `checksystem`, `object_gizmo`, `ox_target` (version Vanguard), `chHyperSound`, `clm_ProgressBar`, `interact-sound`, `kq_lasers` (escrow), `pma_voice_challenge`, `ultra-voltlab`.
+  `utility_lib`, `checksystem`, `object_gizmo`, `ox_target` (version Vanguard), `chHyperSound`, `clm_ProgressBar`, `interact-sound`, `pma_voice_challenge`, `ultra-voltlab`.
 
 ## 2. Serveur de test et déploiement
 
@@ -80,3 +80,9 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 - Mode d'emploi : `docs/gabarit-pop.md`. Exemple : `pop_bank`.
 - `bridge/` et `shared/` sont des copies exactes de `templates/pop_base` : ne jamais les modifier dans un script. Un bug dedans → le noter dans `docs/en-cours.md` pour le Chef 1, qui corrige le modèle et recopie partout.
 - Avec pop_inventory, `Bridge.GetMoney/AddMoney/RemoveMoney(src, 'cash')` utilise l'objet `cash` ; `'bank'` reste le compte ESX.
+
+## Fichiers écrits par le serveur
+Un script qui écrit un fichier sur le serveur (SaveResourceFile, io.open) doit l'ajouter aux `--exclude-glob` de `.github/workflows/deploy.yml` (demander au Chef 1), sinon chaque déploiement l'écrase ou le supprime. Protégés aujourd'hui : bans.json, staff_characters.json, disconnect_logs.json, diag_save.log (pop_admin), plants.json (pop_weed), overrides.json, doors.json (pop_doorlock).
+
+## ESX et inventaire externe (22/11)
+ESX est réglé avec `Config.CustomInventory = true` (pop_inventory). ESX 1.16 ne gère ce mode qu'avec ox_inventory : sa sauvegarde plantait sur `getInventory(true)` (inventory.lua:112), donc banque, job et position n'étaient plus enregistrés et le joueur restait bloqué (« stale player entry »). Corrigé sur le serveur par l'action `fix_esx_save` de Server tools (copie de l'original : `inventory.lua.pop-backup`). **À refaire après chaque mise à jour d'ESX.** Ne jamais appeler `xPlayer.getInventory` / `addInventoryItem` d'ESX : passer par pop_inventory ou le bridge.

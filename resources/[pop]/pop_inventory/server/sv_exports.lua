@@ -106,18 +106,26 @@ AddEventHandler('playerDropped', function()
   forgetSourceIdentifier(src)
 end)
 
-AddEventHandler('onResourceStop', function(resourceName)
-  if resourceName ~= GetCurrentResourceName() then
-    return
-  end
-  -- Sauvegarde immédiate de tous les inventaires (la boucle de sauvegarde
-  -- s'arrête avec la ressource, un simple markDirty serait perdu).
+-- Sauvegarde immédiate de tous les inventaires, du sol et des coffres.
+local function saveEverything()
   for identifier, store in pairs(Stores) do
     if store._loaded then store._dirty = true end
     pcall(saveStore, identifier, store, true)
   end
-  saveGround(true)
+  pcall(saveGround, true)
+  pcall(saveRemoteContainers)
+end
+
+AddEventHandler('onResourceStop', function(resourceName)
+  if resourceName ~= GetCurrentResourceName() then
+    return
+  end
+  -- La boucle de sauvegarde s'arrête avec la ressource : un simple markDirty serait perdu.
+  saveEverything()
 end)
+
+-- Redémarrage / arrêt par txAdmin : on sauvegarde avant l'arrêt, quand la base répond encore.
+AddEventHandler('txAdmin:events:serverShuttingDown', saveEverything)
 
 CreateThread(function()
   local interval = Config.InventorySettings.AutoSaveIntervalMs or 120000

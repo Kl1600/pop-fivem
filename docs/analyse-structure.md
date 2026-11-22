@@ -51,7 +51,7 @@ Le bridge commun est `bridge/client.lua` + `bridge/server.lua` + `shared/locale.
 
 Étape 3 — Chef 1 : `docs/scripts.md` (carte de tous les scripts et de leurs dépendances), vérification finale.
 
-Règles : même fonctionnement, mêmes couleurs, aucun changement visible en jeu. Ne pas renommer les objets en base. Ne pas toucher aux dépendances tierces (utility_lib, ox_target, kq_lasers, object_gizmo, checksystem…).
+Règles : même fonctionnement, mêmes couleurs, aucun changement visible en jeu. Ne pas renommer les objets en base. Ne pas toucher aux dépendances tierces (utility_lib, ox_target, object_gizmo, checksystem…).
 
 À décider par le client :
 - sortir pop_police et pop_police80 du dossier lancé ;

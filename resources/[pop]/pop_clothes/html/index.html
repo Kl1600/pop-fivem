@@ -231,9 +231,10 @@
         <input type="range" min="0" max="0" value="0" class="variations-bar" id="variations-slider" oninput="updateVariation(this.value)">
 
         <div class="currency-selector" id="currency-selector" style="display: none;">
-            <div class="currency-label">Devise :</div>
+            <div class="currency-label">Paiement :</div>
             <div class="currency-options-wrapper">
-                <div class="currency-option active" data-currency="cash" onclick="selectCurrency('cash')">DOLLAR ($)</div>
+                <div class="currency-option active" data-currency="cash" onclick="selectCurrency('cash')">ESPÈCES</div>
+                <div class="currency-option" data-currency="bank" onclick="selectCurrency('bank')">CARTE</div>
             </div>
         </div>
 
@@ -607,9 +608,9 @@
                 } else {
                     document.querySelector('.buy-btn').style.display = 'block';
                     document.getElementById('return-btn').style.display = 'none';
-                    // Plus de choix de devise : paiement en dollars (cash, sinon banque)
-                    document.getElementById('currency-selector').style.display = 'none';
-                    selectedCurrency = 'cash';
+                    // Choix du paiement : espèces (objet cash) ou carte (compte bancaire)
+                    document.getElementById('currency-selector').style.display = 'flex';
+                    selectCurrency('cash');
                 }
                 
                 document.getElementById('app').style.display = 'block';

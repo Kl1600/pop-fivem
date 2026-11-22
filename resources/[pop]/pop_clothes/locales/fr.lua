@@ -19,6 +19,8 @@ Locales['fr'] = {
     -- Textes propres au script :
     shop_title         = 'Boutique',
     shop_no_money      = "Pas assez d'argent.",
+    shop_no_money_cash = "Pas assez d'espèces sur vous.",
+    shop_no_money_bank = "Pas assez d'argent sur votre compte bancaire.",
     purchase_cash      = 'Achat effectué — <span style="color:#e74c3c; font-weight:bold;">-%s$</span>.',
     purchase_bank      = 'Achat payé par carte — <span style="color:#e74c3c; font-weight:bold;">-%s$</span>.',
     purchase_free      = 'Achat effectué (Gratuit).',

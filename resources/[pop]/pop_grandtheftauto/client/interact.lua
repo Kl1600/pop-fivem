@@ -184,9 +184,11 @@ local function OnPanelHacked()
 
     CreateKeysBlip()
     Relay("event", { name = "mission:keysBlipOn", args = {} }, false)
+    Debug('panneau piraté : coupure de courant')
 
     if _G.npcHandle and DoesEntityExist(_G.npcHandle) then EntrerVoiture(_G.npcHandle) end
 
+    TriggerEvent('mission:local:guide', 'power')
     ShowSubtitle(L('wait_blackout'), 8500)
     Relay("subtitle", { text = L('wait_blackout'), duration = 8500 }, false)
     Wait(6000)
@@ -296,6 +298,8 @@ local function OpenWhiteDoor(ped)
     doorOpened = true
     HidePrompt("door")
     Relay("event", { name = "mission:setDoorOpened", args = {} }, false)
+    TriggerEvent('mission:local:guide', 'door')
+    Debug('porte du garage ouverte')
 end
 
 CreateThread(function()
@@ -366,6 +370,8 @@ function TakeMappedKeys(ped)
 
     -- Synchronisation coop
     Relay("event", { name = "mission:setKeysTaken", args = {} }, false)
+    TriggerEvent('mission:local:guide', 'keys')
+    Debug('clés récupérées')
 end
 
 ------------------------------------------------------------

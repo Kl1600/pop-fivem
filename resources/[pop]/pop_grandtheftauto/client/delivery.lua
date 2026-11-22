@@ -124,6 +124,12 @@ AddEventHandler('mission:client:receiveDeliverySlot', function(slotIndex)
         BeginTextCommandSetBlipName("STRING")
         AddTextComponentString(L('blip_truck'))
         EndTextCommandSetBlipName(truckBlip)
+        -- Itinéraire jusqu'au camion
+        Guide.ClearRoute()
+        SetBlipRoute(truckBlip, true)
+        SetBlipRouteColour(truckBlip, 5)
+        TriggerEvent('mission:local:guide', 'truck')
+        Debug(('camion de livraison prêt (emplacement %d)'):format(slotIndex))
 
         SetVehicleDoorOpen(veh, 5, false, false)
         table.insert(convoy, { vehicle = veh, driver = ped, isLoaded = false, blip = truckBlip, slot = slotIndex, nextTry = 0 })
