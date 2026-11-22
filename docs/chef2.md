@@ -52,3 +52,23 @@ Scripts : pop_inventory, checksystem, pop_charcreator, pop_clothes, pop_loading,
 - T-shirt homme et femme (haut 0 par défaut).
 - Coffre de véhicule à deux joueurs (le second doit être refusé).
 - Licences `70523d55…` et `fc88a542…` retirées de la liste admin de l'inventaire : à ajouter dans pop_admin si besoin.
+
+## Gabarit POP (22/11/2026) — terminé
+Modèle suivi : `templates/pop_base` + `docs/gabarit-pop.md` (bridge en `bridge/client.lua` + `bridge/server.lua`, `shared/locale.lua`, `shared/callback.lua`, copies exactes).
+- Évènements renommés en `pop_` (vanguard_charcreator, vg_paint, tab_sabot, tab_douilles, tab_chargeurs, tab_uvlight, tab_interacts). `vg_engine:*` gardé (partagé avec ox_target). Objets et tables en base inchangés.
+- **pop_charcreator** : client/ (camera, creator, appearance), server/ (common, save, instance), locales, README. luacheck 0/0.
+- **pop_loading** : client/main.lua, musique 320 → 128 kbps, images WebP (16 Mo → 8 Mo). luacheck 0/0.
+- **pop_idcard** : client/ (photo, main), server/ (common, main), images WebP (3,5 Mo → 0,6 Mo). luacheck 0/0.
+- **pop_passport** : client/ (photo, main), server/ (common, main, commands), images WebP (6,9 Mo → 1,7 Mo). luacheck 0/0.
+- **pop_clothes** : NUI dans html/, client/ (common, tattoos, camera, barber, shop, nui), server/ (common, tattoos, shop) ; paiement via Bridge (cash puis banque) ; `dependency 'pop_inventory'` (le bridge détecte l'inventaire au démarrage). luacheck 0/0.
+- **pop_inventory** : config/ (items_1..5, clothing, shops, recipes, modules…), client/ et server/ découpés (< 600 lignes, même ordre de chargement), Bridge pour notifications / job, Callback pour chargeurs et douilles, textes en L(), prints derrière Config.Debug, carton en veille (Wait 500), images WebP (21 → 12 Mo). `Config.Inventory` (table) renommé `Config.InventorySettings`, `Config.Debug` (table) → `Config.DebugOptions`. luacheck 0/0 (78 fichiers).
+
+### Reste / à savoir
+- 33 PNG gardés dans pop_inventory/html/img : pop_bennys et pop_management pointent encore vers `nui://pop_inventory/html/img/*.png` (environ 4 Mo à gagner quand ils passeront en .webp).
+- Icônes absentes depuis l'origine : bequille, civiere, defib, fauteuil, lucas, sabot (clamp utilisé), `img/vector*.svg` du CSS.
+- Double `RegisterNUICallback('close')` (bridge + script) dans pop_inventory, pop_clothes, pop_idcard, pop_passport : sans effet attendu, à confirmer en jeu.
+
+### À vérifier en jeu (gabarit)
+- Inventaire : TAB court/maintenu (roue), radio puis I/TAB, carton, coffre de véhicule, capot, fouille, TPE, menottes, brancard, boutique, établi, casiers, chargeurs, douilles.
+- Vêtements : achat cash puis carte, barbier, tatoueur, fermeture sans achat.
+- Créateur, carte d'identité, passeport, écran de connexion (musique, touche M).
