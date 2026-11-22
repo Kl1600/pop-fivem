@@ -29,7 +29,8 @@
     #pop-wheel .ring { fill: none; stroke: rgba(255, 255, 255, 0.25); stroke-width: 2; }
     #pop-wheel .hub { fill: rgb(12, 12, 12); stroke: rgba(255, 255, 255, 0.15); stroke-width: 1; }
     #pop-wheel .icon { position: absolute; width: 74px; height: 58px; margin: -29px 0 0 -37px; display: flex;
-      align-items: center; justify-content: center; pointer-events: none; transition: transform 80ms ease; }
+      align-items: center; justify-content: center; pointer-events: none; transition: transform 80ms ease;
+      filter: none; opacity: 1; cursor: default; z-index: auto; } /* annule la règle .icon des onglets de l'inventaire */
     #pop-wheel .icon img { max-width: 70px; max-height: 54px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
     #pop-wheel .icon.empty img, #pop-wheel .icon.empty .ph { opacity: 0.25; }
     #pop-wheel .icon.sel { transform: scale(1.12); }
