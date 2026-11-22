@@ -122,5 +122,6 @@ AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     watchDeath(false)
     SetNuiFocus(false, false)
+    if C.StopMap then C.StopMap() end
     C.Anim.Stop()
 end)

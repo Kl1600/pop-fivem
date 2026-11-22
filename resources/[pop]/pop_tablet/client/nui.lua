@@ -80,7 +80,4 @@ RegisterNUICallback('tablet:micro', function(data, cb)
     cb({ ok = true })
 end)
 
--- Carte : branchée avec Plans (passage suivant).
-RegisterNUICallback('tablet:map', function(_, cb)
-    cb({ ok = false, err = 'err_unavailable' })
-end)
+-- Carte de Plans : voir client/map.lua.

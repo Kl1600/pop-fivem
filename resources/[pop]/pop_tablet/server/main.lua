@@ -31,12 +31,15 @@ local function forget(src)
     Tablet.Device.DropSession(src)
     if Tablet.Share then Tablet.Share.Forget(src) end
     if Tablet.Recorder then Tablet.Recorder.Forget(src) end
+    if Tablet.Stocks then Tablet.Stocks.Forget(src) end
 end
 Bridge.OnPlayerDropped(forget)
 Bridge.OnPlayerUnloaded(forget)
 
 AddEventHandler('onResourceStop', function(resource)
-    if resource == RES then Tablet.Device.StopAll() end
+    if resource ~= RES then return end
+    if Tablet.Stocks then Tablet.Stocks.Save() end
+    Tablet.Device.StopAll()
 end)
 
 -- Échéance signalée par le client (alarme, rappel, événement) : le serveur revérifie l'objet porté.

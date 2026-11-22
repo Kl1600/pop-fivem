@@ -63,7 +63,16 @@ function C.WeatherSnapshot()
     local kind = ((tonumber(pct) or 1) >= 0.5 and nxt or prev) or nxt or prev or 'clear'
     if kind == 'clear' and (GetRainLevel() or 0) > 0.3 then kind = 'rain' end
     local base = BASE_TEMP[kind] or 22
-    return { temp = C.TempAt(kind, GetClockHours()), kind = kind, hi = base + TEMP_SWING, lo = base - TEMP_SWING, city = Config.Weather.City }
+    local rain = GetRainLevel() or 0
+    -- Vent : GetWindSpeed (m/s, converti en km/h) et GetWindDirection (vecteur, cap en degrés). À valider en jeu.
+    local speed = tonumber(GetWindSpeed()) or 0
+    local dir = GetWindDirection()
+    local deg = 0
+    if type(dir) == 'vector3' or type(dir) == 'table' then deg = math.floor((math.deg(math.atan(dir.x or 0, dir.y or 0)) % 360) + 0.5) end
+    return {
+        temp = C.TempAt(kind, GetClockHours()), kind = kind, hi = base + TEMP_SWING, lo = base - TEMP_SWING, city = Config.Weather.City,
+        rain = math.floor(rain * 100 + 0.5) / 100, wind = math.floor(speed * 3.6 + 0.5), deg = deg,
+    }
 end
 
 local function tick(mine)

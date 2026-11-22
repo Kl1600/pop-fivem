@@ -57,6 +57,9 @@ Tablet.Media.boards, Tablet.Media.boardPoints, Tablet.Media.boardItems = 30, 100
 Tablet.Media.recs, Tablet.Media.recSeconds, Tablet.Media.recBytes, Tablet.Media.recChunk = 30, 120, 409600, 32768
 Tablet.Media.shareSeconds = 30
 
+-- Limites de Plans, Traduire et Bourse (données par tablette rangées dans pop_tablet_appdata).
+Tablet.Tools = { favPlaces = 12, recentPlaces = 5, translateFavs = 30, translateChars = 500, watch = 20 }
+
 -- Version du système et modèle affichés dans Réglages > Général > Informations.
 Tablet.OsVersion = '1.0'
 Tablet.Model = 'POP Tab'
@@ -130,6 +133,7 @@ local relayed = {
     'contacts:list', 'contacts:save', 'contacts:delete',
     'browser:sites', 'music:stations', 'translate:run',
     'stocks:subscribe', 'stocks:unsubscribe', 'stocks:watch',
+    'plans:state', 'plans:fav', 'plans:recent', 'translate:favs', 'translate:fav',
     'share:nearby', 'share:send', 'share:accept', 'share:refuse',
     'app:call', 'app:focus', 'music:state',
 }

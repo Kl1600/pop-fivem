@@ -10,7 +10,7 @@ import re
 import sqlite3
 import sys
 
-EXPECTED = 20
+EXPECTED = 21
 src = open('sql/install.sql', encoding='utf-8').read()
 src = re.sub(r'--[^\n]*', '', src)
 statements = [s.strip() for s in src.split(';\n') if s.strip()]

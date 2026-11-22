@@ -380,6 +380,28 @@ function DB.DeleteMailbox(address, serial)
     MySQL.update.await('DELETE FROM pop_tablet_mailboxes WHERE address = ? AND serial = ?', { address, serial })
 end
 
+--- Données d'appli par tablette (Plans, Traduire, Bourse) : texte JSON, nil si rien d'enregistré.
+function DB.GetAppData(serial, app)
+    return MySQL.scalar.await('SELECT data FROM pop_tablet_appdata WHERE serial = ? AND app = ?', { serial, app })
+end
+
+function DB.SetAppData(serial, app, data)
+    MySQL.update.await('INSERT INTO pop_tablet_appdata (serial, app, data) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)', { serial, app, data })
+end
+
+--- Marché simulé : lecture de tous les symboles, écriture d'un lot (état persisté rarement).
+function DB.LoadMarket()
+    return MySQL.query.await('SELECT symbol, price, prev_close, trend, updated_at FROM pop_tablet_market', {}) or {}
+end
+
+function DB.SaveMarket(rows, now)
+    for _, r in ipairs(rows) do
+        MySQL.update.await('INSERT INTO pop_tablet_market (symbol, price, prev_close, trend, updated_at) VALUES (?, ?, ?, ?, ?)'
+            .. ' ON DUPLICATE KEY UPDATE price = VALUES(price), prev_close = VALUES(prev_close), trend = VALUES(trend), updated_at = VALUES(updated_at)',
+            { r.sym, r.price, r.prev, r.trend, now })
+    end
+end
+
 --- Supprime messages et appels plus vieux que `days` jours. Appelée au démarrage seulement.
 function DB.Purge(days, now)
     local cutoff = now - days * 86400

@@ -279,3 +279,13 @@ CREATE TABLE IF NOT EXISTS `pop_tablet_sites` (
   `page`           VARCHAR(120) NOT NULL DEFAULT '',
   PRIMARY KEY (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Données propres à une appli (favoris et récents de Plans, favoris de Traduire, liste de suivi de la Bourse) : un texte JSON
+-- par tablette et par appli, validé par le serveur à chaque écriture.
+CREATE TABLE IF NOT EXISTS `pop_tablet_appdata` (
+  `serial` CHAR(13)    NOT NULL,
+  `app`    VARCHAR(16) NOT NULL,
+  `data`   TEXT        NULL,
+  PRIMARY KEY (`serial`, `app`),
+  CONSTRAINT `fk_appdata_device` FOREIGN KEY (`serial`) REFERENCES `pop_tablet_devices` (`serial`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

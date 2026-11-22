@@ -48,6 +48,8 @@ Callback = { Register = function(name, fn) handlers[name] = fn end }
 
 dofile('config.lua')
 dofile('shared/tablet.lua')
+dofile('shared/places.lua')
+dofile('shared/market.lua')
 dofile('shared/locale.lua')
 for _, lang in ipairs({ 'en', 'fr', 'es', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 'ar' }) do
     dofile('locales/' .. lang .. '.lua')
@@ -1287,6 +1289,8 @@ do
     def('GetNextWeatherTypeHashName', function() return joaat(weatherNext) end)
     def('GetWeatherTypeTransition', function() return joaat(weatherPrev), joaat(weatherNext), weatherPct end)
     def('GetRainLevel', function() return rainLevel end)
+    def('GetWindSpeed', function() return 4.0 end)
+    def('GetWindDirection', function() return { x = 1.0, y = 0.0, z = 0.0 } end)
     def('RequestModel', function() end)
     def('HasModelLoaded', function() return true end)
     def('GetEntityCoords', function() return { x = 0, y = 0, z = 0 } end)
@@ -1323,7 +1327,7 @@ do
         'GetEntityHeading', 'GetPedBoneCoords' }) do
         def(n, function(...) camCalls[#camCalls + 1] = n if n == 'CreateCam' then return 9 end if n == 'GetPedBoneCoords' then return { x = 0, y = 0, z = 0 } end if n == 'GetEntityHeading' then return 0.0 end end)
     end
-    for _, f in ipairs({ 'locale', 'anim', 'camera', 'device', 'scheduler', 'main', 'nui', 'api' }) do dofile('client/' .. f .. '.lua') end
+    for _, f in ipairs({ 'locale', 'anim', 'camera', 'device', 'scheduler', 'main', 'nui', 'map', 'api' }) do dofile('client/' .. f .. '.lua') end
     loading = false
     local C = Tablet.Client
     local function triggered(name) for i = #triggers, 1, -1 do if triggers[i].name == name then return triggers[i] end end end
@@ -1395,8 +1399,39 @@ do
     serverReply['pop_tablet:notes:save'] = nil
     nuiCb['tablet:call']({ name = 'notes:save', data = {} }, function(r) got = r end)
     check('relais : pas de réponse serveur -> err_timeout', got.err == 'err_timeout')
+    -- Plans : callback `tablet:map` (position, itinéraire natif, annulation, carte du menu pause)
+    local mapCalls, wpActive = {}, false
+    local function mapNative(n, fn) def(n, function(...) mapCalls[#mapCalls + 1] = { n, ... } return fn and fn(...) end) end
+    mapNative('GetStreetNameAtCoord', function() return 111, 0 end)
+    mapNative('GetStreetNameFromHashKey', function() return 'Sinner St' end)
+    mapNative('GetNameOfZone', function() return 'PBOX' end)
+    mapNative('GetLabelText', function() return 'Pillbox Hill' end)
+    mapNative('SetNewWaypoint', function() wpActive = true end)
+    mapNative('SetWaypointOff', function() wpActive = false end)
+    mapNative('IsWaypointActive', function() return wpActive end)
+    mapNative('CalculateTravelDistanceBetweenPoints', function() return 1500.4 end)
+    mapNative('ActivateFrontendMenu')
+    mapNative('PauseMenuceptionGoDeeper')
+    mapNative('IsPauseMenuActive', function() return false end)
+    mapNative('GetFirstBlipInfoId', function() return 9 end)
+    mapNative('GetBlipInfoIdCoord', function() return { x = 120.5, y = -40.0, z = 0.0 } end)
     nuiCb['tablet:map']({}, function(r) got = r end)
-    check('carte/micro : réponse propre en attendant les applis', got.ok == false and got.err == 'err_unavailable')
+    check('carte : action absente refusée', got.ok == false and got.err == 'err_payload')
+    nuiCb['tablet:map']({ action = 'position' }, function(r) got = r end)
+    check('carte : position, rue, quartier, point sur la carte stylisée', got.ok and got.street == 'Sinner St' and got.zone == 'Pillbox Hill' and got.mx > 0 and got.my > 0)
+    nuiCb['tablet:map']({ action = 'route', x = 441.0, y = -982.0, z = 30.0 }, function(r) got = r end)
+    check('itinéraire : SetNewWaypoint puis distance native par la route', got.ok and got.meters == 1500 and got.road == true and wpActive)
+    nuiCb['tablet:map']({ action = 'route', x = 'a', y = 1 }, function(r) got = r end)
+    check('itinéraire : coordonnées invalides refusées', got.ok == false and got.err == 'err_payload')
+    nuiCb['tablet:map']({ action = 'route', x = 999999.0, y = 1.0 }, function(r) got = r end)
+    check('itinéraire : coordonnées hors monde refusées', got.ok == false and got.err == 'err_payload')
+    nuiCb['tablet:map']({ action = 'clear' }, function(r) got = r end)
+    check('annulation : SetWaypointOff', got.ok and not wpActive)
+    nuiMsgs[#nuiMsgs + 1] = nil
+    focus[#focus + 1] = { 'mark' }
+    nuiCb['tablet:map']({ action = 'pause' }, function(r) got = r end)
+    local last = focus[#focus]
+    check('carte du menu pause : ouverte, focus rendu puis repris, point posé relu', got.ok and last[1] == true and lastMsg().action == 'tablet:waypoint')
     -- Appareil photo : natives CellCam, repli scripté, fermeture sans fuite
     camCalls = {}
     nuiCb['tablet:camera']({ action = 'start' }, function(r) got = r end)
@@ -1669,6 +1704,192 @@ do
     local o4 = handlers['pop_tablet:share:send'](40, { target = 41, kind = 'note', id = note })
     tk()
     check('share:refuse : l\'offre disparaît', handlers['pop_tablet:share:refuse'](41, o4.offerId).ok and handlers['pop_tablet:share:accept'](41, o4.offerId).err == 'err_not_found')
+    def('json', keep)
+end
+
+------------------------------------------------------------------------
+section('Plans, Traduire, Bourse (app-pla, app-tra, app-bou, api-06)')
+------------------------------------------------------------------------
+do
+    local AD, MK, saved = {}, {}, {}
+    local seq = 0
+    local function nid() seq = seq + 1 return seq end
+    DB.GetAppData = function(serial, app) return AD[serial .. '|' .. app] end
+    DB.SetAppData = function(serial, app, data) AD[serial .. '|' .. app] = data end
+    DB.LoadMarket = function() return MK end
+    DB.SaveMarket = function(r, now) saved[#saved + 1] = { rows = r, now = now } end
+    local keep, jstore = json, {}
+    def('json', { encode = function(v) local k = 'T' .. nid() jstore[k] = v return k end, decode = function(k) return jstore[k] end })
+    Callback = { Register = function(name, fn) handlers[name] = fn end }
+    local httpCalls, httpReply, convar = {}, { 200, nil }, ''
+    def('SetTimeout', function() end)
+    def('GetConvar', function() return convar end)
+    def('promise', { new = function() local p = { v = nil } function p:resolve(v) if self.v == nil then self.v = v end end return p end })
+    def('Citizen', { Await = function(p) return p.v end })
+    def('PerformHttpRequest', function(url, cb, method, body)
+        httpCalls[#httpCalls + 1] = { url = url, method = method, body = jstore[body] }
+        cb(httpReply[1], httpReply[2])
+    end)
+    for _, f in ipairs({ 'appdata', 'plans', 'translate', 'stocks' }) do dofile('server/apps/' .. f .. '.lua') end
+
+    local srcs = { 50, 51, 52 }
+    local function tk() clock = clock + 5 end
+    for i, src in ipairs(srcs) do
+        players[src] = 'char' .. src
+        inv[src] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+        tk()
+        handlers['pop_tablet:device:open'](src, nil, '2026-06-14 08:30')
+        tk()
+        handlers['pop_tablet:device:setup'](src, { code = '4321', name = 'Bo' .. i, lang = 'fr', mail = 'bo' .. i .. '.test' })
+    end
+    Tablet.Scheduler.SetClock(function() return clock end)
+
+    -- Plans
+    tk()
+    local st = handlers['pop_tablet:plans:state'](50)
+    check('plans:state : 9 lieux, favoris par défaut (domicile, police, garage)', st.ok and #st.places == 9 and #st.favs == 3 and st.favs[1] == 'home' and #st.recents == 0, tostring(st.err))
+    Config.Places = { { id = 'mairie', name = 'Mairie', x = 1.0, y = 2.0, z = 3.0, mx = 100, my = 100 }, { id = 'Bad Id', name = 'x', x = 1, y = 1, z = 1, mx = 1, my = 1 },
+        { id = 'police', name = 'Poste central', x = 5.0, y = 6.0, z = 7.0, mx = 200, my = 200 } }
+    tk()
+    st = handlers['pop_tablet:plans:state'](50)
+    local police
+    for _, p in ipairs(st.places) do if p.id == 'police' then police = p end end
+    check('lieux de la config : ajout, remplacement par id, id invalide ignoré', #st.places == 10 and police.name == 'Poste central')
+    Config.Places = {}
+    tk()
+    check('plans:fav : ajout', handlers['pop_tablet:plans:fav'](50, { id = 'casino', on = true }).favs[4] == 'casino')
+    tk()
+    check('plans:fav : retrait', #handlers['pop_tablet:plans:fav'](50, { id = 'home', on = false }).favs == 3)
+    tk()
+    check('plans:fav : lieu inconnu refusé', handlers['pop_tablet:plans:fav'](50, { id = 'nulle_part', on = true }).err == 'err_payload')
+    tk()
+    check('plans:fav : favoris propres à chaque tablette', #handlers['pop_tablet:plans:state'](51).favs == 3 and handlers['pop_tablet:plans:state'](51).favs[1] == 'home')
+    local last
+    for _, id in ipairs({ 'fleeca', 'pier', 'casino', 'customs', 'cafe', 'pillbox' }) do tk() last = handlers['pop_tablet:plans:recent'](50, id) end
+    check('plans:recent : 5 au plus, le dernier en tête', last.ok and #last.recents == 5 and last.recents[1] == 'pillbox' and last.recents[5] == 'pier')
+    tk()
+    check('plans:recent : un lieu déjà récent remonte sans doublon', handlers['pop_tablet:plans:recent'](50, 'pier').recents[1] == 'pier' and #handlers['pop_tablet:plans:state'](50).recents == 5)
+    tk()
+    check('plans:recent : lieu inconnu refusé', handlers['pop_tablet:plans:recent'](50, 'x').err == 'err_payload')
+
+    -- Traduire
+    local function tr(src, text, from, to) tk() return handlers['pop_tablet:translate:run'](src, { text = text, src = from, dst = to }) end
+    check('translate:run : sans service, err_unavailable (l\'interface reste hors ligne)', tr(50, 'Bonjour', 'fr', 'en').err == 'err_unavailable' and #httpCalls == 0)
+    Config.Translate.Url = 'https://service.test/translate'
+    httpReply = { 200, json.encode({ translatedText = 'Hello' }) }
+    convar = 'cle-secrete'
+    local r = tr(50, 'Bonjour', 'fr', 'en')
+    check('translate:run : service appelé (POST, langues, clé de la convar)', r.ok and r.text == 'Hello' and r.cached == false and #httpCalls == 1
+        and httpCalls[1].method == 'POST' and httpCalls[1].body.source == 'fr' and httpCalls[1].body.target == 'en' and httpCalls[1].body.api_key == 'cle-secrete', tostring(r.err))
+    r = tr(50, 'Bonjour', 'fr', 'en')
+    check('translate:run : cache (aucun second appel)', r.ok and r.cached == true and #httpCalls == 1)
+    check('translate:run : même langue refusée', tr(50, 'Bonjour', 'fr', 'fr').err == 'err_payload')
+    check('translate:run : langue inconnue refusée', tr(50, 'Bonjour', 'fr', 'xx').err == 'err_payload')
+    check('translate:run : texte vide refusé', tr(50, '', 'fr', 'en').err == 'err_payload')
+    check('translate:run : > 500 caractères refusé', tr(50, string.rep('a', 501), 'fr', 'en').err == 'err_payload')
+    httpReply = { 500, '' }
+    check('translate:run : service en erreur -> err_unavailable', tr(50, 'Autre phrase', 'fr', 'es').err == 'err_unavailable')
+    httpReply = { 200, json.encode({ translatedText = 'Hola' }) }
+    Tablet.Device.GetSession(50).settings = { air = true }
+    check('translate:run : mode avion -> err_offline', tr(50, 'Bonjour', 'fr', 'es').err == 'err_offline')
+    Tablet.Device.GetSession(50).settings = {}
+    local fav = { src = 'fr', dst = 'en', s = 'Combien ça coûte ?', t = 'How much is it?', on = true }
+    tk()
+    check('translate:fav : ajout puis liste', handlers['pop_tablet:translate:fav'](50, fav).ok and #handlers['pop_tablet:translate:favs'](50).items == 1)
+    tk()
+    handlers['pop_tablet:translate:fav'](50, fav)
+    check('translate:fav : pas de doublon', #handlers['pop_tablet:translate:favs'](50).items == 1)
+    tk()
+    check('translate:fav : favoris propres à chaque tablette', #handlers['pop_tablet:translate:favs'](51).items == 0)
+    tk()
+    fav.on = false
+    check('translate:fav : retrait', handlers['pop_tablet:translate:fav'](50, fav).ok and #handlers['pop_tablet:translate:favs'](50).items == 0)
+    local full
+    for i = 1, 31 do tk() full = handlers['pop_tablet:translate:fav'](50, { src = 'fr', dst = 'en', s = 'phrase ' .. i, t = 'sentence ' .. i, on = true }) end
+    check('translate:fav : le 31e est refusé', full.err == 'err_limit')
+    tk()
+    check('translate:fav : texte trop long refusé', handlers['pop_tablet:translate:fav'](50, { src = 'fr', dst = 'en', s = string.rep('a', 201), t = 'x', on = true }).err == 'err_payload')
+
+    -- Bourse : simulation bornée
+    local S = Tablet.Stocks
+    local inBounds = true
+    for _, d in ipairs(Tablet.StockDefs) do
+        local lo, hi = S.Limits(d)
+        local stt = { price = d.price, trend = 0 }
+        for _ = 1, 10000 do
+            S.Step(d, stt, math.random)
+            if stt.price < lo or stt.price > hi then inBounds = false end
+        end
+        stt = { price = d.price, trend = 0 }
+        for _ = 1, 3000 do S.Step(d, stt, function() return 0.0 end) end
+        if stt.price < lo or lo < d.price * 0.05 - 1e-9 then inBounds = false end
+        for _ = 1, 3000 do S.Step(d, stt, function() return 0.999999 end) end
+        if stt.price > hi or hi > d.price * 10 + 1e-9 then inBounds = false end
+    end
+    check('bourse : 10 000 pas par symbole, prix toujours dans [5 %, 10x] (aléatoire, plancher, plafond)', inBounds)
+
+    -- Bourse : abonnement, échéance unique, envoi aux abonnés seulement
+    local before = Tablet.Scheduler.Count()
+    check('bourse : aucun abonné au départ', S.SubscriberCount() == 0)
+    tk()
+    local sub = handlers['pop_tablet:stocks:subscribe'](50)
+    check('stocks:subscribe : 7 symboles, liste de suivi complète par défaut', sub.ok and #sub.items == 7 and #sub.watch == 7 and sub.items[1].sym == 'BAWS' and sub.items[2].open == 412.6, tostring(sub.err))
+    check('stocks:subscribe : UNE échéance serveur armée', S.SubscriberCount() == 1 and Tablet.Scheduler.Count() == before + 1)
+    tk()
+    handlers['pop_tablet:stocks:subscribe'](50)
+    check('stocks:subscribe : second abonnement de la même tablette sans effet', S.SubscriberCount() == 1 and Tablet.Scheduler.Count() == before + 1)
+    sent = {}
+    clock = clock + 6
+    Tablet.Scheduler.Run()
+    local pushes = {}
+    for _, m in ipairs(sent) do if m.name == 'pop_tablet:client:market' then pushes[#pushes + 1] = m end end
+    check('échéance : un seul envoi, à l\'abonné seulement', #pushes == 1 and pushes[1].src == 50)
+    local p = pushes[1] and pushes[1].data.p
+    local bytes = 6
+    for _, v in ipairs(p or {}) do bytes = bytes + #tostring(v) + 1 end
+    check('échéance : cours en centimes par index, paquet <= 200 octets', p and #p == 7 and math.type(p[1]) == 'integer' and bytes <= 200, tostring(bytes))
+    check('échéance suivante armée tant qu\'un abonné reste', Tablet.Scheduler.Count() == before + 1)
+    tk()
+    check('stocks:unsubscribe : abonnement retiré', handlers['pop_tablet:stocks:unsubscribe'](50).ok and S.SubscriberCount() == 0)
+    sent = {}
+    clock = clock + 6
+    Tablet.Scheduler.Run()
+    check('plus d\'abonné : aucun envoi et aucune échéance ré-armée', #sent == 0 and Tablet.Scheduler.Count() == before)
+    local savedBefore = #saved
+    tk()
+    handlers['pop_tablet:stocks:subscribe'](51)
+    Tablet.Device.DropSession(51)
+    clock = clock + 6
+    Tablet.Scheduler.Run()
+    check('abonné parti (session perdue) : retiré à l\'échéance, plus d\'échéance', S.SubscriberCount() == 0 and Tablet.Scheduler.Count() == before)
+    tk()
+    handlers['pop_tablet:stocks:subscribe'](52)
+    clock = clock + 700
+    Tablet.Scheduler.Run()
+    check('persistance : état écrit après 10 minutes avec abonné', #saved > savedBefore and #saved[#saved].rows == 7 and saved[#saved].rows[1].sym == 'BAWS')
+    S.Forget(52)
+
+    -- Bourse : liste de suivi par tablette, choc de marché
+    tk()
+    local w = handlers['pop_tablet:stocks:watch'](52, { sym = 'PISS', on = false })
+    check('stocks:watch : retrait de PISS', w.ok and #w.watch == 6)
+    tk()
+    check('stocks:watch : ajout', #handlers['pop_tablet:stocks:watch'](52, { sym = 'PISS', on = true }).watch == 7)
+    tk()
+    check('stocks:watch : symbole inconnu refusé', handlers['pop_tablet:stocks:watch'](52, { sym = 'EVIL', on = true }).err == 'err_payload')
+    tk()
+    check('stocks:watch : liste propre à chaque tablette', #handlers['pop_tablet:stocks:watch'](50, { sym = 'MAZE', on = false }).watch == 6)
+    local maze = S.Prices()[2].price
+    check('MarketShock : +10 % sur MAZE', S.Shock('MAZE', 10) and math.abs(S.Prices()[2].price - maze * 1.1) < 0.02)
+    check('MarketShock : symbole inconnu, 60 % et texte refusés', not S.Shock('EVIL', 5) and not S.Shock('MAZE', 60) and not S.Shock('MAZE', 'x'))
+
+    -- Chargement : un état de plus de 24 h repart d'une clôture égale au cours
+    MK = { { symbol = 'MAZE', price = 500.0, prev_close = 450.0, trend = 0.001, updated_at = clock - 1000 }, { symbol = 'FLCA', price = 90.0, prev_close = 80.0, trend = 0, updated_at = clock - 90000 } }
+    dofile('server/apps/stocks.lua')
+    Tablet.Stocks.Load()
+    local pr = Tablet.Stocks.Prices()
+    check('chargement : état récent repris (clôture conservée)', pr[2].price == 500.0 and pr[2].prev == 450.0)
+    check('chargement : état de plus de 24 h = nouvelle clôture ; symbole sans ligne = cours de base', pr[3].price == 90.0 and pr[3].prev == 90.0 and pr[1].price == 11842.3)
     def('json', keep)
 end
 

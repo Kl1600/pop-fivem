@@ -82,6 +82,19 @@ Config.Browser = { AllowedHosts = {} }
 -- Météo : nom de ville affiché (nom propre, pas traduit). La température est déduite du type de météo du jeu et de l'heure.
 Config.Weather = { City = 'Los Santos' }
 
+-- Plans : lieux ajoutés à ceux de shared/places.lua (même format ; un `id` identique remplace le lieu d'origine).
+-- Exemple : { id = 'mairie', name = 'Mairie', short = 'Mairie', area = 'Rockford', cat = 'public', addr = '1 Main St',
+--             phone = '(555) 0001', hours = 'h24', icon = 'shield', col = '#30509c', x = -540.0, y = -200.0, z = 38.0, mx = 1000, my = 600 }
+Config.Places = {}
+
+-- Traduire : sans service, l'appli traduit hors ligne (dictionnaire embarqué, jamais masquée).
+-- Url : adresse d'un service compatible LibreTranslate (POST JSON { q, source, target, format, api_key }, réponse { translatedText }).
+-- La clé éventuelle se règle dans la convar serveur `set pop_tablet_translate_key "..."` (jamais dans ce fichier).
+Config.Translate = { Url = '', MaxChars = 500, CacheSize = 200, TimeoutSeconds = 8 }
+
+-- Bourse : pas de la simulation en secondes réelles. Elle ne tourne que si une tablette a l'appli ouverte.
+Config.Market = { TickSeconds = 5 }
+
 -- Coque d'appareil autour de l'écran : réservée au navigateur de développement. Laisser false en jeu (plein écran).
 Config.Shell = false
 
