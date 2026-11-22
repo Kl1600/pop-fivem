@@ -71,21 +71,15 @@ p { margin: 0; }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 6px 8px;
+  padding: 4px 8px 8px 10px;
   margin-bottom: 4px;
   border-bottom: 1px solid var(--pop-border);
 }
 
 .pop-target-head .circle {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  color: #0a0a0c;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 10px;
+  color: #fff;
 }
 
 .pop-target-head .title {
@@ -106,7 +100,7 @@ p { margin: 0; }
   align-items: center;
   gap: 10px;
   height: 34px;
-  padding: 0 8px 0 6px;
+  padding: 0 8px 0 10px;
   border-radius: 3px;
   font-size: 12.5px;
   color: var(--pop-text);
@@ -117,17 +111,12 @@ p { margin: 0; }
 .option-container + .option-container { margin-top: 2px; }
 
 .option-icon {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: #fff;
-  transition: background 120ms, color 120ms;
+  flex: 0 0 16px;
+  width: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 120ms;
 }
 
 .option-label {
@@ -147,15 +136,11 @@ p { margin: 0; }
   background: #fff;
   color: #0a0a0c;
 }
-.option-container:hover .option-icon {
-  background: #0a0a0c;
-  color: #fff;
-}
+.option-container:hover .option-icon { color: #0a0a0c; }
 .option-container:hover .option-arrow { color: #0a0a0c; }
 
 /* « Retour » d'un sous-menu */
 .option-container.back { color: var(--pop-muted); }
-.option-container.back .option-icon { background: transparent; }
 
 #mechanicChecklist {
 	position: absolute;
