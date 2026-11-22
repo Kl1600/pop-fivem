@@ -10,6 +10,13 @@ name: Deploy to test server
 
 on:
   workflow_dispatch:
+    inputs:
+      machine:
+        description: "mac = ton Mac (gratuit, il doit être allumé avec le runner lancé) ; github = machines GitHub (quota)"
+        required: true
+        default: mac
+        type: choice
+        options: [mac, github]
 
 concurrency:
   group: deploy
@@ -17,7 +24,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.machine == 'github' && 'ubuntu-latest' || 'self-hosted' }}
     steps:
       - name: Check secrets
         id: check
@@ -43,12 +50,17 @@ jobs:
             /^@/ { t = substr($0, 2); next }
             NF && !($0 in seen) { seen[$0] = t; print t "\t" $0 }
           ' | while IFS=$'\t' read -r t f; do
-            if [ -f "$f" ]; then touch -m -d "@$t" "$f"; fi
+            [ -f "$f" ] || continue
+            # GNU (Linux) : touch -d @epoch ; BSD (macOS) : touch -t AAAAMMJJhhmm.ss
+            touch -m -d "@$t" "$f" 2>/dev/null || touch -m -t "$(date -r "$t" +%Y%m%d%H%M.%S)" "$f"
           done
 
       - name: Install lftp
         if: steps.check.outputs.skip != 'true'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+        run: |
+          if command -v lftp >/dev/null; then echo "lftp déjà installé"
+          elif command -v brew >/dev/null; then brew install lftp
+          else sudo apt-get update -qq && sudo apt-get install -y -qq lftp; fi
 
       # Données écrites par le serveur lui-même (bans, logs, plantes, portes) : jamais
       # envoyées ni supprimées par le déploiement, sinon elles seraient écrasées à chaque push.
