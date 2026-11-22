@@ -232,6 +232,11 @@ AddEventHandler('onResourceStop', function(res)
     for _, e in pairs(current) do saveAllFor(e, false) end
 end)
 
+-- Redémarrage / arrêt par txAdmin : sauvegarde avant l'arrêt, quand la base répond encore.
+AddEventHandler('txAdmin:events:serverShuttingDown', function()
+    for _, e in pairs(current) do saveAllFor(e, false) end
+end)
+
 -- Commande console (debug) : état de la persistance.
 RegisterCommand('debug_persistence', function(src)
     if src ~= 0 then

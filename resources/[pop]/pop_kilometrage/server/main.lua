@@ -47,6 +47,9 @@ AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() then flush() end
 end)
 
+-- Redémarrage / arrêt par txAdmin : écriture avant l'arrêt, quand la base répond encore.
+AddEventHandler('txAdmin:events:serverShuttingDown', flush)
+
 AddEventHandler('playerDropped', function() lastAsk[source] = nil end)
 
 RegisterNetEvent('pop_kilometrage:server:requestMileage', function(plate)
