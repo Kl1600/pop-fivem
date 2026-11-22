@@ -110,10 +110,13 @@ end)
 -- ============================================================
 -- COMMANDES ET DÉMARRAGE MISSION
 -- ============================================================
--- Raccourci admin : même départ que Svetlana (vérifié côté serveur)
+-- Raccourci admin : même départ que Svetlana.
+-- Commande non « restricted » (sinon bloquée en mode production) : le serveur vérifie l'ACE
+-- (mission:server:adminStart → command.startheist ou pop.admin).
 RegisterCommand('startheist', function()
     TriggerServerEvent('mission:server:adminStart')
-end, true)
+end, false)
+TriggerEvent('chat:addSuggestion', '/startheist', 'Admin : lancer le casse Benefactor tout de suite')
 
 
 RegisterNetEvent('spawncamion')

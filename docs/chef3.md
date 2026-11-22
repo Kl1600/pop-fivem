@@ -46,6 +46,10 @@ Restructuration selon `docs/gabarit-pop.md` (config.lua, locales/fr.lua, bridge/
 - kq_lasers (payant, licence absente : « You lack the required entitlement ») remplacé par nos lasers dans `pop_grandtheftauto/client/lasers.lua` : mêmes 23 segments, `DrawLine` rouge avec léger scintillement, dessin et détection seulement si actifs et à moins de 40 m du showroom (sinon veille `Wait(1000)`, boucle arrêtée quand les lasers sont éteints). Détection : distance pieds/bassin/tête – segment ≤ 0,25 m → `grandtheftauto:alarme` + 5 de dégâts, 10 s de délai. Mêmes évènements (startheist, mission:local:lasers, mission:local:reset, onResourceStop).
 - `resources/[pop]/kq_lasers` supprimé (le déploiement le retire du serveur), exclusion retirée de lint.yml, mentions retirées de coordination-chefs.md, analyse-structure.md et gabarit-pop.md.
 
+### Retours F8 du client (22/11/2026)
+- pop_grandtheftauto : `/startheist` bloquée en mode production (commande client « restricted ») → `RegisterCommand(..., false)`, le serveur vérifie déjà l'ACE (`command.startheist` ou `pop.admin`). Suggestion de chat ajoutée.
+- pop_crew : avertissement ox_target « Replacing existing target option 'pop_crew_recruit' » → option retirée (`removeGlobalPlayer`) avant d'être remise, et retirée à l'arrêt de la ressource.
+
 ### Reste
 - Tester la mission en jeu avec le client (après la restructuration).
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).
