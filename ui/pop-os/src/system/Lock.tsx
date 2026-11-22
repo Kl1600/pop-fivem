@@ -20,14 +20,14 @@ export function LockLayer({ active, toCode }: { active: boolean; toCode: boolean
   const events = boot?.widgets?.events ?? [];
   const next = events[0];
   return (
-    <div className="tr" data-layer="lock" style={{ position: 'absolute', inset: 0, opacity: active ? 1 : 0, transform: active ? 'none' : toCode ? 'translateY(-40px)' : 'translateY(-100%)', pointerEvents: active ? 'auto' : 'none' }}>
+    <div className="tr" data-layer="lock" aria-hidden={!active} inert={!active} style={{ position: 'absolute', inset: 0, opacity: active ? 1 : 0, transform: active ? 'none' : toCode ? 'translateY(-40px)' : 'translateY(-100%)', pointerEvents: active ? 'auto' : 'none' }}>
       <div style={{ position: 'absolute', insetInlineStart: 70, top: 90, display: 'flex', flexDirection: 'column' }}>
         <span style={{ fontSize: 28, fontWeight: 600, opacity: 0.92 }}>{formatDate(d, lang, 'long')}</span>
         <span dir="ltr" style={{ fontSize: 172, fontWeight: 700, lineHeight: 0.95, letterSpacing: -6, color: 'rgba(255,255,255,.88)', textShadow: '0 2px 0 rgba(255,255,255,.25), 0 8px 40px rgba(0,0,0,.18)' }}>{formatTime(d)}</span>
         <div style={{ display: 'flex', gap: 14, marginTop: 26 }}>
           <Glass kind="gw" style={{ width: 168, height: 76, borderRadius: 22, padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.8 }}>{weather?.city ?? t('widget.city')}</span>
-            <span style={{ fontSize: 24, fontWeight: 600 }}>{weather ? `${Math.round(weather.temp)}° · ${t(`weather.${weather.kind}`)}` : '–'}</span>
+            <span style={{ fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{weather ? `${Math.round(weather.temp)}° · ${t(`weather.${weather.kind}`)}` : '–'}</span>
           </Glass>
           <Glass kind="gw" style={{ width: 168, height: 76, borderRadius: 22, padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.8 }}>{next ? next.time.split(' ')[0] : t('widget.calendar')}</span>
@@ -126,7 +126,7 @@ export function CodeLayer({ active }: { active: boolean }) {
   const onDelete = () => { if (!busy) setCode((c) => c.slice(0, -1)); };
   const message = blocked ? t('code.wait', wait) : err ? (err === 'err_code_blocked' ? t('code.wait', wait) : t(err === 'err_code_wrong' ? 'code.wrong' : err)) : t('code.enter');
   return (
-    <div className="tr" data-layer="code" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 150, opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}>
+    <div className="tr" data-layer="code" aria-hidden={!active} inert={!active} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 150, opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}>
       <span role="status" style={{ fontSize: 22, fontWeight: 500 }}>{message}</span>
       <Keypad code={code} onDigit={onDigit} onDelete={onDelete} shake={shake} disabled={!active || blocked} />
       <div style={{ position: 'absolute', bottom: 44, insetInlineEnd: 60, display: 'flex', gap: 30, fontSize: 17 }}>
@@ -181,7 +181,7 @@ export function SetupLayer({ active }: { active: boolean }) {
   const idx = STEPS.indexOf(step);
   const title = { lang: 'setup.lang', code: 'setup.code', confirm: 'setup.confirm', name: 'setup.name', mail: 'setup.mail' }[step];
   return (
-    <div className="tr" data-layer="setup" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 120, opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}>
+    <div className="tr" data-layer="setup" aria-hidden={!active} inert={!active} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 120, opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}>
       <span style={{ fontSize: 40, fontWeight: 700 }}>{t('setup.hello')}</span>
       <span role="status" style={{ fontSize: 22, fontWeight: 500, marginTop: 10 }}>{t(title)}</span>
       {step === 'lang' && (

@@ -43,3 +43,38 @@ export interface AppManifest {
   online?: boolean;
   load: () => Promise<{ default: React.ComponentType<AppProps> }>;
 }
+
+/** Réglages de l'appareil, partagés avec les applis (Réglages) par le contexte `SettingsContext`. */
+export interface DeviceSettings {
+  lang?: string;
+  dark?: boolean;
+  glass?: number;
+  bright?: number;
+  wall?: string;
+  blur?: boolean;
+  mail?: string;
+  air?: boolean;
+  wifi?: boolean;
+  bt?: boolean;
+  rot?: boolean;
+  mirror?: boolean;
+  share?: boolean;
+  focus?: boolean;
+}
+
+export interface SettingsApi {
+  settings: DeviceSettings;
+  name: string;
+  serial: string;
+  battery: number;
+  lang: string;
+  /** Applique un réglage tout de suite et le fait enregistrer. */
+  set: (patch: DeviceSettings) => void;
+  setLang: (lang: string) => void;
+  changeCode: (oldCode: string, newCode: string) => Promise<{ ok: boolean; err?: string }>;
+}
+
+export const LANGUAGES = ['en', 'fr', 'es', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 'ar'] as const;
+export const LANGUAGE_NAMES: Record<(typeof LANGUAGES)[number], string> = {
+  en: 'English', fr: 'Français', es: 'Español', de: 'Deutsch', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe', ar: 'العربية',
+};

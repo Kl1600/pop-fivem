@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import type { ReactNode } from 'react';
 import { useDark, useLayout, useT } from './context';
 import { palette } from './theme';
@@ -47,9 +47,9 @@ export function NavStack({ pages, onBack }: { pages: NavPage[]; onBack: () => vo
       </header>
       <div style={{ position: 'relative', flexGrow: 1, minHeight: 0 }}>
         <AnimatePresence initial={false}>
-          <motion.div key={top.key} initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }} style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
+          <m.div key={top.key} initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }} style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
             {top.content}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </div>
     </div>

@@ -3,7 +3,7 @@
 Journal court. À relire au début de chaque session, avec `feature_list.json` et `SPEC.md`.
 
 ## État
-- Fonctions validées : 6 / 120
+- Fonctions validées : 12 / 120 (dont ui-01 à ui-05 et ui-17)
 - Prochaine fonction : socle-02
 - Plafond de tours : 20 par session (par domaine : socle serveur, socle client, socle interface, puis applis)
 
@@ -54,3 +54,15 @@ Prouvé hors jeu : aucun thread ni boucle au chargement ; `RegisterKeyMapping('p
 4. `diff -r` de `shared/` ne peut pas être vide (ajout de `shared/tablet.lua`) : comparer fichier par fichier.
 5. feature_list.json compte 120 entrées (PROGRESS annonçait 116).
 6. Item `pop_tablet` non ajouté à `pop_inventory` (README seulement), à décider.
+
+## Session 2 — 2026-11-22 (socle interface, ui-01 à ui-17)
+Preuve commune (ui/pop-os) : `pnpm typecheck` OK ; `pnpm test` = 39 réussis / 0 échec (2 fichiers : kit.test.tsx, system.test.tsx) ; `pnpm build` OK vers web/dist ; `pnpm check` (check-imports + check-strings) OK ; `pnpm verify` = 27 fichiers, 23 JS, 395,7 Ko de JS, `node --check` OK sur chaque JS, 0 URL externe dans index.html. Captures Chrome headless (écran verrouillé clair et sombre) relues.
+- **ui-01 OK** : Vite 8 + React 19 + TS + motion, pnpm + lockfile, base './', dist 395,7 Ko JS (<= 450), dist commité.
+- **ui-02 OK** : `scripts/check-imports.mjs` (apps -> kit seul ; kit sans device/system/apps/nui ; device sans apps/system) + test vitest.
+- **ui-03 OK** : kit (Glass, BlurLayer, Button, Switch, Slider, ListRow, Field, Sheet, SplitView, NavStack, TabBar, AppWaiting, VirtualList, AppIcon, hooks useT/useNui/useNotify/useLayout) rendus en regular et compact (vitest).
+- **ui-04 OK** : `scripts/check-strings.mjs` = 0 chaîne en dur ; fr et en identiques en clés ; es/de/it/pt/nl/pl/tr/ar vides (repli anglais) ; dir=rtl pour l'arabe (vitest).
+- **ui-05 OK** : thème clair/sombre, accent `Config.AccentColor` (liste blanche #hex), curseur de verre (0,12 + g*0,6), flou coupable, prefers-reduced-motion (CSS + MotionConfig) ; vitest + captures.
+- **ui-17 OK** : VirtualList, 1000 éléments = au plus 60 lignes dans le DOM.
+- **Restent false** : ui-06 (test en jeu, console NUI vide), ui-07 à ui-15 (code et tests vitest faits, mais « capture comparée à la maquette » impossible : `support.js` de la maquette absent de ui/pop-os/design, elle ne se rend pas ; seul le portage du code a été fait ; ui-09, 10, 13 demandent aussi un test en jeu), ui-16 (relevé de profil NUI en jeu).
+- **Écarts SPEC** : `src/kit/` au lieu de `src/sdk/` (demande) ; écran de référence 1348x1019 mis à l'échelle (transform) au lieu de vh/vw ; flou : un backdrop-filter par couche surchargée (panneaux dans un centre/recherche à plat), mais plusieurs sur l'accueil (widgets, dock) ; Wi-Fi/Bluetooth/rotation/recopie gardés (section 0 prime sur 6.3) ; « + Ajouter un widget » et pastilles de page du centre de contrôle retirés (sans fonction) ; flou animé (filter) remplacé par un fond flouté en fondu d'opacité.
+- **Contrat à compléter côté client/serveur** : `tablet:open` doit porter `lang` (écran verrouillé sans `boot`) et `shell` (absent = pas de coque) ; clés de `settings:save` à autoriser : lang, dark, glass, bright, wall, blur, air, wifi, bt, rot, mirror, share, focus ; `boot.widgets` ({events, reminders}) et `boot.music` à fournir ; `tablet:weather` {temp, kind, hi, lo, city} ; les textes de l'interface sont dans le bundle (la table Lua ne contient pas ces clés).

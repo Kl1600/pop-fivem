@@ -161,31 +161,31 @@
       "id": "ui-01",
       "description": "Projet ui/pop-os (Vite, React, TS, motion, pnpm) construit vers web/dist ; fichiers versionnés ; dist <= 450 Ko JS",
       "verification": "pnpm build puis taille de dist ; git status montre dist",
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-02",
       "description": "Séparation device/ sdk/ apps/ : aucune importation d apps vers device",
       "verification": "vitest ou script lint : aucun import device dans apps/",
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-03",
       "description": "sdk : AppProps layout regular/compact, useT, useNui, useNotify, composants communs",
       "verification": "vitest : rendu de chaque composant en regular et compact sans erreur",
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-04",
       "description": "i18n : toutes les chaînes visibles viennent de la table de clés ; RTL",
       "verification": "script de contrôle : aucune chaîne littérale visible ; vitest RTL",
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-05",
       "description": "Thème clair et sombre, accent Config.AccentColor, transparence réglable, prefers-reduced-motion",
       "verification": "capture clair/sombre ; vitest sur le thème",
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-06",
@@ -257,7 +257,7 @@
       "id": "ui-17",
       "description": "Listes virtualisées au-delà de 100 éléments",
       "verification": "vitest : 1000 éléments, nombre de nœuds DOM <= 60",
-      "passes": false
+      "passes": true
     },
     {
       "id": "app-set-01",

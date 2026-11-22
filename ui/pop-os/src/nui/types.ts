@@ -1,3 +1,4 @@
+import type { DeviceSettings } from '../kit';
 // Contrat NUI <-> client (SPEC section 8). Seuls ces types décrivent ce que Lua envoie.
 export interface ClockSnap {
   h: number;
@@ -19,24 +20,7 @@ export interface Weather {
   city?: string;
 }
 
-export interface Settings {
-  lang?: string;
-  dark?: boolean;
-  glass?: number;
-  bright?: number;
-  /** Indice dans la collection POP, ou 'auto'. */
-  wall?: string;
-  blur?: boolean;
-  mail?: string;
-  air?: boolean;
-  wifi?: boolean;
-  bt?: boolean;
-  rot?: boolean;
-  mirror?: boolean;
-  share?: boolean;
-  focus?: boolean;
-}
-
+export type Settings = DeviceSettings;
 export interface WidgetData {
   /** Prochains événements du calendrier (fournis par le serveur au démarrage). */
   events?: Array<{ title: string; time: string; color?: string }>;

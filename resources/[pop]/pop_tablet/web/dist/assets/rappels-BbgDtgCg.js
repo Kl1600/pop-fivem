@@ -1,0 +1,1 @@
+import{h as e,n as t}from"./index-BiSf7DzR.js";var n=e();function r(e){return(0,n.jsx)(t,{...e})}export{r as default};

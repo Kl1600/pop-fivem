@@ -1,12 +1,12 @@
 import { createContext, useContext } from 'react';
-import type { Layout, NotifyInput, NuiApi, TFn } from './types';
+import type { Layout, NotifyInput, NuiApi, NuiResult, TFn } from './types';
 
 // Contextes fournis par l'appareil (system/) ou par un futur pop_phone. Les applis ne lisent que ces hooks.
 export const TContext = createContext<TFn>((k) => k);
 export const LayoutContext = createContext<Layout>('regular');
 export const DarkContext = createContext<boolean>(false);
 export const NuiContext = createContext<NuiApi>({
-  call: async () => ({ ok: false, err: 'err_unavailable' }),
+  call: async <T extends NuiResult = NuiResult>() => ({ ok: false, err: 'err_unavailable' }) as T,
   post: async () => null,
 });
 export const NotifyContext = createContext<(n: NotifyInput) => void>(() => {});
@@ -18,3 +18,11 @@ export const useLayout = (): Layout => useContext(LayoutContext);
 export const useDark = (): boolean => useContext(DarkContext);
 export const useNui = (): NuiApi => useContext(NuiContext);
 export const useNotify = (): ((n: NotifyInput) => void) => useContext(NotifyContext);
+
+import type { SettingsApi } from './types';
+export const SettingsContext = createContext<SettingsApi | null>(null);
+export function useSettingsApi(): SettingsApi {
+  const v = useContext(SettingsContext);
+  if (!v) throw new Error('SettingsContext manquant');
+  return v;
+}

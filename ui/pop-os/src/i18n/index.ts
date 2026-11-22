@@ -13,15 +13,12 @@ import ar from './ar';
 export type Table = Record<string, string>;
 
 /** Les 10 langues de la SPEC. fr et en sont complètes ; les 8 autres retombent sur l'anglais clé par clé. */
-export const LANGUAGES = ['en', 'fr', 'es', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 'ar'] as const;
+import { LANGUAGES, LANGUAGE_NAMES } from '../kit';
+export { LANGUAGES, LANGUAGE_NAMES };
 export type Lang = (typeof LANGUAGES)[number];
 
 export const TABLES: Record<Lang, Table> = { en, fr, es, de, it, pt, nl, pl, tr, ar };
 
-/** Nom de chaque langue dans sa propre langue (sélecteur de langue). */
-export const LANGUAGE_NAMES: Record<Lang, string> = {
-  en: 'English', fr: 'Français', es: 'Español', de: 'Deutsch', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', tr: 'Türkçe', ar: 'العربية',
-};
 
 export const RTL_LANGS: ReadonlySet<string> = new Set(['ar']);
 
