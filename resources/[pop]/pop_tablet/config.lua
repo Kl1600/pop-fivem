@@ -109,8 +109,8 @@ Config.Translate = { Url = '', MaxChars = 500, CacheSize = 200, TimeoutSeconds =
 -- Bourse : pas de la simulation en secondes réelles. Elle ne tourne que si une tablette a l'appli ouverte.
 Config.Market = { TickSeconds = 5 }
 
--- Coque d'appareil autour de l'écran : réservée au navigateur de développement. Laisser false en jeu (plein écran).
-Config.Shell = false
+-- Coque d'appareil (bords, boutons marche et volume) autour de l'écran. false = écran seul.
+Config.Shell = true
 
 -- Messages et appels plus vieux que ce nombre de jours sont supprimés au démarrage du serveur (jamais en boucle).
 Config.Retention = { Days = 90 }

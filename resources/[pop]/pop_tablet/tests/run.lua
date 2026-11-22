@@ -1379,7 +1379,7 @@ do
     check('ouverture : message tablet:open (locale, rtl, accent, horloge)', lastMsg().action == 'tablet:open'
         and lastMsg().data.rtl == true and lastMsg().data.accent == Config.AccentColor and lastMsg().data.clock.h == 8
         and lastMsg().data.locale.tablet_key == Locales.ar.tablet_key)
-    check('ouverture : langue, pas de coque, date du jeu envoyée au serveur', lastMsg().data.lang == 'ar' and lastMsg().data.shell == nil
+    check('ouverture : langue, coque selon Config.Shell, date du jeu envoyée au serveur', lastMsg().data.lang == 'ar' and lastMsg().data.shell == (Config.Shell == true or nil)
         and triggered('pop_tablet:device:open').args[2] == '2026-06-14 08:30')
     local wx = lastMsg().data.weather
     check('ouverture : météo {temp, kind, hi, lo, city} depuis les natives', wx and wx.kind == 'rain' and wx.temp == 16 and wx.hi == 21 and wx.lo == 13 and wx.city == 'Los Santos', wx and wx.temp)
