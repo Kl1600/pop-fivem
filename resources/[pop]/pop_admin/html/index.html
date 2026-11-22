@@ -8,26 +8,32 @@
 <body>
     <!-- Menu principal : liste façon GTA, en haut à droite -->
     <div id="menu" class="hidden">
-        <div class="m-head">
-            <span class="m-title">Admin</span>
+        <div class="m-card">
+            <div class="m-head">
+                <div class="m-circle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg>
+                </div>
+                <div class="m-titles">
+                    <span class="m-title" id="m-title">Administration</span>
+                    <span class="m-sub"><span id="m-sub">Menu principal</span> · <span id="m-count">1/1</span></span>
+                </div>
+                <span class="m-online"><span class="m-dot"></span><span id="m-online">0 en ligne</span></span>
+            </div>
+            <div class="m-list" id="m-list"></div>
+            <div class="m-more hidden" id="m-more">▲ ▼</div>
+            <div class="m-progress"><div id="m-progress"></div></div>
         </div>
-        <div class="m-sub">
-            <span id="m-sub">Menu principal</span>
-            <span id="m-count">1/1</span>
-        </div>
-        <div class="m-list" id="m-list"></div>
-        <div class="m-more hidden" id="m-more">▲ ▼</div>
         <div class="m-desc" id="m-desc"></div>
         <div class="m-input hidden" id="m-input">
             <label id="m-input-label">Saisie</label>
             <input id="m-input-field" type="text" autocomplete="off" spellcheck="false">
-            <span class="m-input-hint">[ENTRÉE] Valider · [ÉCHAP] Annuler</span>
+            <span class="m-input-hint"><b>Entrée</b> Valider · <b>Échap</b> Annuler</span>
         </div>
         <div class="m-keys">
             <span><b>↑↓</b> Naviguer</span>
             <span><b>←→</b> Choisir</span>
-            <span><b>ENTRÉE</b> Valider</span>
-            <span><b>RETOUR</b> Retour</span>
+            <span><b>Entrée</b> Valider</span>
+            <span><b>Retour</b> Revenir</span>
         </div>
     </div>
 

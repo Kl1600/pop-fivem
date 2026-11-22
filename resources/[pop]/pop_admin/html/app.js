@@ -33,6 +33,19 @@ function loadPersonas() { try { return JSON.parse(localStorage.getItem('tab_admi
 function savePersonas(a) { try { localStorage.setItem('tab_admin_personas', JSON.stringify(a)); } catch (e) {} }
 
 /* ============== HELPERS D'ITEMS ============== */
+const ICONS = {
+    self: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+    players: '<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7"/><path d="M18 14.6c2.4.6 4 2.4 4 5.4"/>',
+    vehicles: '<path d="M3 13l2-5h14l2 5v5H3z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="16.5" cy="18" r="1.5"/>',
+    items: '<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
+    jobs: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>',
+    world: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 010 18"/><path d="M12 3a14 14 0 000 18"/>',
+    chars: '<circle cx="12" cy="8" r="4"/><path d="M6 21v-2a6 6 0 0112 0v2"/><path d="M19 3l2 2-2 2"/>',
+    tools: '<path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+};
+const iconHtml = (name) => ICONS[name]
+    ? `<span class="m-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg></span>`
+    : '';
 const btn = (label, action, o = {}) => Object.assign({ type: 'button', label, action }, o);
 const sub = (label, to, args, o = {}) => Object.assign({ type: 'sub', label, to, args }, o);
 const sep = (label) => ({ type: 'sep', label });
@@ -65,14 +78,14 @@ const MENUS = {
     root: () => ({
         title: 'Administration', sub: 'Menu principal',
         items: [
-            sub('Personnel', 'self', null, { desc: 'Noclip, godmode, soins, téléportation.' }),
-            sub('Joueurs', 'players', null, { right: String(S.players.length), desc: 'Joueurs connectés et actions.', onEnter: () => post('requestPlayers') }),
-            sub('Véhicules', 'vehicles', null, { desc: 'Apparition, réparation, véhicules persistants.' }),
-            sub('Items', 'items', null, { desc: 'Donner un item à soi ou à un joueur.', onEnter: () => post('requestItems') }),
-            sub('Jobs', 'jobs', null, { desc: 'Jobs, grades et argent des sociétés.', onEnter: () => post('requestJobs') }),
-            sub('Monde', 'world', null, { desc: 'Heure, météo et blackout.' }),
-            sub('Personnages', 'chars', null, { desc: 'Apparences staff, positions et modèles.', onEnter: () => post('charRequest') }),
-            sub('Outils', 'tools', null, { desc: 'Éditeurs et logs de déconnexion.' }),
+            sub('Personnel', 'self', null, { icon: 'self', right: (S.self && S.self.godmode) ? 'Godmode actif' : '', desc: 'Noclip, godmode, invisible, soins, téléportation.' }),
+            sub('Joueurs', 'players', null, { icon: 'players', right: String(S.players.length), desc: 'Joueurs connectés et actions.', onEnter: () => post('requestPlayers') }),
+            sub('Véhicules', 'vehicles', null, { icon: 'vehicles', desc: 'Apparition, réparation, véhicules persistants.' }),
+            sub('Items', 'items', null, { icon: 'items', desc: 'Donner un item à soi ou à un joueur.', onEnter: () => post('requestItems') }),
+            sub('Jobs', 'jobs', null, { icon: 'jobs', desc: 'Jobs, grades et argent des sociétés.', onEnter: () => post('requestJobs') }),
+            sub('Monde', 'world', null, { icon: 'world', right: S.tw ? `${pad(S.tw.hour)}:${pad(S.tw.minute)} · ${S.tw.weather}` : '', desc: 'Heure, météo et blackout.' }),
+            sub('Personnages', 'chars', null, { icon: 'chars', desc: 'Apparences staff, positions et modèles.', onEnter: () => post('charRequest') }),
+            sub('Outils', 'tools', null, { icon: 'tools', desc: 'Éditeurs et logs de déconnexion.' }),
         ],
     }),
 
@@ -442,12 +455,15 @@ function render() {
     const m = build();
     if (!m) return;
     fixIndex(m, c);
-    $('#m-sub').textContent = m.sub ? `${m.title} · ${m.sub}` : m.title;
+    $('#m-title').textContent = m.title;
+    $('#m-sub').textContent = m.sub || '';
+    $('#m-online').textContent = `${S.players.length} en ligne`;
 
     const n = m.items.length;
     const selCount = m.items.filter(selectable).length;
     const pos = m.items.slice(0, c.index + 1).filter(selectable).length;
     $('#m-count').textContent = selCount ? `${pos}/${selCount}` : '0/0';
+    $('#m-progress').style.width = selCount ? `${(pos / selCount) * 100}%` : '0';
 
     let start = 0;
     if (n > MAX_ROWS) start = Math.min(Math.max(0, c.index - Math.floor(MAX_ROWS / 2)), n - MAX_ROWS);
@@ -460,7 +476,7 @@ function render() {
         if (isSel) cls.push('sel');
         if (it.disabled) cls.push('disabled');
         if (it.danger) cls.push('danger');
-        rows.push(`<div class="${cls.join(' ')}"><span class="m-label">${esc(it.label)}</span><span class="m-right">${it.type === 'sep' ? '' : rightHtml(it, isSel)}</span></div>`);
+        rows.push(`<div class="${cls.join(' ')}">${it.type === 'sep' ? '' : iconHtml(it.icon)}<span class="m-label">${esc(it.label)}</span><span class="m-right">${it.type === 'sep' ? '' : rightHtml(it, isSel)}</span></div>`);
     }
     $('#m-list').innerHTML = rows.join('');
     $('#m-more').classList.toggle('hidden', n <= MAX_ROWS);
