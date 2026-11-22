@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Icônes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1240px; height: 760px; display: flex; font-family: Inter, system-ui, sans-serif">
+<section style="width: 620px; box-sizing: border-box; padding: 40px; background: linear-gradient(160deg,#c6d4ff,#f7c3df); color: #000">
+<h2 style="margin: 0 0 26px; font-size: 22px; font-weight: 700">Thème clair</h2>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: 22px">
+<sc-for list="{{apps}}" as="a" hint-placeholder-count="25">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 500">
+<dc-import name="AppIcon" app-id="{{a.id}}" size="64" dark="{{false}}" hint-size="64px,64px"></dc-import>{{a.name}}
+</div>
+</sc-for>
+</div>
+</section>
+<section style="width: 620px; box-sizing: border-box; padding: 40px; background: linear-gradient(160deg,#090b20,#170818); color: #fff">
+<h2 style="margin: 0 0 26px; font-size: 22px; font-weight: 700">Thème sombre</h2>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: 22px">
+<sc-for list="{{apps}}" as="a" hint-placeholder-count="25">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 500">
+<dc-import name="AppIcon" app-id="{{a.id}}" size="64" dark="{{true}}" hint-size="64px,64px"></dc-import>{{a.name}}
+</div>
+</sc-for>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":760}}'>
+class Component extends DCLogic {
+renderVals() {
+const N = [['reglages','Réglages'],['boutique','Boutique'],['camera','Appareil photo'],['photos','Photos'],['notes','Notes'],['calendrier','Calendrier'],['rappels','Rappels'],['fichiers','Fichiers'],['tableau','Tableau'],['horloge','Horloge'],['calculette','Calculette'],['meteo','Météo'],['plans','Plans'],['dictaphone','Dictaphone'],['traduire','Traduire'],['bourse','Bourse'],['messages','Messages'],['mail','Mail'],['contacts','Contacts'],['telephone','Téléphone'],['navigateur','Navigateur'],['musique','Musique'],['police','Police'],['secours','Secours'],['garage','Garage']];
+return { apps: N.map((x) => ({ id: x[0], name: x[1] })) };
+}
+}
+</script>
+</body>
+</html>

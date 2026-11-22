@@ -55,6 +55,7 @@ Config.GroundProps = {
   printer           = 'prop_cs_cardbox_01',
   sim_card          = 'prop_phone_ing',
   tpe               = 'prop_cs_tablet',
+  pop_tablet        = 'prop_cs_tablet',
   pcb               = 'prop_cs_cardbox_01',
   pager             = 'prop_phone_ing',
   retrophone        = 'prop_phone_ing',

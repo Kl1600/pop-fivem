@@ -1,0 +1,101 @@
+import { memo } from 'react';
+
+// Icônes d'applis : portage fidèle de la maquette AppIcon.dc.html (formes vectorielles, aucune image).
+type Shape = { d: string; f: string; s: string; w: number };
+type Txt = { s: string; y: number; size: number; weight: number; f: string };
+type Def = { bg: [string, string]; shapes: Shape[]; texts?: Txt[] };
+
+const C = (cx: number, cy: number, r: number) => `M${cx - r},${cy}a${r},${r} 0 1,0 ${2 * r},0a${r},${r} 0 1,0 ${-2 * r},0Z`;
+const R = (x: number, y: number, w: number, h: number, r: number) =>
+  `M${x + r},${y}h${w - 2 * r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}a${r},${r} 0 0 1 ${-r},${r}h${2 * r - w}a${r},${r} 0 0 1 ${-r},${-r}v${2 * r - h}a${r},${r} 0 0 1 ${r},${-r}Z`;
+const gear = (cx: number, cy: number, ro: number, ri: number, n: number) => {
+  let d = '';
+  for (let i = 0; i < n * 2; i++) {
+    const a0 = (Math.PI * i) / n - Math.PI / (n * 4);
+    const a1 = (Math.PI * i) / n + Math.PI / (n * 4);
+    const r = i % 2 ? ri : ro;
+    d += `${i ? 'L' : 'M'}${(cx + r * Math.cos(a0)).toFixed(1)},${(cy + r * Math.sin(a0)).toFixed(1)}L${(cx + r * Math.cos(a1)).toFixed(1)},${(cy + r * Math.sin(a1)).toFixed(1)}`;
+  }
+  return d + 'Z' + C(cx, cy, ri * 0.42);
+};
+const W = 'W';
+const f = (d: string, fill: string): Shape => ({ d, f: fill, s: 'none', w: 0 });
+const st = (d: string, color: string, w: number): Shape => ({ d, f: 'none', s: color, w });
+const bars = [[18, 20], [26, 36], [34, 52], [42, 30], [50, 60], [58, 40], [66, 50], [74, 26], [82, 16]].map((b) => f(R(b[0]! - 2.5, 50 - b[1]! / 2, 5, b[1]!, 2.5), '#ff383c'));
+
+const ICONS: Record<string, Def> = {
+  reglages: { bg: ['#a3a3aa', '#636369'], shapes: [f(gear(50, 50, 33, 26, 12), '#e5e5ea'), f(C(50, 50, 18), '#8e8e93'), f(gear(50, 50, 15, 11, 8), '#d1d1d6')] },
+  boutique: { bg: ['#ff6aae', '#ff2e88'], shapes: [f(R(26, 38, 48, 40, 8), W), f('M38 40v-6a12 12 0 0 1 24 0v6h-6v-6a6 6 0 0 0-12 0v6z', W), f(C(40, 52, 3.5), '#ff2e88'), f(C(60, 52, 3.5), '#ff2e88')] },
+  camera: { bg: ['#d8d8dc', '#9a9aa0'], shapes: [f(R(16, 32, 68, 46, 10), '#2c2c2e'), f(R(38, 24, 24, 12, 4), '#2c2c2e'), f(C(50, 55, 15), '#48484a'), f(C(50, 55, 10), '#1c1c1e'), f(C(46, 51, 3), '#8e8ef0'), f(C(73, 41, 3), '#ffd60a')] },
+  photos: { bg: ['#ffffff', '#f2f2f7'], shapes: [f(R(18, 26, 52, 44, 8), '#ff9f43'), f(R(30, 32, 52, 44, 8), '#0088ff'), f(R(34, 36, 44, 30, 5), '#bfe3ff'), f('M34 62l13-14 9 9 7-6 15 13v2H34z', '#34c759'), f(C(68, 44, 5), '#ffd60a')] },
+  notes: { bg: ['#ffffff', '#f4f4f4'], shapes: [f('M0 0h100v28H0z', '#ffd60a'), f(R(14, 42, 72, 3, 1.5), '#d1d1d6'), f(R(14, 54, 72, 3, 1.5), '#d1d1d6'), f(R(14, 66, 72, 3, 1.5), '#d1d1d6'), f(R(14, 78, 50, 3, 1.5), '#d1d1d6')] },
+  calendrier: { bg: ['#ffffff', '#f4f4f4'], shapes: [], texts: [{ s: 'DIM.', y: 30, size: 16, weight: 700, f: '#ff383c' }, { s: '22', y: 79, size: 52, weight: 300, f: '#1c1c1e' }] },
+  rappels: { bg: ['#ffffff', '#f4f4f4'], shapes: [f(C(26, 30, 7), '#0088ff'), f(C(26, 50, 7), '#ff383c'), f(C(26, 70, 7), '#ff8d28'), f(R(40, 28, 42, 4, 2), '#c7c7cc'), f(R(40, 48, 42, 4, 2), '#c7c7cc'), f(R(40, 68, 42, 4, 2), '#c7c7cc')] },
+  fichiers: { bg: ['#ffffff', '#f4f4f4'], shapes: [f('M16 32a6 6 0 0 1 6-6h17l6 7h33a6 6 0 0 1 6 6v35a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6z', '#1a8cff'), f(R(16, 40, 68, 40, 6), '#52aaff')] },
+  tableau: { bg: ['#ffffff', '#f4f4f4'], shapes: [f(R(18, 20, 20, 20, 5), '#ffcc00'), f(C(72, 30, 10), '#34c759'), st('M18 72c10-22 20-22 26 0s16 22 24 0 8-12 14-14', '#0088ff', 7)] },
+  horloge: { bg: ['#3a3a3c', '#0a0a0a'], shapes: [f(C(50, 50, 36), '#ffffff'), st('M50 50V27', '#1c1c1e', 5), st('M50 50l17 10', '#1c1c1e', 4), st('M50 60V22', '#ff8d28', 1.6), f(C(50, 50, 3), '#ff8d28')] },
+  calculette: { bg: ['#48484a', '#1c1c1e'], shapes: [f(C(32, 32, 12), '#a5a5aa'), f(C(68, 32, 12), '#ff9f0a'), f(C(32, 68, 12), '#636366'), f(C(68, 68, 12), '#ff9f0a'), st('M63 68h10M68 63v10', '#fff', 3), st('M63 30h10M63 35h10', '#fff', 3)] },
+  meteo: { bg: ['#5aaeff', '#1d6fe0'], shapes: [f(C(40, 40, 15), '#ffd60a'), f('M30 74a12 12 0 0 1 1-24 16 16 0 0 1 31-3 12 12 0 0 1 8 27z', W)] },
+  plans: { bg: ['#e3f6dc', '#bfe8b2'], shapes: [st('M-5 72L105 38', '#ffffff', 13), st('M34 -5L58 105', '#ffd60a', 8), f('M64 20a13 13 0 0 1 13 13c0 10-13 22-13 22S51 43 51 33a13 13 0 0 1 13-13z', '#ff383c'), f(C(64, 33, 4.5), '#ffffff')] },
+  dictaphone: { bg: ['#3a3a3c', '#0a0a0a'], shapes: bars },
+  traduire: { bg: ['#2f8cff', '#0040dd'], shapes: [f(R(12, 20, 46, 36, 10), W), f(R(42, 46, 46, 36, 10), '#1c1c1e')], texts: [{ s: 'A', y: 47, size: 26, weight: 700, f: '#0a62f0' }, { s: '文', y: 73, size: 24, weight: 600, f: '#ffffff' }] },
+  bourse: { bg: ['#2c2c2e', '#000000'], shapes: [st('M12 70L30 54l15 8 17-24 14 6 12-18', '#30d158', 6), st('M12 82h76', '#3a3a3c', 2)] },
+  messages: { bg: ['#6cf58a', '#14c43c'], shapes: [f('M50 22c19 0 33 11.6 33 26S69 74 50 74c-4 0-7.8-.5-11.3-1.5L23 79l4.8-12.4C21.6 61.7 17 55.2 17 48c0-14.4 14-26 33-26z', W)] },
+  mail: { bg: ['#55b6ff', '#0a6cff'], shapes: [f(R(16, 28, 68, 46, 7), W), st('M19 32l31 22 31-22', '#0a6cff', 4)] },
+  contacts: { bg: ['#d8d8de', '#9b9ba4'], shapes: [f(C(50, 40, 14), W), f('M24 80c0-15 11.6-24 26-24s26 9 26 24z', W)] },
+  telephone: { bg: ['#6cf58a', '#14c43c'], shapes: [f('M34 21c3 0 5 2 6 5l3 9c1 3 0 5-2 7l-5 4c4 8 10 14 18 18l4-5c2-2 4-3 7-2l9 3c3 1 5 3 5 6v8c0 4-3 7-7 7C46 81 19 54 19 28c0-4 3-7 7-7z', W)] },
+  navigateur: { bg: ['#ffffff', '#eef2f7'], shapes: [f(C(50, 50, 32), '#1a8cff'), st('M50 18c-10 9-14 20-14 32s4 23 14 32M50 18c10 9 14 20 14 32s-4 23-14 32M18 50h64M23 34h54M23 66h54', '#ffffff', 3)] },
+  musique: { bg: ['#ff7a59', '#e5266f'], shapes: [f('M42 26l32-8v42a9.5 9.5 0 1 1-6-8.8V31l-20 5v31a9.5 9.5 0 1 1-6-8.8z', W)] },
+  police: { bg: ['#3a7bff', '#1a3fb8'], shapes: [f('M50 16l29 10v21c0 19-12 31-29 37-17-6-29-18-29-37V26z', W), f('M50 34l4.7 9.6 10.5 1.5-7.6 7.4 1.8 10.5L50 58l-9.4 5 1.8-10.5-7.6-7.4 10.5-1.5z', '#2a5fe0')] },
+  secours: { bg: ['#ff5a5a', '#d70015'], shapes: [f('M41 18h18v23h23v18H59v23H41V59H18V41h23z', W)] },
+  garage: { bg: ['#ffae3d', '#e8590c'], shapes: [st('M28 72l30-30', W, 11), f(C(64, 36, 15), W), f(C(70, 30, 6), '#f27a1a')] },
+};
+
+export const ICON_IDS = Object.keys(ICONS);
+
+interface Props {
+  appId: string;
+  size?: number;
+  dark?: boolean;
+  /** Libellé accessible (l'icône est décorative sans lui). */
+  label?: string;
+}
+
+const CUSTOM = new Map<string, Def>();
+
+/** Icône générique d'une appli d'une autre ressource : pastille de couleur et première lettre du nom. */
+export function setCustomIcon(id: string, name: string, color?: string): void {
+  const c = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#5e5ce6';
+  CUSTOM.set(id, { bg: [c, c], shapes: [], texts: [{ s: (name.trim()[0] ?? '?').toUpperCase(), y: 68, size: 56, weight: 700, f: 'W' }] });
+}
+
+export const AppIcon = memo(function AppIcon({ appId, size = 120, dark = false, label }: Props) {
+  const def = ICONS[appId] ?? CUSTOM.get(appId) ?? ICONS.reglages!;
+  const tint = def.bg[1];
+  const whiteTile = def.bg[0] === '#ffffff';
+  const bg = dark ? 'linear-gradient(180deg,#3a3a3e,#1c1c1f)' : `linear-gradient(180deg,${def.bg[0]},${def.bg[1]})`;
+  const map = (c: string) => (c === 'W' ? (dark ? (whiteTile ? '#ffffff' : tint) : '#ffffff') : c);
+  const rad = `${(size * 0.225).toFixed(1)}px`;
+  const shadow = size > 50 ? `0 ${(size * 0.04).toFixed(1)}px ${(size * 0.12).toFixed(1)}px rgba(0,0,0,.22)` : '0 1px 3px rgba(0,0,0,.2)';
+  return (
+    <span
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+      style={{ position: 'relative', display: 'block', width: size, height: size, borderRadius: rad, overflow: 'hidden', background: bg, boxShadow: shadow, flexShrink: 0 }}
+    >
+      <svg aria-hidden="true" viewBox="0 0 100 100" width="100%" height="100%" style={{ position: 'absolute', inset: 0, display: 'block' }}>
+        {def.shapes.map((p, i) => (
+          <path key={i} d={p.d} fill={map(p.f)} stroke={map(p.s)} strokeWidth={p.w} strokeLinecap="round" strokeLinejoin="round" fillRule="evenodd" />
+        ))}
+        {(def.texts ?? []).map((tx, i) => (
+          <text key={`t${i}`} x="50" y={tx.y} fontSize={tx.size} fontWeight={tx.weight} fill={dark && tx.f === '#1c1c1e' ? '#ffffff' : map(tx.f)} textAnchor="middle" fontFamily="Inter, system-ui, sans-serif">
+            {tx.s}
+          </text>
+        ))}
+      </svg>
+      <span aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: rad, background: 'linear-gradient(180deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 46%)', pointerEvents: 'none' }} />
+      <span aria-hidden="true" style={{ position: 'absolute', inset: 0, borderRadius: rad, boxShadow: 'inset 0 1.5px 1px rgba(255,255,255,.65), inset 0 -1px 1.5px rgba(0,0,0,.14), inset 0 0 0 .5px rgba(255,255,255,.25)', pointerEvents: 'none' }} />
+    </span>
+  );
+});

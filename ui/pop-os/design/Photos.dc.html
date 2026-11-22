@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Photos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.cell}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Photos" style="width: 300px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 14px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 10px 14px">Photos</span>
+<sc-for list="{{side}}" as="g" hint-placeholder-count="3">
+<span style="font-size: 13px; font-weight: 600; color: {{c.sub}}; padding: 14px 10px 4px; text-transform: uppercase">{{g.head}}</span>
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+<button onClick="{{it.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 10px; border-radius: 10px; background: {{it.bg}}; color: {{it.fg}}">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{it.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"/></svg>
+<span style="flex-grow: 1; font-size: 17px">{{it.name}}</span>
+<span style="font-size: 15px; color: {{it.sub}}">{{it.n}}</span>
+</button>
+</sc-for>
+</sc-for>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; overflow-y: auto; position: relative">
+<div style="position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 40px 28px 14px; background: linear-gradient(180deg,{{c.cell}} 70%, transparent)">
+<span style="font-size: 34px; font-weight: 700">{{title}}</span>
+<sc-if value="{{showSeg}}" hint-placeholder-val="{{true}}">
+<div class="{{c.glass}}" style="display: flex; padding: 3px; border-radius: 20px; gap: 2px">
+<sc-for list="{{segs}}" as="sg" hint-placeholder-count="3">
+<button onClick="{{sg.go}}" style="all: unset; cursor: pointer; height: 34px; padding: 0 20px; border-radius: 17px; font-size: 15px; font-weight: 600; background: {{sg.bg}}; color: {{sg.fg}}; transition: background .2s">{{sg.name}}</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{is.years}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 4px 28px 40px">
+<sc-for list="{{years}}" as="y" hint-placeholder-count="3">
+<button onClick="{{y.go}}" style="all: unset; cursor: pointer; height: 250px; border-radius: 22px; background: {{y.bg}}; display: flex; align-items: flex-end; padding: 22px; box-sizing: border-box; color: #fff"><span style="display: flex; flex-direction: column"><span style="font-size: 40px; font-weight: 800">{{y.year}}</span><span style="font-size: 16px; opacity: .9">{{y.n}} éléments</span></span></button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{is.months}}" hint-placeholder-val="{{false}}">
+<div style="padding: 4px 28px 40px">
+<sc-for list="{{monthGroups}}" as="mg" hint-placeholder-count="2">
+<span style="display: block; font-size: 22px; font-weight: 700; padding: 14px 0 10px">{{mg.name}}</span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{mg.items}}" as="p" hint-placeholder-count="4">
+<button onClick="{{p.open}}" aria-label="Photo {{p.id}}" style="all: unset; cursor: pointer; aspect-ratio: 4 / 3; border-radius: 12px; background: {{p.bg}}; position: relative"><span style="position: absolute; left: 8px; bottom: 6px; color: #fff; font-size: 14px">{{p.heart}}</span></button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{is.grid}}" hint-placeholder-val="{{true}}">
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; padding: 4px 0 40px">
+<sc-for list="{{shown}}" as="p" hint-placeholder-count="12">
+<button onClick="{{p.open}}" aria-label="Photo {{p.id}}" style="all: unset; cursor: pointer; aspect-ratio: 1 / 1; background: {{p.bg}}; position: relative"><span style="position: absolute; left: 8px; bottom: 6px; color: #fff; font-size: 14px">{{p.heart}}</span></button>
+</sc-for>
+</div>
+<sc-if value="{{emptyShown}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 120px 0; font-size: 20px; color: {{c.sub}}">{{emptyText}}</span></sc-if>
+</sc-if>
+
+<sc-if value="{{is.cards}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 4px 28px 40px">
+<sc-for list="{{cards}}" as="k" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; gap: 8px; align-items: {{k.align}}">
+<span style="width: {{k.w}}; height: {{k.h}}; border-radius: {{k.rad}}; background: {{k.bg}}"></span>
+<span style="font-size: 17px; font-weight: 600">{{k.name}}</span><span style="font-size: 14px; color: {{c.sub}}; margin-top: -6px">{{k.sub}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</main>
+
+<sc-if value="{{viewer}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: #000; display: flex; color: #fff">
+<div style="flex-grow: 1; position: relative; display: flex; align-items: center; justify-content: center">
+<span style="width: {{cur.w}}; height: 700px; border-radius: 14px; background: {{cur.bg}}; filter: {{cur.filter}}; transition: filter .3s"></span>
+<div class="glass dk" style="position: absolute; top: 28px; left: 28px; right: 28px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-sizing: border-box">
+<button onClick="{{closeViewer}}" style="all: unset; cursor: pointer; font-size: 17px; font-weight: 600; color: #4aa8ff">‹ Photothèque</button>
+<span style="font-size: 16px; font-weight: 600">{{cur.date}}</span>
+<span style="display: flex; gap: 6px"><button onClick="{{prev}}" aria-label="Précédente" style="all: unset; cursor: pointer; width: 36px; text-align: center; font-size: 24px">‹</button><button onClick="{{next}}" aria-label="Suivante" style="all: unset; cursor: pointer; width: 36px; text-align: center; font-size: 24px">›</button></span>
+</div>
+<div style="position: absolute; bottom: 120px; display: flex; gap: 6px">
+<sc-for list="{{stars}}" as="st" hint-placeholder-count="5">
+<button onClick="{{st.go}}" aria-label="{{st.n}} étoiles" style="all: unset; cursor: pointer"><svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="{{st.fill}}" stroke="{{st.stroke}}" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 17l-5.6 3 1.3-6.2L3 9.5l6.3-.7z"/></svg></button>
+</sc-for>
+</div>
+<div class="glass dk" style="position: absolute; bottom: 28px; height: 60px; border-radius: 30px; display: flex; align-items: center; gap: 10px; padding: 0 22px">
+<sc-for list="{{tools}}" as="t" hint-placeholder-count="5">
+<button onClick="{{t.go}}" aria-label="{{t.label}}" style="all: unset; cursor: pointer; width: 48px; height: 48px; border-radius: 24px; display: flex; align-items: center; justify-content: center; background: {{t.bg}}"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="{{t.fill}}" stroke="{{t.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"/></svg></button>
+</sc-for>
+</div>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><span class="glass dk" style="position: absolute; top: 100px; padding: 8px 18px; border-radius: 18px; font-size: 15px">{{toast}}</span></sc-if>
+</div>
+<sc-if value="{{showInfo}}" hint-placeholder-val="{{false}}">
+<div style="width: 320px; flex-shrink: 0; background: #1c1c1e; padding: 40px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 22px; font-weight: 700">Informations</span>
+<sc-for list="{{infos}}" as="i" hint-placeholder-count="5"><div style="display: flex; justify-content: space-between; font-size: 16px; border-bottom: 1px solid rgba(84,84,88,.6); padding-bottom: 10px"><span style="color: rgba(235,235,245,.6)">{{i.k}}</span><span>{{i.v}}</span></div></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{showEdit}}" hint-placeholder-val="{{false}}">
+<div style="width: 320px; flex-shrink: 0; background: #1c1c1e; padding: 40px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+<span style="font-size: 22px; font-weight: 700">Modifier</span>
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><button onClick="{{f.go}}" style="all: unset; cursor: pointer; height: 44px; border-radius: 12px; padding: 0 16px; display: flex; align-items: center; font-size: 17px; background: {{f.bg}}">{{f.name}}</button></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const photos = [];
+const months = [['Novembre 2026', 2026, 11], ['Octobre 2026', 2026, 10], ['Septembre 2026', 2026, 9], ['Août 2025', 2025, 8], ['Juin 2025', 2025, 6], ['Mars 2024', 2024, 3]];
+let id = 0;
+months.forEach((m, mi) => { for (let k = 0; k < 8; k++) { id++; photos.push({ id, month: m[0], year: m[1], hue: (id * 37) % 360, fav: id % 7 === 0, rating: id % 5 === 0 ? 4 : 0, mine: id % 3 !== 0, del: id === 5 || id === 22, filter: 'none', day: 1 + ((id * 5) % 27) }); } });
+this.state = { dark: !!props.dark, sel: 'lib', seg: 'all', photos, open: null, info: false, edit: false, toast: '' };
+this.tt = null;
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+componentWillUnmount() { clearTimeout(this.tt); }
+setP(id, patch) { this.setState({ photos: this.state.photos.map((p) => (p.id === id ? { ...p, ...patch } : p)) }); }
+note(t) { this.setState({ toast: t }); clearTimeout(this.tt); this.tt = setTimeout(() => this.setState({ toast: '' }), 1600); }
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { side: '#000000', cell: '#000000', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#2c2c2e', glass: 'glass dk', hi: '#2c2c2e' }
+: { side: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass', hi: '#e3e3e8' };
+const bgOf = (p, w) => 'radial-gradient(60% 50% at ' + ((p.id * 13) % 70 + 15) + '% ' + ((p.id * 29) % 40 + 55) + '%, hsl(' + ((p.hue + 50) % 360) + ',85%,65%) 0%, transparent 70%), linear-gradient(' + ((p.id * 40) % 360) + 'deg, hsl(' + p.hue + ',70%,52%), hsl(' + ((p.hue + 60) % 360) + ',65%,28%))';
+const live = s.photos.filter((p) => !p.del);
+const scope = s.sel === 'trash' ? s.photos.filter((p) => p.del) : s.sel === 'mine' ? live.filter((p) => p.mine) : s.sel === 'fav' ? live.filter((p) => p.fav) : live;
+const V = (p) => ({ id: p.id, bg: bgOf(p), heart: p.fav ? '♥' : '', open: () => this.setState({ open: p.id, info: false, edit: false }) });
+const side = [
+{ head: '', items: [['lib', 'Photothèque', 'M3 5h18v14H3zM3 16l6-6 5 5 3-3 4 4', '#0088ff', live.length], ['coll', 'Collections', 'M4 5h16v14H4zM8 5v14M16 5v14', '#ff8d28', '']] },
+{ head: 'Albums', items: [['albums', 'Tous les albums', 'M5 4h14v16H5zM9 4v16', '#0088ff', ''], ['fav', 'Favoris', 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.500-7 10-7 10z', '#ff2d55', live.filter((p) => p.fav).length], ['people', 'Personnes', 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 20c0-4 4-6 8-6s8 2 8 6', '#8e8e93', ''], ['memories', 'Souvenirs', 'M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2', '#cb30e0', '']] },
+{ head: 'Utilitaires', items: [['mine', 'Pris par moi', 'M4 8h4l2-3h4l2 3h4v11H4zM12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', '#34c759', live.filter((p) => p.mine).length], ['trash', 'Récemment supprimés', 'M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13', '#ff383c', s.photos.filter((p) => p.del).length]] }
+].map((g) => ({ head: g.head, items: g.items.map((x) => ({ name: x[1], d: x[2], color: s.sel === x[0] ? '#fff' : x[3], n: x[4], bg: s.sel === x[0] ? '#0088ff' : 'transparent', fg: s.sel === x[0] ? '#fff' : c.fg, sub: s.sel === x[0] ? 'rgba(255,255,255,.8)' : c.sub, go: () => this.setState({ sel: x[0], open: null }) })) }));
+const titles = { lib: 'Photothèque', coll: 'Collections', albums: 'Albums', fav: 'Favoris', people: 'Personnes', memories: 'Souvenirs', mine: 'Pris par moi', trash: 'Récemment supprimés' };
+const photoSec = ['lib', 'fav', 'mine', 'trash'].indexOf(s.sel) >= 0;
+const hue = (h, h2) => 'linear-gradient(150deg,hsl(' + h + ',70%,55%),hsl(' + h2 + ',65%,30%))';
+const cardsFor = { coll: [['Ce mois-ci', 'Novembre 2026', 210], ['Patrouilles', '42 éléments', 20], ['Véhicules', '31 éléments', 20], ['Sandy Shores', '18 éléments', 40], ['Couchers de soleil', '27 éléments', 20], ['Vinewood', '15 éléments', 280]], albums: [['Poste de police', '64', 220], ['Garage', '38', 25], ['Paleto Bay', '21', 160], ['Soirées', '47', 300], ['Captures', '112', 200], ['Voyages', '29', 340]], memories: [['Un été à Del Perro', 'Été 2026', 35], ['Nuits de Vinewood', 'Octobre 2026', 280], ['Retour à Paleto', 'Août 2025', 150]], people: [['Sam Leroy', '24 photos', 200], ['Lina Costa', '18 photos', 330], ['Noah Petit', '31 photos', 90], ['Jade Moreau', '12 photos', 260]] };
+const isPeople = s.sel === 'people';
+const cards = (cardsFor[s.sel] || []).map((k) => ({ name: k[0], sub: k[1], bg: hue(k[2], k[2] + 50), w: isPeople ? '150px' : '100%', h: isPeople ? '150px' : '190px', rad: isPeople ? '50%' : '18px', align: isPeople ? 'center' : 'stretch' }));
+const monthNames = []; const groups = {};
+scope.forEach((p) => { if (!groups[p.month]) { groups[p.month] = []; monthNames.push(p.month); } groups[p.month].push(V(p)); });
+const years = [2026, 2025, 2024].map((y) => { const ps = scope.filter((p) => p.year === y); return { year: y, n: ps.length, bg: ps.length ? bgOf(ps[0]) : hue(220, 250), go: () => this.setState({ seg: 'months' }) }; });
+const segs = [['years', 'Années'], ['months', 'Mois'], ['all', 'Tout']].map((x) => ({ name: x[1], bg: s.seg === x[0] ? '#0088ff' : 'transparent', fg: s.seg === x[0] ? '#fff' : c.fg, go: () => this.setState({ seg: x[0] }) }));
+const curP = s.photos.find((p) => p.id === s.open);
+const cur = curP ? { bg: bgOf(curP), w: '900px', filter: curP.filter, date: curP.day + ' ' + curP.month.split(' ')[0].toLowerCase() + ' ' + curP.year } : {};
+const move = (d) => { const ids = scope.map((p) => p.id); const i = ids.indexOf(s.open); if (ids.length) this.setState({ open: ids[(i + d + ids.length) % ids.length] }); };
+const tool = (label, d, color, go, active, fill) => ({ label, d, color, go, bg: active ? 'rgba(255,255,255,.18)' : 'transparent', fill: fill || 'none' });
+const tools = curP ? [
+tool('Partager', 'M12 3v12M8 7l4-4 4 4M5 12v8h14v-8', '#fff', () => this.note('Lien de partage copié'), false),
+tool('Favori', 'M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.500A4 4 0 0 1 19 10c0 5.500-7 10-7 10z', curP.fav ? '#ff2d55' : '#fff', () => this.setP(curP.id, { fav: !curP.fav }), false, curP.fav ? '#ff2d55' : 'none'),
+tool('Informations', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.500v.1', '#fff', () => this.setState({ info: !s.info, edit: false }), s.info),
+tool('Supprimer', 'M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13', '#ff6b6b', () => { this.setP(curP.id, { del: true }); this.setState({ open: null }); }, false),
+tool('Modifier', 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4', '#fff', () => this.setState({ edit: !s.edit, info: false }), s.edit)
+] : [];
+const fl = [['Original', 'none'], ['Vif', 'saturate(1.6)'], ['Noir et blanc', 'grayscale(1)'], ['Dramatique', 'contrast(1.4) saturate(1.2)'], ['Ancien', 'sepia(.8)']];
+const rate = curP ? curP.rating : 0;
+return {
+c, dark, side, title: titles[s.sel], showSeg: photoSec, segs, years, cards,
+is: { years: photoSec && s.seg === 'years', months: photoSec && s.seg === 'months', grid: photoSec && s.seg === 'all', cards: !photoSec },
+monthGroups: monthNames.map((n) => ({ name: n, items: groups[n] })),
+shown: scope.map(V), emptyShown: !scope.length, emptyText: 'Aucune photo ici pour le moment.',
+viewer: !!curP, cur, closeViewer: () => this.setState({ open: null }), prev: () => move(-1), next: () => move(1), tools, toast: s.toast,
+stars: [1, 2, 3, 4, 5].map((n) => ({ n, fill: n <= rate ? '#ffcc00' : 'none', stroke: n <= rate ? '#ffcc00' : 'rgba(255,255,255,.7)', go: () => this.setP(curP.id, { rating: rate === n ? 0 : n }) })),
+showInfo: s.info && !!curP, showEdit: s.edit && !!curP,
+infos: curP ? [{ k: 'Date', v: cur.date }, { k: 'Lieu', v: 'Los Santos' }, { k: 'Appareil', v: 'POP Tab Pro 13"' }, { k: 'Taille', v: '4032 × 3024' }, { k: 'Note', v: rate ? rate + ' / 5' : 'Aucune' }] : [],
+filters: fl.map((f) => ({ name: f[0], bg: curP && curP.filter === f[1] ? '#0088ff' : '#2c2c2e', go: () => this.setP(curP.id, { filter: f[1] }) }))
+};
+}
+}
+</script>
+</body>
+</html>

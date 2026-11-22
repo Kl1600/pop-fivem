@@ -9,6 +9,7 @@ allow_defined_top = true
 
 globals = {
     'Config', 'Locales', 'L', 'GetLocaleTable', 'Bridge', 'Callback', 'GlobalState',
+    'Tablet', -- espace de noms de pop_tablet (shared/tablet.lua, server/*.lua, client/*.lua)
 }
 
 read_globals = {

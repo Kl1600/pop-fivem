@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Traduire</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Traduire" style="width: 280px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 14px 20px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 10px 14px">Traduire</span>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="3">
+<button onClick="{{n.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 10px; border-radius: 10px; background: {{n.bg}}; color: {{n.fg}}">
+<span style="width: 30px; height: 30px; border-radius: 8px; background: {{n.col}}; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"/></svg></span>
+<span style="flex-grow: 1; font-size: 17px">{{n.label}}</span><span style="font-size: 16px; color: {{n.sub}}">{{n.n}}</span>
+</button>
+</sc-for>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; position: relative; display: flex; flex-direction: column; padding: 46px 36px 28px; box-sizing: border-box; gap: 18px">
+<sc-if value="{{showLangs}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 12px; position: relative; z-index: 3">
+<button onClick="{{openSrc}}" aria-label="Langue source" class="{{c.glass}}" style="all: unset; cursor: pointer; flex: 1; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 19px; font-weight: 700; color: #0088ff">{{srcName}}<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+<button onClick="{{swap}}" aria-label="Inverser les langues" class="{{c.glass}}" style="all: unset; cursor: pointer; width: 56px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; color: {{c.fg}}"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h15l-4-4M20 16H5l4 4"/></svg></button>
+<button onClick="{{openDst}}" aria-label="Langue cible" class="{{c.glass}}" style="all: unset; cursor: pointer; flex: 1; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 19px; font-weight: 700; color: #0088ff">{{dstName}}<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{picker}}" hint-placeholder-val="{{false}}">
+<div class="{{c.glass}}" style="position: absolute; top: 66px; left: {{pickLeft}}px; width: 360px; border-radius: 24px; padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px">
+<sc-for list="{{langs}}" as="l" hint-placeholder-count="10"><button onClick="{{l.go}}" style="all: unset; cursor: pointer; height: 42px; padding: 0 14px; border-radius: 14px; display: flex; align-items: center; justify-content: space-between; font-size: 17px; font-weight: 600; background: {{l.bg}}; color: {{l.fg}}">{{l.name}}<span style="opacity: {{l.on}}">✓</span></button></sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isText}}" hint-placeholder-val="{{true}}">
+<div style="flex-grow: 1; display: flex; gap: 18px; min-height: 0">
+<section aria-label="Texte source" style="flex: 1; border-radius: 28px; background: {{c.cell}}; padding: 22px 26px; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 14px; font-weight: 600; color: {{c.sub}}">{{srcName}}</span>
+<button onClick="{{clear}}" aria-label="Effacer" style="all: unset; cursor: pointer; width: 30px; height: 30px; border-radius: 15px; background: {{c.fill}}; display: flex; align-items: center; justify-content: center; color: {{c.sub}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<textarea aria-label="Texte à traduire" placeholder="Saisissez un texte" onInput="{{onText}}" dir="{{srcDir}}" style="all: unset; flex-grow: 1; font-size: 32px; line-height: 1.3; font-weight: 500; color: {{c.fg}}; white-space: pre-wrap">{{text}}</textarea>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px">
+<sc-for list="{{suggest}}" as="s" hint-placeholder-count="3"><button onClick="{{s.go}}" style="all: unset; cursor: pointer; padding: 8px 14px; border-radius: 18px; background: {{c.fill}}; font-size: 15px; color: {{c.fg}}">{{s.t}}</button></sc-for>
+</div>
+</section>
+<section aria-label="Traduction" style="flex: 1; border-radius: 28px; background: {{c.cell}}; padding: 22px 26px; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+<span style="font-size: 14px; font-weight: 600; color: {{c.sub}}">{{dstName}}</span>
+<span dir="{{dstDir}}" style="flex-grow: 1; font-size: 32px; line-height: 1.3; font-weight: 500; color: #0088ff; white-space: pre-wrap">{{out}}</span>
+<sc-if value="{{noMatch}}" hint-placeholder-val="{{false}}"><span style="font-size: 15px; color: {{c.sub}}">Pas de traduction hors connexion pour cette phrase. Essayez une suggestion ou une phrase du quotidien.</span></sc-if>
+<div style="display: flex; gap: 10px; justify-content: flex-end">
+<button onClick="{{copy}}" aria-label="Copier la traduction" style="all: unset; cursor: pointer; height: 40px; padding: 0 16px; border-radius: 20px; background: {{c.fill}}; display: flex; align-items: center; font-size: 15px; font-weight: 600; color: {{c.fg}}">{{copyLabel}}</button>
+<button onClick="{{toggleFav}}" aria-label="Ajouter aux favoris" style="all: unset; cursor: pointer; width: 40px; height: 40px; border-radius: 20px; background: {{c.fill}}; display: flex; align-items: center; justify-content: center; color: #ff8d28"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="{{starFill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.700 5.600 6.100.8-4.500 4.200 1.100 6.100L12 16.800 6.600 19.700l1.100-6.100L3.200 9.400l6.100-.8z"/></svg></button>
+</div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{isConv}}" hint-placeholder-val="{{false}}">
+<div style="flex-grow: 1; overflow-y: auto; border-radius: 28px; background: {{c.cell}}; padding: 26px; display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{bubbles}}" as="b" hint-placeholder-count="4">
+<div style="display: flex; justify-content: {{b.just}}">
+<div style="max-width: 520px; padding: 14px 20px; border-radius: 24px; background: {{b.bg}}; color: {{b.fg}}; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; opacity: .75; font-weight: 600">{{b.lang}}</span>
+<span dir="{{b.dir}}" style="font-size: 22px; font-weight: 600">{{b.text}}</span>
+<span dir="{{b.odir}}" style="font-size: 18px; color: {{b.outCol}}">{{b.out}}</span>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{noBubbles}}" hint-placeholder-val="{{false}}"><span style="text-align: center; padding: 80px 10px; color: {{c.sub}}; font-size: 17px">Écrivez une phrase puis choisissez qui parle.</span></sc-if>
+</div>
+<div style="display: flex; gap: 10px; align-items: center">
+<input aria-label="Message" placeholder="Écrire un message" value="{{draft}}" onInput="{{onDraft}}" style="all: unset; flex: 1; height: 56px; padding: 0 22px; border-radius: 28px; background: {{c.cell}}; font-size: 18px; color: {{c.fg}}">
+<button onClick="{{sendA}}" style="all: unset; cursor: pointer; height: 56px; padding: 0 22px; border-radius: 28px; background: #0088ff; color: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center">{{srcName}}</button>
+<button onClick="{{sendB}}" style="all: unset; cursor: pointer; height: 56px; padding: 0 22px; border-radius: 28px; background: #34c759; color: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center">{{dstName}}</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isFav}}" hint-placeholder-val="{{false}}">
+<span style="font-size: 34px; font-weight: 700">Favoris</span>
+<div style="flex-grow: 1; overflow-y: auto; border-radius: 22px; background: {{c.cell}}; align-self: stretch">
+<sc-for list="{{favRows}}" as="f" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-bottom: 1px solid {{c.sep}}">
+<button onClick="{{f.open}}" style="all: unset; cursor: pointer; flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: {{c.sub}}">{{f.pair}}</span><span style="font-size: 20px; font-weight: 600">{{f.s}}</span><span style="font-size: 19px; color: #0088ff">{{f.t}}</span></button>
+<button onClick="{{f.remove}}" aria-label="Retirer des favoris" style="all: unset; cursor: pointer; width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; color: #ff8d28"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.700 5.600 6.100.8-4.500 4.200 1.100 6.100L12 16.800 6.600 19.700l1.100-6.100L3.200 9.400l6.100-.8z"/></svg></button>
+</div>
+</sc-for>
+<sc-if value="{{noFavs}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 80px 10px; color: {{c.sub}}; font-size: 17px">Aucun favori. Touchez l’étoile d’une traduction.</span></sc-if>
+</div>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { dark: !!props.dark, mode: 'text', src: 'fr', dst: 'en', text: 'Où est le poste de police ?', picker: null, favs: [{ src: 'fr', dst: 'en', s: 'Combien ça coûte ?', t: 'How much is it?' }, { src: 'fr', dst: 'es', s: 'Appelez une ambulance !', t: '¡Llamen a una ambulancia!' }], conv: [], draft: '', copied: false };
+this.state.conv = [this.bubble('a', 'fr', 'en', 'Bonjour, comment allez-vous ?'), this.bubble('b', 'en', 'fr', 'Where is the police station?')];
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+langs() { return [['fr', 'Français'], ['en', 'Anglais'], ['es', 'Espagnol'], ['de', 'Allemand'], ['it', 'Italien'], ['pt', 'Portugais'], ['nl', 'Néerlandais'], ['pl', 'Polonais'], ['tr', 'Turc'], ['ar', 'Arabe']]; }
+phrases() {
+const k = ['fr', 'en', 'es', 'de', 'it', 'pt', 'nl', 'pl', 'tr', 'ar'];
+const rows = [
+['Bonjour, comment allez-vous ?', 'Hello, how are you?', 'Hola, ¿cómo está?', 'Hallo, wie geht es Ihnen?', 'Buongiorno, come sta?', 'Olá, como está?', 'Hallo, hoe gaat het met u?', 'Dzień dobry, jak się pan ma?', 'Merhaba, nasılsınız?', 'مرحبا، كيف حالك؟'],
+['Où est le poste de police ?', 'Where is the police station?', '¿Dónde está la comisaría?', 'Wo ist die Polizeiwache?', "Dov'è la stazione di polizia?", 'Onde fica a delegacia de polícia?', 'Waar is het politiebureau?', 'Gdzie jest komisariat?', 'Karakol nerede?', 'أين مركز الشرطة؟'],
+["J'ai besoin d'un mécanicien.", 'I need a mechanic.', 'Necesito un mecánico.', 'Ich brauche einen Mechaniker.', 'Ho bisogno di un meccanico.', 'Preciso de um mecânico.', 'Ik heb een monteur nodig.', 'Potrzebuję mechanika.', 'Bir tamirciye ihtiyacım var.', 'أحتاج إلى ميكانيكي.'],
+['Combien ça coûte ?', 'How much is it?', '¿Cuánto cuesta?', 'Wie viel kostet das?', 'Quanto costa?', 'Quanto custa?', 'Hoeveel kost het?', 'Ile to kosztuje?', 'Bu ne kadar?', 'كم الثمن؟'],
+['Appelez une ambulance !', 'Call an ambulance!', '¡Llamen a una ambulancia!', 'Rufen Sie einen Krankenwagen!', "Chiamate un'ambulanza!", 'Chamem uma ambulância!', 'Bel een ambulance!', 'Wezwijcie karetkę!', 'Ambulans çağırın!', 'اتصلوا بالإسعاف!'],
+['Je voudrais réserver une table pour deux.', 'I would like to book a table for two.', 'Quisiera reservar una mesa para dos.', 'Ich möchte einen Tisch für zwei reservieren.', 'Vorrei prenotare un tavolo per due.', 'Gostaria de reservar uma mesa para dois.', 'Ik wil graag een tafel voor twee reserveren.', 'Chciałbym zarezerwować stolik dla dwóch osób.', 'İki kişilik masa ayırtmak istiyorum.', 'أود حجز طاولة لشخصين.'],
+['Merci beaucoup, bonne journée.', 'Thank you very much, have a nice day.', 'Muchas gracias, que tenga un buen día.', 'Vielen Dank, einen schönen Tag noch.', 'Grazie mille, buona giornata.', 'Muito obrigado, tenha um bom dia.', 'Hartelijk dank, een fijne dag.', 'Dziękuję bardzo, miłego dnia.', 'Çok teşekkürler, iyi günler.', 'شكرا جزيلا، أتمنى لك يوما سعيدا.'],
+['Le garage ouvre à huit heures.', "The garage opens at eight o'clock.", 'El taller abre a las ocho.', 'Die Werkstatt öffnet um acht Uhr.', "L'officina apre alle otto.", 'A oficina abre às oito horas.', 'De garage opent om acht uur.', 'Warsztat otwiera się o ósmej.', 'Garaj sekizde açılıyor.', 'يفتح الكراج في الساعة الثامنة.'],
+["Vous êtes en état d'arrestation.", 'You are under arrest.', 'Está usted detenido.', 'Sie sind festgenommen.', 'Lei è in arresto.', 'Você está preso.', 'U bent gearresteerd.', 'Jest pan aresztowany.', 'Tutuklusunuz.', 'أنت رهن الاعتقال.'],
+['Où se trouve la plage de Del Perro ?', 'Where is Del Perro beach?', '¿Dónde está la playa de Del Perro?', 'Wo ist der Strand von Del Perro?', "Dov'è la spiaggia di Del Perro?", 'Onde fica a praia de Del Perro?', 'Waar is het strand van Del Perro?', 'Gdzie jest plaża Del Perro?', 'Del Perro plajı nerede?', 'أين شاطئ ديل بيرو؟']
+];
+return rows.map((r) => { const o = {}; k.forEach((l, i) => { o[l] = r[i]; }); return o; });
+}
+norm(t) { return t.toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '').replace(/[^\p{L}\p{N} ]/gu, ' ').replace(/\s+/g, ' ').trim(); }
+tr(text, src, dst) {
+if (!text.trim()) return '';
+if (src === dst) return text;
+const n = this.norm(text); const p = this.phrases().find((x) => this.norm(x[src]) === n);
+return p ? p[dst] : null;
+}
+bubble(side, src, dst, text) { const o = this.tr(text, src, dst); return { side, src, dst, text, out: o === null ? 'Traduction indisponible hors connexion' : o, ok: o !== null }; }
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', side: '#000000', cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#3a3a3c', glass: 'glass dk' }
+: { bg: '#f2f2f7', side: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass' };
+const L = this.langs(); const name = (id) => L.find((l) => l[0] === id)[1]; const dir = (id) => (id === 'ar' ? 'rtl' : 'ltr');
+const ndef = [['text', 'Texte', 'M4 7h9M8.500 7c0 5-2 8-5 10M5 11c1.500 2.500 4 4 7 5M13 19l4-10 4 10M14.500 16h5', '#0088ff', ''], ['conv', 'Conversation', 'M4 5h12v9H9l-4 3v-3H4zM14 14h6v6l-3-2h-3', '#34c759', ''], ['fav', 'Favoris', 'M12 3l2.700 5.600 6.100.8-4.500 4.200 1.100 6.100L12 16.800 6.600 19.700l1.100-6.100L3.200 9.400l6.100-.8z', '#ff8d28', s.favs.length]];
+const nav = ndef.map((n) => ({ label: n[1], d: n[2], col: n[3], n: n[4], bg: s.mode === n[0] ? '#0088ff' : 'transparent', fg: s.mode === n[0] ? '#fff' : c.fg, sub: s.mode === n[0] ? 'rgba(255,255,255,.85)' : c.sub, go: () => this.setState({ mode: n[0], picker: null }) }));
+const trans = this.tr(s.text, s.src, s.dst); const n = this.norm(s.text);
+const suggest = n.length >= 2 ? this.phrases().filter((p) => this.norm(p[s.src]).indexOf(n) >= 0 && this.norm(p[s.src]) !== n).slice(0, 3).map((p) => ({ t: p[s.src], go: () => this.setState({ text: p[s.src], copied: false }) })) : [];
+const isFavNow = trans !== null && trans !== '' && s.favs.some((f) => f.src === s.src && f.dst === s.dst && f.s === s.text);
+const langs = L.map((l) => { const cur = s.picker === 'src' ? s.src : s.dst; const on = cur === l[0]; return { name: l[1], on: on ? 1 : 0, bg: on ? 'rgba(0,136,255,.16)' : 'transparent', fg: on ? '#0088ff' : c.fg, go: () => { const other = s.picker === 'src' ? s.dst : s.src; if (l[0] === other) this.setState({ src: s.dst, dst: s.src, picker: null }); else this.setState(s.picker === 'src' ? { src: l[0], picker: null } : { dst: l[0], picker: null }); } }; });
+const bubbles = s.conv.map((b) => ({ just: b.side === 'a' ? 'flex-start' : 'flex-end', bg: b.side === 'a' ? c.fill : '#0088ff', fg: b.side === 'a' ? c.fg : '#fff', outCol: b.side === 'a' ? '#0088ff' : 'rgba(255,255,255,.9)', lang: name(b.src), text: b.text, out: b.out, dir: dir(b.src), odir: dir(b.dst) }));
+const send = (side) => { if (!s.draft.trim()) return; const b = side === 'a' ? this.bubble('a', s.src, s.dst, s.draft.trim()) : this.bubble('b', s.dst, s.src, s.draft.trim()); this.setState({ conv: s.conv.concat([b]), draft: '' }); };
+const favRows = s.favs.map((f, i) => ({ pair: name(f.src) + ' → ' + name(f.dst), s: f.s, t: f.t, open: () => this.setState({ mode: 'text', src: f.src, dst: f.dst, text: f.s }), remove: () => this.setState({ favs: s.favs.filter((x, j) => j !== i) }) }));
+return {
+c, dark, nav, langs, bubbles, favRows, suggest, srcName: name(s.src), dstName: name(s.dst), srcDir: dir(s.src), dstDir: dir(s.dst),
+isText: s.mode === 'text', isConv: s.mode === 'conv', isFav: s.mode === 'fav', showLangs: s.mode !== 'fav', picker: !!s.picker, pickLeft: s.picker === 'src' ? 0 : 538,
+text: s.text, out: trans === null ? '' : trans, noMatch: trans === null, noBubbles: !s.conv.length, noFavs: !s.favs.length, draft: s.draft,
+onText: (e) => this.setState({ text: e.target.value, copied: false }), onDraft: (e) => this.setState({ draft: e.target.value }),
+clear: () => this.setState({ text: '', copied: false }),
+openSrc: () => this.setState({ picker: s.picker === 'src' ? null : 'src' }), openDst: () => this.setState({ picker: s.picker === 'dst' ? null : 'dst' }),
+swap: () => this.setState({ src: s.dst, dst: s.src, text: trans && trans !== s.text ? trans : s.text, picker: null }),
+copyLabel: s.copied ? 'Copié' : 'Copier', copy: () => this.setState({ copied: true }),
+starFill: isFavNow ? 'currentColor' : 'none',
+toggleFav: () => { if (trans === null || trans === '') return; if (isFavNow) this.setState({ favs: s.favs.filter((f) => !(f.src === s.src && f.dst === s.dst && f.s === s.text)) }); else this.setState({ favs: s.favs.concat([{ src: s.src, dst: s.dst, s: s.text, t: trans }]) }); },
+sendA: () => send('a'), sendB: () => send('b')
+};
+}
+}
+</script>
+</body>
+</html>

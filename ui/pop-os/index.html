@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- CSP : aucun script ni style externe ; images locales, data: (photos) et blob: ; cadres seulement vers nui: (ressources du
+     serveur) et https: (hôtes de Config.Browser.AllowedHosts, revérifiés par le serveur à l'enregistrement) ; `nui:` est
+     aussi listé pour que 'self' ne casse pas l'interface si le moteur ne le reconnaît pas. Retirée en développement (vite). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' nui:; style-src 'self' nui: 'unsafe-inline'; img-src 'self' nui: data: blob:; font-src 'self' nui: data:; media-src 'self' nui: https: blob: data:; connect-src 'self' nui: https:; frame-src nui: https:; base-uri 'none'; form-action 'none'">
+<title>POP Tab</title>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

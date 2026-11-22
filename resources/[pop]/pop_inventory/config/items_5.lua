@@ -381,6 +381,23 @@ local items = {
     tags     = { 'chèque', 'banque' },
     usable   = false,
   },
+
+  -- Tablette POP Tab (ressource pop_tablet). Le serial de la tablette voyage dans les métadonnées de la pile.
+  pop_tablet = {
+    label    = 'POP Tab',
+    weight   = 0.5,
+    maxStack = 1,
+    icon     = 'img/tpe.png',
+    usable   = true,
+    tags     = { 'tools' },
+    gradientColor = 'rgba(200, 220, 230, 0.40)',
+    onUse    = function(source, itemData)
+      -- La pile utilisée porte `meta` (pas `metadata`) ; le serial sert d'indice, revérifié par pop_tablet.
+      local meta = type(itemData) == 'table' and (itemData.meta or itemData.metadata) or nil
+      TriggerClientEvent('pop_tablet:client:use', source, type(meta) == 'table' and meta.serial or nil)
+      return false -- Ne pas consommer l'item
+    end,
+  },
 }
 
 for id, def in pairs(items) do

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Téléphone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+.callglass{background:rgba(255,255,255,.18);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Téléphone" style="width: 300px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 14px 20px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 10px 12px">Téléphone</span>
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<button onClick="{{t.go}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 10px; border-radius: 10px; background: {{t.bg}}; color: {{t.fg}}">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{t.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{t.d}}"/></svg>
+<span style="flex-grow: 1; font-size: 17px">{{t.name}}</span>
+<span style="min-width: 22px; height: 22px; border-radius: 11px; background: #ff383c; color: #fff; font-size: 13px; font-weight: 700; display: {{t.badge}}; align-items: center; justify-content: center">{{t.n}}</span>
+</button>
+</sc-for>
+<span style="flex-grow: 1"></span>
+<button onClick="{{simIncoming}}" style="all: unset; cursor: pointer; font-size: 14px; color: {{c.sub}}; padding: 10px; text-align: center">Simuler un appel entrant</button>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; position: relative">
+<div style="padding: 46px 40px 10px; display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 34px; font-weight: 700">{{title}}</span>
+<sc-if value="{{isRecents}}" hint-placeholder-val="{{false}}">
+<span class="{{c.glass}}" style="display: flex; padding: 3px; border-radius: 20px; gap: 2px">
+<sc-for list="{{seg}}" as="g" hint-placeholder-count="2"><button onClick="{{g.go}}" style="all: unset; cursor: pointer; height: 34px; padding: 0 18px; border-radius: 17px; font-size: 15px; font-weight: 600; background: {{g.bg}}; color: {{g.fg}}">{{g.name}}</button></sc-for>
+</span>
+</sc-if>
+</div>
+
+<sc-if value="{{isFavs}}" hint-placeholder-val="{{false}}">
+<div style="padding: 10px 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; overflow-y: auto">
+<sc-for list="{{favs}}" as="f" hint-placeholder-count="6">
+<button onClick="{{f.call}}" style="all: unset; cursor: pointer; background: {{c.cell}}; border-radius: 20px; padding: 18px; display: flex; align-items: center; gap: 14px">
+<span style="width: 56px; height: 56px; border-radius: 28px; background: {{f.grad}}; color: #fff; font-size: 21px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{f.ini}}</span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 600">{{f.name}}</span><span style="font-size: 14px; color: {{c.sub}}">{{f.kind}}</span></span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isList}}" hint-placeholder-val="{{true}}">
+<div style="flex-grow: 1; overflow-y: auto; padding: 10px 40px 30px">
+<div style="background: {{c.cell}}; border-radius: 16px; overflow: hidden">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; gap: 14px; padding: 0 18px; height: 64px; border-bottom: 1px solid {{r.line}}">
+<button onClick="{{r.call}}" style="all: unset; cursor: pointer; flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 18px; font-weight: 600; color: {{r.fg}}">{{r.name}}</span>
+<span style="font-size: 14px; color: {{c.sub}}; display: flex; align-items: center; gap: 5px"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round" stroke-linejoin="round" style="display: {{r.arrow}}; transform: rotate({{r.rot}})"><path d="M7 17L17 7M9 7h8v8"/></svg>{{r.sub}}</span>
+</button>
+<span style="font-size: 15px; color: {{c.sub}}">{{r.time}}</span>
+<button onClick="{{r.call}}" aria-label="Appeler" style="all: unset; cursor: pointer; width: 38px; height: 38px; border-radius: 19px; background: {{c.fill}}; color: #0088ff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></button>
+</div>
+</sc-for>
+<sc-if value="{{noRows}}" hint-placeholder-val="{{false}}"><span style="display: block; text-align: center; padding: 50px; color: {{c.sub}}">Aucun élément.</span></sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isVoice}}" hint-placeholder-val="{{false}}">
+<div style="flex-grow: 1; overflow-y: auto; padding: 10px 40px 30px">
+<div style="background: {{c.cell}}; border-radius: 16px; overflow: hidden">
+<sc-for list="{{voice}}" as="v" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid {{v.line}}">
+<button onClick="{{v.play}}" aria-label="Lecture" style="all: unset; cursor: pointer; width: 44px; height: 44px; border-radius: 22px; background: #0088ff; color: #fff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="{{v.icon}}"/></svg></button>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 18px; font-weight: 600">{{v.name}}</span><span style="height: 4px; border-radius: 2px; background: {{c.fill}}; position: relative; overflow: hidden"><span style="position: absolute; inset: 0; width: {{v.w}}; background: #0088ff; transition: width .3s"></span></span></span>
+<span style="font-size: 15px; color: {{c.sub}}">{{v.dur}} · {{v.time}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isPad}}" hint-placeholder-val="{{false}}">
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; padding-top: 10px">
+<span style="height: 70px; font-size: 44px; font-weight: 300; letter-spacing: 0.04em; display: flex; align-items: center">{{shown}}</span>
+<div style="display: grid; grid-template-columns: repeat(3, 92px); gap: 18px 26px; margin-top: 10px">
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="12">
+<button onClick="{{k.press}}" aria-label="{{k.d}}" style="all: unset; cursor: pointer; width: 92px; height: 92px; border-radius: 46px; background: {{c.fill}}; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<span style="font-size: 36px; font-weight: 400; line-height: 1">{{k.d}}</span><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.15em; color: {{c.sub}}; height: 13px">{{k.l}}</span>
+</button>
+</sc-for>
+<span></span>
+<button onClick="{{dial}}" aria-label="Appeler" style="all: unset; cursor: pointer; width: 92px; height: 92px; border-radius: 46px; background: #34c759; color: #fff; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24" fill="#fff"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></button>
+<button onClick="{{back}}" aria-label="Effacer" style="all: unset; cursor: pointer; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; color: {{c.sub}}; opacity: {{backOp}}"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11v12H9l-6-6zM12 9.500l5 5M17 9.500l-5 5"/></svg></button>
+</div>
+</div>
+</sc-if>
+</main>
+
+<sc-if value="{{inCall}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; z-index: 30; background: linear-gradient(170deg,#3a4a7a,#1d2a52 55%,#0a0f26); color: #fff; display: flex; flex-direction: column; align-items: center">
+<span style="width: 120px; height: 120px; border-radius: 60px; margin-top: 130px; background: {{call.grad}}; font-size: 44px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{call.ini}}</span>
+<span style="font-size: 44px; font-weight: 700; margin-top: 22px">{{call.name}}</span>
+<span style="font-size: 20px; opacity: .75; margin-top: 6px">{{callState}}</span>
+<sc-if value="{{call.keypad}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(3, 76px); gap: 12px 22px; margin-top: 36px">
+<sc-for list="{{callKeys}}" as="k" hint-placeholder-count="12"><button onClick="{{k.press}}" aria-label="{{k.d}}" class="callglass" style="box-sizing: border-box; padding: 0; font: inherit; outline: none; cursor: pointer; width: 76px; height: 76px; border-radius: 38px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #fff">{{k.d}}</button></sc-for>
+</div>
+<button onClick="{{hideKeypad}}" style="all: unset; cursor: pointer; font-size: 17px; margin-top: 18px; opacity: .85">Masquer</button>
+</sc-if>
+<sc-if value="{{call.noKeypad}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; gap: 34px; margin-top: 90px">
+<sc-for list="{{callBtns}}" as="b" hint-placeholder-count="4">
+<span style="display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button onClick="{{b.go}}" aria-label="{{b.name}}" class="callglass" style="box-sizing: border-box; padding: 0; font: inherit; outline: none; cursor: pointer; width: 88px; height: 88px; border-radius: 44px; display: flex; align-items: center; justify-content: center; background: {{b.bg}}; color: {{b.fg}}; transition: background .2s"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round"><path d="{{b.d}}"/></svg></button>
+<span style="font-size: 15px">{{b.name}}</span></span>
+</sc-for>
+</div>
+</sc-if>
+<span style="flex-grow: 1"></span>
+<button onClick="{{hangUp}}" aria-label="Raccrocher" style="all: unset; cursor: pointer; width: 88px; height: 88px; border-radius: 44px; background: #ff383c; margin-bottom: 90px; display: flex; align-items: center; justify-content: center; color: #fff"><svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24" fill="#fff" style="transform: rotate(135deg)"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></button>
+</div>
+</sc-if>
+
+<sc-if value="{{inIncoming}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; z-index: 40; background: linear-gradient(170deg,#4b3a7a,#2a1d52 55%,#0d0a26); color: #fff; display: flex; flex-direction: column; align-items: center">
+<span style="font-size: 18px; opacity: .75; margin-top: 120px">Appel entrant</span>
+<span style="width: 120px; height: 120px; border-radius: 60px; margin-top: 24px; background: {{inc.grad}}; font-size: 44px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{inc.ini}}</span>
+<span style="font-size: 44px; font-weight: 700; margin-top: 22px">{{inc.name}}</span>
+<span style="font-size: 20px; opacity: .75; margin-top: 6px">{{inc.num}}</span>
+<span style="flex-grow: 1"></span>
+<div style="display: flex; gap: 160px; margin-bottom: 110px">
+<span style="display: flex; flex-direction: column; align-items: center; gap: 10px"><button onClick="{{refuse}}" aria-label="Refuser" style="all: unset; cursor: pointer; width: 88px; height: 88px; border-radius: 44px; background: #ff383c; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24" fill="#fff" style="transform: rotate(135deg)"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></button><span style="font-size: 15px">Refuser</span></span>
+<span style="display: flex; flex-direction: column; align-items: center; gap: 10px"><button onClick="{{accept}}" aria-label="Accepter" style="all: unset; cursor: pointer; width: 88px; height: 88px; border-radius: 44px; background: #34c759; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="38" height="38" viewBox="0 0 24 24" fill="#fff"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></button><span style="font-size: 15px">Accepter</span></span>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"incoming":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const contacts = [
+{ name: 'Lina Costa', num: '555-0187', kind: 'mobile', g: ['#ff8d28', '#ff2d55'] },
+{ name: 'Sam Leroy', num: '555-0123', kind: 'mobile', g: ['#34c759', '#00c0e8'] },
+{ name: 'Noah Petit', num: '555-0166', kind: 'mobile', g: ['#0088ff', '#cb30e0'] },
+{ name: 'Jade Moreau', num: '555-0109', kind: 'mobile', g: ['#cb30e0', '#ff2d55'] },
+{ name: 'Eli Garcia', num: '555-0150', kind: 'domicile', g: ['#ffcc00', '#ff8d28'] },
+{ name: 'Garage Del Perro', num: '555-0199', kind: 'travail', g: ['#8e8e93', '#48484a'] },
+{ name: 'Commissariat Mission Row', num: '555-0911', kind: 'travail', g: ['#0088ff', '#00c0e8'] }
+];
+const recents = [
+{ id: 1, name: 'Sam Leroy', num: '555-0123', dir: 'missed', time: '10:12' },
+{ id: 2, name: 'Lina Costa', num: '555-0187', dir: 'out', time: '09:30' },
+{ id: 3, name: 'Garage Del Perro', num: '555-0199', dir: 'in', time: 'Hier' },
+{ id: 4, name: 'Inconnu', num: '555-0777', dir: 'missed', time: 'Hier' },
+{ id: 5, name: 'Noah Petit', num: '555-0166', dir: 'out', time: 'Samedi' },
+{ id: 6, name: 'Jade Moreau', num: '555-0109', dir: 'in', time: 'Vendredi' }
+];
+const voice = [{ id: 1, name: 'Lina Costa', dur: '0:42', time: 'Hier' }, { id: 2, name: '555-0777', dur: '0:18', time: 'Samedi' }, { id: 3, name: 'Maze Bank', dur: '1:05', time: '15/11/2026' }];
+this.state = { dark: !!props.dark, tab: 'recents', seg: 'all', digits: '', contacts, recents, voice, playing: 0, call: null, inc: props.incoming ? { name: 'Jade Moreau', num: '555-0109' } : null, nid: 7 };
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+componentWillUnmount() { clearInterval(this.timer); }
+start(name, num) {
+if (!num || this.state.call) return;
+clearInterval(this.timer);
+this.setState({ call: { name, num, secs: 0, mute: false, spk: false, keypad: false, typed: '' }, tab: this.state.tab });
+this.timer = setInterval(() => { const c = this.state.call; if (c) this.setState({ call: { ...c, secs: c.secs + 1 } }); }, 1000);
+}
+end() {
+clearInterval(this.timer);
+const c = this.state.call; if (!c) return;
+const r = { id: this.state.nid, name: c.name, num: c.num, dir: 'out', time: 'À l’instant' };
+this.setState({ call: null, recents: [r].concat(this.state.recents), nid: this.state.nid + 1 });
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', side: '#000000', cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', fill: '#2c2c2e', glass: 'glass dk' }
+: { bg: '#f2f2f7', side: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', fill: '#e3e3e8', glass: 'glass' };
+const ini = (n) => n.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+const grad = (g) => 'linear-gradient(160deg,' + g[0] + ',' + g[1] + ')';
+const find = (num) => s.contacts.find((x) => x.num === num);
+const gOf = (name, num) => { const f = find(num); return grad(f ? f.g : ['#8e8e93', '#48484a']); };
+const fmt = (n) => String(Math.floor(n / 60)) + ':' + String(n % 60).padStart(2, '0');
+const missed = s.recents.filter((r) => r.dir === 'missed').length;
+const tdef = [['favs', 'Favoris', 'M12 3l2.700 5.600 6.100.9-4.400 4.300 1 6.100L12 17l-5.400 2.900 1-6.100L3.200 9.500l6.100-.9z', '#ff9f0a'], ['recents', 'Récents', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2', '#0088ff'], ['contacts', 'Contacts', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', '#8e8e93'], ['pad', 'Clavier', 'M6 5h.01M12 5h.01M18 5h.01M6 10h.01M12 10h.01M18 10h.01M6 15h.01M12 15h.01M18 15h.01M12 20h.01', '#34c759'], ['voice', 'Messagerie', 'M7 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM17 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM7 16h10', '#cb30e0']];
+const tabs = tdef.map((t) => ({ name: t[1], d: t[2], color: s.tab === t[0] ? '#fff' : t[3], bg: s.tab === t[0] ? '#0088ff' : 'transparent', fg: s.tab === t[0] ? '#fff' : c.fg, n: t[0] === 'recents' ? missed : 0, badge: t[0] === 'recents' && missed ? 'flex' : 'none', go: () => this.setState({ tab: t[0] }) }));
+const seg = [['all', 'Tous'], ['missed', 'Manqués']].map((g) => ({ name: g[1], bg: s.seg === g[0] ? '#0088ff' : 'transparent', fg: s.seg === g[0] ? '#fff' : c.fg, go: () => this.setState({ seg: g[0] }) }));
+const favs = s.contacts.slice(0, 6).map((x) => ({ name: x.name, kind: x.kind, ini: ini(x.name), grad: grad(x.g), call: () => this.start(x.name, x.num) }));
+let rows = [];
+if (s.tab === 'recents') {
+const list = s.recents.filter((r) => s.seg === 'all' || r.dir === 'missed');
+rows = list.map((r, i) => ({ name: r.name, fg: r.dir === 'missed' ? '#ff383c' : c.fg, sub: r.dir === 'missed' ? 'Appel manqué' : r.dir === 'in' ? 'Appel entrant' : 'Appel sortant', arrow: r.dir === 'missed' ? 'none' : 'block', rot: r.dir === 'in' ? '90deg' : '0deg', time: r.time, line: i < list.length - 1 ? c.sep : 'transparent', call: () => this.start(r.name, r.num) }));
+} else if (s.tab === 'contacts') {
+rows = s.contacts.slice().sort((a, b) => a.name.localeCompare(b.name)).map((x, i, arr) => ({ name: x.name, fg: c.fg, sub: x.kind + ' · ' + x.num, arrow: 'none', rot: '0deg', time: '', line: i < arr.length - 1 ? c.sep : 'transparent', call: () => this.start(x.name, x.num) }));
+}
+const letters = { 1: '', 2: 'ABC', 3: 'DEF', 4: 'GHI', 5: 'JKL', 6: 'MNO', 7: 'PQRS', 8: 'TUV', 9: 'WXYZ', '*': '', 0: '+', '#': '' };
+const order = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
+const keys = order.map((d) => ({ d, l: letters[d], press: () => this.setState({ digits: s.digits.length < 12 ? s.digits + d : s.digits }) }));
+const shown = s.digits.length > 3 && /^\d+$/.test(s.digits) ? s.digits.slice(0, 3) + '-' + s.digits.slice(3) : s.digits;
+const cl = s.call;
+const callKeys = order.map((d) => ({ d, press: () => this.setState({ call: { ...cl, typed: cl.typed + d } }) }));
+const callBtns = cl ? [
+{ name: 'Silence', d: 'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16', on: cl.mute, go: () => this.setState({ call: { ...cl, mute: !cl.mute } }) },
+{ name: 'Clavier', d: 'M6 5h.01M12 5h.01M18 5h.01M6 11h.01M12 11h.01M18 11h.01M6 17h.01M12 17h.01M18 17h.01', on: false, go: () => this.setState({ call: { ...cl, keypad: true } }) },
+{ name: 'Haut-parleur', d: 'M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.500 6a8 8 0 0 1 0 12', on: cl.spk, go: () => this.setState({ call: { ...cl, spk: !cl.spk } }) },
+{ name: 'Ajouter', d: 'M12 5v14M5 12h14', on: false, go: () => {} }
+].map((b) => ({ ...b, bg: b.on ? '#fff' : 'rgba(255,255,255,.18)', fg: b.on ? '#1d2a52' : '#fff' })) : [];
+const inc = s.inc || { name: '', num: '' };
+return {
+c, dark, tabs, seg, favs, rows, keys, shown, callKeys, callBtns, call: cl ? { name: cl.name, ini: ini(cl.name), grad: gOf(cl.name, cl.num), keypad: cl.keypad, noKeypad: !cl.keypad } : {},
+title: (tdef.find((t) => t[0] === s.tab) || tdef[0])[1],
+isFavs: s.tab === 'favs', isList: s.tab === 'recents' || s.tab === 'contacts', isRecents: s.tab === 'recents', isPad: s.tab === 'pad', isVoice: s.tab === 'voice', noRows: !rows.length,
+voice: s.voice.map((v, i, a) => ({ name: v.name, dur: v.dur, time: v.time, line: i < a.length - 1 ? c.sep : 'transparent', w: s.playing === v.id ? '60%' : '0%', icon: s.playing === v.id ? 'M7 5h4v14H7zM13 5h4v14h-4z' : 'M7 4l13 8-13 8z', play: () => this.setState({ playing: s.playing === v.id ? 0 : v.id }) })),
+backOp: s.digits ? 1 : 0.3, back: () => this.setState({ digits: s.digits.slice(0, -1) }),
+dial: () => { if (!s.digits) return; const f = find(shown); this.start(f ? f.name : shown, shown); this.setState({ digits: '' }); },
+inCall: !!cl, callState: cl ? (cl.secs < 2 ? 'Appel en cours…' : fmt(cl.secs)) + (cl.keypad && cl.typed ? '  ·  ' + cl.typed : '') : '',
+hangUp: () => this.end(), hideKeypad: () => this.setState({ call: { ...cl, keypad: false } }),
+inIncoming: !!s.inc && !cl, inc: { name: inc.name, num: inc.num, ini: ini(inc.name || ' '), grad: gOf(inc.name, inc.num) },
+simIncoming: () => this.setState({ inc: { name: 'Jade Moreau', num: '555-0109' } }),
+accept: () => { const i = s.inc; this.setState({ inc: null }); this.start(i.name, i.num); },
+refuse: () => { const i = s.inc; this.setState({ inc: null, recents: [{ id: s.nid, name: i.name, num: i.num, dir: 'missed', time: 'À l’instant' }].concat(s.recents), nid: s.nid + 1 }); }
+};
+}
+}
+</script>
+</body>
+</html>

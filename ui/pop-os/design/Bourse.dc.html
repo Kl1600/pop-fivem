@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Bourse</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.glass{background:rgba(255,255,255,.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.12)}
+.glass.dk{background:rgba(40,40,44,.55);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 24px rgba(0,0,0,.4)}
+</style>
+</helmet>
+<div style="width: 1348px; height: 1019px; display: flex; font-family: Inter, system-ui, sans-serif; letter-spacing: -0.01em; background: {{c.bg}}; color: {{c.fg}}; overflow: hidden; position: relative">
+
+<nav aria-label="Liste de suivi" style="width: 360px; flex-shrink: 0; height: 100%; box-sizing: border-box; background: {{c.side}}; border-right: 1px solid {{c.sep}}; padding: 46px 14px 20px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 34px; font-weight: 700; padding: 0 10px 4px">Bourse</span>
+<span style="font-size: 14px; color: {{c.sub}}; padding: 0 10px 10px">Liste de suivi · Marché ouvert</span>
+<div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+<button onClick="{{r.pick}}" style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; background: {{r.bg}}">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 700">{{r.sym}}</span><span style="font-size: 13px; color: {{c.sub}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span></span>
+<svg aria-hidden="true" width="70" height="30" viewBox="0 0 70 30"><path d="{{r.spark}}" fill="none" stroke="{{r.col}}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px"><span style="font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums">{{r.price}}</span><span style="min-width: 64px; text-align: center; padding: 2px 6px; border-radius: 6px; background: {{r.col}}; color: #fff; font-size: 14px; font-weight: 600">{{r.chg}}</span></span>
+</button>
+</sc-for>
+</div>
+<button onClick="{{toggleMode}}" style="all: unset; cursor: pointer; text-align: center; padding: 10px; font-size: 15px; color: #0088ff">{{modeLabel}}</button>
+</nav>
+
+<main style="flex-grow: 1; min-width: 0; height: 100%; overflow-y: auto; padding: 46px 36px 40px; box-sizing: border-box; background: {{c.cell}}">
+<div style="display: flex; justify-content: space-between; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 34px; font-weight: 800">{{cur.sym}}</span><span style="font-size: 17px; color: {{c.sub}}">{{cur.name}}</span></div>
+<div class="{{c.glass}}" style="display: flex; gap: 2px; padding: 4px; border-radius: 22px">
+<sc-for list="{{periods}}" as="p" hint-placeholder-count="6"><button onClick="{{p.go}}" style="all: unset; cursor: pointer; min-width: 44px; height: 36px; border-radius: 18px; text-align: center; line-height: 36px; font-size: 15px; font-weight: 700; background: {{p.bg}}; color: {{p.fg}}; transition: background .2s">{{p.label}}</button></sc-for>
+</div>
+</div>
+<div style="display: flex; align-items: baseline; gap: 14px; padding: 14px 0 10px">
+<span style="font-size: 56px; font-weight: 700; font-variant-numeric: tabular-nums">{{shown.price}}</span>
+<span style="font-size: 20px; font-weight: 600; color: {{cur.col}}">{{shown.chg}}</span>
+<span style="font-size: 15px; color: {{c.sub}}">{{shown.label}}</span>
+</div>
+<div style="position: relative; width: 916px; height: 330px">
+<svg aria-label="Graphique du cours" width="916" height="330" viewBox="0 0 916 330" onPointerMove="{{onMove}}" onPointerLeave="{{onLeave}}" style="display: block; touch-action: none">
+<defs><linearGradient id="aire" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{{cur.col}}" stop-opacity=".32"></stop><stop offset="1" stop-color="{{cur.col}}" stop-opacity="0"></stop></linearGradient></defs>
+<sc-for list="{{grid}}" as="g" hint-placeholder-count="4"><line x1="0" y1="{{g.y}}" x2="916" y2="{{g.y}}" stroke="{{c.sep}}" stroke-width="1"></line><text x="912" y="{{g.ty}}" text-anchor="end" font-size="12" fill="{{c.sub}}" font-family="Inter, system-ui, sans-serif">{{g.t}}</text></sc-for>
+<path d="{{chart.area}}" fill="url(#aire)"></path>
+<path d="{{chart.line}}" fill="none" stroke="{{cur.col}}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></path>
+<line x1="{{hov.x}}" y1="0" x2="{{hov.x}}" y2="330" stroke="{{c.sub}}" stroke-width="1" opacity="{{hov.op}}"></line>
+<circle cx="{{hov.x}}" cy="{{hov.y}}" r="6" fill="{{cur.col}}" stroke="{{c.cell}}" stroke-width="3" opacity="{{hov.op}}"></circle>
+</svg>
+</div>
+<div style="width: 916px; display: flex; justify-content: space-between; font-size: 13px; color: {{c.sub}}; padding-top: 6px">
+<sc-for list="{{xlabels}}" as="x" hint-placeholder-count="5"><span>{{x.t}}</span></sc-for>
+</div>
+
+<span style="display: block; font-size: 22px; font-weight: 700; padding: 30px 0 10px">Chiffres clés</span>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 24px; width: 916px">
+<sc-for list="{{facts}}" as="f" hint-placeholder-count="8"><div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 1px solid {{c.sep}}; font-size: 15px"><span style="color: {{c.sub}}">{{f.k}}</span><span style="font-weight: 600; font-variant-numeric: tabular-nums">{{f.v}}</span></div></sc-for>
+</div>
+
+<span style="display: block; font-size: 22px; font-weight: 700; padding: 30px 0 10px">Actualités</span>
+<div style="display: flex; flex-direction: column; gap: 12px; width: 916px">
+<sc-for list="{{news}}" as="n" hint-placeholder-count="3">
+<div style="display: flex; gap: 16px; padding: 12px; border-radius: 18px; background: {{c.bg}}">
+<span style="width: 120px; height: 80px; flex-shrink: 0; border-radius: 12px; background: {{n.grad}}"></span>
+<span style="display: flex; flex-direction: column; justify-content: center; gap: 4px"><span style="font-size: 13px; font-weight: 700; color: {{c.sub}}">{{n.src}} · {{n.ago}}</span><span style="font-size: 18px; font-weight: 600; line-height: 1.25">{{n.title}}</span></span>
+</div>
+</sc-for>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1348,"height":1019}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { dark: !!props.dark, sel: 0, period: 2, hover: null, pct: true };
+}
+componentDidUpdate(prev) { if (prev.dark !== this.props.dark) this.setState({ dark: !!this.props.dark }); }
+stocks() {
+return [
+{ sym: 'BAWS', name: 'Bawsaq · indice', price: 11842.3, ch: [0.4, 0.9, 2.2, 4.1, 9.3, 55], vol: '1,8 Md', cap: '—', per: '—', div: '—' },
+{ sym: 'MAZE', name: 'Maze Bank', price: 412.6, ch: [1.8, 3.1, 5.4, 9.8, 22.5, 140], vol: '4,2 M', cap: '86,4 Md$', per: '14,2', div: '2,1 %' },
+{ sym: 'FLCA', name: 'Fleeca Bank', price: 87.35, ch: [-0.6, -1.2, 0.8, -3.4, 6.1, 35], vol: '2,9 M', cap: '21,7 Md$', per: '11,8', div: '3,4 %' },
+{ sym: 'LIFI', name: 'LifeInvader', price: 156.2, ch: [3.2, 6.5, -2.1, 14, 48, 310], vol: '9,6 M', cap: '54,0 Md$', per: '32,5', div: '—' },
+{ sym: 'PISS', name: 'Pisswasser', price: 64.8, ch: [-1.4, -0.3, -4.8, -7.9, -12.6, -20], vol: '3,1 M', cap: '12,3 Md$', per: '17,0', div: '4,8 %' },
+{ sym: 'AMMU', name: 'Ammu-Nation', price: 203.45, ch: [0.9, 1.7, 3.3, 5.2, 11.4, 60], vol: '1,4 M', cap: '29,8 Md$', per: '19,4', div: '1,6 %' },
+{ sym: 'VAPD', name: 'Vapid Motors', price: 98.1, ch: [-2.1, 2.4, 7.7, 12.3, 30.2, 85], vol: '5,5 M', cap: '33,2 Md$', per: '9,7', div: '2,9 %' }
+];
+}
+series(i, p) {
+const st = this.stocks()[i]; const N = [48, 56, 60, 70, 80, 90][p]; const vol = [0.35, 0.6, 1.2, 2, 3.5, 5][p] / 100; const T = st.ch[p] / 100;
+let x = (i + 1) * 1237 + p * 911; const w = [1];
+for (let k = 1; k < N; k++) { x = (x * 9301 + 49297) % 233280; w.push(w[k - 1] * (1 + (x / 233280 - 0.5) * 2 * vol)); }
+const r = ((1 + T) * w[0]) / w[N - 1]; const v = w.map((q, k) => q * Math.pow(r, k / (N - 1)));
+const sc = st.price / v[N - 1]; return v.map((q) => q * sc);
+}
+renderVals() {
+const s = this.state; const dark = s.dark;
+const c = dark
+? { bg: '#000000', side: '#000000', cell: '#1c1c1e', fg: '#ffffff', sub: 'rgba(235,235,245,.6)', sep: 'rgba(84,84,88,.6)', glass: 'glass dk' }
+: { bg: '#f2f2f7', side: '#f2f2f7', cell: '#ffffff', fg: '#000000', sub: 'rgba(60,60,67,.6)', sep: 'rgba(60,60,67,.18)', glass: 'glass' };
+const fr = (v, d) => v.toLocaleString('fr-FR', { minimumFractionDigits: d === undefined ? 2 : d, maximumFractionDigits: d === undefined ? 2 : d });
+const sg = (v) => (v >= 0 ? '+' : '−') + fr(Math.abs(v));
+const green = '#34c759'; const red = '#ff3b30';
+const all = this.stocks();
+const dayChg = (st, i) => { const d = this.series(i, 0); return { pct: st.ch[0], abs: d[d.length - 1] - d[0] }; };
+const rows = all.map((st, i) => {
+const d = this.series(i, 0); const mn = Math.min.apply(null, d); const mx = Math.max.apply(null, d); const dc = dayChg(st, i);
+const spark = d.map((q, k) => (k ? 'L' : 'M') + (k / (d.length - 1) * 70).toFixed(1) + ' ' + (3 + (mx - q) / (mx - mn || 1) * 24).toFixed(1)).join('');
+return { sym: st.sym, name: st.name, price: fr(st.price), col: st.ch[0] >= 0 ? green : red, chg: s.pct ? sg(dc.pct).replace(/\d+,\d+$/, (m) => m) + ' %' : sg(dc.abs), spark, bg: s.sel === i ? (dark ? '#2c2c2e' : '#ffffff') : 'transparent', pick: () => this.setState({ sel: i, hover: null }) };
+});
+rows.forEach((r, i) => { if (s.pct) r.chg = (all[i].ch[0] >= 0 ? '+' : '−') + fr(Math.abs(all[i].ch[0])) + ' %'; });
+const st = all[s.sel]; const ser = this.series(s.sel, s.period); const N = ser.length;
+const W = 916; const H = 330; const top = 20; const bot = 20;
+const mn = Math.min.apply(null, ser); const mx = Math.max.apply(null, ser); const rng = mx - mn || 1;
+const px = (k) => (k / (N - 1)) * W; const py = (q) => top + ((mx - q) / rng) * (H - top - bot);
+const line = ser.map((q, k) => (k ? 'L' : 'M') + px(k).toFixed(1) + ' ' + py(q).toFixed(1)).join('');
+const chart = { line, area: line + 'L' + W + ' ' + H + 'L0 ' + H + 'Z' };
+const grid = [0, 1, 2, 3].map((g) => { const y = top + g * (H - top - bot) / 3; const val = mx - rng * g / 3; return { y, ty: y - 5, t: fr(val) }; });
+const col = st.ch[s.period] >= 0 ? green : red;
+const hk = s.hover === null ? N - 1 : s.hover;
+const hv = ser[hk]; const hp = ((hv - ser[0]) / ser[0]) * 100;
+const hov = { x: px(hk).toFixed(1), y: py(hv).toFixed(1), op: s.hover === null ? 0 : 1 };
+const labs = [['09:30', '11:00', '12:30', '14:00', '16:00'], ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.'], ['23 oct.', '1 nov.', '8 nov.', '15 nov.', '22 nov.'], ['23 août', '12 sept.', '2 oct.', '22 oct.', '22 nov.'], ['nov. 25', 'févr.', 'mai', 'août', 'nov. 26'], ['2022', '2023', '2024', '2025', '2026']][s.period];
+const pnames = ['1J', '1S', '1M', '3M', '1A', '5A'];
+const pfull = ['aujourd’hui', 'cette semaine', 'ce mois', '3 derniers mois', 'cette année', '5 dernières années'];
+const hi = Math.max.apply(null, this.series(s.sel, 0)); const lo = Math.min.apply(null, this.series(s.sel, 0));
+const y1 = this.series(s.sel, 4); const hi52 = Math.max.apply(null, y1); const lo52 = Math.min.apply(null, y1);
+const d0 = this.series(s.sel, 0);
+const facts = [['Ouverture', fr(d0[0])], ['Haut', fr(hi)], ['Bas', fr(lo)], ['Volume', st.vol], ['Capitalisation', st.cap], ['C/B', st.per], ['Rendement', st.div], ['Haut 52 sem.', fr(hi52)], ['Bas 52 sem.', fr(lo52)], ['Variation 1M', sg(st.ch[2]) + ' %'], ['Variation 1A', sg(st.ch[4]) + ' %'], ['Variation 5A', sg(st.ch[5]) + ' %']].map((f) => ({ k: f[0], v: f[1] }));
+const nw = st.sym === 'BAWS'
+? [['Weazel News', '1 h', 'Le Bawsaq termine en hausse, porté par les valeurs bancaires'], ['Bawsaq Daily', '3 h', 'Introductions en Bourse : trois sociétés de Vinewood sur les rangs'], ['Los Santos Standard', 'hier', 'Taux directeurs : les marchés attendent la décision de la banque centrale']]
+: [['Weazel News', '2 h', st.name + (st.ch[0] >= 0 ? ' dépasse les attentes au troisième trimestre' : ' recule malgré des résultats solides')], ['Bawsaq Daily', '5 h', 'Les analystes ' + (st.ch[3] >= 0 ? 'relèvent leur objectif sur ' : 'restent prudents sur ') + st.name], ['Los Santos Standard', 'hier', st.name + ' annonce un partenariat avec des commerçants de Del Perro']];
+const grads = ['linear-gradient(135deg,#ffae3d,#b8326f)', 'linear-gradient(135deg,#2c7be5,#56ccf2)', 'linear-gradient(135deg,#34c759,#0a6b4a)'];
+const news = nw.map((n, i) => ({ src: n[0], ago: n[1], title: n[2], grad: grads[i] }));
+const totalPct = st.ch[s.period];
+return {
+c, dark, rows, grid, chart, hov, facts, news, xlabels: labs.map((t) => ({ t })),
+cur: { sym: st.sym, name: st.name, col },
+shown: { price: fr(hv), chg: (hp >= 0 ? '+' : '−') + fr(Math.abs(s.hover === null ? totalPct : hp)) + ' %', label: s.hover === null ? pfull[s.period] : 'depuis le début de la période' },
+periods: pnames.map((n, i) => ({ label: n, bg: s.period === i ? (dark ? '#3a3a3c' : '#ffffff') : 'transparent', fg: s.period === i ? c.fg : c.sub, go: () => this.setState({ period: i, hover: null }) })),
+modeLabel: s.pct ? 'Afficher la variation en valeur' : 'Afficher la variation en %', toggleMode: () => this.setState({ pct: !s.pct }),
+onMove: (e) => { const r = e.currentTarget.getBoundingClientRect(); const k = Math.round(((e.clientX - r.left) / r.width) * (N - 1)); this.setState({ hover: Math.max(0, Math.min(N - 1, k)) }); },
+onLeave: () => this.setState({ hover: null })
+};
+}
+}
+</script>
+</body>
+</html>
