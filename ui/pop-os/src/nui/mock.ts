@@ -54,6 +54,8 @@ let blockedUntil = 0;
 let code = MOCK_CODE;
 // Messages, Téléphone et Contacts simulés : module chargé à la demande (hors du point d'entrée du bundle).
 let commFresh = true;
+let mailFresh = true;
+const MAIL_NAMES = new Set(['mail:folders', 'mail:list', 'mail:get', 'mail:send', 'mail:move', 'mail:flag', 'mail:delete']);
 const COMM_NAMES = new Set(['messages:threads', 'messages:thread', 'messages:send', 'messages:read', 'messages:pin', 'messages:group', 'messages:media',
   'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history', 'phone:voicemail', 'phone:voicemails', 'contacts:list', 'contacts:save', 'contacts:delete']);
 let installed: string[] = [...MOCK_BOOT.apps];
@@ -64,6 +66,7 @@ export function resetMock(): void {
   seedBoard();
   seedTools();
   commFresh = true;
+  mailFresh = true;
   installed = [...MOCK_BOOT.apps];
   fails = 0;
   blockedUntil = 0;
@@ -122,6 +125,11 @@ export async function simulate(name: string, data?: unknown): Promise<unknown> {
       installed = installed.filter((x) => x !== d.data);
       return { ok: true, apps: installed };
     default:
+      if (MAIL_NAMES.has(String(d.name))) {
+        const m = await import('./mock-mail');
+        if (mailFresh) { m.seedMail(); mailFresh = false; }
+        return m.mailCall(String(d.name), d.data);
+      }
       if (COMM_NAMES.has(String(d.name))) {
         const m = await import('./mock-comm');
         if (commFresh) { m.seedComm(); commFresh = false; }

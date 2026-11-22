@@ -299,6 +299,13 @@ export function handleMessage(action: string, data: unknown): void {
       if (!d.read && os.get().app !== 'messages') pushNotify({ app: d.vm ? 'telephone' : 'messages', title: d.from, text: d.body });
       return;
     }
+    case 'mail': {
+      const d = data as { from?: string; subject?: string } | null;
+      if (!os.get().open || !d) return;
+      window.dispatchEvent(new CustomEvent('pop-mail', { detail: d }));
+      if (os.get().app !== 'mail') pushNotify({ app: 'mail', title: d.from, text: d.subject });
+      return;
+    }
     case 'call': {
       const d = data as { state?: string } | null;
       if (!os.get().open || !d) return;

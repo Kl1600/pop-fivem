@@ -60,6 +60,8 @@ Tablet.Media.shareSeconds = 30
 -- Limites de Plans, Traduire et Bourse (données par tablette rangées dans pop_tablet_appdata).
 -- Messages, Téléphone, Contacts.
 Tablet.Comm = { contacts = 300, pins = 12, group = 8, groupName = 40, voicemail = 200, contactNote = 200, contactAddr = 60, contactNotes = 100, preview = 80 }
+-- Mail : mails par tablette, dossiers déplaçables.
+Tablet.MailBox = { max = 300, folders = { inbox = true, sent = true, draft = true, trash = true, archive = true }, movable = { inbox = true, archive = true, trash = true } }
 Tablet.ContactGroups = { famille = true, travail = true, lspd = true, ami = true }
 
 Tablet.Tools = { favPlaces = 12, recentPlaces = 5, translateFavs = 30, translateChars = 500, watch = 20 }

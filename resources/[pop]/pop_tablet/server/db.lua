@@ -659,3 +659,59 @@ end
 function DB.DeleteContact(serial, id)
     return (MySQL.update.await('DELETE FROM pop_tablet_contacts WHERE id = ? AND serial = ?', { id, serial }) or 0) > 0
 end
+
+------------------------------------------------------------------------
+-- Mail (index (serial, folder, id) ; 300 mails par tablette)
+------------------------------------------------------------------------
+
+--- Adresse mail de la tablette, ou nil.
+function DB.MailAddress(serial)
+    return MySQL.scalar.await('SELECT address FROM pop_tablet_mailboxes WHERE serial = ? LIMIT 1', { serial })
+end
+
+function DB.CountMails(serial)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_mails WHERE serial = ?', { serial })) or 0
+end
+
+function DB.InsertMail(serial, folder, from, to, subject, body, now, readAt)
+    return MySQL.insert.await('INSERT INTO pop_tablet_mails (serial, folder, from_addr, to_addr, subject, body, read_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        { serial, folder, from, to, subject, body, readAt, now })
+end
+
+--- Nombre de mails et de non-lus par dossier, plus le nombre de mails avec drapeau.
+function DB.MailCounts(serial)
+    return MySQL.query.await('SELECT folder, COUNT(*) AS n, SUM(read_at IS NULL) AS unread, SUM(flagged) AS flagged FROM pop_tablet_mails WHERE serial = ? GROUP BY folder', { serial }) or {}
+end
+
+--- 30 mails d'un dossier (ou `flagged` : tous les mails avec drapeau hors corbeille), du plus récent au plus ancien ; `before` : id exclu.
+function DB.ListMails(serial, folder, before)
+    local cols = 'id, from_addr, to_addr, subject, SUBSTRING(body, 1, 80) AS preview, read_at, flagged, created_at, folder'
+    if folder == 'flagged' then
+        return MySQL.query.await('SELECT ' .. cols .. ' FROM pop_tablet_mails WHERE serial = ? AND flagged = 1 AND folder <> \'trash\' AND id < ? ORDER BY id DESC LIMIT 30', { serial, before }) or {}
+    end
+    return MySQL.query.await('SELECT ' .. cols .. ' FROM pop_tablet_mails WHERE serial = ? AND folder = ? AND id < ? ORDER BY id DESC LIMIT 30', { serial, folder, before }) or {}
+end
+
+function DB.GetMail(serial, id)
+    return MySQL.single.await('SELECT id, folder, from_addr, to_addr, subject, body, read_at, flagged, created_at FROM pop_tablet_mails WHERE id = ? AND serial = ?', { id, serial })
+end
+
+function DB.MarkMailRead(serial, id, now)
+    MySQL.update.await('UPDATE pop_tablet_mails SET read_at = ? WHERE id = ? AND serial = ? AND read_at IS NULL', { now, id, serial })
+end
+
+function DB.MoveMail(serial, id, folder)
+    return (MySQL.update.await('UPDATE pop_tablet_mails SET folder = ? WHERE id = ? AND serial = ?', { folder, id, serial }) or 0) > 0
+end
+
+function DB.FlagMail(serial, id, on)
+    return (MySQL.update.await('UPDATE pop_tablet_mails SET flagged = ? WHERE id = ? AND serial = ?', { on and 1 or 0, id, serial }) or 0) > 0
+end
+
+function DB.DeleteMail(serial, id)
+    return (MySQL.update.await('DELETE FROM pop_tablet_mails WHERE id = ? AND serial = ?', { id, serial }) or 0) > 0
+end
+
+function DB.UnreadMail(serial)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_mails WHERE serial = ? AND folder = \'inbox\' AND read_at IS NULL', { serial })) or 0
+end

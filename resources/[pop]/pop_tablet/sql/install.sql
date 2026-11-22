@@ -219,7 +219,7 @@ CREATE TABLE IF NOT EXISTS `pop_tablet_calls` (
 CREATE TABLE IF NOT EXISTS `pop_tablet_mails` (
   `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `serial`     CHAR(13)        NOT NULL,
-  `folder`     ENUM('inbox','sent','trash','draft','flagged') NOT NULL DEFAULT 'inbox',
+  `folder`     ENUM('inbox','sent','trash','draft','archive','flagged') NOT NULL DEFAULT 'inbox',
   `from_addr`  VARCHAR(80)     NOT NULL,
   `to_addr`    VARCHAR(80)     NOT NULL,
   `subject`    VARCHAR(120)    NOT NULL DEFAULT '',

@@ -2129,5 +2129,132 @@ do
     def('json', keep)
 end
 
+------------------------------------------------------------------------
+section('Mail (app-mai)')
+------------------------------------------------------------------------
+do
+    local MAILS = {}
+    local boxOf = {}
+    for addr, serial in pairs(mailboxes) do boxOf[serial] = addr end
+    local seqMail = 0
+    local function nid() seqMail = seqMail + 1 return seqMail end
+    def('exports', function(n, fn) exportsApi[n] = fn end)
+    DB.MailAddress = function(serial) return boxOf[serial] end
+    DB.CountMails = function(serial) local n = 0 for _, m in pairs(MAILS) do if m.serial == serial then n = n + 1 end end return n end
+    DB.InsertMail = function(serial, folder, from, to, subject, body, now, readAt)
+        local id = nid()
+        MAILS[id] = { id = id, serial = serial, folder = folder, from_addr = from, to_addr = to, subject = subject, body = body, read_at = readAt, flagged = 0, created_at = now }
+        return id
+    end
+    DB.GetMail = function(serial, id) local m = MAILS[id] return m and m.serial == serial and m or nil end
+    DB.MarkMailRead = function(serial, id, now) local m = DB.GetMail(serial, id) if m and not m.read_at then m.read_at = now end end
+    DB.MoveMail = function(serial, id, f) local m = DB.GetMail(serial, id) if not m then return false end m.folder = f return true end
+    DB.FlagMail = function(serial, id, on) local m = DB.GetMail(serial, id) if not m then return false end m.flagged = on and 1 or 0 return true end
+    DB.DeleteMail = function(serial, id) if not DB.GetMail(serial, id) then return false end MAILS[id] = nil return true end
+    DB.UnreadMail = function(serial) local n = 0 for _, m in pairs(MAILS) do if m.serial == serial and m.folder == 'inbox' and not m.read_at then n = n + 1 end end return n end
+    DB.MailCounts = function(serial)
+        local acc = {}
+        for _, m in pairs(MAILS) do
+            if m.serial == serial then
+                local a = acc[m.folder] or { folder = m.folder, n = 0, unread = 0, flagged = 0 }
+                acc[m.folder] = a
+                a.n = a.n + 1 a.unread = a.unread + (m.read_at and 0 or 1) a.flagged = a.flagged + m.flagged
+            end
+        end
+        local out = {}
+        for _, a in pairs(acc) do out[#out + 1] = a end
+        return out
+    end
+    DB.ListMails = function(serial, folder, before)
+        local out = {}
+        for i = seqMail, 1, -1 do
+            local m = MAILS[i]
+            if m and m.serial == serial and m.id < before and ((folder == 'flagged' and m.flagged == 1 and m.folder ~= 'trash') or m.folder == folder) then
+                out[#out + 1] = { id = m.id, from_addr = m.from_addr, to_addr = m.to_addr, subject = m.subject, preview = m.body:sub(1, 80), read_at = m.read_at, flagged = m.flagged, created_at = m.created_at, folder = m.folder }
+            end
+        end
+        return out
+    end
+    local notified = {}
+    Bridge.Notify = function(src, msg) notified[#notified + 1] = { src = src, msg = msg } end
+    dofile('server/apps/mail.lua')
+    local H = handlers
+    local function tk() clock = clock + 6 end
+    local function err(name, src, data) tk() return H['pop_tablet:' .. name](src, data).err end
+    -- Trois tablettes neuves (60, 61, 62) : les sessions du bloc précédent sont terminées.
+    for _, src in ipairs({ 60, 61, 62 }) do
+        players[src] = 'mailchar' .. src
+        inv[src] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+        tk() handlers['pop_tablet:device:open'](src, nil, '2026-06-14 08:30')
+        tk() handlers['pop_tablet:device:setup'](src, { code = '4321', name = 'Mx' .. src, lang = 'fr', mail = 'mx' .. src .. '.test' })
+        local s = Tablet.Device.GetSession(src) s.settings = {} s.openedAt = 1
+    end
+    for addr, serial in pairs(mailboxes) do boxOf[serial] = addr end
+    local a60, a61 = boxOf[Tablet.Device.SerialOf(60)], boxOf[Tablet.Device.SerialOf(61)]
+
+    tk() sent = {}
+    local r = H['pop_tablet:mail:send'](60, { to = a61, subject = 'Bonjour', body = 'Texte du mail' })
+    local pushed = false
+    for _, m in ipairs(sent) do if m.name == 'pop_tablet:client:mail' and m.src == 61 and m.data.from == a60 then pushed = true end end
+    check('mail:send : livré en Réception, copie en Envoyés, push à la tablette ouverte', r.ok and pushed, tostring(r.err))
+    tk()
+    local f61, f60 = H['pop_tablet:mail:folders'](61), H['pop_tablet:mail:folders'](60)
+    check('mail:folders : adresse, non-lu et Envoyés', f61.address == a61 and f61.folders.inbox.unread == 1 and f60.folders.sent.n == 1)
+    check('mail:send : adresse inconnue refusée', err('mail:send', 60, { to = 'nobody.x@pop.ls', subject = 'a', body = 'b' }) == 'err_not_found')
+    check('mail:send : adresse mal formée refusée', err('mail:send', 60, { to = 'pas une adresse', subject = 'a', body = 'b' }) == 'err_payload')
+    check('mail:send : sujet vide refusé', err('mail:send', 60, { to = a61, subject = '', body = 'b' }) == 'err_payload')
+    check('mail:send : plus de 5000 caractères refusé', err('mail:send', 60, { to = a61, subject = 'a', body = string.rep('x', 5001) }) == 'err_too_large')
+    tk()
+    local list = H['pop_tablet:mail:list'](61, { folder = 'inbox' })
+    check('mail:list : Réception, non lu', list.ok and #list.items == 1 and list.items[1].read == false and list.items[1].from == a60)
+    check('mail:list : dossier inconnu refusé', err('mail:list', 61, { folder = 'secret' }) == 'err_payload')
+    tk()
+    local g = H['pop_tablet:mail:get'](61, list.items[1].id)
+    check('mail:get : corps complet, marqué lu', g.ok and g.mail.body == 'Texte du mail' and H['pop_tablet:mail:folders'](61).folders.inbox.unread == 0)
+    check('mail:get : mail d\'une autre tablette refusé', err('mail:get', 62, list.items[1].id) == 'err_not_found')
+    tk()
+    check('mail:flag : drapeau puis vue Drapeau', H['pop_tablet:mail:flag'](61, { id = g.mail.id, on = true }).ok and #H['pop_tablet:mail:list'](61, { folder = 'flagged' }).items == 1)
+    check('mail:flag : mail d\'un autre refusé', err('mail:flag', 62, { id = g.mail.id, on = true }) == 'err_not_found')
+    tk()
+    check('mail:move : Archive', H['pop_tablet:mail:move'](61, { id = g.mail.id, folder = 'archive' }).ok and #H['pop_tablet:mail:list'](61, { folder = 'archive' }).items == 1)
+    check('mail:move : vers Envoyés refusé', err('mail:move', 61, { id = g.mail.id, folder = 'sent' }) == 'err_payload')
+    tk()
+    local del1 = H['pop_tablet:mail:delete'](61, g.mail.id).ok
+    tk()
+    local inTrash = #H['pop_tablet:mail:list'](61, { folder = 'trash' }).items == 1
+    tk()
+    local del2 = H['pop_tablet:mail:delete'](61, g.mail.id).ok
+    tk()
+    check('mail:delete : Corbeille puis suppression définitive', del1 and inTrash and del2 and #H['pop_tablet:mail:list'](61, { folder = 'trash' }).items == 0)
+    tk()
+    local d = H['pop_tablet:mail:send'](60, { to = a61, subject = 'Brouillon', body = 'à finir', draft = true })
+    tk()
+    local dl = #H['pop_tablet:mail:list'](60, { folder = 'draft' }).items
+    tk()
+    check('mail:send draft : enregistré en Brouillons, rien livré', d.ok and dl == 1 and #H['pop_tablet:mail:list'](61, { folder = 'inbox' }).items == 0)
+    tk()
+    local fin = H['pop_tablet:mail:send'](60, { to = a61, subject = 'Final', body = 'ok', id = d.id })
+    tk()
+    check('mail:send : un brouillon envoyé disparaît des Brouillons', fin.ok and #H['pop_tablet:mail:list'](60, { folder = 'draft' }).items == 0)
+    tk() notified = {}
+    Tablet.Device.GetSession(61).openedAt = nil
+    H['pop_tablet:mail:send'](60, { to = a61, subject = 'Dors', body = 'x' })
+    check('tablette fermée : notification du jeu', #notified == 1 and notified[1].src == 61)
+    tk() sent, notified = {}, {}
+    Tablet.Device.GetSession(61).settings = { air = true }
+    H['pop_tablet:mail:send'](60, { to = a61, subject = 'Avion', body = 'x' })
+    check('destinataire en Mode Avion : mail rangé sans alerte', #notified == 0 and #sent == 0 and DB.UnreadMail(Tablet.Device.SerialOf(61)) >= 1)
+    Tablet.Device.GetSession(61).settings = {}
+    check('export SendMail : mail d\'une ressource livré', exportsApi.SendMail(a61, 'Convocation', 'Commissariat, 14 h', 'LSPD') == true and DB.ListMails(Tablet.Device.SerialOf(61), 'inbox', 99999)[1].from_addr == 'LSPD')
+    check('export SendMail : adresse inconnue refusée', select(2, exportsApi.SendMail('x.y@pop.ls', 'a', 'b')) == 'err_not_found')
+    local sA = Tablet.Device.SerialOf(62)
+    for _ = 1, Tablet.MailBox.max do DB.InsertMail(sA, 'inbox', 'x@y.z', boxOf[sA], 's', 'b', 1, 1) end
+    tk()
+    check('mail:send : boîte pleine (300) refusée', err('mail:send', 60, { to = boxOf[sA], subject = 'a', body = 'b' }) == 'err_limit')
+    local badge = {}
+    for _, h in ipairs(Tablet.BootHooks) do pcall(h, Tablet.Device.SerialOf(61), badge) end
+    check('boot : badge de mails non lus', (badge.badges or {}).mail ~= nil and badge.badges.mail >= 1)
+end
+
 print(('\n%d réussis, %d échecs'):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

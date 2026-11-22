@@ -123,3 +123,9 @@ Preuve commune : `lua tests/run.lua` = 537 réussis / 0 échec ; luacheck pop_ta
 - **app-msg-01, app-tel-01, app-con-01 passent à true** (tests Lua et vitest). **Restent false** : app-msg-02 (contact en pièce jointe d'un message non fait, seul le partage de proximité existe), app-msg-03 (remise à la prochaine ouverture : badge et fils relus, pas de test de démarrage), app-tel-02 (voix pma-voice : à valider en jeu), app-tel-03 (sans pma-voice : aucune erreur claire, `setPlayerCall` ignoré sans message).
 - **Écarts SPEC** : 2 tables de groupe ; mocks de l'interface chargés à la demande pour tenir le plafond du point d'entrée ; silence, haut-parleur et clavier de l'appel sont visuels (pas d'effet voix) ; pas de badge Téléphone.
 - **À valider en jeu** : voix sur le canal, sonnerie en notification tablette fermée, capture comparée aux maquettes (non faite).
+
+## Session 9 - 2026-11-22 (bundle, Mail)
+Preuve : `lua tests/run.lua` = 560 réussis / 0 échec ; luacheck 0/0 ; check_sql OK ; ui/pop-os `pnpm typecheck && pnpm check && pnpm test` = 107 réussis, `pnpm build && pnpm verify` = entrée 334,8 Ko (plafond ramené à 380 Ko).
+- **Bundle** : mocks (`nui/mock*`), `DevHost` (hors jeu seulement) et calques centres/recherche/multitâche (`system/OverlayLayer.tsx`, chargé à la première ouverture) sortis du point d'entrée par import dynamique : 449,6 -> 334,6 Ko.
+- **Mail** : `server/apps/mail.lua` (boîtes Réception, Envoyés, Brouillons, Archive, Corbeille, vue Drapeau ; 300 mails, 5000 caractères ; push `mail` ou notification du jeu ; badge ; export `SendMail(to, subject, body, from?)`). `sql/update-mail-archive.sql` pour une base déjà installée. UI `apps/mail` (lecture, rédaction, répondre, transférer, drapeau, archive, corbeille).
+- **app-mai-01 et app-mai-02 restent false** : test en jeu à deux joueurs requis (logique prouvée par tests Lua et vitest). Pas de dossiers personnalisés.
