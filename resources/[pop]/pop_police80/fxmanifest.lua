@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
-description 'Tabernac Police Dispatch — MDT 80s (CRT phosphore ambre, plein écran)'
+author 'KL'
+description 'POP Police Dispatch — MDT 80s (CRT phosphore ambre, plein écran)'
 version '1.0.0'
 
 dependencies {

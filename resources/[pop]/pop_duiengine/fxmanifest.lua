@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'codyraves x Tabernac'
-description 'tabernac DUI engine'
+author 'KL'
+description 'POP DUI engine'
 version '2.6'
 
 client_scripts {

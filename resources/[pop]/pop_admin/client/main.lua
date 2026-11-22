@@ -117,8 +117,13 @@ end)
 -- =====================================================================
 --  ACCÈS
 -- =====================================================================
-RegisterNetEvent('pop_admin:setAccess', function(allowed)
+local openMenu
+
+RegisterNetEvent('pop_admin:setAccess', function(allowed, openAfter)
     Admin.isAdmin = allowed == true
+    if openAfter then
+        if Admin.isAdmin then openMenu() else AdminNotify("Accès refusé", 'error') end
+    end
 end)
 
 CreateThread(function()
@@ -131,9 +136,10 @@ end)
 -- =====================================================================
 --  OUVERTURE / FERMETURE
 -- =====================================================================
-local function openMenu()
+openMenu = function()
     if not Admin.isAdmin then
-        AdminNotify("Accès refusé", 'error')
+        -- Le groupe a pu changer depuis la connexion : on redemande au serveur.
+        TriggerServerEvent('pop_admin:requestAccess', true)
         return
     end
     Admin.open = true
@@ -176,10 +182,10 @@ local function toggleMenu()
     end
 end
 
-RegisterCommand('tab_admin_open', toggleMenu, false)
-RegisterKeyMapping('tab_admin_open', 'Admin : ouvrir / fermer le menu', 'keyboard', Config.OpenKey or 'F6')
+RegisterCommand('pop_admin_open', toggleMenu, false)
+RegisterKeyMapping('pop_admin_open', 'Admin : ouvrir / fermer le menu', 'keyboard', Config.OpenKey or 'F6')
 
-RegisterCommand('tab_admin_noclip', function()
+RegisterCommand('pop_admin_noclip', function()
     if not Admin.isAdmin then return end
     AdminToggleNoclip()
     if Admin.open and not Admin.minimized then
@@ -190,11 +196,21 @@ RegisterCommand('tab_admin_noclip', function()
         })
     end
 end, false)
-RegisterKeyMapping('tab_admin_noclip', 'Admin : noclip', 'keyboard', Config.NoclipKey or 'F7')
+RegisterKeyMapping('pop_admin_noclip', 'Admin : noclip', 'keyboard', Config.NoclipKey or 'F7')
 
 -- =====================================================================
 --  CALLBACKS NUI GÉNÉRAUX
 -- =====================================================================
+-- Sécurité Échap : si la NUI a caché le menu, le Lua arrête de bloquer les touches.
+RegisterNUICallback('menuHidden', function(_, cb)
+    if Admin.open and not Admin.spec.active then
+        Admin.open = false
+        inputFocused = false
+        AdminRefreshFocus()
+    end
+    cb({})
+end)
+
 RegisterNUICallback('close', function(_, cb)
     AdminClose(); cb({})
 end)

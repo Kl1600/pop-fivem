@@ -1,14 +1,30 @@
 fx_version 'cerulean'
 game 'gta5'
+lua54 'yes'
 
-author 'TAB'
+name 'pop_chat'
+author 'KL'
+version '1.1.0'
 description 'Chat roleplay - commande /me'
-version '1.0.0'
+
+shared_scripts {
+    'config.lua',
+    'shared/*.lua',
+    'locales/*.lua',
+}
 
 client_scripts {
-    'client.lua'
+    'bridge/client.lua',
+    'client/main.lua',
 }
 
 server_scripts {
-    'server.lua'
+    'bridge/server.lua',
+    'server/main.lua',
+}
+
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
 }

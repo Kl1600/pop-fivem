@@ -306,9 +306,20 @@ end)
 -- =====================================================================
 --  ACCÈS CLIENT
 -- =====================================================================
-RegisterNetEvent('pop_admin:requestAccess', function()
+RegisterNetEvent('pop_admin:requestAccess', function(openAfter)
     local src = source
-    TriggerClientEvent('pop_admin:setAccess', src, IsAdmin(src))
+    TriggerClientEvent('pop_admin:setAccess', src, IsAdmin(src), openAfter == true)
+end)
+
+-- Changement de groupe (menu admin, /setgroup ESX, txAdmin...) : on met à jour
+-- l'accès du joueur tout de suite, sans qu'il ait à se reconnecter.
+AddEventHandler('esx:setGroup', function(playerId)
+    playerId = tonumber(playerId)
+    if playerId then
+        SetTimeout(200, function()
+            TriggerClientEvent('pop_admin:setAccess', playerId, IsAdmin(playerId), false)
+        end)
+    end
 end)
 
 -- =====================================================================
@@ -422,9 +433,20 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
     elseif action == 'money' then
         if not xTarget then return end
         local account = tostring(data.account or 'money')
-        if not xTarget.getAccount(account) then notify(src, 'Compte invalide', 'error'); return end
         local amount = math.floor(tonumber(data.amount) or 0)
         if amount == 0 then return end
+        -- Le cash est un objet de l'inventaire (pop_inventory), pas le compte ESX « money ».
+        if account == 'money' and GetResourceState('pop_inventory') == 'started' then
+            local ok
+            if amount > 0 then
+                ok = exports['pop_inventory']:GiveItem(xTarget.source, 'cash', amount)
+            else
+                ok = exports['pop_inventory']:removeItem(xTarget.source, 'cash', -amount)
+            end
+            notify(src, ok and ('%s : %s%s$ (cash)'):format(xTarget.getName(), amount > 0 and '+' or '', amount) or 'Pas assez de cash à retirer', ok and 'success' or 'error')
+            return
+        end
+        if not xTarget.getAccount(account) then notify(src, 'Compte invalide', 'error'); return end
         if amount > 0 then
             xTarget.addAccountMoney(account, amount, 'pop_admin')
         else
@@ -445,14 +467,31 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
     elseif action == 'setgroup' then
         if not xTarget then return end
         local group = tostring(data.group or 'user')
+        -- Hiérarchie : on ne peut ni donner un groupe supérieur ou égal au sien,
+        -- ni modifier quelqu'un de rang supérieur ou égal (sauf owner / console).
+        local RANK = { user = 0, mod = 1, admin = 2, superadmin = 3, owner = 4 }
+        if RANK[group] == nil then notify(src, 'Groupe inconnu', 'error'); return end
+        local myRank = (src == 0) and 99 or (RANK[xAdmin and xAdmin.getGroup() or 'user'] or 0)
+        -- Admins listés dans la config ou ayant tous les droits ACE : rang maximal
+        if src ~= 0 and (isIdentifierListed(src) or IsPlayerAceAllowed(src, 'command')) then myRank = 4 end
+        if myRank < 4 and (RANK[group] >= myRank or (RANK[xTarget.getGroup()] or 0) >= myRank) and xTarget.source ~= src then
+            notify(src, 'Vous ne pouvez pas attribuer ce groupe', 'error'); return
+        end
+        if myRank < 4 and xTarget.source == src and RANK[group] > myRank then
+            notify(src, 'Vous ne pouvez pas vous promouvoir', 'error'); return
+        end
         xTarget.setGroup(group)
+        -- Enregistré tout de suite en base : ESX ne sauvegarde qu'à la déconnexion
+        -- ou toutes les 10 min, donc un restart juste après faisait perdre le groupe.
+        MySQL.update('UPDATE `users` SET `group` = ? WHERE `identifier` = ?', { group, xTarget.identifier })
+        TriggerClientEvent('pop_admin:setAccess', xTarget.source, IsAdmin(xTarget.source), false)
         notify(src, ('%s → groupe %s'):format(xTarget.getName(), group), 'success')
 
     elseif action == 'giveitem' then
         if not xTarget then return end
         local item = tostring(data.item or '')
-        local qty = tonumber(data.qty) or 1
-        if item == '' then return end
+        local qty = math.floor(tonumber(data.qty) or 1)
+        if item == '' or qty < 1 or qty > 1000 then return end
         if GetResourceState('pop_inventory') == 'started' then
             local ok = pcall(function()
                 return exports['pop_inventory']:GiveItem(xTarget.source, item, qty)
@@ -476,8 +515,8 @@ RegisterNetEvent('pop_admin:giveSelf', function(item, qty)
     local src = source
     if not IsAdmin(src) then return end
     item = tostring(item or '')
-    qty = tonumber(qty) or 1
-    if item == '' then return end
+    qty = math.floor(tonumber(qty) or 1)
+    if item == '' or qty < 1 or qty > 1000 then return end
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
     if GetResourceState('pop_inventory') == 'started' then
@@ -696,7 +735,7 @@ RegisterNetEvent('pop_admin:jobAddGrade', function(jobName, level, gname, glabel
     salary = tonumber(salary) or 0
     if type(gname) ~= 'string' or gname == '' or type(glabel) ~= 'string' or glabel == '' then return end
     MySQL.update('DELETE FROM job_grades WHERE job_name = ? AND grade = ?', { jobName, level }, function()
-        MySQL.update('INSERT INTO job_grades (job_name, grade, name, label, salary) VALUES (?, ?, ?, ?, ?)',
+        MySQL.update("INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female) VALUES (?, ?, ?, ?, ?, '{}', '{}')",
             { jobName, level, gname, glabel, salary }, function()
             if ESX.Jobs and ESX.Jobs[jobName] then
                 ESX.Jobs[jobName].grades = ESX.Jobs[jobName].grades or {}
@@ -739,7 +778,6 @@ RegisterNetEvent('pop_admin:jobDelete', function(jobName)
     end
     local accountName = 'society_' .. jobName
     MySQL.update("UPDATE users SET job = 'unemployed', job_grade = 0 WHERE job = ?", { jobName }, function()
-        MySQL.update("UPDATE users SET job2 = 'unemployed', job2_grade = 0 WHERE job2 = ?", { jobName })
         MySQL.update('DELETE FROM job_grades WHERE job_name = ?', { jobName }, function()
             MySQL.update('DELETE FROM jobs WHERE name = ?', { jobName }, function()
                 MySQL.update('DELETE FROM addon_account_data WHERE account_name = ?', { accountName })
@@ -755,5 +793,75 @@ RegisterNetEvent('pop_admin:jobDelete', function(jobName)
                 refreshJobsAndReply(src)
             end)
         end)
+    end)
+end)
+
+-- =====================================================================
+--  DIAGNOSTIC « Cleaning stale player entry » (ESX bloqué à la connexion)
+--  Si un joueur déconnecté est encore en mémoire ESX 20 s plus tard, c'est que
+--  la sauvegarde ESX de fin de session échoue en boucle. On rejoue chaque étape
+--  de cette sauvegarde pour trouver laquelle plante, et on l'écrit dans
+--  diag_save.log (lisible depuis GitHub, outil serveur « logs »).
+-- =====================================================================
+local function diagWrite(lines)
+    local old = LoadResourceFile(resName, 'diag_save.log') or ''
+    local text = old .. table.concat(lines, '\n') .. '\n\n'
+    if #text > 60000 then text = text:sub(-60000) end
+    SaveResourceFile(resName, 'diag_save.log', text, -1)
+end
+
+AddEventHandler('playerDropped', function(reason)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if not xPlayer then return end
+    local identifier, name = xPlayer.identifier, xPlayer.getName()
+    SetTimeout(20000, function()
+        local stale = ESX.GetPlayerFromIdentifier(identifier)
+        if not stale then return end
+        local lines = { ('[%s] Joueur encore en mémoire ESX 20 s après sa déconnexion : %s (raison : %s)'):format(os.date('%Y-%m-%d %H:%M:%S'), tostring(name), tostring(reason)) }
+        local steps = {
+            { 'accounts', function() return json.encode(stale.getAccounts(true)) end },
+            { 'job', function() return tostring(stale.job and stale.job.name) .. ' / ' .. tostring(stale.job and stale.job.grade) end },
+            { 'group', function() return tostring(stale.group) end },
+            { 'coords', function() return json.encode(stale.getCoords(false, true)) end },
+            { 'inventory', function() return json.encode(stale.getInventory(true)) end },
+            { 'loadout', function() return json.encode(stale.getLoadout(true)) end },
+            { 'metadata', function() return json.encode(stale.getMeta()) end },
+            { 'pendingOps', function() return tostring(stale.getPendingAccountOperations and stale.getPendingAccountOperations()) end },
+        }
+        for _, step in ipairs(steps) do
+            local ok, res = pcall(step[2])
+            local value = tostring(res)
+            if #value > 300 then value = value:sub(1, 300) .. '…' end
+            lines[#lines + 1] = ('  %s : %s %s'):format(step[1], ok and 'OK' or 'ERREUR', value)
+        end
+        print('^1[pop_admin] DIAG sauvegarde ESX bloquée :^7\n' .. table.concat(lines, '\n'))
+        diagWrite(lines)
+    end)
+end)
+
+-- Test de la sauvegarde ESX (lecture seule) : 60 s après le chargement d'un joueur,
+-- on prépare les mêmes données qu'ESX et on vérifie les colonnes, résultat dans diag_save.log.
+AddEventHandler('esx:playerLoaded', function(playerId)
+    SetTimeout(60000, function()
+        local xPlayer = ESX.GetPlayerFromId(playerId)
+        if not xPlayer then return end
+        local okParams, params = pcall(function()
+            return {
+                json.encode(xPlayer.getAccounts(true)), xPlayer.job.name, xPlayer.job.grade, xPlayer.group,
+                json.encode(xPlayer.getCoords(false, true)), json.encode(xPlayer.getInventory(true)),
+                json.encode(xPlayer.getLoadout(true)), json.encode(xPlayer.getMeta()), xPlayer.identifier,
+            }
+        end)
+        local line
+        if not okParams then
+            line = ('ERREUR en préparant la sauvegarde : %s'):format(tostring(params))
+        else
+            -- Lecture seule : vérifie que toutes les colonnes de la sauvegarde ESX existent
+            -- et que les données se convertissent bien, sans rien réécrire.
+            local ok, res = pcall(MySQL.single.await, 'SELECT `accounts`, `job`, `job_grade`, `group`, `position`, `inventory`, `loadout`, `metadata` FROM `users` WHERE `identifier` = ?', { xPlayer.identifier })
+            line = ok and (res and 'colonnes OK, données convertibles' or 'joueur introuvable en base') or ('ERREUR SQL : %s'):format(tostring(res))
+        end
+        diagWrite({ ('[%s] Test sauvegarde ESX pour %s (groupe %s) : %s'):format(os.date('%Y-%m-%d %H:%M:%S'), xPlayer.getName(), tostring(xPlayer.group), line) })
     end)
 end)

@@ -1,30 +1,25 @@
--- TAB Doorlock | Doorbuilder edition --
-
 Config = {}
 
-Config.Translate = {									-- Messages | personnalise ici
-	['opened_door'] = 'Porte déverrouillée',
-	['closed_door'] = 'Porte verrouillée',
-	['employes_only'] = 'Réservé au personnel autorisé !',
-	['need_key'] = 'Il vous faut la bonne clé.',
-	-- Doorbuilder
-	['builder_open'] = 'Doorbuilder ouvert.',
-	['builder_no_perm'] = 'Vous n\'avez pas la permission.',
-	['builder_select'] = 'Mode sélection : visez les portes.',
-	['builder_added'] = 'Porte ajoutée à la sélection (%s).',
-	['builder_removed'] = 'Porte retirée de la sélection (%s restantes).',
-	['builder_already'] = 'Cette porte est déjà sélectionnée.',
-	['builder_not_door'] = 'Aucune porte visée.',
-	['builder_empty'] = 'Aucune porte sélectionnée.',
-	['builder_saved'] = 'Groupe "%s" enregistré (%s porte(s)).',
-	['builder_cancel'] = 'Doorbuilder annulé.',
-	['builder_deleted'] = 'Groupe "%s" supprimé.',
-	['builder_delete_fail'] = 'Suppression impossible (groupe statique ?).',
-	['key_received'] = 'Clé reçue pour "%s".',
-	['key_regenerated'] = 'Clé régénérée pour "%s" (les anciennes clés ne fonctionnent plus).',
-	['key_fail'] = 'Impossible de recevoir la clé.',
-	['builder_group_emptied'] = 'Le groupe ne contient plus aucune porte, il a été retiré.',
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
 }
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_doorlock (doorlock + Doorbuilder). Textes : locales/fr.lua
+------------------------------------------------------------------------
 
 -- =====================================================================
 --  DOORBUILDER / ADMIN
@@ -54,11 +49,6 @@ Config.Builder = {
 	MarkerColor = { r = 235, g = 235, b = 235 },		-- couleur marqueur porte visée (neutre, comme le thème admin)
 	SelectedColor = { r = 120, g = 200, b = 160 },		-- couleur marqueur porte sélectionnée (vert accent admin)
 }
-
-Config.ESX_Notify = false								-- If you want to use ESX notify | current true | if false add at bottom whatever notify you have
-Config.Custom_Notify = function(Text, Time, Type)
-	
-end
 
 Config.Doors = {
 	--[[
@@ -118,7 +108,7 @@ Config.Doors = {
         Jobs = false -- Tout le monde peut l'utiliser avec le code
     },
 
-    
+
 
     -- Nouveau Keypad Warehous
 }

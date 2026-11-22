@@ -1,0 +1,38 @@
+-- Français
+Locales['fr'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Annuler',
+    confirm            = 'Confirmer',
+    close              = 'Fermer',
+    interact           = 'Interagir',
+    progress_cancelled = 'Action annulée',
+    no_permission      = "Vous n'avez pas la permission",
+    wrong_job          = "Vous n'avez pas le métier requis",
+    too_far            = 'Vous êtes trop loin',
+    not_enough_money   = "Pas assez d'argent",
+    missing_item       = 'Il vous faut : %s',
+    inventory_full     = 'Votre inventaire est plein',
+    cooldown           = 'Patientez encore %s s',
+    busy               = 'Vous êtes déjà occupé',
+    error              = 'Une erreur est survenue',
+
+    -- Textes propres au script :
+    need_water_bottle  = "Il vous faut une bouteille d'eau.",
+    plant_watered      = 'Plante arrosée !',
+    max_plants         = 'Vous avez déjà %d plantes.',
+    need_pot           = 'Il vous faut un pot.',
+    need_seed          = 'Il vous faut une graine de cannabis.',
+    plant_planted      = 'Plante mise en terre !',
+    plant_not_ready    = "La plante n'est pas encore prête.",
+    harvest_done       = 'Récolte : <b>%d weed</b> obtenus.',
+    harvest_progress   = 'Récolte en cours...',
+    target_examine     = 'Examiner',
+    target_harvest     = 'Récolter',
+    growth_notify      = 'Croissance : <b>%d%%</b>',
+    no_plant_nearby    = 'Aucune plante à proximité.',
+    need_seed_for_pot  = 'Il vous faut une graine de cannabis pour utiliser ce pot.',
+    hud_growth         = 'Croissance   %d%%',
+    hud_water          = 'Eau   %d%%',
+    log_save_failed    = "^1[pop_weed] Impossible d'écrire plants.json^7",
+    log_loaded         = '[pop_weed] %d plante(s) chargée(s)',
+}

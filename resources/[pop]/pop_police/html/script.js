@@ -628,7 +628,7 @@ function renderDbResults() {
   if (localVehs.length > 0) {
     dbResList.insertAdjacentHTML('beforeend', `
       <div style="padding:5px 12px 3px;border-bottom:1px solid rgba(255,255,255,0.07);">
-        <span style="font-size:10px;color:#ff2e88;font-weight:600;letter-spacing:.5px;text-transform:uppercase;">Véhicules (${localVehs.length})</span>
+        <span style="font-size:10px;color:#e67e22;font-weight:600;letter-spacing:.5px;text-transform:uppercase;">Véhicules (${localVehs.length})</span>
       </div>`);;
     for (const v of localVehs) {
       const el = document.createElement('div');
@@ -647,7 +647,7 @@ function renderDbResults() {
   if (localCits.length > 0) {
     dbResList.insertAdjacentHTML('beforeend', `
       <div style="padding:5px 12px 3px;border-bottom:1px solid rgba(255,255,255,0.07);">
-        <span style="font-size:10px;color:#ff2e88;font-weight:600;letter-spacing:.5px;text-transform:uppercase;">Citoyens (${localCits.length})</span>
+        <span style="font-size:10px;color:#e67e22;font-weight:600;letter-spacing:.5px;text-transform:uppercase;">Citoyens (${localCits.length})</span>
       </div>`);;
     for (const c of localCits) {
       const el = document.createElement('div');

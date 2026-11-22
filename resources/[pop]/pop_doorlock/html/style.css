@@ -196,8 +196,8 @@ button.big { width: 100%; padding: 13px; font-size: 12px; margin-bottom: 4px; }
 button.mini { padding: 5px 9px; font-size: 9.5px; }
 button.danger { background: rgba(220, 80, 80, 0.1); border-color: rgba(220, 80, 80, 0.3); color: #ffc8c8; }
 button.danger:hover { background: rgba(220, 80, 80, 0.2); border-color: rgba(220, 80, 80, 0.55); }
-button.key { background: rgba(255, 46, 136, 0.12); border-color: rgba(255, 46, 136, 0.35); color: #ffb3d4; }
-button.key:hover { background: rgba(255, 46, 136, 0.22); border-color: rgba(255, 46, 136, 0.55); }
+button.key { background: rgba(210, 180, 80, 0.12); border-color: rgba(210, 180, 80, 0.35); color: #f0dd9c; }
+button.key:hover { background: rgba(210, 180, 80, 0.22); border-color: rgba(210, 180, 80, 0.55); }
 
 /* SWITCH */
 .switch { display: flex; align-items: center; gap: 9px; cursor: pointer; text-transform: none; letter-spacing: 0; margin: 0; margin-top: 18px; }

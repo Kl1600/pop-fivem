@@ -1226,11 +1226,11 @@ function renderOrders() {
     header.style.fontSize = '10px';
     header.style.textTransform = 'uppercase';
     header.style.letterSpacing = '1.5px';
-    header.style.color = '#ff2e88'; // Orange Accent matching Import
+    header.style.color = '#e67e22'; // Orange Accent matching Import
     header.style.marginBottom = '12px';
     header.style.fontWeight = '800';
     header.style.opacity = '0.9';
-    header.style.borderBottom = '1px solid rgba(255, 46, 136, 0.2)';
+    header.style.borderBottom = '1px solid rgba(230, 126, 34, 0.2)';
     header.style.paddingBottom = '4px';
     header.textContent = 'Importations Véhicules';
     container.appendChild(header);
@@ -1320,8 +1320,8 @@ function renderOrders() {
       if (progress > 100) progress = 100;
 
       let statusLabel = 'EXPÉDIÉ';
-      let statusColor = '#ff2e88'; // Orange
-      let barColor = '#ff2e88';
+      let statusColor = '#e67e22'; // Orange
+      let barColor = '#e67e22';
 
       if (order.status === 'ready' || progress >= 100) {
         if (order.status !== 'delivered' && order.status !== 'completed') {
@@ -1577,7 +1577,7 @@ function renderD8Properties() {
             <div style="height:140px; background:#000; overflow:hidden; position:relative;">
                 <img src="${prop.image}" style="width:100%; height:100%; object-fit:cover;">
                 ${statusHtml}
-                <div style="position:absolute; bottom:5px; left:5px; background:rgba(255, 46, 136, 0.9); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;">
+                <div style="position:absolute; bottom:5px; left:5px; background:rgba(230, 126, 34, 0.9); width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;">
                     <i class="fa-solid fa-lightbulb" style="font-size:12px;"></i>
                 </div>
             </div>
@@ -1620,7 +1620,7 @@ function showD8Detail(propId) {
                     
                     <div style="background:rgba(0,0,0,0.2); padding:12px 20px; border-radius:8px; display:flex; align-items:center; gap:15px; border:1px solid rgba(255,255,255,0.05);">
                         <span style="color:white; font-size:12px; font-weight:600;">Alerte Loyer Impayé</span>
-                        <div style="background:#ff2e88; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; box-shadow:0 0 10px rgba(255, 46, 136, 0.5);">
+                        <div style="background:#e67e22; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; box-shadow:0 0 10px rgba(230, 126, 34, 0.5);">
                             <i class="fa-solid fa-check" style="font-size:14px;"></i>
                         </div>
                     </div>
@@ -1969,7 +1969,7 @@ function renderYouToolCategories() {
     
     // Style de surbrillance YouTool
     if (cat.id === youToolCurrentCategory) {
-      item.style.background = '#ff2e88';
+      item.style.background = '#e67e22';
       item.style.color = 'white';
     } else {
       item.style.background = 'transparent';

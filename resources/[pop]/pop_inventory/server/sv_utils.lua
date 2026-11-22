@@ -1,6 +1,6 @@
 function debugPrint(...)
-  if Config.Debug and Config.Debug.PrintActions then
-    print('[TAB_INVENTORY]', ...)
+  if Config.Debug or Config.DebugOptions.PrintActions then
+    print('[POP_INVENTORY]', ...)
   end
 end
 
@@ -21,19 +21,24 @@ function createStore()
   }
 end
 
+-- Cache source -> identifiant ESX : sert pendant playerDropped, quand ESX a déjà
+-- retiré le joueur (sinon l'inventaire ne serait pas sauvegardé à la déconnexion).
+local SourceIdentifier = {}
+
 function getIdentifier(source)
-  print("^3[PAINTGUN][SV] getIdentifier called with source: " .. tostring(source) .. "^7")
   if not source or source == 0 or source == '' then
-    print("^1[PAINTGUN][SV] getIdentifier: source is invalid^7")
     return nil
   end
+  source = tonumber(source) or source
   if ESX then
     local xPlayer = ESX.GetPlayerFromId(source)
-    print("^3[PAINTGUN][SV] getIdentifier ESX: xPlayer = " .. tostring(xPlayer) .. "^7")
     if xPlayer and xPlayer.identifier then
-      print("^2[PAINTGUN][SV] getIdentifier ESX success: " .. tostring(xPlayer.identifier) .. "^7")
+      SourceIdentifier[source] = xPlayer.identifier
       return xPlayer.identifier
     end
+    -- Pas de repli sur la license en ESX : un joueur pas encore chargé aurait
+    -- sinon un inventaire vide (chargé sous sa license) et apparaîtrait en caleçon.
+    return SourceIdentifier[source]
   elseif QBCore then
     local xPlayer = QBCore.Functions.GetPlayer(source)
     if xPlayer and xPlayer.PlayerData.citizenid then
@@ -42,14 +47,19 @@ function getIdentifier(source)
   end
 
   local license = GetPlayerIdentifierByType(source, 'license')
-  print("^3[PAINTGUN][SV] getIdentifier license = " .. tostring(license) .. "^7")
   if license and license ~= '' then
     return license
   end
 
   local identifiers = GetPlayerIdentifiers(source)
-  print("^3[PAINTGUN][SV] getIdentifier fallback identifiers count = " .. tostring(identifiers and #identifiers or 0) .. "^7")
   return identifiers and identifiers[1]
+end
+
+-- Le cache est vidé un peu après la déconnexion, une fois les sauvegardes faites
+-- (appelé par l'unique playerDropped de sv_exports.lua).
+function forgetSourceIdentifier(src)
+  src = tonumber(src) or src
+  SetTimeout(10000, function() SourceIdentifier[src] = nil end)
 end
 
 function toVector3(coords)
@@ -127,30 +137,30 @@ function rebuildLocations(store)
   if not store then return end
   store.itemLocations = {}
   store.containerOwners = {}
-  
+
   -- Fusion de toutes les itérations en une seule boucle pour les items
   local it = 0
   for itemId, item in pairs(store.items) do
     it = it + 1
     if it % 250 == 0 then Wait(0) end -- Anti-freeze
-    
+
     if item and item.containerId then
       store.containerOwners[item.containerId] = itemId
     end
   end
-  
+
   -- Nettoyage et reconstruction des conteneurs
   for containerId, container in pairs(store.containers) do
     it = it + 1
     if it % 200 == 0 then Wait(0) end
-    
+
     local rebuilt = {}
     for slot, itemId in pairs(container.items or {}) do
       local slotIndex = tonumber(slot)
       if slotIndex then
         rebuilt[slotIndex] = itemId
-        if itemId then 
-          store.itemLocations[itemId] = { type = 'container', containerId = containerId, slot = slotIndex } 
+        if itemId then
+          store.itemLocations[itemId] = { type = 'container', containerId = containerId, slot = slotIndex }
         end
       end
     end
@@ -193,7 +203,7 @@ function pruneEmptyGroundPiles()
   for pileId, pile in pairs(GroundPiles) do
     count = count + 1
     if count % 100 == 0 then Wait(0) end -- Timeout anti-freeze
-    
+
     local containerId = pile and pile.containerId
     local container = containerId and GroundStore.containers[containerId] or nil
     local hasItems = false
@@ -238,16 +248,16 @@ function saveGround(force)
   if not force and not groundDirty then
     return
   end
-  
+
   -- Rebuild cache before encoding
   pruneEmptyGroundPiles()
-  
+
   local payload = json.encode({
     piles = GroundPiles,
     items = GroundStore.items,
     containers = GroundStore.containers,
   })
-  
+
   mysqlUpdate(
     string.format('INSERT INTO `%s` (id, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)', tableName),
     { getGroundSaveId(), payload },
@@ -380,7 +390,7 @@ function loadGround()
   GroundStore.containers = decoded.containers or (decoded.store and decoded.store.containers) or {}
   GroundStore.itemLocations = {}
   GroundStore.containerOwners = {}
-  
+
   -- Initialiser la grille spatiale
   GroundGrid = {}
   for _, pile in pairs(GroundPiles) do

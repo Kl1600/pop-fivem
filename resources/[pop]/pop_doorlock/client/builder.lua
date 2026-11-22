@@ -1,23 +1,11 @@
--- TAB Doorlock | Doorbuilder | hub de gestion + sélection d'entités via raycast --
+-- Doorbuilder : hub de gestion (NUI) + sélection des portes via raycast.
 
 local selecting = false   -- mode sélection in-game (raycast) actif
 local formOpen  = false   -- formulaire d'attribution affiché (gèle le raycast)
 local selected  = {}      -- [entityHandle] = { model, coords{x,y,z} }
 
--- =====================================================================
---  NOTIF LOCALE
--- =====================================================================
 local function notifyLocal(text, kind)
-    if Config.ESX_Notify then
-        exports['esx_notify']:Notify(kind or 'info', 3000, text)
-    elseif GetResourceState('pop_notify') == 'started' then
-        local icon = (kind == 'error') and 'fas fa-triangle-exclamation' or 'fas fa-door-open'
-        exports['pop_notify']:ShowNotify({ icon = icon, message = text, duration = 3000 })
-    elseif ESX and ESX.ShowNotification then
-        ESX.ShowNotification(text)
-    else
-        Config.Custom_Notify(text, 3000, kind or 'info')
-    end
+    Doorlock.Notify(text, kind, 3000, 'fas fa-door-open')
 end
 RegisterNetEvent('pop_doorlock:notifyLocal', notifyLocal)
 
@@ -83,14 +71,8 @@ end
 --  HUB DE GESTION (NUI)
 -- =====================================================================
 local function openHub()
-    ESX.TriggerServerCallback('pop_doorlock:getGroups', function(groups)
+    Callback.Trigger('pop_doorlock:getGroups', function(groups)
         SetNuiFocus(true, true)
-        SendNUIMessage({ action = 'hub', groups = groups })
-    end)
-end
-
-local function refreshHub()
-    ESX.TriggerServerCallback('pop_doorlock:getGroups', function(groups)
         SendNUIMessage({ action = 'hub', groups = groups })
     end)
 end
@@ -101,7 +83,7 @@ end
 local currentDetailGid = nil   -- gid actuellement affiché dans le panneau de config (ou nil)
 
 local function openDetail(gid)
-    ESX.TriggerServerCallback('pop_doorlock:getGroupDetail', function(detail)
+    Callback.Trigger('pop_doorlock:getGroupDetail', function(detail)
         if not detail then
             currentDetailGid = nil
             openHub()
@@ -123,7 +105,7 @@ end
 -- =====================================================================
 local function openForm()
     if countSelected() == 0 then
-        notifyLocal(Config.Translate['builder_empty'], 'error')
+        notifyLocal(L('builder_empty'), 'error')
         return
     end
     formOpen = true
@@ -145,8 +127,8 @@ local function selectionLoop()
 
             if formOpen then goto continue end
 
-            drawText2D('~w~DOORBUILDER~s~  |  Sélectionnées : ~g~' .. countSelected(), 0.36, 0.92, 0.45)
-            drawText2D('[E] Sélectionner/Retirer    [ENTER] Valider & attribuer la clé    [X] Annuler', 0.265, 0.95, 0.38)
+            drawText2D(L('builder_hud_title', countSelected()), 0.36, 0.92, 0.45)
+            drawText2D(L('builder_hud_keys'), 0.265, 0.95, 0.38)
 
             for _, info in pairs(selected) do
                 drawMarker(info.coords, Config.Builder.SelectedColor)
@@ -162,21 +144,21 @@ local function selectionLoop()
                 local already = selected[entity] ~= nil
                 drawMarker(coords, already and Config.Builder.SelectedColor or Config.Builder.MarkerColor)
                 drawText3D(coords + vector3(0,0,0.5),
-                    ('~w~%s~s~\n%s'):format(model, already and '~g~SÉLECTIONNÉE' or '~w~[E] sélectionner'))
+                    ('~w~%s~s~\n%s'):format(model, already and L('builder_aim_selected') or L('builder_aim_select')))
 
                 if IsControlJustReleased(0, Config.Builder.SelectKey) then
                     if already then
                         selected[entity] = nil
-                        notifyLocal((Config.Translate['builder_removed']):format(countSelected()), 'info')
+                        notifyLocal(L('builder_removed', countSelected()), 'info')
                     else
                         selected[entity] = { model = model, coords = { x = coords.x, y = coords.y, z = coords.z } }
-                        notifyLocal((Config.Translate['builder_added']):format(countSelected()), 'success')
+                        notifyLocal(L('builder_added', countSelected()), 'success')
                     end
                 end
             end
 
             if not aimedValid and IsControlJustReleased(0, Config.Builder.SelectKey) then
-                notifyLocal(Config.Translate['builder_not_door'], 'error')
+                notifyLocal(L('builder_not_door'), 'error')
             end
 
             if IsControlJustReleased(0, Config.Builder.ValidateKey) then
@@ -185,7 +167,7 @@ local function selectionLoop()
 
             if IsControlJustReleased(0, Config.Builder.CancelKey) then
                 stopSelection()
-                notifyLocal(Config.Translate['builder_cancel'], 'info')
+                notifyLocal(L('builder_cancel'), 'info')
             end
 
             ::continue::
@@ -198,31 +180,31 @@ end
 -- =====================================================================
 RegisterNetEvent('pop_doorlock:builder:open', function()
     if selecting then return end
-    notifyLocal(Config.Translate['builder_open'], 'success')
+    notifyLocal(L('builder_open'), 'success')
     openHub()
 end)
 
 RegisterNetEvent('pop_doorlock:builder:denied', function()
-    notifyLocal(Config.Translate['builder_no_perm'], 'error')
+    notifyLocal(L('builder_no_perm'), 'error')
 end)
 
 RegisterNetEvent('pop_doorlock:builder:saved', function(label, count)
-    notifyLocal((Config.Translate['builder_saved']):format(label, count), 'success')
+    notifyLocal(L('builder_saved', label, count), 'success')
 end)
 
 RegisterNetEvent('pop_doorlock:builder:deleted', function(label)
     if label then
-        notifyLocal((Config.Translate['builder_deleted']):format(label), 'success')
+        notifyLocal(L('builder_deleted', label), 'success')
     else
-        notifyLocal(Config.Translate['builder_delete_fail'], 'error')
+        notifyLocal(L('builder_delete_fail'), 'error')
     end
 end)
 
 RegisterNetEvent('pop_doorlock:keyResult', function(label, isRegen)
     if label then
-        notifyLocal((isRegen and Config.Translate['key_regenerated'] or Config.Translate['key_received']):format(label), 'success')
+        notifyLocal(L(isRegen and 'key_regenerated' or 'key_received', label), 'success')
     else
-        notifyLocal(Config.Translate['key_fail'], 'error')
+        notifyLocal(L('key_fail'), 'error')
     end
 end)
 
@@ -236,7 +218,7 @@ RegisterNetEvent('pop_doorlock:builder:doorRemoved', function(gid, emptied)
     if currentDetailGid ~= gid then return end
     if emptied then
         currentDetailGid = nil
-        notifyLocal(Config.Translate['builder_group_emptied'], 'info')
+        notifyLocal(L('builder_group_emptied'), 'info')
         openHub()
     else
         refreshDetail()
@@ -253,7 +235,7 @@ RegisterNUICallback('startSelection', function(_, cb)
     selecting = true
     formOpen = false
     selectionLoop()
-    notifyLocal(Config.Translate['builder_select'], 'info')
+    notifyLocal(L('builder_select'), 'info')
     cb('ok')
 end)
 

@@ -483,15 +483,18 @@ local currentChecklist = nil
 local tyreNeeds = {}
 local function normPlate(p) return (tostring(p or '')):gsub('^%s*(.-)%s*$', '%1') end
 
--- Notification "à gauche" : la ressource `notification` (export ShowNotify) est le
--- système utilisé par tab_inventory. Le flux mécano passait par esx:showNotification,
+-- Notification "à gauche" : la ressource `pop_notify` (export ShowNotify) est le
+-- système utilisé par pop_inventory. Le flux mécano passait par esx:showNotification,
 -- qui n'est PAS routé vers cette ressource -> aucun retour visible pour le joueur.
+-- pcall : si pop_notify est absente/arrêtée, on ignore silencieusement.
 local function mechNotify(message, icon)
-    exports['notification']:ShowNotify({
-        message = message,
-        icon = icon or 'fas fa-wrench',
-        duration = 5000
-    })
+    pcall(function()
+        exports['pop_notify']:ShowNotify({
+            message = message,
+            icon = icon or 'fas fa-wrench',
+            duration = 5000
+        })
+    end)
 end
 
 -- =====================================================================
@@ -523,7 +526,7 @@ end
 local function setChecklistMouse(armed)
     checklistMouseArmed = armed and true or false
     if not armed then releaseChecklistFocus() end
-    -- Remonte les notifications (ressource `notification`) au-dessus de la checklist
+    -- Remonte les notifications (ressource `pop_notify`) au-dessus de la checklist
     -- tant qu'elle est affichée, sinon elles passent derrière (rendu ox_target dessus).
     TriggerEvent('notification:client:setRaised', checklistMouseArmed)
 end
@@ -779,7 +782,7 @@ RegisterNetEvent('vg_engine:client:bodyRepairAllowed', function()
     end
 end)
 
-RegisterNetEvent('tab_hud:client:showDamageChecklist', function(show, vehicle)
+RegisterNetEvent('pop_hud:client:showDamageChecklist', function(show, vehicle)
     if not show then
         isChecklistVisible = false
         currentChecklist = nil
@@ -815,7 +818,12 @@ RegisterNetEvent('tab_hud:client:showDamageChecklist', function(show, vehicle)
             seed = seed + string.byte(plate:sub(i, i))
         end
     end
-    math.randomseed(seed)
+    -- Générateur local déterministe (LCG) basé sur la plaque : ne touche pas la graine globale.
+    local rngState = seed % 2147483648
+    local function plateRandom(min, max)
+        rngState = (rngState * 1103515245 + 12345) % 2147483648
+        return min + (rngState // 65536) % (max - min + 1)
+    end
 
     local bodyHealth = GetVehicleBodyHealth(veh)
     local engineHealth = GetVehicleEngineHealth(veh)
@@ -825,7 +833,7 @@ RegisterNetEvent('tab_hud:client:showDamageChecklist', function(show, vehicle)
     if not tyreNeeds[pkey] then
         local t = {}
         for i = 0, 3 do
-            if bodyDamaged and (math.random(1, 100) > 50) then t[i] = true end
+            if bodyDamaged and (plateRandom(1, 100) > 50) then t[i] = true end
         end
         tyreNeeds[pkey] = t
     end

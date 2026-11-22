@@ -297,7 +297,7 @@
     text-align: center;
     letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 18px rgba(255, 46, 136, 0.30);
+    text-shadow: 0 0 18px rgba(255, 255, 255, 0.30);
   }
 
   /* Slider moderne : piste fine arrondie remplie en rose jusqu'au pouce. */
@@ -308,7 +308,7 @@
     height: 6px;
     border-radius: 999px;
     background: linear-gradient(to right,
-      #ff2e88 0%, #ff6aa8 var(--p, 50%),
+      #ffffff 0%, #d9d9d9 var(--p, 50%),
       rgba(255, 255, 255, 0.13) var(--p, 50%), rgba(255, 255, 255, 0.13) 100%);
     outline: none;
     cursor: pointer;
@@ -320,12 +320,12 @@
     border-radius: 50%;
     background: #fff;
     border: 0;
-    box-shadow: 0 0 0 4px rgba(255, 46, 136, 0.28), 0 2px 6px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.45);
     transition: transform 0.12s, box-shadow 0.12s;
   }
   .et-slider::-webkit-slider-thumb:hover {
     transform: scale(1.15);
-    box-shadow: 0 0 0 6px rgba(255, 46, 136, 0.34), 0 2px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.34), 0 2px 8px rgba(0, 0, 0, 0.5);
   }
   .et-sub {
     display: flex;
@@ -361,8 +361,8 @@
     color: #fff;
   }
   .et-preset.active {
-    background: rgba(255, 46, 136, 0.18);
-    border-color: rgba(255, 46, 136, 0.55);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.55);
     color: #fff;
   }
 
@@ -392,9 +392,9 @@
     color: #fff;
   }
   .et-seg-btn.active {
-    background: #ff2e88;
-    color: #fff;
-    box-shadow: 0 2px 10px rgba(255, 46, 136, 0.35);
+    background: #ffffff;
+    color: #1c1f24;
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.35);
   }
   .et-seg-btn.active.run {
     background: #58a03c;
@@ -478,8 +478,8 @@
   }
 
   .paint-item-slot.selected {
-    border-color: #f2b4d9;
-    background: rgba(242, 180, 217, 0.15) !important;
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.15) !important;
   }
 
   .paint-item-slot .color-bubble {
@@ -495,7 +495,7 @@
   }
 
   #paint-btn-apply:hover {
-    background: #e2a0ca !important;
+    background: #d9d9d9 !important;
   }
 </style>
 
@@ -515,7 +515,7 @@
     </div>
     <svg class="attachments-lines" id="attachments-lines" viewBox="0 0 1318 707" preserveAspectRatio="none"></svg>
     <div class="attachments-weapon-center">
-      <img id="attachments-weapon-img" src="img/unknown.png" alt="" />
+      <img id="attachments-weapon-img" src="img/unknown.webp" alt="" />
     </div>
     <!-- Zone de capture du glisser-souris pour tourner l'arme 3D (au centre, hors cellules) -->
     <div id="attachments-3d-drag" title="Glissez pour tourner l'arme"></div>
@@ -688,7 +688,7 @@
     style="width: 9px; height: 441px; left: 272px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 5px">
   </div>
   <div id="ground-scroll-thumb"
-    style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(242, 180, 217, 0.35); border-radius: 5px">
+    style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(255, 255, 255, 0.35); border-radius: 5px">
   </div>
   <div id="clothes-side">
     <div
@@ -888,81 +888,81 @@
     <div
       style="width: 82px; height: 80px; left: 1043px; top: 84px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="1">
-      <img src="torso/male_1.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_1.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1139px; top: 84px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="2">
-      <img src="torso/male_2.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_2.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1235px; top: 84px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="3">
-      <img src="torso/male_3.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_3.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <!-- row 2 -->
     <div
       style="width: 82px; height: 80px; left: 1043px; top: 177px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="4">
-      <img src="torso/male_4.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_4.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1139px; top: 177px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="5">
-      <img src="torso/male_5.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_5.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1235px; top: 177px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="6">
-      <img src="torso/male_6.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_6.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <!-- row 3 -->
     <div
       style="width: 82px; height: 80px; left: 1043px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="7">
-      <img src="torso/male_7.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_7.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1139px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="8">
-      <img src="torso/male_8.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_8.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1235px; top: 270px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="9">
-      <img src="torso/male_9.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_9.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <!-- row 4 -->
     <div
       style="width: 82px; height: 80px; left: 1043px; top: 363px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="10">
-      <img src="torso/male_10.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_10.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1139px; top: 363px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="11">
-      <img src="torso/male_11.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_11.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1235px; top: 363px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="12">
-      <img src="torso/male_12.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_12.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <!-- row 5 -->
     <div
       style="width: 82px; height: 80px; left: 1043px; top: 456px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="13">
-      <img src="torso/male_13.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_13.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1139px; top: 456px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="14">
-      <img src="torso/male_14.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_14.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
     <div
       style="width: 82px; height: 80px; left: 1235px; top: 456px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 2px; display: flex; align-items: center; justify-content: center;"
       data-zone="torso-grid" data-slot-index="15">
-      <img src="torso/male_15.png" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
+      <img src="torso/male_15.webp" style="width: 90%; height: 90%; object-fit: contain; pointer-events: none;" />
     </div>
   </div>
 
@@ -992,7 +992,7 @@
       style="width: 9px; height: 441px; left: 272px; top: 88px; position: absolute; background: rgba(245, 245, 245, 0.15); border-radius: 5px">
     </div>
     <div id="paint-scroll-thumb"
-      style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(242, 180, 217, 0.35); border-radius: 5px">
+      style="width: 9px; height: 214px; left: 272px; top: 88px; position: absolute; background: rgba(255, 255, 255, 0.35); border-radius: 5px">
     </div>
 
     <!-- Panel de détails de peinture en bas -->
@@ -1660,11 +1660,11 @@
       }
 
       /* Soulignement (onglet) de la categorie active : pose par-dessus la ligne.
-         Couleur d'accent rose/magenta (cf. maquette). */
+         Couleur d'accent blanche (cf. maquette). */
       .inv-icon-underline {
         width: 0;
         height: 2px;
-        background: #ff2e88;
+        background: #ffffff;
         border-radius: 1px;
         opacity: 0;
         pointer-events: none;
@@ -2431,15 +2431,15 @@
   <link rel="stylesheet" href="radio/style.css">
   <div id="radio-root">
     <div id="container">
-      <header><img src="radio/img/5.png"></header>
+      <header><img src="radio/img/5.webp"></header>
     </div>
     <div class="radioUI" style="display:none;">
       <div class="radioState" step="any"></div>
       <div class="radioScreen">
-        <img src="radio/img/mute.png" class="radioRec" id="radioMute">
-        <img src="radio/img/network.png" class="radioRec" id="radioNetwork" style="float: right;">
-        <img src="radio/img/rec.png" class="radioRec" id="radioRec" style="left: 0; bottom: 0; position: absolute;">
-        <img src="radio/img/hertz.png" class="radioRec" id="radioHZ" style="right: 0; bottom: 0; position: absolute;">
+        <img src="radio/img/mute.webp" class="radioRec" id="radioMute">
+        <img src="radio/img/network.webp" class="radioRec" id="radioNetwork" style="float: right;">
+        <img src="radio/img/rec.webp" class="radioRec" id="radioRec" style="left: 0; bottom: 0; position: absolute;">
+        <img src="radio/img/hertz.webp" class="radioRec" id="radioHZ" style="right: 0; bottom: 0; position: absolute;">
       </div>
       <div class="radioPanel">
         <button class="buttonRadio" id="radioUP"></button>
@@ -2479,6 +2479,7 @@
 
   <script src="app.js"></script>
   <script src="paint_picker.js"></script>
+  <script src="wheel.js"></script>
 </body>
 
 </html>

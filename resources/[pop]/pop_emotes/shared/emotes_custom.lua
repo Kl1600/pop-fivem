@@ -1,3 +1,4 @@
+-- luacheck: ignore (liste de données RPEmotes, gardée telle quelle)
 -- Emotes you add in the file will automatically be added to AnimationList.lua
 -- If you have multiple custom list files they MUST be added between AnimationList.lua and Emote.lua in fxmanifest.lua!
 -- Don't change 'CustomEmotesList' it is local to this file!

@@ -1,129 +1,69 @@
-# pop_vehiclepersistence — Configuration
+# pop_vehiclepersistence
 
-Persistance **physique** des véhicules : tout véhicule conduit est sauvegardé (position,
-état, mods, dégâts, carburant) et réapparaît **là où il a été laissé**, mais **uniquement
-autour des joueurs** (rayon de 250 m) pour économiser les ressources.
+Persistance physique des véhicules : tout véhicule conduit (avec ses clés) est sauvegardé (position, état, mods, dégâts, carburant) et réapparaît là où il a été laissé, **uniquement autour des joueurs** (rayon `Config.CullRadius`, 250 m) pour économiser les ressources.
 
-> ⚠️ Ce script utilise sa **propre table** `persistent_vehicles`. Il ne lit ni n'écrit
-> jamais dans la table ESX `owned_vehicles`. La propriété est suivie par **license**.
-
----
+## Fonctionnement
+- À l'entrée dans un véhicule, puis toutes les 10 s en roulant (30 s / 60 s à l'arrêt), le client envoie l'état du véhicule. Le serveur vérifie que le véhicule existe (netId), que le modèle et la plaque correspondent, prend la position côté serveur et borne toutes les valeurs.
+- Seul un joueur qui a la clé (`carkeys` de pop_inventory avec `meta.plate`, ou `Config.HasVehicleKey`) fait sauvegarder un véhicule.
+- Le serveur range les véhicules dans une grille spatiale et demande au joueur le plus proche de les faire apparaître ; il les fait disparaître quand plus personne n'est à proximité.
+- À la connexion, seuls les véhicules proches du joueur apparaissent ; la connexion ne compte pas comme une utilisation.
+- Un véhicule non utilisé depuis `Config.MaxPersistenceDays` jours est supprimé (0 = jamais).
+- Table propre `persistent_vehicles` (créée et migrée automatiquement). Ne lit ni n'écrit `owned_vehicles`. Propriétaire suivi par license (`Config.OwnerKey`).
 
 ## Dépendances
+oxmysql. Optionnel : pop_inventory (clés, `Config.UseTabInventory = true`), pop_notify (notifications).
 
-| Ressource | Requis | Rôle |
+## Fichiers
+| Fichier | Rôle |
+|---|---|
+| `config.lua` | réglages communs POP + clés, expiration, propriétaire, rayons |
+| `locales/fr.lua` | tous les textes (debug, HUD `/showvehicles`) |
+| `client/notify.lua` | notifications, export `Notify` |
+| `client/props.lua` | lecture / application des propriétés d'un véhicule (`PersistClient`) |
+| `client/main.lua` | suivi du véhicule conduit, envoi au serveur, apparition / disparition |
+| `client/debug_hud.lua` | outil admin `/showvehicles` (HUD + repères 3D) |
+| `server/common.lua` | état partagé (`Persist`), grille spatiale, validation des données client |
+| `server/keys.lua` | propriétaire (owner_id) et vérification des clés |
+| `server/storage.lua` | base de données, export `Forget`, expiration |
+| `server/spatial.lua` | boucle spatiale, auto-save, purge horaire |
+| `server/events.lua` | évènements réseau, commande `debug_persistence` |
+| `bridge/`, `shared/` | fichiers communs POP (ne pas modifier ici : `templates/pop_base`) |
+
+## Réglages principaux
+| Option | Défaut | Rôle |
 |---|---|---|
-| `oxmysql` | ✅ | Base de données |
-| `utility_lib` | non | Plus requis (le serveur est désormais en Lua) |
-| `pop_inventory` | optionnel | Système de clés (`Config.UseTabInventory = true`) |
-| `ox_lib` | optionnel | Notifications (sinon fallback framework/chat) |
+| `UseTabInventory` | `true` | sauvegarde seulement avec la clé `carkeys` (sinon tout véhicule conduit) |
+| `MaxPersistenceDays` | `30` | expiration d'un véhicule inutilisé (0 = jamais) |
+| `OwnerKey` | `'license'` | `'license'` ou `'framework'` — **ne pas changer sur une base existante** |
+| `CustomIdentifier` / `CustomNotify` / `HasVehicleKey` | `nil` | crochets avancés |
+| `CullRadius` | `250.0` | rayon d'apparition autour des joueurs |
+| `MaxClientDistance` | `75.0` | distance max joueur ↔ véhicule envoyé |
 
-Aucun framework obligatoire : fonctionne en **ESX**, **QBCore**, **Qbox** ou **standalone**.
-
----
-
-## Installation
-
-1. Placer la ressource dans `resources/[system]/pop_vehiclepersistence`.
-2. `ensure pop_vehiclepersistence` dans le `server.cfg` (après oxmysql / le framework).
-3. La table SQL est créée et migrée **automatiquement** au démarrage. Rien à importer.
-
----
-
-## Options (`config.lua`)
-
-| Option | Valeurs | Défaut | Description |
-|---|---|---|---|
-| `UseTabInventory` | `true` / `false` | `true` | `true` : sauve seulement si le joueur a l'item `carkeys` (meta.plate) via pop_inventory. `false` : sauve tout véhicule conduit. |
-| `MaxPersistenceDays` | nombre (jours) | `30` | Supprime un véhicule non utilisé depuis X jours. `0` = jamais d'expiration. |
-| `Framework` | `'auto'` `'esx'` `'qb'` `'qbox'` `'standalone'` | `'auto'` | Détection auto du framework. À forcer seulement si la détection se trompe. |
-| `Notification` | `'auto'` `'ox_lib'` `'esx'` `'qb'` `'chat'` | `'auto'` | Système de notification utilisé. `'auto'` = ox_lib si présent, sinon le framework, sinon le chat. |
-| `OwnerKey` | `'license'` / `'framework'` | `'license'` | Identifiant stocké comme propriétaire (`owner_id`). `'license'` = universel. `'framework'` = identifier ESX / citizenid QB. |
-| `CustomIdentifier` | `function(src)` ou `nil` | `nil` | (Avancé, serveur) Surcharge totale de l'identifiant propriétaire. |
-| `CustomNotify` | `function(msg, type)` ou `nil` | `nil` | (Avancé, client) Surcharge totale des notifications. |
-| `HasVehicleKey` | `function(src, plate)` ou `nil` | `nil` | (Avancé, serveur) Branche ton propre système de clés. `nil` = comportement par défaut (pop_inventory / tout). Si défini, remplace entièrement la vérif pop_inventory. |
-
----
-
-## ⚠️ Les 2 réglages à ne pas rater
-
-1. **`OwnerKey`** — à fixer **avant la mise en service**. Le changer sur une base existante
-   « détache » les véhicules déjà enregistrés (leur `owner_id` ne correspondra plus → non
-   rechargés). En cas de doute : laisser `'license'`.
-2. **`UseTabInventory = true` sans pop_inventory installé = aucun véhicule sauvegardé**
-   (la vérification de clé échoue toujours). Sans système de clés pop_inventory → mettre `false`.
-
----
-
-## Profils types
-
-**Base ESX existante (ne rien casser) :**
-```lua
-Config.UseTabInventory    = true       -- seulement si tu as pop_inventory + carkeys
-Config.MaxPersistenceDays = 30         -- 0 pour le comportement strictement d'avant
-Config.Framework          = 'auto'
-Config.Notification       = 'auto'
-Config.OwnerKey           = 'license'  -- NE PAS CHANGER
-```
-
-**Serveur ESX standard (sans pop_inventory) :**
-```lua
-Config.UseTabInventory    = false
-Config.MaxPersistenceDays = 30
-Config.Framework          = 'auto'
-Config.Notification       = 'auto'
-Config.OwnerKey           = 'license'
-```
-
-**Standalone (aucun framework) :**
-```lua
-Config.UseTabInventory    = false
-Config.MaxPersistenceDays = 30
-Config.Framework          = 'standalone'
-Config.Notification       = 'chat'
-Config.OwnerKey           = 'license'
-```
-
----
-
-## Base de données
-
-Table créée automatiquement :
-
-```sql
-CREATE TABLE IF NOT EXISTS persistent_vehicles (
-    plate        VARCHAR(64)  NOT NULL,
-    owner_id     VARCHAR(250),
-    vehicle_data LONGTEXT,
-    last_seen    BIGINT       NOT NULL DEFAULT 0,
-    PRIMARY KEY (plate),
-    INDEX idx_owner (owner_id)
-);
-```
-
-- `plate` : clé primaire (plaque normalisée, sans espaces, en majuscules).
-- `owner_id` : propriétaire (license ou identifiant framework selon `OwnerKey`), préservé même si un détenteur de clé conduit le véhicule.
-- `vehicle_data` : état complet du véhicule en JSON.
-- `last_seen` : timestamp Unix de la dernière interaction (pour l'expiration). Compatible MySQL **et** MariaDB.
-
----
+`UseTabInventory = true` sans pop_inventory = aucun véhicule sauvegardé.
 
 ## Commandes
-
-| Commande | Côté | Description |
+| Commande | Qui | Rôle |
 |---|---|---|
-| `/showvehicles` | joueur | Active/désactive le HUD admin + l'affichage 3D dans le monde. |
-| `debug_persistence` | console / joueur | Affiche l'état (DB / spawnés / véhicules trackés). |
-| `expire_test <plaque>` | console | Force une plaque comme expirée puis lance la purge (test). |
-| `test_persistence_200` | joueur | Stress-test : injecte 200 véhicules. |
-| `test_persistence_cleanup` | console / joueur | Supprime les véhicules de test. |
+| `/showvehicles` | admin (ACE `command`) | HUD + affichage 3D des véhicules persistés |
+| `debug_persistence` | console / admin | état (base, véhicules apparus, véhicules suivis) |
 
----
-
-## Exports
-
-| Export | Côté | Usage |
+## Évènements et exports
+| Nom | Sens | Rôle |
 |---|---|---|
-| `GetIdentifier(src)` | serveur | Identifiant propriétaire résolu (license ou framework). |
-| `Notify(msg, type)` | client | Notification via le système configuré. |
-| `OnKeyGranted(pid, plate)` | serveur | À appeler depuis pop_inventory quand un item `carkeys` est donné (resync). |
+| `CurrentVehicle` (data \| nil) | client → serveur | véhicule conduit (nil = sortie) |
+| `saveVehicleToDatabase` | client → serveur | sauvegarde immédiate |
+| `requestSavedVehicle` | client → serveur | véhicules du joueur à la connexion |
+| `respawnPlayerInVehicle` | serveur → client | faire apparaître un véhicule |
+| `pop_vehiclepersistence:despawnVehicle` / `:despawnFailed` | serveur ↔ client | faire disparaître un véhicule |
+| `pop_vehiclepersistence:vehicleSpawned` | client → serveur | véhicule apparu |
+| `pop_vehiclepersistence:forceResync` | serveur → client | renvoyer le véhicule conduit (clé reçue) |
+| `pop_vehiclepersistence:notify` | serveur → client | notification |
+| export serveur `Forget(plate)` | | retire une plaque (monde, mémoire, base) — pop_enterprisegarage |
+| export serveur `IsTracked(plate)` | | plaque suivie ? |
+| export serveur `GetIdentifier(src)` | | owner_id du joueur |
+| export serveur `PlayerHasKey(src, plate)` / `playerHasKeyCached(pid, plate)` | | vérification des clés |
+| export serveur `OnKeyGranted(pid, plate)` | | à appeler quand une clé est donnée (pop_inventory) |
+| export client `Notify(msg, type)` | | notification (pop_enterprisegarage) |
+
+## Relancer
+`restart pop_vehiclepersistence` (puis `restart pop_enterprisegarage` qui utilise ses exports).

@@ -427,8 +427,8 @@ function renderPlate() {
   return `
     <div class="sec-title">TEXTE</div>
     <input class="plate-input" maxlength="8" value="${curT}"
-           placeholder="ABC 1234"
-           oninput="onPlateText(this.value)">
+           placeholder="ABC 1234" readonly
+           title="Le texte de la plaque ne se modifie pas ici">
     <div class="sec-title">STYLE</div>
     <div class="plate-styles">
       ${PLATE_STYLES.map(p => `

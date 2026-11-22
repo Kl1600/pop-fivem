@@ -17,9 +17,11 @@ $(document).ready(function(){
             // nationalité MX est déjà statique "Mexicaine" dans le HTML
 
             // Photo
+            // Pas de photo du titulaire : on masque l'image, le fond gris par défaut reste visible
             var photoSrc = d.headshot ? "https://nui-img/" + d.headshot + "/" + d.headshot : "";
-            $("#player-photo-us").attr("src", photoSrc);
-            $("#player-photo-mx").attr("src", photoSrc);
+            var photoVis = photoSrc ? "visible" : "hidden";
+            $("#player-photo-us").attr("src", photoSrc).css("visibility", photoVis);
+            $("#player-photo-mx").attr("src", photoSrc).css("visibility", photoVis);
 
             // Basculer entre US et MX
             if (isMx) {

@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
-description 'Tabernac Gestion'
+author 'KL'
+description 'POP Gestion'
 version '1.0.0'
 
 -- Refresh cache

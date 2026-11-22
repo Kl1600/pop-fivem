@@ -16,6 +16,9 @@ Config.Notify    = 'auto' -- 'framework' | 'ox_lib' | 'pop' | 'native'
 -- Couleur d'accent de l'interface. Rose néon par défaut, cyan : '#22d3ee'.
 Config.AccentColor = '#ff2e88'
 
+-- Objet « argent liquide » de pop_inventory (lu par le bridge ; pop_tablet ne touche pas à l'argent).
+Config.CashItem = 'cash'
+
 -- Touches (numéros de contrôle GTA : https://docs.fivem.net/docs/game-references/controls/).
 Config.Keys = {
     Interact = { control = 38, label = 'E' }, -- prompt natif (sans ox_target / qb-target)

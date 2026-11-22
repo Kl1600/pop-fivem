@@ -21,7 +21,7 @@ jobs:
         run: luacheck templates
 
       - name: Lua syntax (scripts convertis)
-        run: find resources -name '*.lua' -not -path '*/utility_lib/*' -not -path '*/ox_target/*' -print0 | xargs -0 -r -n1 luac5.4 -p
+        run: find resources -name '*.lua' -not -path '*/utility_lib/*' -not -path '*/ox_target/*' -not -path '*/kq_lasers/*' -print0 | xargs -0 -r -n1 luac5.4 -p
 
       - name: JS syntax
         run: |

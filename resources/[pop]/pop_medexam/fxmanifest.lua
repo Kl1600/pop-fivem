@@ -2,9 +2,10 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
-description 'Tabernac Medical Examination - examen des blessures par zone du corps'
-version '1.0.0'
+name 'pop_medexam'
+author 'KL'
+version '1.1.0'
+description 'POP Medical Examination - examen des blessures par zone du corps'
 
 dependencies {
   'es_extended',
@@ -12,16 +13,20 @@ dependencies {
 }
 
 shared_scripts {
-  '@es_extended/imports.lua',
   'config.lua',
+  'shared/*.lua',
+  'locales/*.lua',
 }
 
 client_scripts {
-  'client.lua',
+  'bridge/client.lua',
+  'client/injuries.lua',
+  'client/exam.lua',
 }
 
 server_scripts {
-  'server.lua',
+  'bridge/server.lua',
+  'server/main.lua',
 }
 
 ui_page 'html/index.html'
@@ -30,4 +35,10 @@ files {
   'html/index.html',
   'html/styles.css',
   'html/script.js',
+}
+
+escrow_ignore {
+  'config.lua',
+  'locales/*.lua',
+  'bridge/*.lua',
 }

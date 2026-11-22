@@ -1,5 +1,26 @@
 Config = {}
 
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_vehiclepersistence
+------------------------------------------------------------------------
+
 -- Si true, le script vérifiera que le joueur possède l'item 'carkeys' correspondant à la plaque de son véhicule via l'inventaire pop_inventory pour le sauvegarder.
 -- Si false, le script sauvegardera tous les véhicules dans lesquels le joueur monte, sans distinction de clefs.
 Config.UseTabInventory = true
@@ -12,18 +33,6 @@ Config.UseTabInventory = true
 -- serveur NE compte PAS comme une interaction (sinon rien n'expirerait jamais).
 -- Mettre à 0 pour désactiver l'expiration (persistance illimitée).
 Config.MaxPersistenceDays = 30
-
--- ─── Compatibilité framework ─────────────────────────────────────────────────
--- Tout est en 'auto' par défaut : le script détecte seul ESX / QBCore / Qbox, et
--- tombe en standalone si aucun n'est présent. Ne change ces valeurs que si la
--- détection se trompe ou pour forcer un comportement.
-
--- 'auto' | 'esx' | 'qb' | 'qbox' | 'standalone'
-Config.Framework = 'auto'
-
--- Système de notification : 'auto' (ox_lib si présent, sinon le framework, sinon chat)
--- 'auto' | 'ox_lib' | 'esx' | 'qb' | 'chat'
-Config.Notification = 'auto'
 
 -- Identifiant utilisé comme propriétaire (owner_id) des véhicules :
 --   'license'   = license Rockstar (universel, recommandé, indépendant du framework)
@@ -49,3 +58,9 @@ Config.CustomNotify     = nil
 --       return exports['mon_systeme_cles']:HasKey(src, plate)
 --   end
 Config.HasVehicleKey = nil
+
+-- Rayon (m) autour des joueurs dans lequel les véhicules persistés apparaissent.
+Config.CullRadius = 250.0
+
+-- Distance max (m) entre le joueur et le véhicule dont il envoie les données.
+Config.MaxClientDistance = 75.0

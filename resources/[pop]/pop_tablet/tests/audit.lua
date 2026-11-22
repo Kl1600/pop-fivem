@@ -174,7 +174,7 @@ return function(check, section)
     -- (`data.phone` est le correspondant choisi par l'utilisateur, pas l'expéditeur : l'expéditeur vient de la session.)
     check('aucune identité (serial, identifiant, propriétaire, expéditeur) lue dans la charge client', #ident == 0, table.concat(ident, ','))
     -- SQL : tout WHERE/UPDATE/DELETE portant sur des données de tablette contient serial ou phone (messages) ; valeurs en ?.
-    local db = read('server/db.lua')
+    local db = read('server/db.lua') .. '\n' .. read('server/db_planning.lua')
     local badSql = {}
     local lines = {}
     for l in db:gmatch('[^\n]*') do lines[#lines + 1] = l end

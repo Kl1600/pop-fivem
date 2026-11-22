@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 name 'pop_tablet'
-author 'POP'
+author 'KL'
 version '1.0.0'
 description 'POP Tab : tablette en objet d inventaire, applis, API pour les autres ressources'
 
@@ -24,8 +24,18 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'bridge/server.lua',
-    'server/*.lua',
-    'server/apps/*.lua', -- le glob précédent ne descend pas dans les sous-dossiers
+    -- Ordre explicite : inventory.lua avant device.lua, db_planning.lua après db.lua.
+    'server/api.lua',
+    'server/db.lua',
+    'server/db_planning.lua',
+    'server/inventory.lua',
+    'server/device.lua',
+    'server/hash.lua',
+    'server/limits.lua',
+    'server/main.lua',
+    'server/push.lua',
+    'server/scheduler.lua',
+    'server/apps/*.lua', -- le glob ne descend pas dans les sous-dossiers
 }
 
 -- Interface construite (versionnée, jamais construite sur le serveur).

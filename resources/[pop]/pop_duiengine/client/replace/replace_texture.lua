@@ -28,13 +28,30 @@ local function _destroyDui(entry)
   end
 end
 
+-- Runtime TXDs already created, by name: one fixed TXD per replaced slot,
+-- reused across openings instead of a new CreateRuntimeTxd every time.
+local RUNTIME_TXDS = {}
+
+local function _slotName(origTxd, origTxn)
+  return (("%s_%s"):format(origTxd, origTxn)):gsub("[^%w_]", "_")
+end
+
+local function _getRuntimeTxd(name)
+  local txd = RUNTIME_TXDS[name]
+  if not txd then
+    txd = CreateRuntimeTxd(name)
+    RUNTIME_TXDS[name] = txd
+  end
+  return txd
+end
+
 local function _createOrUpdateRuntimeTex(entry)
   _assertNonEmptyStr(entry.url, "opts.url")
 
   entry.dui = CreateDui(entry.url, entry.resW or 1024, entry.resH or 1024)
   local handle = GetDuiHandle(entry.dui)
 
-  local txd = CreateRuntimeTxd(entry.rtTxdName)
+  local txd = _getRuntimeTxd(entry.rtTxdName)
   CreateRuntimeTextureFromDuiHandle(txd, entry.rtTexName, handle)
 end
 
@@ -68,8 +85,9 @@ function CR3D.createReplaceTextureInternal(opts, ownerOverride)
     resW = opts.resW or 1024,
     resH = opts.resH or 1024,
 
-    rtTxdName = opts.runtimeTxdName or ("cr3dnui_rttxd_%s"):format(id),
-    rtTexName = opts.runtimeTexName or ("cr3dnui_rttex_%s"):format(id),
+    -- Fixed names per slot (origTxd/origTxn) so the runtime TXD is reused.
+    rtTxdName = opts.runtimeTxdName or ("cr3dnui_rttxd_%s"):format(_slotName(opts.origTxd, opts.origTxn)),
+    rtTexName = opts.runtimeTexName or ("cr3dnui_rttex_%s"):format(_slotName(opts.origTxd, opts.origTxn)),
 
     dui = nil,
   }

@@ -1,7 +1,7 @@
 Config = {}
 
 -- Langue : en, fr, es, de, it, pt, nl, pl, tr, ar (une clé absente retombe sur 'en').
-Config.Locale = 'en'
+Config.Locale = 'fr'
 
 -- Affiche les messages de diagnostic dans la console.
 Config.Debug = false
@@ -12,8 +12,11 @@ Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | 'qs-inventory' |
 Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
 Config.Notify    = 'auto' -- 'framework' | 'ox_lib' | 'pop' | 'native'
 
--- Couleur d'accent de l'interface. Rose néon par défaut, cyan : '#22d3ee'.
-Config.AccentColor = '#ff2e88'
+-- Couleur d'accent du kit d'interface (web/kit). Les scripts existants gardent leurs couleurs d'origine.
+Config.AccentColor = '#ffffff'
+
+-- Avec pop_inventory, l'argent liquide est cet objet (Bridge.GetMoney/AddMoney/RemoveMoney 'cash').
+Config.CashItem = 'cash'
 
 -- Touches (numéros de contrôle GTA : https://docs.fivem.net/docs/game-references/controls/).
 Config.Keys = {

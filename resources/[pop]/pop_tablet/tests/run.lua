@@ -57,7 +57,7 @@ end
 local evHandlers, invoking, exportsApi = {}, 'pop_police', {}
 def('AddEventHandler', function(n, fn) evHandlers[n] = fn end)
 def('GetInvokingResource', function() return invoking end)
-for _, f in ipairs({ 'hash', 'limits', 'db', 'device', 'push', 'scheduler', 'api' }) do
+for _, f in ipairs({ 'hash', 'limits', 'db', 'db_planning', 'inventory', 'device', 'push', 'scheduler', 'api' }) do
     def('exports', function(n, fn) exportsApi[n] = fn end)
     dofile('server/' .. f .. '.lua')
 end
@@ -2638,6 +2638,111 @@ do
     check('translate : sans clé, http reste permis', httpCalls == 2, httpCalls)
     def('GetConvar', realConvar)
     Config.Translate.Url = ''
+end
+
+------------------------------------------------------------------------
+section('inventaire : pop_inventory direct (le bridge perd les métadonnées)')
+------------------------------------------------------------------------
+do
+    local realExports, realBridgeInv = rawget(_G, 'exports'), Bridge.Inventory
+    -- Faux exports de pop_inventory : piles { id, defId, qty, meta } par joueur.
+    local stacks, nextId, calls = {}, 100, { update = 0, remove = 0, add = 0, bridgeGet = 0 }
+    local api = {}
+    function api:GetPlayerItems(src, defId)
+        local out = {}
+        for _, s in ipairs(stacks[src] or {}) do if s.defId == defId then out[#out + 1] = s end end
+        return out
+    end
+    function api:UpdateItemMetadata(src, id, meta)
+        calls.update = calls.update + 1
+        for _, s in ipairs(stacks[src] or {}) do if s.id == id then s.meta = meta return true end end
+        return false
+    end
+    function api:removeItemById(src, id)
+        calls.remove = calls.remove + 1
+        for i, s in ipairs(stacks[src] or {}) do if s.id == id then table.remove(stacks[src], i) return true end end
+        return false
+    end
+    function api:addItem(src, defId, qty, meta)
+        calls.add = calls.add + 1
+        nextId = nextId + 1
+        stacks[src] = stacks[src] or {}
+        table.insert(stacks[src], { id = nextId, defId = defId, qty = qty, meta = meta })
+        return true
+    end
+    rawset(_G, 'exports', { pop_inventory = api })
+    Bridge.Inventory = 'pop_inventory'
+    -- Le bridge agrégé ne doit jamais servir : il perdrait le serial.
+    local bridgeGet = Bridge.GetItems
+    Bridge.GetItems = function(...) calls.bridgeGet = calls.bridgeGet + 1 return bridgeGet(...) end
+
+    local Inv = Tablet.Inventory
+    check('Inventory.Direct : vrai avec pop_inventory', Inv.Direct() == true)
+    players[70] = 'char70'
+    stacks[70] = { { id = 7, defId = 'pop_tablet', qty = 1, meta = { serial = 'PT-AAAAAAAAAA', color = 'noir' } },
+        { id = 8, defId = 'pop_tablet', qty = 1 } }
+    local list = Inv.List(70)
+    check('liste : id, slot et métadonnées de chaque pile', #list == 2 and list[1].slot == 7 and list[1].id == 7
+        and list[1].metadata.color == 'noir' and list[1].metadata.serial == 'PT-AAAAAAAAAA')
+    check('liste : pile sans meta -> table vide', type(list[2].metadata) == 'table' and next(list[2].metadata) == nil)
+
+    -- Carries : vrai pour le serial porté, faux pour un autre
+    check('Carries : serial porté', D.Carries(70, 'PT-AAAAAAAAAA') == true)
+    check('Carries : serial non porté', D.Carries(70, 'PT-BBBBBBBBBB') == false)
+    check('Carries : joueur sans tablette', D.Carries(71, 'PT-AAAAAAAAAA') == false)
+
+    -- Objet sans serial converti sur place
+    players[72] = 'char72'
+    stacks[72] = { { id = 21, defId = 'pop_tablet', qty = 1, meta = { color = 'blanc' } } }
+    local rowsBefore = countRows()
+    local o1 = handlers['pop_tablet:device:open'](72)
+    check('ouverture : tablette nue convertie', o1.ok and D.SerialValid(o1.serial), o1.err)
+    check('conversion sur place : même pile, métadonnées gardées + serial',
+        #stacks[72] == 1 and stacks[72][1].id == 21 and stacks[72][1].meta.serial == o1.serial and stacks[72][1].meta.color == 'blanc')
+    check('conversion : ni retrait ni ajout, une mise à jour', calls.update == 1 and calls.remove == 0 and calls.add == 0, calls.update)
+    check('conversion : une ligne créée en base', countRows() == rowsBefore + 1 and rows[o1.serial] ~= nil)
+    -- Deuxième ouverture : même serial, aucune nouvelle ligne ni nouvelle mise à jour
+    local o2 = handlers['pop_tablet:device:open'](72)
+    check('deuxième ouverture : même serial, pas de nouveau serial', o2.ok and o2.serial == o1.serial
+        and countRows() == rowsBefore + 1 and calls.update == 1, o2.err)
+    check('Carries : tablette convertie portée', D.Carries(72, o1.serial) == true)
+    check('le bridge agrégé n\'a servi à aucune lecture', calls.bridgeGet == 0, calls.bridgeGet)
+
+    -- Échec en base : métadonnées d'origine restaurées, aucune ligne
+    players[73] = 'char73'
+    stacks[73] = { { id = 31, defId = 'pop_tablet', qty = 1, meta = { color = 'rouge' } } }
+    local createDevice, rowsNow = DB.CreateDevice, countRows()
+    DB.CreateDevice = function() return false end
+    local o3 = handlers['pop_tablet:device:open'](73)
+    DB.CreateDevice = createDevice
+    check('échec en base : refusé', not o3.ok and o3.err == 'err_db', o3.err)
+    check('échec en base : métadonnées d\'origine restaurées, même pile',
+        #stacks[73] == 1 and stacks[73][1].id == 31 and stacks[73][1].meta.serial == nil and stacks[73][1].meta.color == 'rouge')
+    check('échec en base : aucune ligne créée', countRows() == rowsNow)
+    -- Échec de la mise à jour en place : rien en base
+    local update = api.UpdateItemMetadata
+    api.UpdateItemMetadata = function() return false end
+    local o4 = handlers['pop_tablet:device:open'](73)
+    api.UpdateItemMetadata = update
+    check('échec de la mise à jour : err_convert, rien en base', not o4.ok and o4.err == 'err_convert' and countRows() == rowsNow, o4.err)
+
+    -- Retrait d'une tablette précise : par id, jamais une autre pile
+    stacks[74] = { { id = 41, defId = 'pop_tablet', qty = 1, meta = { serial = 'PT-CCCCCCCCCC' } },
+        { id = 42, defId = 'pop_tablet', qty = 1, meta = { serial = 'PT-DDDDDDDDDD' } } }
+    check('retrait par serial : la bonne pile', Inv.RemoveBySerial(74, 'PT-DDDDDDDDDD') == true
+        and #stacks[74] == 1 and stacks[74][1].id == 41)
+    check('retrait par serial : serial absent -> false', Inv.RemoveBySerial(74, 'PT-ZZZZZZZZZZ') == false and #stacks[74] == 1)
+
+    -- Autre inventaire : le comportement du bridge reste
+    Bridge.GetItems = bridgeGet
+    Bridge.Inventory = 'ox_inventory'
+    check('Inventory.Direct : faux avec un autre inventaire', Inv.Direct() == false)
+    players[75] = 'char75'
+    inv[75] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = { serial = 'PT-EEEEEEEEEE' } } }
+    check('autre inventaire : liste via le bridge', #Inv.List(75) == 1 and D.Carries(75, 'PT-EEEEEEEEEE') == true)
+
+    Bridge.Inventory = realBridgeInv
+    rawset(_G, 'exports', realExports)
 end
 
 -- Revue statique (boucles, gardes, tailles, SQL, secrets, locales) : tests/audit.lua

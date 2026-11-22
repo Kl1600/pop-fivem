@@ -15,7 +15,7 @@
 	position: absolute;
 	min-width: 250px;
 	min-height: 665px;
-	background-image: url("img/radio.png");
+	background-image: url("img/radio.webp");
 	background-size: cover;
 	font-family: 'DS-Digital', 'Share Tech Mono', 'Orbitron', monospace;
 	right: 40px;
@@ -110,7 +110,7 @@
 
 /* Fond = ton PNG SECURECOM (746x2109), affiché en 250x707. */
 .radioUI.skin-80s {
-	background-image: url("img/radio_80s.png");
+	background-image: url("img/radio_80s.webp");
 	min-width: 250px;
 	min-height: 707px;
 	width: 250px;

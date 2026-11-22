@@ -54,7 +54,7 @@ end
 -- Retourne un message d'erreur si le placement est interdit, sinon nil.
 -- Gère les items multi-cases (gridSpan) : armes longues (2x1) ET moteur (3x3).
 -- excludeSlot : slot à considérer comme vide (slot source d'un déplacement interne).
-local function standbyPlacementError(store, containerId, toSlot, movingDefId, excludeSlot)
+function Inv.standbyPlacementError(store, containerId, toSlot, movingDefId, excludeSlot)
   local c = store.containers[containerId]
   if not c then return nil end
   -- Grilles concernées : coffre distant, conteneurs véhicule (coffre / capot moteur)
@@ -82,7 +82,7 @@ local function standbyPlacementError(store, containerId, toSlot, movingDefId, ex
         if aSlot >= 1 then
           local aw, ah = getDefSpan(defAt(aSlot))
           if aw > dc and ah > dr then
-            return 'Emplacement occupé'
+            return L('placement_taken')
           end
         end
       end
@@ -94,16 +94,16 @@ local function standbyPlacementError(store, containerId, toSlot, movingDefId, ex
   local mw, mh = getDefSpan(movingDefId)
   if mw > 1 or mh > 1 then
     if tcol + (mw - 1) > (cols - 1) then
-      return ('Pièce %dx%d : déborde de la grille'):format(mw, mh)
+      return L('placement_overflow', mw, mh)
     end
     for dr = 0, mh - 1 do
       for dc = 0, mw - 1 do
         local bSlot = toSlot + dr * cols + dc
         if bSlot > maxSlots then
-          return ('Pièce %dx%d : pas assez de place'):format(mw, mh)
+          return L('placement_no_room', mw, mh)
         end
         if defAt(bSlot) then
-          return ('Pièce %dx%d : cases occupées'):format(mw, mh)
+          return L('placement_cells_taken', mw, mh)
         end
       end
     end
@@ -125,26 +125,26 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainer', function()
 
   local container = getNearbyRemoteContainer(src, { x = coords.x, y = coords.y, z = coords.z })
   if not container then
-    notify(src, 'Aucune boite a proximite')
+    notify(src, L('no_box_nearby_server'))
     return
   end
 
   store.activeContainerId = container.id
   store.activeContainerIsGround = false
-  
+
   -- Créer un conteneur virtuel pour le conteneur distant s'il n'existe pas
   if not store.containers[container.id] then
     store.containers[container.id] = {
       id = container.id,
       defId = '__remote_container__',
-      label = 'Boite en Carton',
+      label = L('cardboard_box_label'),
       slots = 20,
       maxWeight = 30.0,
       weight = 0,
       items = {},
     }
   end
-  
+
   -- Créer des items temporaires pour chaque item du conteneur distant
   for slot, itemData in pairs(container.data.itemData or {}) do
     if itemData and itemData.defId then
@@ -159,7 +159,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainer', function()
       end
     end
   end
-  
+
   markDirty(identifier)
   sendState(src, { x = coords.x, y = coords.y, z = coords.z })
 end)
@@ -172,7 +172,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerFromProp', function(co
   end
 
   local store = ensureStore(identifier)
-  
+
   local container = getNearbyRemoteContainer(src, coords)
   if not container then
     -- Fallback: tenter de ramasser un item équipable (boite/malette) depuis une pile au sol
@@ -191,7 +191,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerFromProp', function(co
                 sendState(src, coords)
                 TriggerClientEvent('pop_inventory:client:applyEquipment', src, buildEquipmentDefs(store))
               else
-                notify(src, err or 'Action impossible')
+                notify(src, err or L('action_impossible'))
               end
               return
             end
@@ -199,7 +199,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerFromProp', function(co
         end
       end
     end
-    notify(src, 'Aucune boite a proximite')
+    notify(src, L('no_box_nearby_server'))
     return
   end
 
@@ -211,14 +211,14 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerFromProp', function(co
     store.containers[container.id] = {
       id = container.id,
       defId = '__remote_container__',
-      label = 'Boite en Carton',
+      label = L('cardboard_box_label'),
       slots = 20,
       maxWeight = 30.0,
       weight = 0,
       items = {},
     }
   end
-  
+
   -- Créer des items temporaires pour chaque item du conteneur distant
   for slot, itemData in pairs(container.data.itemData or {}) do
     if itemData and itemData.defId then
@@ -233,7 +233,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerFromProp', function(co
       end
     end
   end
-  
+
   markDirty(identifier)
   sendState(src, coords)
 end)
@@ -250,7 +250,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerStandby', function(coo
   local itemsSource = {}  -- { [slotNumber] = { defId, qty, meta } }
   local boxSlots    = 20
   local boxMaxWeight = 30.0
-  local boxLabel    = 'Boite en Carton'
+  local boxLabel    = L('cardboard_box_label')
 
   -- 1. Remote container (carton posé en tant que container persistant)
   local remoteContainer = getNearbyRemoteContainer(src, coords)
@@ -278,7 +278,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerStandby', function(coo
               boxSlots     = boxContainer.slots     or (itemDef and itemDef.container and itemDef.container.slots) or boxSlots
               boxMaxWeight = boxContainer.maxWeight or (itemDef and itemDef.container and itemDef.container.maxWeight) or boxMaxWeight
               boxLabel     = (itemDef and itemDef.label) or boxLabel
-              
+
               for boxSlot, boxItemId in pairs(boxContainer.items or {}) do
                 local boxItem = GroundStore.items[boxItemId]
                 if boxItem then
@@ -295,7 +295,7 @@ RegisterNetEvent('pop_inventory:server:openRemoteContainerStandby', function(coo
   end
 
   if not containerId then
-    notify(src, 'Aucune boite a proximite')
+    notify(src, L('no_box_nearby_server'))
     return
   end
 
@@ -422,11 +422,11 @@ end
 
 -- (Re)construit les sections de fouille depuis l'inventaire ACTUEL de la cible.
 -- Retourne cids, sections. Réutilisé par l'ouverture ET l'actualisation en direct.
-local function buildSearchSections(src, store, tStore, targetIdentifier, targetId)
+function Inv.buildSearchSections(src, store, tStore, targetIdentifier, targetId)
   clearSearchContainers(store, src)
 
   local cids, sections = {}, {}
-  for _, eqSlot in ipairs(Config.Inventory.ContainerOrder or {}) do
+  for _, eqSlot in ipairs(Config.InventorySettings.ContainerOrder or {}) do
     local eqItemId = tStore.equipment[eqSlot]
     local eqItem = eqItemId and tStore.items[eqItemId]
     if eqItem and eqItem.containerId then
@@ -463,7 +463,7 @@ local function buildSearchSections(src, store, tStore, targetIdentifier, targetI
 
   -- Section ARMES.
   local wcid = ('search_%d_weapons'):format(targetId)
-  local wC = { id = wcid, defId = '__remote_standby__', label = 'Armes', slots = 6, maxWeight = 1000.0, weight = 0, items = {} }
+  local wC = { id = wcid, defId = '__remote_standby__', label = L('weapons_label'), slots = 6, maxWeight = 1000.0, weight = 0, items = {} }
   local wslot = 0
   for _, eqSlot in ipairs({ 'weapon_long', 'weapon_pistol', 'weapon_tazer' }) do
     local wItemId = tStore.equipment[eqSlot]
@@ -482,7 +482,7 @@ local function buildSearchSections(src, store, tStore, targetIdentifier, targetI
   if wslot > 0 then
     store.containers[wcid] = wC
     cids[#cids + 1] = wcid
-    sections[#sections + 1] = { containerId = wcid, defId = 'weapons', label = 'Armes' }
+    sections[#sections + 1] = { containerId = wcid, defId = 'weapons', label = L('weapons_label') }
   end
 
   return cids, sections
@@ -499,7 +499,7 @@ RegisterNetEvent('pop_inventory:server:openSearchStandby', function(targetId)
   if not targetPed or targetPed == 0 then return end
   local srcPed = GetPlayerPed(src)
   if #(GetEntityCoords(srcPed) - GetEntityCoords(targetPed)) > 3.0 then
-    notify(src, 'Trop loin.')
+    notify(src, L('too_far_dot'))
     return
   end
   -- Anti-triche : même condition que l'ox_target "Fouiller" (mains levées, menotté ou mort)
@@ -515,10 +515,10 @@ RegisterNetEvent('pop_inventory:server:openSearchStandby', function(targetId)
   local store = ensureStore(identifier)
   local tStore = ensureStore(targetIdentifier)
 
-  local cids, sections = buildSearchSections(src, store, tStore, targetIdentifier, targetId)
+  local cids, sections = Inv.buildSearchSections(src, store, tStore, targetIdentifier, targetId)
 
   if #cids == 0 then
-    notify(src, 'Rien à fouiller (aucune poche).')
+    notify(src, L('nothing_to_search'))
     return
   end
 
@@ -535,619 +535,3 @@ RegisterNetEvent('pop_inventory:server:openSearchStandby', function(targetId)
   state._seq = StateSeq[src]
   TriggerClientEvent('pop_inventory:client:state', src, state)
 end)
-
--- =====================================================
---  Actualisation EN DIRECT du conteneur distant ouvert.
---  Fouille : reconstruit les sections depuis l'inventaire ACTUEL de la cible.
---  Coffre distant (remote_standby_) : ré-importe depuis RemoteContainers (modifs
---  des autres joueurs). Le client défère le rendu s'il est en plein drag.
--- =====================================================
-local function refreshOpenStandby(src)
-  local identifier = getIdentifier(src)
-  if not identifier then return end
-  local store = ensureStore(identifier)
-  if not store then return end
-
-  local sinfo = SearchStandby[src]
-  if sinfo then
-    -- Cible déconnectée -> on arrête (la fermeture nettoiera).
-    if not (sinfo.tsrc and GetPlayerName(sinfo.tsrc)) then return end
-    local tStore = ensureStore(sinfo.ident)
-    if not tStore then return end
-    local active = StandbyContainers[src]
-    local cids, sections = buildSearchSections(src, store, tStore, sinfo.ident, sinfo.tsrc)
-    if #cids == 0 then return end
-    local newActive = cids[1]
-    for _, c in ipairs(cids) do if c == active then newActive = active break end end
-    StandbyContainers[src] = newActive
-    SearchStandby[src] = { ident = sinfo.ident, tsrc = sinfo.tsrc, cids = cids, sections = sections }
-    local state = buildState(src, store, nil)
-    state.standbyContainerId = newActive
-    state.standbyContainer = buildContainerView(store, newActive)
-    state.standbyPath = sections
-    state.isSearch = true
-    StateSeq[src] = (StateSeq[src] or 0) + 1
-    state._seq = StateSeq[src]
-    TriggerClientEvent('pop_inventory:client:state', src, state)
-    return
-  end
-
-  local cid = StandbyContainers[src]
-  if not cid or not store.containers[cid] then return end
-  local c = store.containers[cid]
-
-  -- Source partagée à ré-importer (RemoteContainers ou coffre au sol GroundStore).
-  local srcItems = nil
-  local remoteId = cid:match('^remote_standby_(.+)$')
-  if remoteId and RemoteContainers[remoteId] then
-    srcItems = RemoteContainers[remoteId].itemData
-  else
-    local groundId = cid:match('^ground_standby_(.+)$')
-    if groundId and GroundStore.containers[groundId] then
-      srcItems = {}
-      for slot, gItemId in pairs(GroundStore.containers[groundId].items or {}) do
-        local gi = GroundStore.items[gItemId]
-        if gi then srcItems[slot] = serializeItemTree(GroundStore, gItemId) end
-      end
-    end
-  end
-
-  if srcItems then
-    for _, itemId in pairs(c.items or {}) do
-      if store.items[itemId] and store.items[itemId]._isTemporary then
-        removeStoreItemTree(store, itemId)
-      end
-    end
-    c.items = {}
-    for slot, itemData in pairs(srcItems) do
-      if itemData and itemData.defId then
-        local tempId = rebuildItemTree(store, itemData, true)
-        if tempId then
-          local ns = tonumber(slot) or slot
-          c.items[ns] = tempId
-          setItemLocation(store, tempId, { type = 'container', containerId = cid, slot = ns })
-        end
-      end
-    end
-  end
-  local state = buildState(src, store, nil)
-  state.standbyContainerId = cid
-  state.standbyContainer = buildContainerView(store, cid)
-  StateSeq[src] = (StateSeq[src] or 0) + 1
-  state._seq = StateSeq[src]
-  TriggerClientEvent('pop_inventory:client:state', src, state)
-end
-
-CreateThread(function()
-  while true do
-    Wait(1500)
-    for src in pairs(StandbyContainers) do
-      pcall(refreshOpenStandby, src)
-    end
-  end
-end)
-
-RegisterNetEvent('pop_inventory:server:moveRemoteContainer', function()
-  local src = source
-  local identifier = getIdentifier(src)
-  if not identifier then
-    return
-  end
-
-  local ped = GetPlayerPed(src)
-  local coords = GetEntityCoords(ped)
-
-  local container = getNearbyRemoteContainer(src, { x = coords.x, y = coords.y, z = coords.z })
-  if not container then
-    notify(src, 'Aucune boite a proximite')
-    return
-  end
-
-  TriggerClientEvent('pop_inventory:client:startMoveContainer', src, container.id, container.data.coords)
-end)
-
-RegisterNetEvent('pop_inventory:server:takeRemoteContainer', function(propCoords)
-  local src = source
-  local identifier = getIdentifier(src)
-  if not identifier then
-    return
-  end
-
-  local store = ensureStore(identifier)
-  
-  if hasBriefcaseEquipped(store) then
-    notify(src, 'Impossible de prendre une boite avec une malette')
-    return
-  end
-
-  if hasCardboardBoxEquipped(store) or hasSafeEquipped(store) then
-    notify(src, 'Vous portez deja un conteneur')
-    return
-  end
-
-  -- propCoords arrive du client sous forme de vector3 (GetEntityCoords), pas
-  -- de table : `type(vector3(...)) == 'vector3'`, jamais 'table'. L'ancien
-  -- test tombait donc toujours dans le fallback et ignorait les coords
-  -- réelles du carton au profit de la position du joueur.
-  local searchCoords = toVector3(propCoords)
-  if not searchCoords then
-    searchCoords = GetEntityCoords(GetPlayerPed(src))
-  end
-
-  local container = getNearbyRemoteContainer(src, searchCoords)
-  if not container then
-    notify(src, 'Aucune boite a proximite')
-    return
-  end
-
-  local itemToCreate = 'cardboard_box'
-  if container.data and container.data.propModel == 'prop_ld_int_safe_01' then
-    itemToCreate = 'safe'
-  end
-
-  local itemId = createItem(store, itemToCreate, 1)
-  if not itemId then
-    notify(src, 'Erreur creation item')
-    return
-  end
-
-  local item = store.items[itemId]
-  if item and item.containerId then
-    -- Créer de nouveaux items basés sur les données du conteneur distant
-    for slot, itemData in pairs(container.data.itemData or {}) do
-      if itemData and itemData.defId then
-        -- rebuildItemTree recrée aussi les conteneurs imbriqués (pot, sac…).
-        local newItemId = rebuildItemTree(store, itemData, false)
-        if newItemId then
-          store.containers[item.containerId].items[slot] = newItemId
-          setItemLocation(store, newItemId, { type = 'container', containerId = item.containerId, slot = slot })
-        end
-      end
-    end
-  end
-
-  RemoteContainers[container.id] = nil
-
-  local ok = equipItem(store, itemId)
-  if ok then
-    markDirty(identifier)
-    local ped = GetPlayerPed(src)
-    local pedCoords = GetEntityCoords(ped)
-    sendState(src, { x = pedCoords.x, y = pedCoords.y, z = pedCoords.z })
-    TriggerClientEvent('pop_inventory:client:applyEquipment', src, buildEquipmentDefs(store))
-    TriggerClientEvent('pop_inventory:client:updateRemoteContainers', -1, RemoteContainers)
-  else
-    notify(src, 'Impossible d\'equiper la boite')
-  end
-end)
-
--- duplicate dropRemoteContainer removed (defined earlier)
-
-RegisterNetEvent('pop_inventory:server:updateRemoteContainerPos', function(containerId, coords, originalCoords)
-  -- Anti-triche : déplacement uniquement autour du joueur (origine et destination)
-  local src = source
-  if not safeCoordsOverride(src, coords, 10.0) then return end
-  if originalCoords and not safeCoordsOverride(src, originalCoords, 10.0) then return end
-  if containerId and RemoteContainers[containerId] and RemoteContainers[containerId].coords
-      and not safeCoordsOverride(src, RemoteContainers[containerId].coords, 10.0) then return end
-  -- Si containerId est nil, chercher le conteneur distant ou la pile au sol le plus proche des coordonnées d'origine
-  if not containerId and originalCoords then
-    local targetCoords = vector3(originalCoords.x, originalCoords.y, originalCoords.z)
-    local closestDist = 2.0
-    local found = false
-    
-    -- 1. Chercher dans RemoteContainers
-    local closestRemoteId = nil
-    for id, container in pairs(RemoteContainers) do
-      if container and container.coords then
-        local dist = #(vector3(container.coords.x, container.coords.y, container.coords.z) - targetCoords)
-        if dist <= closestDist then
-          closestDist = dist
-          closestRemoteId = id
-        end
-      end
-    end
-    
-    if closestRemoteId then
-      RemoteContainers[closestRemoteId].coords = coords
-      TriggerClientEvent('pop_inventory:client:updateRemoteContainers', -1, RemoteContainers)
-      found = true
-    end
-    
-    -- 2. Chercher dans GroundPiles si non trouvé
-    if not found then
-      closestDist = 2.0
-      local closestPileId = nil
-      for id, pile in pairs(GroundPiles or {}) do
-        if pile and pile.coords then
-          local dist = #(vector3(pile.coords.x, pile.coords.y, pile.coords.z) - targetCoords)
-          if dist <= closestDist then
-            closestDist = dist
-            closestPileId = id
-          end
-        end
-      end
-      
-      if closestPileId then
-        GroundPiles[closestPileId].coords = coords
-        markGroundDirty()
-        syncGroundDropEntities()
-        saveGround()
-      end
-    end
-    
-    return
-  end
-  
-  if containerId and RemoteContainers[containerId] then
-    RemoteContainers[containerId].coords = coords
-    TriggerClientEvent('pop_inventory:client:updateRemoteContainers', -1, RemoteContainers)
-  end
-end)
-
-RegisterNetEvent('pop_inventory:server:requestRemoteContainers', function()
-  TriggerClientEvent('pop_inventory:client:updateRemoteContainers', source, RemoteContainers)
-end)
-
-
-
-function getOrCreateStandbyContainer(store, identifier)
-  local containerId = 'standby_' .. identifier:gsub('[^%w]', '_')
-  if store.containers[containerId] then
-    return containerId
-  end
-  store.containers[containerId] = {
-    id = containerId,
-    defId = '__standby_container__',
-    label = 'Stockage',
-    slots = 30,
-    maxWeight = 100.0,
-    items = {},
-  }
-  return containerId
-end
-
-RegisterNetEvent('pop_inventory:server:openStandbyContainer', function(coords)
-  local src = source
-  local identifier = getIdentifier(src)
-  if not identifier then
-    return
-  end
-  local store = ensureStore(identifier)
-  local containerId = getOrCreateStandbyContainer(store, identifier)
-  StandbyContainers[src] = containerId
-  markDirty(identifier)
-  local state = buildState(src, store, coords)
-  state.standbyContainerId = containerId
-  state.standbyContainer = buildContainerView(store, containerId)
-  StateSeq[src] = (StateSeq[src] or 0) + 1
-  state._seq = StateSeq[src]
-  TriggerClientEvent('pop_inventory:client:state', src, state)
-end)
-
-RegisterNetEvent('pop_inventory:server:openStaticChest', function(chestId, label, reqSlots, reqMaxWeight)
-  local src = source
-  local identifier = getIdentifier(src)
-  if not identifier then return end
-  
-  if not chestId then return end
-  chestId = tostring(chestId)
-
-  -- Coffres bancaires pop_bank : l'id vient du client -> on revérifie le propriétaire
-  -- (sinon n'importe qui pouvait ouvrir le compte d'un autre joueur ou d'une entreprise).
-  if ESX and (chestId:sub(1, 14) == 'bank_personal_' or chestId:sub(1, 13) == 'bank_company_') then
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer then return end
-    if chestId:sub(1, 14) == 'bank_personal_' then
-      if chestId:sub(15) ~= xPlayer.identifier then return end
-    else
-      local job = xPlayer.job
-      if not job or chestId:sub(14) ~= job.name or job.grade_name ~= 'boss' then return end
-    end
-  end
-
-  -- Job permission check
-  local chestConfig = nil
-  if Config.StaticChests then
-    for _, c in ipairs(Config.StaticChests) do
-      if c.id == chestId then chestConfig = c; break end
-    end
-  end
-
-  -- Anti-triche : coffre configuré = capacité serveur + joueur à proximité du point
-  if chestConfig then
-    reqSlots, reqMaxWeight = nil, nil
-    if chestConfig.coords then
-      local ped = GetPlayerPed(src)
-      local pc = ped ~= 0 and GetEntityCoords(ped)
-      if pc and #(pc) > 1.0 and #(pc - vector3(chestConfig.coords.x, chestConfig.coords.y, chestConfig.coords.z)) > (chestConfig.radius or 2.0) + 5.0 then
-        return
-      end
-    end
-  else
-    -- Coffre dynamique (véhicule de service, etc.) : bornes raisonnables sur la capacité demandée
-    reqSlots = tonumber(reqSlots)
-    reqMaxWeight = tonumber(reqMaxWeight)
-    if reqSlots then reqSlots = math.max(1, math.min(math.floor(reqSlots), 200)) end
-    if reqMaxWeight then reqMaxWeight = math.max(1.0, math.min(reqMaxWeight, 2000.0)) end
-  end
-
-  if chestConfig and (chestConfig.jobs or chestConfig.job) then
-    local allowedJobs = chestConfig.jobs or chestConfig.job
-    if type(allowedJobs) == 'string' then
-      allowedJobs = { allowedJobs }
-    end
-
-    local playerJob = nil
-    if Config.Framework == 'esx' and ESX then
-      local xPlayer = ESX.GetPlayerFromId(src)
-      if xPlayer and xPlayer.job then
-        playerJob = xPlayer.job.name
-      end
-    elseif Config.Framework == 'qbcore' and QBCore then
-      local xPlayer = QBCore.Functions.GetPlayer(src)
-      if xPlayer and xPlayer.PlayerData and xPlayer.PlayerData.job then
-        playerJob = xPlayer.PlayerData.job.name
-      end
-    end
-
-    local isAllowed = false
-    if playerJob then
-      for _, jobName in ipairs(allowedJobs) do
-        if playerJob == jobName then
-          isAllowed = true
-          break
-        end
-      end
-    end
-
-    if not isAllowed then
-      if Config.Framework == 'esx' and ESX then
-        TriggerClientEvent('esx:showNotification', src, "~r~Vous n'avez pas le travail requis pour ouvrir ce coffre.")
-      elseif Config.Framework == 'qbcore' and QBCore then
-        TriggerClientEvent('QBCore:Notify', src, "Vous n'avez pas le travail requis pour ouvrir ce coffre.", "error")
-      else
-        TriggerClientEvent('chat:addMessage', src, { args = { '^1Système', "Vous n'avez pas le travail requis pour ouvrir ce coffre." } })
-      end
-      return
-    end
-  end
-  
-  local store = ensureStore(identifier)
-
-  -- Cleanup: Retirer tout ancien conteneur statique/véhicule mal fermé
-  for cId, container in pairs(store.containers) do
-    if container.defId == '__vehicle_container__' or container.defId == '__static_chest__' then
-       -- Remove temporary items linked to this container
-       for slot, itemId in pairs(container.items or {}) do
-          if store.items[itemId] and store.items[itemId]._isTemporary then
-            removeStoreItemTree(store, itemId)
-          end
-       end
-       store.containers[cId] = nil
-    end
-  end
-
-  local sId = 'static_' .. chestId
-  -- Load from database (persistent shared storage)
-  if not Stores[sId] then
-    Stores[sId] = loadStore(sId)
-  end
-  local sStore = Stores[sId]
-  
-  -- Determine main container ID for this chest
-  local containerId = nil
-  for cId, c in pairs(sStore.containers) do
-     if c.defId == 'static_chest' then
-        containerId = cId
-        break
-     end
-  end
-  if not containerId then
-    for cId, c in pairs(sStore.containers) do
-       containerId = cId
-       break
-    end
-  end
-  
-  if not containerId then
-    -- Look up config for this chest
-    local chestConfig = nil
-    if Config.StaticChests then
-      for _, c in ipairs(Config.StaticChests) do
-        if c.id == chestId then chestConfig = c; break end
-      end
-    end
-    containerId = generateId('static_' .. chestId)
-    sStore.containers[containerId] = {
-      id = containerId,
-      defId = 'static_chest',
-      slots = reqSlots or (chestConfig and chestConfig.slots) or 40,
-      maxWeight = reqMaxWeight or (chestConfig and chestConfig.maxWeight) or 500.0,
-      items = {}
-    }
-  end
-
-  local sContainer = sStore.containers[containerId]
-  
-  if reqSlots then sContainer.slots = reqSlots end
-  if reqMaxWeight then sContainer.maxWeight = reqMaxWeight end
-  
-  -- Inject into player store as temporary container
-  store.containers[containerId] = {
-    id = containerId,
-    defId = '__static_chest__', -- Special defId to recognize it
-    label = label or 'Coffre',
-    slots = sContainer.slots,
-    maxWeight = sContainer.maxWeight,
-    items = {},
-    _staticChestId = chestId -- Store chest ID for sync on close
-  }
-  
-  -- Inject items (create temporary copies pointing to the shared items)
-  for slot, itemId in pairs(sContainer.items) do
-    local sItem = sStore.items[itemId]
-    if sItem then
-      copyItemTree(sStore, store, itemId, function(item)
-        item._isTemporary = true
-        item._staticChestId = chestId
-      end)
-      store.containers[containerId].items[slot] = itemId
-      setItemLocation(store, itemId, { type = 'container', containerId = containerId, slot = slot })
-    end
-  end
-  
-  StandbyContainers[src] = containerId
-  saveStore(identifier, store) -- Save player state (temp items not saved to DB but needed for sync)
-  
-  local state = buildState(src, store)
-  state.standbyContainerId = containerId
-  state.standbyContainer = buildContainerView(store, containerId)
-  
-  StateSeq[src] = (StateSeq[src] or 0) + 1
-  state._seq = StateSeq[src]
-  
-  TriggerClientEvent('pop_inventory:client:state', src, state)
-end)
-
-RegisterNetEvent('pop_inventory:server:closeStandbyContainer', function()
-  local src = source
-  local identifier = getIdentifier(src)
-  if identifier then
-    local store = ensureStore(identifier)
-    -- Sync all shared containers back to their source before closing
-    syncVehicleContainerChanges(store)
-    syncRemoteStandbyChanges(store)
-    syncStaticChestChanges(store)
-    syncSearchChanges(store, src)
-    SearchStandby[src] = nil
-    -- Clean up containers from player store
-    for cId, container in pairs(store.containers) do
-      if container.defId == '__vehicle_container__' then
-        -- Remove only temporary items (vehicle items moved to player inv stay)
-        for slot, itemId in pairs(container.items or {}) do
-          if store.items[itemId] and store.items[itemId]._isTemporary then
-            removeStoreItemTree(store, itemId)
-          end
-        end
-        store.containers[cId] = nil
-      elseif container.defId == '__remote_standby__' or container.defId == '__static_chest__' then
-        -- Remove ALL items (synced to source above, nothing should stay in player store)
-        for slot, itemId in pairs(container.items or {}) do
-          if store.items[itemId] then
-            removeStoreItemTree(store, itemId)
-          end
-        end
-        store.containers[cId] = nil
-      end
-    end
-    markDirty(identifier)
-  end
-  StandbyContainers[src] = nil
-end)
-
-RegisterNetEvent('pop_inventory:server:standbyAction', function(action)
-  local src = source
-  local identifier = getIdentifier(src)
-  if not identifier then
-    return
-  end
-  local store = ensureStore(identifier)
-  if not action or type(action) ~= 'table' then
-    return
-  end
-  updatePlayerCoords(src, action.coords)
-
-  local actionType = action.type
-
-  if actionType == 'move' then
-    local fromSlot = tonumber(action.fromSlot)
-    local toSlot = tonumber(action.toSlot)
-    if fromSlot and toSlot then
-      -- Guard double-case arme longue (coffre distant). On exclut le slot source
-      -- si on déplace à l'intérieur du même conteneur.
-      local fromC = store.containers[action.fromContainerId]
-      local movingItemId = fromC and fromC.items[fromSlot]
-      local movingDefId = movingItemId and store.items[movingItemId] and store.items[movingItemId].defId
-      local excludeSlot = (action.fromContainerId == action.toContainerId) and fromSlot or nil
-      local placeErr = standbyPlacementError(store, action.toContainerId, toSlot, movingDefId, excludeSlot)
-      if placeErr then
-        notify(src, placeErr)
-      else
-        local ok, err = moveItemBetweenContainers(store, action.fromContainerId, fromSlot, action.toContainerId, toSlot)
-        if not ok then
-          notify(src, err or 'Action impossible')
-        end
-      end
-    end
-  elseif actionType == 'equip' then
-    local slot = tonumber(action.fromSlot)
-    if slot then
-      local container = store.containers[action.fromContainerId]
-      if container and container.items[slot] then
-        local itemId = container.items[slot]
-        local ok, err = equipItem(store, itemId)
-        if not ok then
-          notify(src, err or 'Action impossible')
-        else
-          TriggerClientEvent('pop_inventory:client:applyEquipment', src, buildEquipmentDefs(store))
-        end
-      end
-    end
-  elseif actionType == 'unequipToSlot' then
-    local toSlot = tonumber(action.toSlot)
-    if toSlot and action.equipSlot then
-      local eqItemId = store.equipment[action.equipSlot]
-      local movingDefId = eqItemId and store.items[eqItemId] and store.items[eqItemId].defId
-      local placeErr = standbyPlacementError(store, action.toContainerId, toSlot, movingDefId, nil)
-      if placeErr then
-        notify(src, placeErr)
-      else
-        local ok, err = unequipToSlot(store, action.equipSlot, action.toContainerId, toSlot)
-        if not ok then
-          notify(src, err or 'Action impossible')
-        else
-          TriggerClientEvent('pop_inventory:client:applyEquipment', src, buildEquipmentDefs(store))
-        end
-      end
-    end
-  elseif actionType == 'selectStandbyContainer' then
-    local containerId = action.containerId
-    if containerId and store.containers[containerId] then
-      StandbyContainers[src] = containerId
-    end
-  end
-
-  ensureActiveContainer(store)
-  syncVehicleContainerChanges(store)
-  syncRemoteStandbyChanges(store)
-  syncStaticChestChanges(store)
-  syncSearchChanges(store, src)
-  markDirty(identifier)
-  local state = buildState(src, store, action.coords)
-  local containerId = StandbyContainers[src]
-  if containerId then
-    state.standbyContainerId = containerId
-    state.standbyContainer = buildContainerView(store, containerId)
-  end
-  -- Fouille : garder la barre de sections (poches de la cible) à gauche + flag.
-  if SearchStandby[src] then
-    state.standbyPath = SearchStandby[src].sections
-    state.isSearch = true
-  end
-  StateSeq[src] = (StateSeq[src] or 0) + 1
-  state._seq = StateSeq[src]
-  TriggerClientEvent('pop_inventory:client:state', src, state)
-  updateRadioPower(src, store)
-
-  -- Sync EN DIRECT : pousse la mise à jour aux autres personnes qui regardent le
-  -- MÊME coffre (même containerId), pour un coffre partagé édité à deux.
-  if containerId and not SearchStandby[src] then
-    for osrc, ocid in pairs(StandbyContainers) do
-      if osrc ~= src and ocid == containerId then
-        pcall(refreshOpenStandby, osrc)
-      end
-    end
-  end
-end)
-

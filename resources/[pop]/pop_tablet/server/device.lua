@@ -178,7 +178,7 @@ function D.Carries(src, serial)
         local id = Bridge.GetIdentifier(src)
         return id ~= nil and D.OwnerSerial(id) == serial and Bridge.HasItem(src, Config.Item)
     end
-    for _, it in ipairs(Bridge.GetItems(src, Config.Item)) do
+    for _, it in ipairs(Tablet.Inventory.List(src)) do
         if it.metadata and it.metadata.serial == serial then return true end
     end
     return false
@@ -204,14 +204,10 @@ local function convert(src, bare)
     if not phone then return nil, 'err_phone_gen' end
     local meta = copy(bare.metadata)
     meta.serial = serial
-    if not Bridge.RemoveItem(src, Config.Item, 1, nil, bare.slot) then return nil, 'err_convert' end
-    if not Bridge.AddItem(src, Config.Item, 1, meta) then
-        Bridge.AddItem(src, Config.Item, 1, bare.metadata or {})
-        return nil, 'err_convert'
-    end
+    local stamped, undo = Tablet.Inventory.Stamp(src, bare, meta)
+    if not stamped then return nil, 'err_convert' end
     if not DB().CreateDevice(serial, phone, nil, Tablet.Now(), 100) then
-        Bridge.RemoveItem(src, Config.Item, 1, { serial = serial })
-        Bridge.AddItem(src, Config.Item, 1, bare.metadata or {})
+        undo()
         return nil, 'err_db'
     end
     return serial
@@ -227,7 +223,7 @@ function D.ResolveSerial(src, hint)
         return D.OwnerSerial(id), id
     end
     local first, bare
-    for _, it in ipairs(Bridge.GetItems(src, Config.Item)) do
+    for _, it in ipairs(Tablet.Inventory.List(src)) do
         local s = it.metadata and it.metadata.serial
         if D.SerialValid(s) then
             if s == hint then return s end
@@ -563,7 +559,7 @@ function D.Give(target)
     if not phone then return false, nil, 'err_phone_gen' end
     if not Bridge.AddItem(target, Config.Item, 1, { serial = serial }) then return false, nil, 'inventory_full' end
     if not DB().CreateDevice(serial, phone, nil, Tablet.Now(), 100) then
-        Bridge.RemoveItem(target, Config.Item, 1, { serial = serial })
+        Tablet.Inventory.RemoveBySerial(target, serial)
         return false, nil, 'err_db'
     end
     if Tablet.Peer then Tablet.Peer.Index(target) end

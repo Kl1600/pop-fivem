@@ -16,9 +16,12 @@ local function start()
     log(Tablet.Device.Mode() == 'item' and 'log_mode_item' or 'log_mode_owner')
     if GetConvar('pop_tablet_pepper', '') == '' then log('log_pepper_missing') end
     -- Utiliser l'objet ouvre la tablette (le serial de la pile utilisée sert d'indice, revérifié à l'ouverture).
-    Bridge.RegisterUsableItem(Config.Item, function(src, _, metadata)
-        TriggerClientEvent('pop_tablet:client:use', src, type(metadata) == 'table' and metadata.serial or nil)
-    end)
+    -- pop_inventory : l'objet est déclaré utilisable dans sa config (usable + onUse), rien à enregistrer ici.
+    if not Tablet.Inventory.Direct() then
+        Bridge.RegisterUsableItem(Config.Item, function(src, _, metadata)
+            TriggerClientEvent('pop_tablet:client:use', src, type(metadata) == 'table' and metadata.serial or nil)
+        end)
+    end
 end
 
 if MySQL and MySQL.ready then

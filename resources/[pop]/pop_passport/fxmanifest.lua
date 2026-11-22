@@ -1,8 +1,11 @@
 fx_version 'cerulean'
 game 'gta5'
+lua54 'yes'
 
-description 'Vanguard Passport (US / MX)'
-author 'Antigravity'
+name 'pop_passport'
+author 'KL'
+version '1.0.0'
+description 'POP Passport (US / MX)'
 
 ui_page 'html/index.html'
 
@@ -10,19 +13,32 @@ files {
     'html/index.html',
     'html/style.css',
     'html/script.js',
-    'html/usapassport.png',
-    'html/mexicopassport.png'
+    'html/usapassport.webp',
+    'html/mexicopassport.webp',
 }
 
 shared_scripts {
-    '@es_extended/imports.lua'
+    'config.lua',
+    'shared/*.lua',
+    'locales/*.lua',
 }
 
 client_scripts {
-    'client.lua'
+    'bridge/client.lua',
+    'client/photo.lua',
+    'client/main.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server.lua'
+    'bridge/server.lua',
+    'server/common.lua',
+    'server/main.lua',
+    'server/commands.lua',
+}
+
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
 }

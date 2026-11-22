@@ -31,19 +31,22 @@
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
+        // Seules les images dessinées (data:image) ou les fichiers du script sont affichés
+        const isSafe = (u) => typeof u === 'string' && (u.startsWith('data:image/') || u.startsWith('nui://pop_boards/html/'));
+        const FITS = ['fill', 'cover', 'contain'];
         const sourceUrl = urlParams.get('url');
         const fitParam = urlParams.get('fit');
 
         const resW = parseInt(urlParams.get('resW')) || 1024;
         const resH = parseInt(urlParams.get('resH')) || 1024;
 
-        if (sourceUrl) {
+        if (isSafe(sourceUrl)) {
             const img = document.getElementById('displayImg');
             img.src = sourceUrl;
             img.style.display = 'block';
             img.style.pointerEvents = 'none';
             img.style.userSelect = 'none';
-            if (fitParam) {
+            if (FITS.includes(fitParam)) {
                 img.style.objectFit = fitParam;
             }
         }
@@ -51,7 +54,7 @@
         // --- UPDATE FROM LUA MESSAGE ---
         window.addEventListener('message', (event) => {
             const data = event.data;
-            if (data.type === "updateTexture") {
+            if (data.type === "updateTexture" && isSafe(data.url)) {
                 const img = document.getElementById('displayImg');
                 img.src = ""; // Force flush
                 img.style.display = 'none';

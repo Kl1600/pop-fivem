@@ -41,6 +41,8 @@
 
     <script>
         const img     = document.getElementById('img');
+        // Seuls les liens http(s) sont affichés
+        const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u)) ? u : '';
         const overlay = document.getElementById('overlay');
 
         // Mode preview pendant le placement
@@ -51,8 +53,8 @@
 
         // Réception immédiate depuis l'URL de base si présente
         const initialUrl = params.get('url');
-        if (initialUrl) {
-            img.src = initialUrl;
+        if (safeUrl(initialUrl)) {
+            img.src = safeUrl(initialUrl);
             overlay.classList.remove('visible');
         }
 
@@ -60,8 +62,8 @@
         window.addEventListener('message', function(e) {
             const d = e.data;
             if (!d) return;
-            if (d.type === 'setUrl' && d.url) {
-                img.src = d.url;
+            if (d.type === 'setUrl' && safeUrl(d.url)) {
+                img.src = safeUrl(d.url);
                 overlay.classList.remove('visible');
             }
         });

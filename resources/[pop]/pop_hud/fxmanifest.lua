@@ -1,18 +1,34 @@
-fx_version 'bodacious'
-games { 'gta5' }
+fx_version 'cerulean'
+game 'gta5'
+lua54 'yes'
 
-description "Vision v1 Map"
-author "DarKy"
-version "1.0"
+name 'pop_hud'
+author 'KL'
+version '1.1.0'
+description 'HUD : mini-carte ronde, vie, faim, soif, voix, heure'
 
-client_script {
-	'client.lua'
- }
+shared_scripts {
+    'config.lua',
+    'shared/*.lua',
+    'locales/*.lua',
+}
 
-ui_page('html/index.html')
+client_scripts {
+    'bridge/client.lua',
+    'client/status.lua',
+    'client/minimap.lua',
+}
 
-files({
-	"html/script.js",
-	"html/styles.css",
-	"html/index.html",
-})
+ui_page 'html/index.html'
+
+files {
+    'html/script.js',
+    'html/styles.css',
+    'html/index.html',
+}
+
+escrow_ignore {
+    'config.lua',
+    'locales/*.lua',
+    'bridge/*.lua',
+}

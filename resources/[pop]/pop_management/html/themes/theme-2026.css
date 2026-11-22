@@ -11,7 +11,7 @@ html[data-theme="2026"] {
   --bg-light:   #191919;
 
   /* Accent principal (rouge SecuroServ par défaut) */
-  --accent:     #ff2e88;
+  --accent:     #C52622;
 
   /* Texte */
   --text-main:  #E9E9E9;
@@ -30,4 +30,4 @@ html[data-theme="2026"] {
 html[data-theme="2026"] #dashboard-pdm     { --accent: #0145D8; } /* Premium Deluxe Motorsport - bleu */
 html[data-theme="2026"] #dashboard-d8      { --accent: #147a3a; } /* Dynasty 8 - vert */
 html[data-theme="2026"] #dashboard-gouv    { --accent: #3498db; } /* Gouvernement - bleu */
-html[data-theme="2026"] #dashboard-youtool { --accent: #ff2e88; } /* YouTool - orange */
+html[data-theme="2026"] #dashboard-youtool { --accent: #e67e22; } /* YouTool - orange */

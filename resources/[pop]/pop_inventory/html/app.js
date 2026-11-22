@@ -606,7 +606,7 @@
                  item.defId === 'pistolet_peinture' || 
                  item.defId === 'smg' || 
                  item.defId === 'carabine');
-    console.log('[TAB_INVENTORY] isLongWeaponItem item=' + item.defId + ' result=' + res);
+    console.log('[POP_INVENTORY] isLongWeaponItem item=' + item.defId + ' result=' + res);
     return res;
   };
 
@@ -1015,7 +1015,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'attachments-cell-icon';
       const img = document.createElement('img');
-      img.src = opts.iconSrc || 'img/unknown.png';
+      img.src = opts.iconSrc || 'img/unknown.webp';
       img.alt = opts.accessoryLabel || '';
       wrap.appendChild(img);
       cell.appendChild(wrap);
@@ -1030,7 +1030,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'attachments-cell-icon';
       const img = document.createElement('img');
-      img.src = opts.iconSrc || 'img/unknown.png';
+      img.src = opts.iconSrc || 'img/unknown.webp';
       img.alt = '';
       wrap.appendChild(img);
       cell.appendChild(wrap);
@@ -1149,7 +1149,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'attachments-cell-icon';
       const img = document.createElement('img');
-      img.src = accDef.icon || 'img/unknown.png';
+      img.src = accDef.icon || 'img/unknown.webp';
       img.alt = accDef.label || '';
       wrap.appendChild(img);
       cell.appendChild(wrap);
@@ -1212,7 +1212,7 @@
     // derrière la NUI. On garde l'élément (au cas où la 3D échoue / fermeture).
     const weaponImg = document.getElementById('attachments-weapon-img');
     if (weaponImg) {
-      weaponImg.src = item.icon || 'img/unknown.png';
+      weaponImg.src = item.icon || 'img/unknown.webp';
       weaponImg.alt = item.label || '';
       weaponImg.style.display = 'none';
     }
@@ -1258,7 +1258,7 @@
       const cell = buildAttachmentCell({
         cx: cellCx,
         cy: cellCy,
-        iconSrc: accDef.icon || 'img/unknown.png',
+        iconSrc: accDef.icon || 'img/unknown.webp',
         accessoryLabel: accDef.label || iconDefId,
         slotLabel: (slotDef.label || slotName),
         attached: isAttached,
@@ -1997,7 +1997,7 @@
     } else if (data.action === 'craft_mode') {
       openCraftPanel(data.recipes || []);
     } else if (data.action === 'shop_mode') {
-      openShopPanel(data.shopId, data.items || [], data.currency || null);
+      openShopPanel(data.shopId, data.items || []);
     } else if (data.action === 'setAdminItems') {
       adminItemsData = Array.isArray(data.items) ? data.items : [];
       renderAdminItems(adminItemsData);
@@ -2009,7 +2009,7 @@
     } else if (data.action === 'setAdminJobs') {
       const raw = data.jobs;
       adminJobsData = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
-      console.log('[TAB_INVENTORY][NUI] setAdminJobs raw type:', typeof raw, 'isArray:', Array.isArray(raw), '→ normalized to', adminJobsData.length, 'jobs');
+      console.log('[POP_INVENTORY][NUI] setAdminJobs raw type:', typeof raw, 'isArray:', Array.isArray(raw), '→ normalized to', adminJobsData.length, 'jobs');
       const searchInput = document.getElementById('admin-jobs-search');
       if (searchInput) searchInput.value = '';
       renderAdminJobs(adminJobsData);
@@ -2413,7 +2413,7 @@
     if (!list) return;
     list.innerHTML = '';
     const arr = toArray(jobs);
-    console.log('[TAB_INVENTORY][NUI] renderAdminJobs:', arr.length, 'jobs, raw:', JSON.stringify(jobs).slice(0, 200));
+    console.log('[POP_INVENTORY][NUI] renderAdminJobs:', arr.length, 'jobs, raw:', JSON.stringify(jobs).slice(0, 200));
     if (arr.length === 0) {
       list.innerHTML = '<div style="color:rgba(255,255,255,0.5); padding:10px; font-style:italic; text-align:center;">Aucun job (liste vide)</div>';
       return;
@@ -2474,7 +2474,7 @@
       list.appendChild(jobDiv);
     });
     } catch (e) {
-      console.error('[TAB_INVENTORY][NUI] renderAdminJobs error:', e);
+      console.error('[POP_INVENTORY][NUI] renderAdminJobs error:', e);
       list.innerHTML = '<div style="color:#ff7070; padding:10px;">Erreur rendu : ' + (e && e.message || e) + '</div>';
       return;
     }
@@ -2845,6 +2845,20 @@
   }
 
   document.addEventListener('keydown', (event) => {
+    // TAB (ou I) referme l'inventaire, comme il l'a ouvert — sauf pendant une saisie.
+    const tag = (event.target && event.target.tagName) || '';
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (event.target && event.target.isContentEditable);
+    const isToggleKey = event.key === 'Tab' || ((event.key === 'i' || event.key === 'I') && !typing);
+    if (isToggleKey && !event.repeat) {
+      event.preventDefault();
+      if (typing && event.key === 'Tab') event.target.blur();
+      const sFrame = document.getElementById('standby-frame');
+      if (sFrame && sFrame.style.display === 'block') {
+        fetch(`https://${GetParentResourceName()}/standbyClose`, { method: 'POST' });
+      }
+      fetch(`https://${GetParentResourceName()}/close`, { method: 'POST' });
+      return;
+    }
     if (event.key === 'Escape') {
       event.preventDefault();
       const sFrame = document.getElementById('standby-frame');
@@ -3026,7 +3040,6 @@
   let shopItems = [];
   let selectedShopItem = null;
   let shopCategory = "LTD";
-  let shopCurrency = null; // { pesos: bool, rate: number } — mode années 80
 
   const shopSideEl = document.getElementById('shop-side');
   const btnBackShop = document.getElementById('btn-back-shop');
@@ -3045,14 +3058,8 @@
     if (!selectedShopItem) return;
     const qty = parseInt(shopQtyInput.value, 10) || 1;
     const totalDollars = qty * selectedShopItem.price;
-    const method = shopPaymentMethod ? shopPaymentMethod.value : 'cash';
-    if (method === 'pesos' && shopCurrency && shopCurrency.pesos) {
-      shopTotalPriceEl.textContent = totalDollars * (shopCurrency.rate || 1);
-      if (shopTotalUnitEl) shopTotalUnitEl.textContent = ' Pesos';
-    } else {
-      shopTotalPriceEl.textContent = totalDollars;
-      if (shopTotalUnitEl) shopTotalUnitEl.textContent = '$';
-    }
+    shopTotalPriceEl.textContent = totalDollars;
+    if (shopTotalUnitEl) shopTotalUnitEl.textContent = '$';
   };
 
   const renderShop = () => {
@@ -3090,39 +3097,14 @@
     });
   };
 
-  const openShopPanel = (category, items, currency) => {
+  const openShopPanel = (category, items) => {
     shopCategory = category || "Boutique";
     shopItems = items || [];
-    shopCurrency = currency || null;
     selectedShopItem = null;
     shopQtyInput.value = 1;
 
-    // Mode années 80 : afficher l'option Pesos uniquement si la boutique l'accepte, et cacher Banque
+    // Paiement : cash ou banque (plus de pesos sur le serveur)
     if (shopPaymentMethod) {
-      let pesosOpt = shopPaymentMethod.querySelector('option[value="pesos"]');
-      let bankOpt = shopPaymentMethod.querySelector('option[value="bank"]');
-      
-      if (shopCurrency && shopCurrency.pesos) {
-        if (!pesosOpt) {
-          pesosOpt = document.createElement('option');
-          pesosOpt.value = 'pesos';
-          pesosOpt.textContent = 'Pesos';
-          shopPaymentMethod.appendChild(pesosOpt);
-        }
-        if (bankOpt) {
-          bankOpt.remove();
-        }
-      } else {
-        if (pesosOpt) {
-          pesosOpt.remove();
-        }
-        if (!bankOpt) {
-          bankOpt = document.createElement('option');
-          bankOpt.value = 'bank';
-          bankOpt.textContent = 'Banque';
-          shopPaymentMethod.appendChild(bankOpt);
-        }
-      }
       shopPaymentMethod.value = 'cash';
     }
 

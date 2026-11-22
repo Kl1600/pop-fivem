@@ -1,3 +1,21 @@
+# pop_notify
+
+Notifications POP. Aucun framework requis.
+
+## Utilisation
+| Appel | Côté | Rôle |
+|---|---|---|
+| `exports.pop_notify:ShowNotify({ title, message, image, logo, icon, duration })` | client | affiche une notification |
+| `TriggerClientEvent('notification:client:ShowNotify', src, data)` | serveur | idem depuis le serveur |
+| `TriggerEvent('notification:client:checklist', { type = 'show'\|'reset'\|'step', ... })` | client | checklist persistante (livraisons) |
+| `TriggerEvent('notification:client:setRaised', state, bottom)` | client | décale la pile vers le haut |
+
+Les scripts au gabarit POP passent par `Bridge.Notify(...)`, qui appelle `ShowNotify` automatiquement.
+
+Fichiers : `client.lua` (export et évènements), `html/` (affichage). Relancer : `restart pop_notify`.
+
+---
+
 # Custom Notifications Integration / Intégration des Notifications Custom
 
 - 🇫🇷 [Version Française](#version-française)

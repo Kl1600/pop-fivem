@@ -1,7 +1,7 @@
 /* Kit POP : style commun à tous les scripts. Ne pas modifier dans un script (surcharger dans web/style.css). */
 
 :root {
-  --pop-accent: #ff2e88;            /* remplacé au démarrage par Config.AccentColor */
+  --pop-accent: #ffffff;            /* remplacé au démarrage par Config.AccentColor */
   --pop-bg: rgba(14, 14, 17, 0.92); /* #0e0e11 à 92 % */
   --pop-text: #ffffff;
   --pop-muted: rgba(255, 255, 255, 0.6);

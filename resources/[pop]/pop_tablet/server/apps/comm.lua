@@ -38,7 +38,7 @@ function P.Index(src)
         local id = Bridge.GetIdentifier(src)
         if id and Bridge.HasItem(src, Config.Item) then mine[Tablet.Device.OwnerSerial(id)] = true end
     else
-        for _, it in ipairs(Bridge.GetItems(src, Config.Item)) do
+        for _, it in ipairs(Tablet.Inventory.List(src)) do
             local serial = it.metadata and it.metadata.serial
             if Tablet.Device.SerialValid(serial) then mine[serial] = true end
         end

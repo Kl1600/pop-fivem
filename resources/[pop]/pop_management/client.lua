@@ -5,7 +5,6 @@
 --  - Only ONE laptop may be OPEN (and interactive) at a time on this client
 --  - When you stop interacting (ESC / walk away), the laptop closes back to CLOSED model
 
-local CR3D = CR3D
 Config = Config or {}
 
 local shelfObj = nil
@@ -300,7 +299,7 @@ local function placeClosed(customPos, customHeading)
       heading = GetEntityHeading(ped)
   end
 
-  local closed = CreateObject(CLOSED_MODEL, pos.x, pos.y, pos.z, true, true, false)
+  local closed = CreateObject(CLOSED_MODEL, pos.x, pos.y, pos.z, false, false, false)
   SetEntityHeading(closed, heading)
   FreezeEntityPosition(closed, true)
 
@@ -324,7 +323,7 @@ local function openLaptop(entry)
 
   -- spawn open model at same transform
   safeDelete(entry.openEnt)
-  entry.openEnt = CreateObject(OPEN_MODEL, pos.x, pos.y, pos.z, true, true, false)
+  entry.openEnt = CreateObject(OPEN_MODEL, pos.x, pos.y, pos.z, false, false, false)
   SetEntityHeading(entry.openEnt, heading)
   FreezeEntityPosition(entry.openEnt, true)
 
@@ -896,7 +895,7 @@ RegisterCommand('lapedity', function()
     notify('Starting Gizmo Editor. Use mouse handles, Num+/- for size, ENTER to save.')
 
     -- Spawn dummy entity exactly at the current screen's position in world space
-    dummyEnt = CreateObject(dummyModel, posWorld.x, posWorld.y, posWorld.z, true, true, false)
+    dummyEnt = CreateObject(dummyModel, posWorld.x, posWorld.y, posWorld.z, false, false, false)
     SetEntityRotation(dummyEnt, monitorRot.x, monitorRot.y, monitorRot.z, 2, true)
     
     -- Crucial: disable collision and gravity, make invisible, do NOT freeze so matrix/coordinates updates run natively
@@ -1063,6 +1062,7 @@ RegisterCommand('laptest', function()
     stopLaptopCam()
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
+    LocalPlayer.state:set('laptopOpen', false, false)
     notify('Test panel removed.')
   end
 end)
@@ -1225,6 +1225,38 @@ end
 -- =============================
 -- FOCUS / INPUT FORWARD
 -- =============================
+-- laptopOpen (state bag lu par natal_pausemenu, etc.) : posé à true uniquement
+-- quand l'ouverture a réussi, toujours remis à false à la fermeture / échec.
+-- Le compteur évite qu'une remise à false différée écrase une réouverture.
+local laptopOpenGen = 0
+local function setLaptopOpen(state, delayTicks)
+  laptopOpenGen = laptopOpenGen + 1
+  if state then
+    LocalPlayer.state:set('laptopOpen', true, false)
+    return
+  end
+  if not delayTicks or delayTicks <= 0 then
+    LocalPlayer.state:set('laptopOpen', false, false)
+    return
+  end
+  local gen = laptopOpenGen
+  -- Boucle bornée : bloque Échap/pause quelques frames pour que le MÊME appui
+  -- (qui ferme le laptop) n'ouvre pas le menu pause, puis s'arrête toujours.
+  CreateThread(function()
+    local ticks = delayTicks
+    while ticks > 0 do
+      ticks = ticks - 1
+      DisableControlAction(0, 200, true) -- pause (alt / Échap)
+      DisableControlAction(0, 199, true) -- pause
+      DisableControlAction(0, 322, true) -- Échap
+      Wait(0)
+    end
+    if gen == laptopOpenGen then
+      LocalPlayer.state:set('laptopOpen', false, false)
+    end
+  end)
+end
+
 local function closeActive()
   -- Always end focus + teardown replace + swap model back to closed
   if focused then
@@ -1269,27 +1301,12 @@ local function closeActive()
 
   -- Empêche le menu pause de s'ouvrir avec le MÊME appui sur Échap qui ferme le laptop,
   -- quelle que soit l'origine de la fermeture (thread focus, callback NUI, etc.).
-  CreateThread(function()
-    local ticks = 25
-    while ticks > 0 do
-      ticks = ticks - 1
-      DisableControlAction(0, 200, true) -- pause (alt / Échap)
-      DisableControlAction(0, 199, true) -- pause
-      DisableControlAction(0, 322, true) -- Échap
-      Wait(0)
-    end
-    -- On garde laptopOpen actif pendant la fenêtre ci-dessus pour que le MÊME appui
-    -- sur Échap (qui ferme le laptop) n'ouvre pas le menu pause juste après.
-    LocalPlayer.state:set('laptopOpen', false, false)
-  end)
+  -- laptopOpen reste actif pendant cette fenêtre (25 frames) puis repasse à false.
+  setLaptopOpen(false, 25)
 end
 
 beginFocus = function(entry, isTestMode)
   if focused then return end
-
-  -- Signale aux autres ressources (ex: natal_pausemenu) que le laptop est ouvert,
-  -- pour qu'elles n'ouvrent pas leur menu sur Échap.
-  LocalPlayer.state:set('laptopOpen', true, false)
 
   if not isTestMode then
     if not entry or not DoesEntityExist(entry.openEnt) then
@@ -1314,6 +1331,10 @@ beginFocus = function(entry, isTestMode)
       return
     end
   end
+
+  -- Ouverture réussie : signale aux autres ressources (ex: natal_pausemenu) que
+  -- le laptop est ouvert, pour qu'elles n'ouvrent pas leur menu sur Échap.
+  setLaptopOpen(true)
 
   focused = true
   cursorX, cursorY = 0.5, 0.5
@@ -1377,21 +1398,12 @@ beginFocus = function(entry, isTestMode)
           stopLaptopCam()
           SetNuiFocus(false, false)
           SetNuiFocusKeepInput(false)
+          setLaptopOpen(false, 25)
           notify('Test panel removed.')
           break
         else
+          -- closeActive bloque déjà Échap/pause quelques frames (boucle bornée)
           closeActive()
-          -- Disable ESC for a few frames to prevent pause menu from popping up
-          CreateThread(function()
-              local ticks = 15
-              while ticks > 0 do
-                  Wait(0)
-                  ticks = ticks - 1
-                  DisableControlAction(0, 200, true)
-                  DisableControlAction(0, 199, true)
-                  DisableControlAction(0, 322, true)
-              end
-          end)
           break
         end
       end
@@ -1490,10 +1502,17 @@ beginFocus = function(entry, isTestMode)
           stopLaptopCam()
           SetNuiFocus(false, false)
           SetNuiFocusKeepInput(false)
+          setLaptopOpen(false)
           notify('Test panel removed (walked away).')
           break
         end
       end
+    end
+
+    -- Sortie de boucle sans fermeture explicite (DUI perdu, laptop changé...) :
+    -- on garantit que le focus et laptopOpen sont bien relâchés.
+    if not isTestMode and focused and activeLaptop == entry then
+      closeActive()
     end
   end)
 end
@@ -1618,12 +1637,14 @@ end)
 -- est actif pendant le focus DUI, ou si le chat est désactivé sur le serveur).
 -- Toutes rebindables par le joueur dans : Paramètres > Touches > FiveM.
 -- =============================
-RegisterKeyMapping('lapedity',  'Editeur position écran DUI (laptop/PC)', 'KEYBOARD', 'F6')
-RegisterKeyMapping('lapclose',  'Fermer le laptop / PC', 'KEYBOARD', 'F7')
-RegisterKeyMapping('lapplace',  'Placer un laptop / PC devant le joueur', 'KEYBOARD', 'F9')
-RegisterKeyMapping('lapnext',   'Cycle texture cible (debug)', 'KEYBOARD', 'F10')
-RegisterKeyMapping('lapside',   'Inverser le côté écran (debug)', 'KEYBOARD', 'F11')
-RegisterKeyMapping('lapcorners','Editeur 3D par 4 coins (snap)', 'KEYBOARD', 'F5')
+-- Touches par défaut choisies pour ne pas entrer en conflit avec les autres scripts
+-- (F5 emotes, F6 admin, F7 noclip, F10 police). Outils de placement : sans touche.
+RegisterKeyMapping('lapedity',  'Editeur position écran DUI (laptop/PC)', 'KEYBOARD', '')
+RegisterKeyMapping('lapclose',  'Fermer le laptop / PC', 'KEYBOARD', 'F3')
+RegisterKeyMapping('lapplace',  'Placer un laptop / PC devant le joueur', 'KEYBOARD', '')
+RegisterKeyMapping('lapnext',   'Cycle texture cible (debug)', 'KEYBOARD', '')
+RegisterKeyMapping('lapside',   'Inverser le côté écran (debug)', 'KEYBOARD', '')
+RegisterKeyMapping('lapcorners','Editeur 3D par 4 coins (snap)', 'KEYBOARD', '')
 
 RegisterCommand('lapcorners', function()
   startCornerEditor()
@@ -1646,13 +1667,11 @@ end)
 CreateThread(function()
   Wait(1000) -- Attendre un peu que tout soit chargé
   if Config.Laptops and #Config.Laptops > 0 then
-    for i, data in ipairs(Config.Laptops) do
+    for _, data in ipairs(Config.Laptops) do
        placeClosed(data.pos, data.heading)
     end
-  else
-    print('No laptops in Config.Laptops, placing one near player for dev/test.')
-    placeClosed()
   end
+  -- Config.Laptops vide : rien n'est créé devant le joueur (/lapplace en DevMode).
 end)
 
 -- =============================
@@ -1694,6 +1713,7 @@ end)
 RegisterNUICallback('requestSocietyData', function(data, cb)
   -- On demande au serveur de nous envoyer les données de notre job actuel
   -- On ne se fie pas au cache client ESX qui peut être lent
+  storedLaptopData = nil -- évite de renvoyer les données d'une requête précédente
   TriggerServerEvent('cr-laptop:getSocietyData')
   
   -- Attendre un peu pour que le serveur réponde et que storedLaptopData soit mis à jour
@@ -1961,6 +1981,16 @@ _______________              _______________
 
   local title = 'Contrat de travail - ' .. fullName
 
+  if GetResourceState('mt_printers') ~= 'started' then
+    notify("Aucune imprimante disponible sur ce serveur.", {
+        title    = 'Imprimante',
+        image    = NOTIF_IMG.print,
+        duration = 5000,
+    })
+    cb('ok')
+    return
+  end
+
   TriggerServerEvent('mt_printers:server:printDocument',
     'document', title, contractText, '', 0, 0
   )
@@ -2155,6 +2185,7 @@ end)
 -- GOUV (ADMINISTRATION BC)
 -- =============================
 RegisterNUICallback('requestGouvData', function(data, cb)
+    storedGouvData = nil -- évite de renvoyer les données d'une requête précédente
     TriggerServerEvent('pop_management:requestGouvData')
     
     local ClientWaitTime = 0
@@ -2723,7 +2754,7 @@ AddEventHandler('pop_management:openPortMenu', function(vehicles, packages, hasP
 end)
 
 RegisterNetEvent('pop_management:spawnClaimedVehicle')
-AddEventHandler('pop_management:spawnClaimedVehicle', function(model, color, society)
+AddEventHandler('pop_management:spawnClaimedVehicle', function(model, color, society, serverPlate)
     local spawnPoint = Config.Port.SpawnPoint
     ESX.Game.SpawnVehicle(model, spawnPoint, spawnPoint.w, function(vehicle)
         if DoesEntityExist(vehicle) then
@@ -2738,7 +2769,8 @@ AddEventHandler('pop_management:spawnClaimedVehicle', function(model, color, soc
                 return plate
             end
             
-            SetVehicleNumberPlateText(vehicle, GenerateRandomPlate())
+            -- Plaque générée et validée par le serveur (fallback local si absente)
+            SetVehicleNumberPlateText(vehicle, serverPlate or GenerateRandomPlate())
             local plate = GetVehicleNumberPlateText(vehicle)
 
             -- Appliquer couleur (basique - mapping simple ou ID direct)
@@ -3000,8 +3032,9 @@ RegisterCommand('ytcarton', function()
                 EndTextCommandDisplayText(0.5, 0.04)
 
                 if cartonFinish then decided = 'done' end
-                if IsControlJustPressed(0, 191) then decided = 'next' end
-                if IsControlJustPressed(0, 177) then decided = 'undo' end
+                -- contrôles désactivés ci-dessus : il faut lire l'état "disabled"
+                if IsDisabledControlJustPressed(0, 191) then decided = 'next' end
+                if IsDisabledControlJustPressed(0, 177) then decided = 'undo' end
                 Wait(0)
             end
 

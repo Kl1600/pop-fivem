@@ -1,8 +1,8 @@
 Cam = nil
-camHeading = 357.0
+camHeading = 357.0 -- luacheck: ignore 131 (gardé tel quel, non lu)
 camRadius = 1.0
 camHeight = 0.65
-currentPart = 'identity'
+currentPart = 'identity' -- luacheck: ignore 131 (gardé tel quel, non lu)
 
 local offsets = {
     identity = { z = 0.75, d = 3.0, fov = 9.0 }, -- Un FOV de 5.0 écrase la profondeur et annule le flou du jeu
@@ -26,15 +26,15 @@ local offsets = {
 
 function UpdateCamera()
     if not DoesCamExist(Cam) then return end
-    
+
     -- Nouvelles coordonnées fixes du joueur
     local px, py, pz = -578.3015, 44.7212, 92.2444
-    
+
     -- Calculer la position relative de la caméra pour qu'elle soit toujours devant le joueur
     local headingRad = math.rad(275.8544)
     local forwardX = -math.sin(headingRad)
     local forwardY = math.cos(headingRad)
-    
+
     -- Pour décaler le perso sur la droite de l'écran, on bouge la caméra vers sa propre gauche (donc la droite du joueur)
     local shiftAmount = 0.1 -- Réduit à 0.2 (au lieu de 0.4) pour que ce soit moins collé à droite
     local rightHeadingRad = math.rad(245.8544 - 90.0)
@@ -45,10 +45,10 @@ function UpdateCamera()
     local cx = px + (forwardX * camRadius) + rightX
     local cy = py + (forwardY * camRadius) + rightY
     local cz = pz + camHeight
-    
+
     SetCamCoord(Cam, cx, cy, cz)
-    PointCamAtCoord(Cam, px + rightX, py + rightY, cz - 0.1) 
-    
+    PointCamAtCoord(Cam, px + rightX, py + rightY, cz - 0.1)
+
     -- Activer le flou d'arrière-plan (Depth of Field) de façon plus agressive
     SetCamUseShallowDofMode(Cam, true)
     SetCamDofFnumberOfLens(Cam, 0.0) -- Force un flou maximal optique absolu (f/0.0)
@@ -62,21 +62,21 @@ function CreateCamera()
     if not DoesCamExist(Cam) then
         Cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
     end
-    
+
     local playerPed = PlayerPedId()
     camHeading = GetEntityHeading(playerPed) + 180.0
     camRadius = offsets.identity.d
     camHeight = offsets.identity.z
-    
+
     SetCamActive(Cam, true)
     UpdateCamera()
-    
+
     -- Activer le flou exactement comme sur le menu staff
     SetCamUseShallowDofMode(Cam, true)
     SetCamNearDof(Cam, 0.6)
     SetCamFarDof(Cam, camRadius + 0.5)
     SetCamDofStrength(Cam, 1.0)
-    
+
     -- Le thread dédié pour le HiDof comme dans le staff menu
     Citizen.CreateThread(function()
         while DoesCamExist(Cam) do
@@ -84,7 +84,7 @@ function CreateCamera()
             SetUseHiDof()
         end
     end)
-    
+
     RenderScriptCams(true, true, 500, true, true)
 end
 
@@ -105,12 +105,12 @@ end
 
 RegisterNUICallback('rotate', function(data, cb)
     local playerPed = PlayerPedId()
-    
+
     if data.deltaX then
         local heading = GetEntityHeading(playerPed)
         SetEntityHeading(playerPed, heading + (data.deltaX * 0.5))
     end
-    
+
     if data.deltaY then
         camHeight = camHeight + (data.deltaY * 0.005)
         -- Bounds checking for height
@@ -118,7 +118,7 @@ RegisterNUICallback('rotate', function(data, cb)
         if camHeight > 1.2 then camHeight = 1.2 end
         UpdateCamera()
     end
-    
+
     cb('ok')
 end)
 
@@ -128,11 +128,11 @@ RegisterNUICallback('zoom', function(data, cb)
     else
         camRadius = camRadius - 0.1
     end
-    
+
     -- Bounds checking
     if camRadius < 0.4 then camRadius = 0.4 end
     if camRadius > 4.0 then camRadius = 4.0 end
-    
+
     UpdateCamera()
     cb('ok')
 end)

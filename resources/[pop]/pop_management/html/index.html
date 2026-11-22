@@ -178,7 +178,7 @@
         :root {
             --bg-dark: #0D0D0D;
             --bg-light: #191919;
-            --accent: #ff2e88;
+            --accent: #C52622;
             --text-main: #E9E9E9;
             --text-dim: #686868;
             --text-label: #CCCCCC;
@@ -345,7 +345,7 @@
         }
 
         .title-connexion {
-            color: #ff2e88;
+            color: #C52622;
             font-size: 20px;
             font-weight: 700;
             letter-spacing: 2px;
@@ -824,7 +824,7 @@
 
         /* --- DASHBOARD YOUTOOL OVERRIDE --- */
         #dashboard-youtool {
-            --accent: #ff2e88; /* Orange matériel */
+            --accent: #e67e22; /* Orange matériel */
         }
 
         /* Le panneau panier est en position:absolute dans .content */
@@ -836,7 +836,7 @@
         #dashboard-youtool .sidebar .nav-item.active {
             background: var(--accent) !important;
             color: white !important;
-            box-shadow: 0 4px 15px rgba(255, 46, 136, 0.4);
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4);
         }
 
         #dashboard-youtool .sidebar .nav-item:hover i {
@@ -860,9 +860,9 @@
 
         .youtool-card:hover {
             transform: translateY(-6px);
-            border-color: rgba(255, 46, 136, 0.4) !important;
+            border-color: rgba(230, 126, 34, 0.4) !important;
             background: rgba(255, 255, 255, 0.04) !important;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 46, 136, 0.15);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(230, 126, 34, 0.15);
         }
 
         .youtool-card-icon-container {
@@ -870,14 +870,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle at center, rgba(255, 46, 136, 0.15) 0%, rgba(0,0,0,0) 75%);
+            background: radial-gradient(circle at center, rgba(230, 126, 34, 0.15) 0%, rgba(0,0,0,0) 75%);
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             position: relative;
             transition: background 0.3s ease;
         }
 
         .youtool-card:hover .youtool-card-icon-container {
-            background: radial-gradient(circle at center, rgba(255, 46, 136, 0.22) 0%, rgba(0,0,0,0) 75%);
+            background: radial-gradient(circle at center, rgba(230, 126, 34, 0.22) 0%, rgba(0,0,0,0) 75%);
         }
 
         .youtool-card-icon {
@@ -947,7 +947,7 @@
         }
 
         .youtool-order-btn {
-            background: linear-gradient(135deg, #ff2e88 0%, #d81b6e 100%) !important;
+            background: linear-gradient(135deg, #f39c12 0%, #d35400 100%) !important;
             color: white !important;
             border: none;
             padding: 9px;
@@ -996,21 +996,21 @@
         }
 
         #yt-cart-btn:hover {
-            background: rgba(255, 46, 136,0.15);
-            border-color: rgba(255, 46, 136,0.4);
-            color: #ff2e88;
+            background: rgba(230,126,34,0.15);
+            border-color: rgba(230,126,34,0.4);
+            color: #e67e22;
         }
 
         #yt-cart-btn.yt-cart-has-items {
-            border-color: rgba(255, 46, 136,0.5);
-            box-shadow: 0 0 10px rgba(255, 46, 136,0.15);
+            border-color: rgba(230,126,34,0.5);
+            box-shadow: 0 0 10px rgba(230,126,34,0.15);
         }
 
         #yt-cart-badge {
             position: absolute;
             top: -7px;
             right: -7px;
-            background: #ff2e88;
+            background: #e67e22;
             color: white;
             font-size: 10px;
             font-weight: 800;
@@ -1043,7 +1043,7 @@
             width: 300px;
             height: 100%;
             background: rgba(18, 10, 5, 0.97);
-            border-left: 1px solid rgba(255, 46, 136,0.2);
+            border-left: 1px solid rgba(230,126,34,0.2);
             display: flex;
             flex-direction: column;
             transform: translateX(100%);
@@ -1058,7 +1058,7 @@
 
         .yt-cart-header {
             padding: 16px 16px 12px;
-            border-bottom: 1px solid rgba(255, 46, 136,0.15);
+            border-bottom: 1px solid rgba(230,126,34,0.15);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1074,7 +1074,7 @@
             gap: 8px;
         }
 
-        .yt-cart-header-title i { color: #ff2e88; }
+        .yt-cart-header-title i { color: #e67e22; }
 
         .yt-cart-close {
             background: none;
@@ -1121,7 +1121,7 @@
             transition: border-color 0.2s;
         }
 
-        .yt-cart-item:hover { border-color: rgba(255, 46, 136,0.2); }
+        .yt-cart-item:hover { border-color: rgba(230,126,34,0.2); }
 
         .yt-cart-item-icon {
             width: 36px;
@@ -1191,7 +1191,7 @@
 
         .yt-cart-footer {
             padding: 14px;
-            border-top: 1px solid rgba(255, 46, 136,0.15);
+            border-top: 1px solid rgba(230,126,34,0.15);
             flex-shrink: 0;
         }
 
@@ -1220,7 +1220,7 @@
         .yt-checkout-btn {
             width: 100%;
             padding: 11px;
-            background: linear-gradient(135deg, #ff2e88, #d81b6e);
+            background: linear-gradient(135deg, #e67e22, #d35400);
             border: none;
             border-radius: 8px;
             color: white;
@@ -1233,13 +1233,13 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(255, 46, 136,0.25);
+            box-shadow: 0 4px 15px rgba(230,126,34,0.25);
         }
 
         .yt-checkout-btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(255, 46, 136,0.35);
+            box-shadow: 0 6px 20px rgba(230,126,34,0.35);
         }
 
         .yt-checkout-btn:active { transform: translateY(1px); }
@@ -2244,7 +2244,7 @@
 
     <!-- App "Livraisons YouTool" : réservée au job youtool, traite les commandes
          (véhicules + colis) passées par les clients. Validation -> retrait au Port. -->
-    <div id="dashboard-ytjob" data-app="ytjob" style="--accent:#ff2e88;">
+    <div id="dashboard-ytjob" data-app="ytjob" style="--accent:#e67e22;">
         <div class="window-header">
             <div class="window-controls">
                 <div class="traffic-light traffic-red"    onclick="closeWindow('ytjob')"   title="Fermer"></div>

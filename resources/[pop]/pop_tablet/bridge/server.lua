@@ -358,21 +358,20 @@ local function try(fn, ...)
 end
 
 local INVENTORIES = {
-    -- API de pop_inventory (SPEC §1.2 et §7.1) : mêmes noms et signatures qu'ox_inventory
-    -- + RegisterUsableItem(item, cb(source, item, metadata, slot)).
-    -- NOTE: pop_inventory doit exposer Search(src, 'slots', item) comme ox_inventory.
+    -- API réelle de pop_inventory (server/sv_player_items.lua) : getItemCount, addItem, removeItem, getInventory.
+    -- Les objets utilisables sont déclarés dans pop_inventory/config.lua (usable / onUse) : pas d'enregistrement externe.
     pop_inventory = {
-        count = function(src, item) return exports.pop_inventory:GetItemCount(src, item) or 0 end,
-        add = function(src, item, count, metadata) return exports.pop_inventory:AddItem(src, item, count, metadata) == true end,
-        remove = function(src, item, count, metadata, slot)
-            return exports.pop_inventory:RemoveItem(src, item, count, metadata, slot) == true
+        count = function(src, item) return exports.pop_inventory:getItemCount(src, item) or 0 end,
+        add = function(src, item, count, metadata) return exports.pop_inventory:addItem(src, item, count, metadata) == true end,
+        remove = function(src, item, count)
+            return exports.pop_inventory:removeItem(src, item, count) == true
         end,
-        canCarry = function(src, item, count) return exports.pop_inventory:CanCarryItem(src, item, count) == true end,
+        -- addItem refuse déjà si l'inventaire est plein.
+        canCarry = function() return true end,
         list = function(src, item)
-            if item then return toStacks(exports.pop_inventory:Search(src, 'slots', item), item) end
-            return toStacks(exports.pop_inventory:GetInventoryItems(src))
+            return toStacks(exports.pop_inventory:getInventory(src), item)
         end,
-        usable = function(item, cb) exports.pop_inventory:RegisterUsableItem(item, cb) return true end,
+        usable = nil,
     },
     ox_inventory = {
         count = function(src, item, metadata) return exports.ox_inventory:GetItemCount(src, item, metadata) or 0 end,
@@ -509,7 +508,14 @@ end
 -- Argent : account = 'cash' | 'bank' | 'black'
 ------------------------------------------------------------------------
 
+-- Avec pop_inventory, l'argent liquide est l'objet Config.CashItem ('cash'), pas l'argent ESX.
+local function cashIsItem(account)
+    return (account or 'cash') == 'cash' and Bridge.Inventory == 'pop_inventory'
+end
+local CASH_ITEM = Config.CashItem or 'cash'
+
 function Bridge.GetMoney(src, account)
+    if cashIsItem(account) then return Bridge.GetItemCount(src, CASH_ITEM) end
     local ok, n = try(FW.getMoney, tonumber(src), account or 'cash')
     return ok and tonumber(n) or 0
 end
@@ -517,6 +523,7 @@ end
 function Bridge.AddMoney(src, account, amount, reason)
     amount = validAmount(amount)
     if not amount then return false end
+    if cashIsItem(account) then return Bridge.AddItem(src, CASH_ITEM, amount) end
     local ok, res = try(FW.addMoney, tonumber(src), account or 'cash', amount, reason or RES)
     if ok and res then debug('AddMoney %s %s %d', src, account, amount) end
     return ok and res == true
@@ -528,6 +535,7 @@ function Bridge.RemoveMoney(src, account, amount, reason)
     if not amount then return false end
     account = account or 'cash'
     if Bridge.GetMoney(src, account) < amount then return false end
+    if cashIsItem(account) then return Bridge.RemoveItem(src, CASH_ITEM, amount) end
     local ok, res = try(FW.removeMoney, tonumber(src), account, amount, reason or RES)
     if ok and res then debug('RemoveMoney %s %s %d', src, account, amount) end
     return ok and res == true

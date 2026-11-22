@@ -17,8 +17,11 @@ function renderPassport(d, type) {
     var sign = ((d.firstname || '') + ' ' + (d.lastname || '')).trim();
     document.getElementById(p + '-sign').textContent = sign;
 
+    // Pas de photo du titulaire : on masque l'image, le fond par défaut reste visible
     var photoSrc = d.headshot ? ('https://nui-img/' + d.headshot + '/' + d.headshot) : (d.photo || '');
-    document.getElementById('player-photo-' + p).setAttribute('src', photoSrc);
+    var photoEl = document.getElementById('player-photo-' + p);
+    photoEl.setAttribute('src', photoSrc);
+    photoEl.style.visibility = photoSrc ? 'visible' : 'hidden';
 
     if (isMx) {
         $('#passport-container').addClass('show-mx');

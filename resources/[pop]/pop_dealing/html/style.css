@@ -64,12 +64,12 @@ html, body {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(255, 46, 136, 0.35), rgba(216, 27, 110, 0.15));
-    border: 1px solid rgba(255, 46, 136, 0.4);
+    background: linear-gradient(135deg, rgba(88, 160, 60, 0.35), rgba(58, 168, 86, 0.15));
+    border: 1px solid rgba(88, 160, 60, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ff2e88;
+    color: #b9eea0;
     font-size: 15px;
 }
 
@@ -97,9 +97,9 @@ html, body {
     font-weight: 800;
     letter-spacing: 1px;
     text-transform: uppercase;
-    background: rgba(255, 46, 136, 0.18);
-    color: #ff2e88;
-    border: 1px solid rgba(255, 46, 136, 0.35);
+    background: rgba(88, 160, 60, 0.18);
+    color: #b9eea0;
+    border: 1px solid rgba(88, 160, 60, 0.35);
 }
 
 /* ─── Stats ──────────────────────────────────────── */
@@ -135,7 +135,7 @@ html, body {
     font-variant-numeric: tabular-nums;
 }
 
-.deal-stat.accent .deal-stat-value { color: #ff2e88; }
+.deal-stat.accent .deal-stat-value { color: #b9eea0; }
 
 .deal-stat-sep {
     width: 1px;
@@ -169,7 +169,7 @@ html, body {
 .deal-gauge-value {
     font-size: 17px;
     font-weight: 700;
-    color: #ff2e88;
+    color: #b9eea0;
     font-variant-numeric: tabular-nums;
 }
 
@@ -203,7 +203,7 @@ html, body {
     top: 9px;
     bottom: 9px;
     width: 0%;
-    background: linear-gradient(90deg, #d81b6e, #ff2e88);
+    background: linear-gradient(90deg, #58a03c, #b9eea0);
     border-radius: 2px;
     pointer-events: none;
     transition: width 0.05s linear;
@@ -252,8 +252,8 @@ html, body {
     height: 16px;
     border-radius: 50%;
     background: #fff;
-    border: 2px solid #ff2e88;
-    box-shadow: 0 0 0 4px rgba(255, 46, 136, 0.18);
+    border: 2px solid #58a03c;
+    box-shadow: 0 0 0 4px rgba(88, 160, 60, 0.18);
     cursor: grab;
     transition: transform 0.1s;
 }
@@ -264,8 +264,8 @@ html, body {
     height: 16px;
     border-radius: 50%;
     background: #fff;
-    border: 2px solid #ff2e88;
-    box-shadow: 0 0 0 4px rgba(255, 46, 136, 0.18);
+    border: 2px solid #58a03c;
+    box-shadow: 0 0 0 4px rgba(88, 160, 60, 0.18);
     cursor: grab;
 }
 .deal-gauge-track input[type="range"]:focus { outline: none; }

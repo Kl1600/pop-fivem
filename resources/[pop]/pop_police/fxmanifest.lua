@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'Tabernac'
-description 'Tabernac Police Dispatch'
+author 'KL'
+description 'POP Police Dispatch'
 version '1.0.0'
 
 dependencies {

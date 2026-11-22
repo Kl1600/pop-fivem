@@ -19,7 +19,7 @@ const Config = {
         { id: "clothes", label: "VÊTEMENTS", icon: "fa-solid fa-shirt", type: "action" },
         { id: "tattoos", label: "TATOUAGES", icon: "fa-solid fa-paintbrush", type: "action" },
         { id: "arms", label: "BRAS", icon: "fa-solid fa-hand", type: "sliders" },
-        { id: "peds", label: "PEDS", icon: "fa-solid fa-person-circle-check", type: "peds", vip: true },
+        // Onglet PEDS retiré : seuls les modèles freemode sont acceptés par le serveur
         { id: "size", label: "TAILLE", icon: "fa-solid fa-ruler-vertical", type: "sliders" },
         { id: "region", label: "RÉGION", icon: "fa-solid fa-earth-americas", type: "region" },
         { id: "save", label: "SAUVEGARDER", icon: "fa-solid fa-check", type: "action" }
@@ -464,7 +464,7 @@ function renderSliders(items) {
             </div>
             <div class="parent-box">
                 <div class="parent-img-wrap">
-                    <img id="img-mom" src="${Config.parentImages[momId] || ''}" class="parent-img" onerror="this.src='https://ui-avatars.com/api/?name=M&background=e91e63&color=fff'">
+                    <img id="img-mom" src="${Config.parentImages[momId] || ''}" class="parent-img" onerror="this.src='https://ui-avatars.com/api/?name=M&background=8e44ad&color=fff'">
                 </div>
                 <span class="parent-label">MÈRE</span>
             </div>
@@ -686,33 +686,47 @@ function finish() {
     });
 }
 
-// Contrainte date de naissance (serveur en 1980) : champ libre, mais l'année
-// ne peut pas dépasser l'époque (pas né après le serveur) ni être aberrante.
-let birthDateRule = null;
-
-function applyBirthDateRule(rule) {
-    birthDateRule = rule || null;
+// Date de naissance : format JJ/MM/AAAA, les « / » s'ajoutent tout seuls.
+function applyBirthDateRule() {
     const input = document.getElementById('dateofbirth');
     if (!input) return;
     input.readOnly = false;
     input.classList.remove('locked');
+    input.inputMode = 'numeric';
 }
+
+function formatBirthDate(raw) {
+    const d = (raw || '').replace(/\D/g, '').slice(0, 8);
+    if (d.length > 4) return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+    if (d.length > 2) return `${d.slice(0, 2)}/${d.slice(2)}`;
+    return d;
+}
+
+(function bindBirthDateInput() {
+    const input = document.getElementById('dateofbirth');
+    if (!input) return;
+    input.addEventListener('input', (e) => {
+        // Effacement : on laisse supprimer le « / » sans le remettre aussitôt.
+        if (e.inputType && e.inputType.startsWith('delete')) {
+            const v = input.value.replace(/[^\d/]/g, '');
+            if (v !== input.value) input.value = v;
+        } else {
+            input.value = formatBirthDate(input.value);
+        }
+        input.classList.remove('invalid');
+        const errEl = document.getElementById('dateofbirth-error');
+        if (errEl) errEl.textContent = '';
+    });
+})();
 
 // Renvoie null si la date est valide, sinon un message d'erreur.
 function validateBirthDate(value) {
-    if (!birthDateRule) return null;
     const m = (value || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (!m) return "Date de naissance invalide (JJ/MM/AAAA).";
-
-    const year = parseInt(m[3], 10);
-    const minYear = birthDateRule.minYear || 1900;
-    const maxYear = (birthDateRule.serverYear || 1980) - (birthDateRule.minAge || 0);
-
-    if (year > maxYear) {
-        return `Impossible : nous sommes en ${birthDateRule.serverYear}, vous ne pouvez pas être né après ${maxYear}.`;
-    }
-    if (year < minYear) {
-        return `Année de naissance trop ancienne (avant ${minYear}).`;
+    const day = parseInt(m[1], 10), month = parseInt(m[2], 10), year = parseInt(m[3], 10);
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+        return "Cette date n'existe pas.";
     }
     return null;
 }

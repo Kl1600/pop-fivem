@@ -1,10 +1,33 @@
 Config = {}
+
+------------------------------------------------------------------------
+-- Réglages communs POP (ne pas supprimer)
+------------------------------------------------------------------------
+Config.Locale = 'fr'
+Config.Debug = false
+Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
+Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
+Config.Notify    = 'auto' -- pop_notify s'il est lancé
+Config.AccentColor = '#ffffff'
+Config.CashItem = 'cash'
+Config.Keys = {
+    Interact = { control = 38, label = 'E' },
+    Cancel   = { control = 73, label = 'X' },
+}
+Config.CallbackRateLimit = 10
+
+------------------------------------------------------------------------
+-- pop_clothes
+------------------------------------------------------------------------
 Config.GouvUSAccount = 'society_gouv'
 Config.GouvMXAccount = 'society_gouv2'
-Config.Framework = 'esx' -- 'esx', 'qbcore' or 'none'
 Config.Currency = '$'
 Config.Mode80s = true
-Config.PesosPerDollar = 20
+
+-- Notifications de la boutique (pop_notify).
+Config.NotifyImage = 'nui://pop_management/html/Trevor.png'
+Config.NotifyDuration = 5000
 
 
 -- Shop Locations and Types
@@ -28,7 +51,7 @@ Config.Shops = {
     { coords = vector3(-703.776, -152.258, 36.415),    name = "Ponsonbys",      type = "clothing" },
     { coords = vector3(-167.863, -298.969, 38.51517),  name = "Ponsonbys",      type = "clothing" },
     { coords = vector3(428.694, -800.106, 28.491),     name = "Binco",          type = "clothing" },
-    { coords = vector3(-829.413, -10517.710, 10.328),  name = "Binco",          type = "clothing" },
+    { coords = vector3(-829.413, -1073.710, 10.328),   name = "Binco",          type = "clothing" }, -- Binco Vespucci (Y corrigé)
     { coords = vector3(-1193.136, -772.262, 16.324),   name = "Suburban",       type = "clothing" },
     { coords = vector3(-1450.71, -238.16, 48.81),      name = "Ponsonbys",      type = "clothing" },
     { coords = vector3(4.25, 6512.81, 30.87),          name = "Discount Store", type = "clothing" },
@@ -37,7 +60,7 @@ Config.Shops = {
     { coords = vector3(614.20, 2762.79, 41.08),        name = "Discount Store", type = "clothing" },
     { coords = vector3(1196.78, 2709.55, 37.22),       name = "Suburban",       type = "clothing" },
     { coords = vector3(-3171.49, 1043.85, 19.86),      name = "Suburban",       type = "clothing" },
-    { coords = vector3(-1100.95, 2710.21, 189.10),     name = "Discount Store", type = "clothing" },
+    { coords = vector3(-1100.95, 2710.21, 18.10),      name = "Discount Store", type = "clothing" }, -- Route 68 (Z corrigé)
 
     -- Barbiers
     { coords = vector3(-814.308, -183.823, 37.568),    name = "Barbier", type = "barber" },
@@ -60,8 +83,8 @@ Config.Shops = {
 -- Categories Definitions
 Config.Categories = {
     ['clothing'] = {
-        'Hats', 'Masks', 'Ears', 'Glasses', 'Torsos', 'Legs', 'Bags', 
-        'Shoes', 'Accessories', 'Watches', 'Bracelets', 'Undershirts', 
+        'Hats', 'Masks', 'Ears', 'Glasses', 'Torsos', 'Legs', 'Bags',
+        'Shoes', 'Accessories', 'Watches', 'Bracelets', 'Undershirts',
         'Body Armors', 'Tops', 'Decals'
     },
     ['barber'] = {
@@ -77,7 +100,7 @@ Config.Prices = {
     -- Clothes
     ['Hats'] = 50, ['Masks'] = 100, ['Ears'] = 25, ['Glasses'] = 30, ['Torsos'] = 40,
     ['Accessories'] = 35, ['Watches'] = 200, ['Bracelets'] = 150, ['Undershirts'] = 25,
-    ['Body Armors'] = 500, ['Tops'] = 60, ['Legs'] = 55, ['Shoes'] = 45, ['Bags'] = 120, ['Decals'] = 0,
+    ['Body Armors'] = 500, ['Tops'] = 60, ['Legs'] = 55, ['Shoes'] = 45, ['Bags'] = 120, ['Decals'] = 25,
     -- Barber
     ['Hair'] = 50, ['Beard'] = 30, ['Eyebrows'] = 20, ['ChestHair'] = 40, ['Makeup'] = 60, ['Lipstick'] = 25, ['Blush'] = 25,
     -- Tattoos

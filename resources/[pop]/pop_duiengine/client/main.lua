@@ -407,10 +407,11 @@ exports("AttachPanelToBone", function(opts)
         return nil
     end
 
-    local panelId = createPanelInternal(opts, GetCurrentResourceName())
+    local panelId = createPanelInternal(opts, GetInvokingResource() or "unknown")
     if not panelId then return nil end
 
-    ATTACHMENTS[panelId] = {
+    -- PANELS/ATTACHMENTS are keyed by string (cf. destroy & render loop).
+    ATTACHMENTS[tostring(panelId)] = {
         entity = ent,
         boneIndex = boneIndex,
         boneName = boneName,
