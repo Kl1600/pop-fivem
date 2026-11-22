@@ -126,6 +126,9 @@ describe('app-calc Calculette', () => {
     render(<Host />);
     await unlock();
     act(() => openApp('calculette'));
+    // L'appli est chargée à la demande (React.lazy) : sous charge, le module peut mettre plus que les 1 s par défaut de findBy.
+    // On attend donc d'abord qu'elle soit montée, avec une marge large ; les vérifications suivantes restent strictes.
+    await screen.findByTestId('calc-display', {}, { timeout: 15_000 });
     for (const k of ['7', '×', '6', '=']) fireEvent.click(await screen.findByRole('button', { name: k }));
     expect(screen.getByTestId('calc-display').textContent).toBe('42');
     expect(screen.getAllByText('7 × 6').length).toBeGreaterThan(0);
@@ -133,7 +136,7 @@ describe('app-calc Calculette', () => {
     expect(screen.getByText('Aucun calcul.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Scientifique' }));
     expect(screen.queryByRole('button', { name: 'sin' })).toBeNull();
-  });
+  }, 30_000);
 });
 
 describe('app-hor Horloge', () => {

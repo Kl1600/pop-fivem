@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "node scripts/check-imports.mjs && node scripts/check-strings.mjs",
-    "verify": "node scripts/verify-dist.mjs"
+    "verify": "node scripts/verify-dist.mjs",
+    "e2e": "playwright test",
+    "verify:all": "powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/verifier-tablette.ps1"
   },
   "dependencies": {
     "motion": "^14.14.0",
