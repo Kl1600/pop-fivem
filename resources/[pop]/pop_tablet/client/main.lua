@@ -28,7 +28,8 @@ local token = nil
 
 local function newToken()
     local t = {}
-    math.randomseed((GetGameTimer and GetGameTimer() or 0) + os.time())
+    -- Pas de bibliothèque `os` côté client FiveM : graine = horloge du jeu + heure réseau.
+    math.randomseed((GetGameTimer and GetGameTimer() or 0) + (GetCloudTimeAsInt and GetCloudTimeAsInt() or 0))
     for i = 1, 32 do t[i] = ('%x'):format(math.random(0, 15)) end
     return table.concat(t)
 end
