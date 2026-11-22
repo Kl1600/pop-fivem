@@ -5,7 +5,7 @@ lua54 'yes'
 name 'pop_chat'
 author 'KL'
 version '1.1.0'
-description 'Chat roleplay - commande /me'
+description 'Chat roleplay (/me) et chat staff (/staff)'
 
 shared_scripts {
     'config.lua',

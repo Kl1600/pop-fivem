@@ -41,6 +41,12 @@ local function notify(src, message, kind)
     TriggerClientEvent('pop_admin:notify', src, message, kind or 'info')
 end
 
+-- Annonce l'action au staff dans le chat (pop_chat : « [STAFF] KL a réanimé Dano »).
+local function staffLog(src, text)
+    if GetResourceState('pop_chat') ~= 'started' then return end
+    pcall(function() exports.pop_chat:StaffLog(src, text) end)
+end
+
 -- =====================================================================
 --  BANS (persistés dans bans.json)
 -- =====================================================================
@@ -374,6 +380,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         SetPlayerRoutingBucket(src, GetPlayerRoutingBucket(xTarget.source))
         xAdmin.setCoords(c)
         notify(src, ('Téléporté vers %s'):format(xTarget.getName()), 'success')
+        staffLog(src, ('s\'est téléporté vers %s'):format(xTarget.getName()))
 
     elseif action == 'bring' then
         if not xTarget then return end
@@ -381,31 +388,37 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         SetPlayerRoutingBucket(xTarget.source, GetPlayerRoutingBucket(src))
         xTarget.setCoords(c)
         notify(src, ('%s amené à vous'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a amené %s'):format(xTarget.getName()))
 
     elseif action == 'freeze' then
         if not xTarget then return end
         xTarget.triggerEvent('esx:freezePlayer', 'freeze')
         notify(src, ('%s gelé'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a gelé %s'):format(xTarget.getName()))
 
     elseif action == 'unfreeze' then
         if not xTarget then return end
         xTarget.triggerEvent('esx:freezePlayer', 'unfreeze')
         notify(src, ('%s dégelé'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a dégelé %s'):format(xTarget.getName()))
 
     elseif action == 'heal' then
         if not xTarget then return end
         TriggerClientEvent('pop_admin:heal', xTarget.source)
         notify(src, ('%s soigné'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a soigné %s'):format(xTarget.getName()))
 
     elseif action == 'revive' then
         if not xTarget then return end
         TriggerClientEvent('pop_admin:revive', xTarget.source)
         notify(src, ('%s réanimé'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a réanimé %s'):format(xTarget.getName()))
 
     elseif action == 'kill' then
         if not xTarget then return end
         xTarget.triggerEvent('esx:killPlayer')
         notify(src, ('%s tué'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a tué %s'):format(xTarget.getName()))
 
     elseif action == 'kick' then
         if not xTarget then return end
@@ -413,6 +426,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         markKickBan(xTarget.source, 'kick', xAdmin and xAdmin.getName() or 'Admin', reason)
         DropPlayer(tostring(xTarget.source), reason)
         notify(src, ('%s expulsé'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a expulsé %s (%s)'):format(xTarget.getName(), reason))
 
     elseif action == 'ban' then
         if not xTarget then return end
@@ -429,6 +443,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         markKickBan(xTarget.source, 'ban', xAdmin and xAdmin.getName() or 'Admin', ('Banni : %s'):format(reason))
         DropPlayer(tostring(xTarget.source), ('Banni : %s'):format(reason))
         notify(src, ('%s banni'):format(xTarget.getName()), 'success')
+        staffLog(src, ('a banni %s (%s)'):format(xTarget.getName(), reason))
 
     elseif action == 'money' then
         if not xTarget then return end
@@ -444,6 +459,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
                 ok = exports['pop_inventory']:removeItem(xTarget.source, 'cash', -amount)
             end
             notify(src, ok and ('%s : %s%s$ (cash)'):format(xTarget.getName(), amount > 0 and '+' or '', amount) or 'Pas assez de cash à retirer', ok and 'success' or 'error')
+            if ok then staffLog(src, ('a %s %s$ en espèces à %s'):format(amount > 0 and 'donné' or 'retiré', math.abs(amount), xTarget.getName())) end
             return
         end
         if not xTarget.getAccount(account) then notify(src, 'Compte invalide', 'error'); return end
@@ -453,6 +469,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
             xTarget.removeAccountMoney(account, -amount, 'pop_admin')
         end
         notify(src, ('%s : %s%s%s'):format(xTarget.getName(), amount > 0 and '+' or '', amount, account), 'success')
+        staffLog(src, ('a %s %s %s à %s'):format(amount > 0 and 'donné' or 'retiré', math.abs(amount), account, xTarget.getName()))
 
     elseif action == 'setjob' then
         if not xTarget then return end
@@ -463,6 +480,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         end
         xTarget.setJob(job, grade)
         notify(src, ('%s → %s (%d)'):format(xTarget.getName(), job, grade), 'success')
+        staffLog(src, ('a mis %s en %s (%d)'):format(xTarget.getName(), job, grade))
 
     elseif action == 'setgroup' then
         if not xTarget then return end
@@ -486,6 +504,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
         MySQL.update('UPDATE `users` SET `group` = ? WHERE `identifier` = ?', { group, xTarget.identifier })
         TriggerClientEvent('pop_admin:setAccess', xTarget.source, IsAdmin(xTarget.source), false)
         notify(src, ('%s → groupe %s'):format(xTarget.getName(), group), 'success')
+        staffLog(src, ('a mis %s dans le groupe %s'):format(xTarget.getName(), group))
 
     elseif action == 'giveitem' then
         if not xTarget then return end
@@ -498,6 +517,7 @@ RegisterNetEvent('pop_admin:playerAction', function(data)
             end)
             if ok then
                 notify(src, ('Donné %dx %s à %s'):format(qty, item, xTarget.getName()), 'success')
+                staffLog(src, ('a donné %dx %s à %s'):format(qty, item, xTarget.getName()))
             else
                 notify(src, 'Échec du give (item invalide ?)', 'error')
             end
@@ -525,6 +545,7 @@ RegisterNetEvent('pop_admin:giveSelf', function(item, qty)
         xPlayer.addInventoryItem(item, qty)
     end
     notify(src, ('Reçu %dx %s'):format(qty, item), 'success')
+    staffLog(src, ('s\'est donné %dx %s'):format(qty, item))
 end)
 
 -- =====================================================================
@@ -555,6 +576,7 @@ RegisterNetEvent('pop_admin:setTime', function(hour, minute, frozen)
     broadcastTimeWeather()
     notify(src, ('Heure : %02d:%02d %s'):format(timeWeather.hour, timeWeather.minute,
         timeWeather.frozen and '(figée)' or '(réelle)'), 'success')
+    staffLog(src, ('a réglé l\'heure sur %02d:%02d'):format(timeWeather.hour, timeWeather.minute))
 end)
 
 RegisterNetEvent('pop_admin:freezeTime', function(frozen)
@@ -575,6 +597,7 @@ RegisterNetEvent('pop_admin:setWeather', function(weather)
     timeWeather.weather = weather
     broadcastTimeWeather()
     notify(src, ('Météo : %s'):format(weather), 'success')
+    staffLog(src, ('a mis la météo %s'):format(weather))
 end)
 
 RegisterNetEvent('pop_admin:setBlackout', function(state)
@@ -645,6 +668,7 @@ RegisterNetEvent('pop_admin:deleteVehicle', function(plate)
     if plate == '' then return end
     MySQL.update('DELETE FROM persistent_vehicles WHERE plate = ?', { plate }, function()
         notify(src, ('Véhicule %s supprimé'):format(plate), 'success')
+        staffLog(src, ('a supprimé le véhicule %s'):format(plate))
         TriggerClientEvent('pop_admin:vehicleDeleted', src, plate)
     end)
 end)

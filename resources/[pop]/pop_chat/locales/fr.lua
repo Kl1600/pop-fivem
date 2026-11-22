@@ -20,4 +20,11 @@ Locales['fr'] = {
     me_suggestion      = 'Affiche une action roleplay au-dessus de votre tête',
     me_suggestion_arg  = 'action',
     me_suggestion_help = 'Ex: sort son téléphone',
+
+    -- Chat staff
+    staff_prefix       = '[STAFF]',
+    staff_console      = 'Console',
+    staff_suggestion   = 'Message visible uniquement par le staff',
+    staff_suggestion_arg  = 'message',
+    staff_suggestion_help = 'Ex: quelqu\'un au garage ?',
 }
