@@ -58,7 +58,8 @@ export default function App(p: AppProps) {
     let live = true;
     void nui.call<ListRes>('notes:list').then((r) => {
       if (!live) return;
-      if (r.ok) { setNotes(r.notes ?? []); setFolders(r.folders ?? []); } else fail(r);
+      // Le serveur Lua n'envoie pas `folder` quand il est nil : on rétablit `null`.
+      if (r.ok) { setNotes((Array.isArray(r.notes) ? r.notes : []).map((n) => ({ ...n, folder: n.folder ?? null }))); setFolders(Array.isArray(r.folders) ? r.folders : []); } else fail(r);
     });
     return () => { live = false; };
   }, [nui, fail]);
@@ -88,7 +89,7 @@ export default function App(p: AppProps) {
   const pick = async (id: number) => {
     await flush();
     const r = await nui.call<GetRes>('notes:get', id);
-    if (r.ok && r.note) setCur(r.note); else fail(r);
+    if (r.ok && r.note) setCur({ ...r.note, folder: r.note.folder ?? null }); else fail(r);
   };
 
   const create = async () => {

@@ -34,9 +34,10 @@ export default function App({ t, dark, nui }: AppProps) {
     const range = rangeFor(view, anchor);
     const r = await nui.call<ListRes>('calendar:list', range ?? { from: firstOfMonth(anchor), to: firstOfMonth(anchor) });
     if (!r.ok) return fail(r);
-    setEvents(range ? r.events ?? [] : []);
+    // Le serveur Lua n'envoie pas `alert` quand il est nil : on rétablit `null`.
+    setEvents(range ? (Array.isArray(r.events) ? r.events : []).map((e) => ({ ...e, alert: e.alert ?? null })) : []);
     const items: Array<{ id: number; minute: number }> = [];
-    for (const a of r.alerts ?? []) { const m = alertMinute(a); if (m !== null) items.push({ id: a.id, minute: m }); }
+    for (const a of (Array.isArray(r.alerts) ? r.alerts : []).map((x) => ({ ...x, alert: x.alert ?? null }))) { const m = alertMinute(a); if (m !== null) items.push({ id: a.id, minute: m }); }
     setSchedule('event', items);
   }, [nui, view, anchor, fail, setSchedule]);
   useEffect(() => { void load(); }, [load]);
