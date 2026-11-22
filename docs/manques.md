@@ -5,10 +5,10 @@ Analyse de tout ce qui tourne sur le serveur (ressources ESX + 36 scripts pop_*)
 ## 1. Bloquant : la ville ne tourne pas sans ça
 | Manque | Constat | Proposition |
 |---|---|---|
-| **Mort et réapparition** | Aucun script ne gère la mort. pop_loading coupe la réapparition automatique : un joueur mort reste au sol jusqu'à ce qu'on utilise un défibrillateur ou que l'admin le réanime. | `pop_death` : écran de mort, délai, appel EMS, réapparition à l'hôpital (perte d'objets réglable). |
+| ~~**Mort et réapparition**~~ ✅ pop_death (22/11) | Aucun script ne gère la mort. pop_loading coupe la réapparition automatique : un joueur mort reste au sol jusqu'à ce qu'on utilise un défibrillateur ou que l'admin le réanime. | `pop_death` : écran de mort, délai, appel EMS, réapparition à l'hôpital (perte d'objets réglable). |
 | **Job EMS** | Les objets EMS existent (défibrillateur, civière, brancard, kit de soins) et pop_medexam fait l'examen, mais il n'y a pas de métier ambulancier (service, tenue, véhicule, réanimation). | `pop_ems`, branché sur pop_death et pop_medexam. |
 | **Police** | Mise de côté. Sans elle, le contenu illégal (deal, weed, braquage de voitures, territoires) n'a aucun adversaire. | Reprendre pop_police au gabarit, avec menottes et fouille (déjà dans pop_inventory). |
-| **Carburant** | Le niveau d'essence est sauvegardé, mais rien ne le fait baisser et il n'y a pas de station. | `pop_fuel` : consommation et stations, avec paiement en espèces ou par carte. |
+| ~~**Carburant**~~ ✅ pop_fuel (22/11) | Le niveau d'essence est sauvegardé, mais rien ne le fait baisser et il n'y a pas de station. | `pop_fuel` : consommation et stations, avec paiement en espèces ou par carte. |
 
 ## 2. Important pour une ville complète
 | Manque | Constat |
