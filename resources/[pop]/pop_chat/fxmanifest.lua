@@ -23,6 +23,16 @@ server_scripts {
     'server/main.lua',
 }
 
+-- Thème du chat FiveM (ressource « chat ») au style du serveur : cartes en verre, police TT Firs Neue.
+file 'html/chat_theme.css'
+
+chat_theme 'pop' {
+    styleSheet = 'html/chat_theme.css',
+    msgTemplates = {
+        default = '<b>{0}</b><span>{1}</span>',
+    },
+}
+
 escrow_ignore {
     'config.lua',
     'locales/*.lua',
