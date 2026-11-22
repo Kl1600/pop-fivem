@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hello</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; }
+    body.dark { background: #1c1c1e; color: #fff; }
+    button { font-size: 20px; padding: 12px 24px; border: 0; border-radius: 12px; background: var(--accent, #0a84ff); color: #fff; }
+  </style>
+</head>
+<body>
+  <p id="msg">...</p>
+  <button id="ping" type="button">Ping</button>
+  <script>
+    // Contexte de la tablette : theme, langue, sens de lecture (docs/api-applis.md, section 5).
+    var seq = 0;
+    window.addEventListener('message', function (e) {
+      var m = e.data || {};
+      if (m.type === 'pop-app:init') {
+        document.body.classList.toggle('dark', !!m.dark);
+        document.documentElement.lang = m.locale || 'en';
+        document.documentElement.dir = m.rtl ? 'rtl' : 'ltr';
+        if (m.accent) document.documentElement.style.setProperty('--accent', m.accent);
+        document.getElementById('msg').textContent = (m.data && m.data.open && m.data.open.from) || 'Hello';
+      } else if (m.type === 'pop-app:result') {
+        // Reponse a pop-app:call : { id, ok, data } ou { id, ok:false, err }.
+        if (m.ok) document.getElementById('msg').textContent = 'ping #' + m.data.count;
+      } else if (m.type === 'pop-app:event' && m.name === 'pong') {
+        // Poussee du serveur (AppEvent) : aucun polling.
+        document.getElementById('msg').textContent = 'pong #' + m.data.count;
+      }
+    });
+    document.getElementById('ping').addEventListener('click', function () {
+      window.parent.postMessage({ type: 'pop-app:call', appId: 'example_hello', action: 'ping', data: {}, id: ++seq }, '*');
+    });
+  </script>
+</body>
+</html>

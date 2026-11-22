@@ -545,7 +545,7 @@
       "id": "api-07",
       "description": "Exemple d appli API documenté (ressource de test hors dépôt ou dossier examples/)",
       "verification": "revue de docs/api-applis.md à jour avec l exemple",
-      "passes": false
+      "passes": true
     },
     {
       "id": "perf-01",
@@ -587,7 +587,7 @@
       "id": "perf-07",
       "description": "Revue : une seule boucle autorisée pendant l ouverture, justifiée par écrit si présente",
       "verification": "revue de code client",
-      "passes": false
+      "passes": true
     },
     {
       "id": "sec-01",
@@ -605,7 +605,7 @@
       "id": "sec-03",
       "description": "Propriété : tout WHERE porte serial de session",
       "verification": "revue de code : grep des requêtes sans serial",
-      "passes": false
+      "passes": true
     },
     {
       "id": "sec-04",
@@ -623,19 +623,19 @@
       "id": "sec-06",
       "description": "Aucune clé ni secret dans le dépôt ; clés en convar set, jamais setr",
       "verification": "revue : grep des motifs de clé ; convars lues côté serveur seulement",
-      "passes": false
+      "passes": true
     },
     {
       "id": "sec-07",
       "description": "Texte utilisateur affiché sans HTML (aucun dangerouslySetInnerHTML)",
       "verification": "grep dans ui/pop-os/src : zéro occurrence",
-      "passes": false
+      "passes": true
     },
     {
       "id": "sec-08",
       "description": "Appels SQL paramétrés uniquement",
       "verification": "revue : grep de concaténation dans les requêtes",
-      "passes": false
+      "passes": true
     },
     {
       "id": "sec-09",
@@ -647,7 +647,7 @@
       "id": "i18n-01",
       "description": "10 fichiers de locales avec les mêmes clés, aucune clé manquante",
       "verification": "script de comparaison des clés : 0 manquante",
-      "passes": false
+      "passes": true
     },
     {
       "id": "i18n-02",
@@ -671,19 +671,19 @@
       "id": "lint-01",
       "description": "luacheck 0/0 sur resources et templates",
       "verification": "luacheck resources templates : 0 warnings / 0 errors",
-      "passes": false
+      "passes": true
     },
     {
       "id": "lint-02",
       "description": "luac5.4 -p sur tous les .lua du script",
       "verification": "luac5.4 -p sans erreur (luac5.4 à installer sur le poste)",
-      "passes": false
+      "passes": true
     },
     {
       "id": "lint-03",
       "description": "tsc --noEmit, vitest, build Vite verts ; dist à jour dans git",
       "verification": "pnpm typecheck && pnpm test && pnpm build ; git diff dist vide après second build",
-      "passes": false
+      "passes": true
     },
     {
       "id": "lint-04",
@@ -695,7 +695,7 @@
       "id": "doc-01",
       "description": "README du script : installation, item, convars, config, mode repli",
       "verification": "relecture",
-      "passes": false
+      "passes": true
     },
     {
       "id": "arb-01",

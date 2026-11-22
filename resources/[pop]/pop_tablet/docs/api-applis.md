@@ -81,6 +81,26 @@ Au chargement, la page reçoit `{ type: 'pop-app:init', layout: 'regular' | 'com
 - Aucune requête, minuterie ni boucle de POP pour une appli API au repos : 0,00 ms.
 - L'appli n'a aucune permission supplémentaire : pas de caméra, pas de micro, pas d'accès aux photos.
 
-## 7. Versionnage
+## 7. Exemple complet : `examples/pop_tablet_example/`
+
+Ressource minimale, **hors de `resources/[pop]`** (à la racine du dépôt, dossier `examples/`) pour ne jamais être déployée par erreur. Pour l'essayer : la copier dans `resources/`, puis `ensure pop_tablet` puis `ensure pop_tablet_example`.
+
+| Fichier | Rôle |
+| --- | --- |
+| `fxmanifest.lua` | `dependency 'pop_tablet'`, la page déclarée dans `files` |
+| `server.lua` | `RegisterApp` (id `example_hello`, `texts` en/fr, `onCall`), `AppEvent` poussé depuis `onCall`, commande `example_hello [id]` qui appelle `Notify` puis `OpenApp` |
+| `web/index.html` | page de l'appli : reçoit `pop-app:init` (thème, langue, RTL), envoie `pop-app:call`, affiche `pop-app:result` et `pop-app:event` |
+
+Ce que l'exemple montre :
+- **RegisterApp** au démarrage de pop_tablet, qu'il soit démarré avant ou après la ressource (`GetResourceState` + `onServerResourceStart`) : aucune boucle d'attente.
+- **onCall** : l'identité (`src`, `serial`) vient de POP, jamais de la page ; le compteur est en mémoire serveur.
+- **AppEvent** : poussé seulement parce que l'appli est au premier plan (sinon l'export renvoie `false`).
+- **Notify** : textes par clés (`titleKey`, `bodyKey`, `texts`), traduits par la tablette ; renvoie `false` si le joueur ne porte pas de tablette.
+- **OpenApp** : n'ouvre rien si l'appli n'est pas autorisée ; l'écran de code reste exigé.
+- L'appli disparaît seule à l'arrêt de la ressource (`onResourceStop` côté POP).
+
+À valider en jeu : l'affichage réel de la page dans la tablette et l'icône (non testés hors jeu).
+
+## 8. Versionnage
 
 `exports.pop_tablet:GetApiVersion()` renvoie `1`. Ajouts compatibles = même version ; changement cassant = version + 1 et période de dépréciation écrite dans ce fichier.

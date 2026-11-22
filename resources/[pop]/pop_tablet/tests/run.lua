@@ -2338,5 +2338,8 @@ do
     def('json', keep)
 end
 
+-- Revue statique (boucles, gardes, tailles, SQL, secrets, locales) : tests/audit.lua
+dofile('tests/audit.lua')(check, section)
+
 print(('\n%d réussis, %d échecs'):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

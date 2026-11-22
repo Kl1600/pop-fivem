@@ -179,10 +179,12 @@ function F.Move(src, data)
         parent = id(data.parentId)
         local p = parent and byId[parent]
         if not p or p.kind ~= 'folder' then return Tablet.Fail('err_not_found') end
-        local cur = parent
+        local cur, guard = parent, 0
         while cur do
             if cur == fid then return Tablet.Fail('err_depth') end
             cur = byId[cur] and byId[cur].parent_id
+            guard = guard + 1
+            if guard > 50 then return Tablet.Fail('err_depth') end -- chaîne anormale (boucle en base) : jamais de boucle infinie
         end
         base = depthOf(byId, parent) or 99
     end
