@@ -13,8 +13,8 @@ Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | 'qs-inventory' |
 Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
 Config.Notify    = 'auto' -- 'framework' | 'ox_lib' | 'pop' | 'native'
 
--- Couleur d'accent de l'interface. Rose néon par défaut, cyan : '#22d3ee'.
-Config.AccentColor = '#ff2e88'
+-- Couleur d'accent de l'interface. Bleu POP Tab par défaut.
+Config.AccentColor = '#0088FF'
 
 -- Objet « argent liquide » de pop_inventory (lu par le bridge ; pop_tablet ne touche pas à l'argent).
 Config.CashItem = 'cash'
@@ -109,8 +109,8 @@ Config.Translate = { Url = '', MaxChars = 500, CacheSize = 200, TimeoutSeconds =
 -- Bourse : pas de la simulation en secondes réelles. Elle ne tourne que si une tablette a l'appli ouverte.
 Config.Market = { TickSeconds = 5 }
 
--- Coque d'appareil autour de l'écran : réservée au navigateur de développement. Laisser false en jeu (plein écran).
-Config.Shell = false
+-- Coque d'appareil (bords, boutons marche et volume) autour de l'écran. false = écran seul.
+Config.Shell = true
 
 -- Messages et appels plus vieux que ce nombre de jours sont supprimés au démarrage du serveur (jamais en boucle).
 Config.Retention = { Days = 90 }
