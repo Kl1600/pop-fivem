@@ -54,10 +54,11 @@ local function plan(retries)
         if mine ~= generation then return end
         local nowMinute = GetClockHours() * 60 + GetClockMinutes()
         local fired = false
+        local stamp = C.GameStamp()
         for _, it in ipairs(items) do
             if it.minute == nowMinute then
                 fired = true
-                TriggerServerEvent('pop_tablet:server:due', it.id, it.kind)
+                TriggerServerEvent('pop_tablet:server:due', it.id, it.kind, stamp)
             end
         end
         if fired then

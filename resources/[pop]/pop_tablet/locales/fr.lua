@@ -58,4 +58,9 @@ Locales['fr'] = {
     err_limit = 'Limite atteinte',
     err_depth = 'Dossiers trop imbriqués',
     err_token = 'Lien de partage invalide',
+    cal_now = 'Maintenant',
+    rem_due = 'Rappel',
+    clock_alarm = 'Alarme',
+    clock_timer = 'Minuteur',
+    clock_timer_done = 'Minuteur terminé',
 }

@@ -58,4 +58,9 @@ Locales['de'] = {
     err_limit = 'Limit erreicht',
     err_depth = 'Ordner zu tief verschachtelt',
     err_token = 'Ungültiger Freigabelink',
+    cal_now = 'Jetzt',
+    rem_due = 'Erinnerung',
+    clock_alarm = 'Wecker',
+    clock_timer = 'Timer',
+    clock_timer_done = 'Timer abgelaufen',
 }

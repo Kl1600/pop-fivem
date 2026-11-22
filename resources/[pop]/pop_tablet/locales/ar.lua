@@ -59,4 +59,9 @@ Locales['ar'] = {
     err_limit = 'تم بلوغ الحد',
     err_depth = 'المجلدات متداخلة أكثر من اللازم',
     err_token = 'رابط المشاركة غير صالح',
+    cal_now = 'الآن',
+    rem_due = 'تذكير',
+    clock_alarm = 'منبّه',
+    clock_timer = 'مؤقّت',
+    clock_timer_done = 'انتهى المؤقّت',
 }

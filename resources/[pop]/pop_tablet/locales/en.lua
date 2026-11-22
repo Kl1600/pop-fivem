@@ -58,4 +58,9 @@ Locales['en'] = {
     err_limit = 'Limit reached',
     err_depth = 'Folders are nested too deeply',
     err_token = 'Invalid share link',
+    cal_now = 'Now',
+    rem_due = 'Reminder',
+    clock_alarm = 'Alarm',
+    clock_timer = 'Timer',
+    clock_timer_done = 'Timer finished',
 }

@@ -58,4 +58,9 @@ Locales['pt'] = {
     err_limit = 'Limite atingido',
     err_depth = 'Pastas aninhadas em excesso',
     err_token = 'Link de partilha inválido',
+    cal_now = 'Agora',
+    rem_due = 'Lembrete',
+    clock_alarm = 'Alarme',
+    clock_timer = 'Temporizador',
+    clock_timer_done = 'Temporizador terminado',
 }

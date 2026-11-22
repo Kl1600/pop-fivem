@@ -58,4 +58,9 @@ Locales['tr'] = {
     err_limit = 'Sınıra ulaşıldı',
     err_depth = 'Klasörler çok derin iç içe',
     err_token = 'Geçersiz paylaşım bağlantısı',
+    cal_now = 'Şimdi',
+    rem_due = 'Hatırlatıcı',
+    clock_alarm = 'Alarm',
+    clock_timer = 'Zamanlayıcı',
+    clock_timer_done = 'Zamanlayıcı bitti',
 }

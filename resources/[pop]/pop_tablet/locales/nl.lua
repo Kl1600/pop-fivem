@@ -58,4 +58,9 @@ Locales['nl'] = {
     err_limit = 'Limiet bereikt',
     err_depth = 'Mappen te diep genest',
     err_token = 'Ongeldige deellink',
+    cal_now = 'Nu',
+    rem_due = 'Herinnering',
+    clock_alarm = 'Wekker',
+    clock_timer = 'Timer',
+    clock_timer_done = 'Timer afgelopen',
 }

@@ -58,4 +58,9 @@ Locales['pl'] = {
     err_limit = 'Osiągnięto limit',
     err_depth = 'Foldery zagnieżdżone zbyt głęboko',
     err_token = 'Nieprawidłowy link udostępniania',
+    cal_now = 'Teraz',
+    rem_due = 'Przypomnienie',
+    clock_alarm = 'Budzik',
+    clock_timer = 'Minutnik',
+    clock_timer_done = 'Minutnik zakończony',
 }

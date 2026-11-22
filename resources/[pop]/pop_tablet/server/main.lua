@@ -11,6 +11,7 @@ local function start()
     Tablet.DB.Install()
     local purged, purgedCalls = Tablet.DB.Purge(Config.Retention.Days, Tablet.Now())
     if purged > 0 or purgedCalls > 0 then log('log_purged', purged, purgedCalls) end
+    if Tablet.Clock then Tablet.Clock.Rearm() end -- minuteurs en cours : une seule échéance serveur
     log(Tablet.Device.Mode() == 'item' and 'log_mode_item' or 'log_mode_owner')
     if GetConvar('pop_tablet_pepper', '') == '' then log('log_pepper_missing') end
     -- Utiliser l'objet ouvre la tablette (le serial de la pile utilisée sert d'indice, revérifié à l'ouverture).
@@ -34,14 +35,16 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 -- Échéance signalée par le client (alarme, rappel, événement) : le serveur revérifie l'objet porté.
-RegisterNetEvent('pop_tablet:server:due', function(id, kind)
+-- `stamp` : date du jeu 'AAAA-MM-JJ HH:MM' annoncée par le client (les gestionnaires la valident et la comparent à l'échéance).
+RegisterNetEvent('pop_tablet:server:due', function(id, kind, stamp)
     local src = source
     if not Tablet.Limits.Rate(src, 'due', 5) then return end
     if math.type(id) ~= 'integer' or type(kind) ~= 'string' or #kind > 16 then return end
+    if type(stamp) ~= 'string' or #stamp ~= 16 then stamp = nil end
     local s = Tablet.Device.GetSession(src)
     if not s or not Bridge.GetPlayer(src) or not Tablet.Device.Carries(src, s.serial) then return end
     for _, handler in ipairs(Tablet.DueHandlers) do
-        local ok, err = pcall(handler, src, s.serial, id, kind)
+        local ok, err = pcall(handler, src, s.serial, id, kind, stamp)
         if not ok and Config.Debug then print(('[%s] due handler: %s'):format(RES, tostring(err))) end
     end
 end)

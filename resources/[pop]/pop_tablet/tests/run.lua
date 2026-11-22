@@ -997,6 +997,263 @@ do
 end
 
 ------------------------------------------------------------------------
+section('Productivité : Calendrier, Rappels, Horloge (app-cal, app-rem, app-hor)')
+------------------------------------------------------------------------
+do
+    -- Base fictive en mémoire (même contrat que server/db.lua).
+    local EV, RL, RM, AL = {}, {}, {}, {}
+    local seq = 0
+    local function nid() seq = seq + 1 return seq end
+    local function count(t, serial, f) local n = 0 for _, v in pairs(t) do if v.serial == serial and (not f or f(v)) then n = n + 1 end end return n end
+    DB.ListEvents = function(serial, from, to)
+        local o = {}
+        for _, e in pairs(EV) do if e.serial == serial and e.start_game <= to and e.end_game >= from then o[#o + 1] = e end end
+        table.sort(o, function(a, b) return a.start_game < b.start_game end)
+        return o
+    end
+    DB.CountEvents = function(serial) return count(EV, serial) end
+    DB.GetEvent = function(serial, id) local e = EV[id] return e and e.serial == serial and e or nil end
+    DB.InsertEvent = function(serial, e) local id = nid() EV[id] = { id = id, serial = serial, title = e.title, place = e.place, notes = e.notes, start_game = e.start, end_game = e.stop, all_day = e.allDay and 1 or 0, alert_min = e.alert, color = e.color, notified = 0 } return id end
+    DB.UpdateEvent = function(serial, id, e) local o = DB.GetEvent(serial, id) if not o then return false end o.title, o.start_game, o.end_game, o.alert_min, o.notified = e.title, e.start, e.stop, e.alert, 0 return true end
+    DB.DeleteEvent = function(serial, id) if not DB.GetEvent(serial, id) then return false end EV[id] = nil return true end
+    DB.SetEventNotified = function(serial, id) EV[id].notified = 1 end
+    DB.PendingEventAlerts = function(serial) local o = {} for _, e in pairs(EV) do if e.serial == serial and e.alert_min and e.notified == 0 then o[#o + 1] = e end end return o end
+    DB.ListReminderLists = function(serial) local o = {} for _, l in pairs(RL) do if l.serial == serial then o[#o + 1] = l end end return o end
+    DB.CountReminderLists = function(serial) return count(RL, serial) end
+    DB.ReminderListOwned = function(serial, id) return RL[id] ~= nil and RL[id].serial == serial end
+    DB.InsertReminderList = function(serial, name, color) local id = nid() RL[id] = { id = id, serial = serial, name = name, color = color } return id end
+    DB.UpdateReminderList = function(serial, id, name, color) if not DB.ReminderListOwned(serial, id) then return false end RL[id].name, RL[id].color = name, color return true end
+    DB.DeleteReminderList = function(serial, id)
+        if not DB.ReminderListOwned(serial, id) then return false end
+        RL[id] = nil
+        for k, r in pairs(RM) do if r.list_id == id then RM[k] = nil end end
+        return true
+    end
+    DB.ListReminders = function(serial) local o = {} for _, r in pairs(RM) do if r.serial == serial then o[#o + 1] = r end end return o end
+    DB.CountReminders = function(serial) return count(RM, serial) end
+    DB.GetReminder = function(serial, id) local r = RM[id] return r and r.serial == serial and r or nil end
+    DB.InsertReminder = function(serial, r) local id = nid() RM[id] = { id = id, serial = serial, list_id = r.list, title = r.title, done = 0, due_game = r.due, flag = r.flag and 1 or 0 } return id end
+    DB.UpdateReminder = function(serial, id, r) local o = DB.GetReminder(serial, id) if not o then return false end o.list_id, o.title, o.due_game = r.list, r.title, r.due return true end
+    DB.SetReminderDone = function(serial, id, done) local o = DB.GetReminder(serial, id) if not o then return false end o.done = done and 1 or 0 return true end
+    DB.DeleteReminder = function(serial, id) if not DB.GetReminder(serial, id) then return false end RM[id] = nil return true end
+    DB.ListAlarms = function(serial) local o = {} for _, a in pairs(AL) do if a.serial == serial then o[#o + 1] = a end end return o end
+    DB.CountAlarms = function(serial, kind) return count(AL, serial, function(a) return a.kind == kind end) end
+    DB.GetAlarm = function(serial, id) local a = AL[id] return a and a.serial == serial and a or nil end
+    DB.InsertAlarm = function(serial, a) local id = nid() AL[id] = { id = id, serial = serial, kind = a.kind, label = a.label, game_minute = a.minute, repeat_mask = a.mask or 0, ends_at = a.ends, enabled = a.enabled and 1 or 0, sound = a.sound or '' } return id end
+    DB.UpdateAlarm = function(serial, id, a) local o = DB.GetAlarm(serial, id) if not o or o.kind ~= 'alarm' then return false end o.label, o.game_minute, o.repeat_mask, o.enabled = a.label, a.minute, a.mask, a.enabled and 1 or 0 return true end
+    DB.SetAlarmEnabled = function(serial, id, on) AL[id].enabled = on and 1 or 0 end
+    DB.DeleteAlarm = function(serial, id) if not DB.GetAlarm(serial, id) then return false end AL[id] = nil return true end
+    DB.ListTimers = function() local o = {} for _, a in pairs(AL) do if a.kind == 'timer' then o[#o + 1] = a end end return o end
+    Config.Session.IdleLockSeconds = 1000000
+    for _, f in ipairs({ 'calendar', 'clock', 'reminders' }) do dofile('server/apps/' .. f .. '.lua') end
+    local realBridgeNotify = Bridge.Notify
+    local gameNotes = {}
+    Bridge.Notify = function(src, msg) gameNotes[#gameNotes + 1] = { src = src, msg = msg } end
+
+    local function tk() clock = clock + 5 end
+    players[40], players[41] = 'char40', 'char41'
+    inv[40] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+    inv[41] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = {} } }
+    tk()
+    local o = handlers['pop_tablet:device:open'](40, nil, '2026-11-22 08:00')
+    tk()
+    handlers['pop_tablet:device:setup'](40, { code = '4321', name = 'Prod', lang = 'fr', mail = 'prod.test' })
+    tk()
+    local o2 = handlers['pop_tablet:device:open'](41, nil, '2026-11-22 08:00')
+    tk()
+    handlers['pop_tablet:device:setup'](41, { code = '4321', name = 'Autre', lang = 'fr', mail = 'prod2.test' })
+    local serial, serial2 = o.serial, o2.serial
+    local H = handlers
+    local Dates = Tablet.Dates
+
+    -- Dates du jeu
+    check('dates : 22/11/2026 est un dimanche, 23/11 un lundi', Dates.Weekday('2026-11-22 10:00') == 6 and Dates.Weekday('2026-11-23 10:00') == 0)
+    check('dates : 1970-01-01 00:00 = minute 0, un jour = 1440', Dates.Minutes('1970-01-01 00:00') == 0 and Dates.Minutes('1970-01-02 00:00') == 1440)
+    check('dates : 30 février, mois 13, heure 24 refusés', Dates.Minutes('2026-02-30 10:00') == nil and Dates.Minutes('2026-13-01 10:00') == nil and Dates.Minutes('2026-01-01 24:00') == nil)
+    check('dates : 29 février d\'une année bissextile accepté', Dates.Minutes('2028-02-29 10:00') ~= nil and Dates.Minutes('2027-02-29 10:00') == nil)
+    check('dates : texte libre refusé', Dates.Minutes('demain 10h') == nil and Dates.Minutes(42) == nil)
+
+    -- Calendrier
+    tk()
+    local ev = H['pop_tablet:calendar:save'](40, { title = 'Patrouille', place = 'Centre', start = '2026-11-22 15:00', stop = '2026-11-22 17:00', alert = 15, color = '#0088ff' })
+    check('calendar:save : création', ev.ok and ev.id, ev.err)
+    tk()
+    local ev2 = H['pop_tablet:calendar:save'](40, { title = 'Toute la journée', start = '2026-11-25 00:00', stop = '2026-11-25 23:59', allDay = true, alert = 0 })
+    for name, bad in pairs({
+        titre_vide = { title = '', start = '2026-11-22 15:00', stop = '2026-11-22 16:00' },
+        fin_avant_debut = { title = 'x', start = '2026-11-22 16:00', stop = '2026-11-22 15:00' },
+        date_invalide = { title = 'x', start = '2026-11-31 16:00', stop = '2026-12-01 15:00' },
+        alerte_inconnue = { title = 'x', start = '2026-11-22 15:00', stop = '2026-11-22 16:00', alert = 7 },
+        couleur = { title = 'x', start = '2026-11-22 15:00', stop = '2026-11-22 16:00', color = 'red' },
+        notes_trop_longues = { title = 'x', start = '2026-11-22 15:00', stop = '2026-11-22 16:00', notes = string.rep('a', 501) },
+    }) do tk() check('calendar:save : refusé (' .. name .. ')', H['pop_tablet:calendar:save'](40, bad).ok == false) end
+    tk()
+    local r = H['pop_tablet:calendar:list'](40, { from = '2026-11-01', to = '2026-11-30' })
+    check('calendar:list : les deux événements, alertes en attente', r.ok and #r.events == 2 and r.events[1].title == 'Patrouille' and #r.alerts == 2, r.err)
+    tk()
+    r = H['pop_tablet:calendar:list'](40, { from = '2026-12-01', to = '2026-12-31' })
+    check('calendar:list : plage sans événement', r.ok and #r.events == 0)
+    tk()
+    check('calendar:list : plage > 90 jours ou dates invalides refusées', H['pop_tablet:calendar:list'](40, { from = '2026-01-01', to = '2026-12-31' }).err == 'err_payload'
+        and H['pop_tablet:calendar:list'](40, { from = 'x', to = 'y' }).err == 'err_payload')
+    tk()
+    check('calendar:list : l\'autre tablette ne voit rien', #H['pop_tablet:calendar:list'](41, { from = '2026-11-01', to = '2026-11-30' }).events == 0)
+    tk()
+    check('calendar:save : modifier l\'événement d\'autrui refusé', H['pop_tablet:calendar:save'](41, { id = ev.id, title = 'x', start = '2026-11-22 15:00', stop = '2026-11-22 16:00' }).err == 'err_not_found')
+    tk()
+    check('calendar:delete : événement d\'autrui refusé', H['pop_tablet:calendar:delete'](41, ev.id).err == 'err_not_found')
+    local limit = Tablet.Productivity.events
+    Tablet.Productivity.events = 2
+    tk()
+    check('calendar:save : plafond d\'événements', H['pop_tablet:calendar:save'](40, { title = 'x', start = '2026-11-22 15:00', stop = '2026-11-22 16:00' }).err == 'err_limit')
+    Tablet.Productivity.events = limit
+
+    -- Alerte : l'événement de 15:00 avec alerte 15 min sonne à 14:45 (le client signale l'échéance avec la date du jeu)
+    local due = Tablet.DueHandlers
+    local function fire(src, serialId, id, kind, stamp) for _, h in ipairs(due) do h(src, serialId, id, kind, stamp) end end
+    sent = {}
+    gameNotes = {}
+    fire(40, serial, ev.id, 'event', '2026-11-22 14:30')
+    check('alerte : trop tôt, rien', #sent == 0 and #gameNotes == 0 and EV[ev.id].notified == 0)
+    fire(40, serial, ev.id, 'event', '2026-11-23 14:45')
+    check('alerte : mauvais jour (même heure, autre date), rien', #gameNotes == 0 and EV[ev.id].notified == 0)
+    fire(41, serial2, ev.id, 'event', '2026-11-22 14:45')
+    check('alerte : événement d\'autrui, rien', #gameNotes == 0 and EV[ev.id].notified == 0)
+    fire(40, serial, ev.id, 'event', 'pas une date')
+    check('alerte : date illisible, rien', #gameNotes == 0 and EV[ev.id].notified == 0)
+    fire(40, serial, ev.id, 'event', '2026-11-22 14:45')
+    local pushed = false
+    for _, p in ipairs(sent) do if p.name == 'pop_tablet:client:notify' and p.data.title == 'Patrouille' then pushed = true end end
+    check('alerte : à l\'heure, notification dans la tablette ouverte, marquée notifiée', pushed and EV[ev.id].notified == 1)
+    sent = {}
+    fire(40, serial, ev.id, 'event', '2026-11-22 14:45')
+    check('alerte : une seule fois', #sent == 0 and #gameNotes == 0)
+    tk()
+    H['pop_tablet:device:close'](40)
+    fire(40, serial, ev2.id, 'event', '2026-11-25 00:00')
+    check('alerte : tablette fermée, notification du jeu', #gameNotes == 1 and gameNotes[1].src == 40 and gameNotes[1].msg:find('Toute la journée', 1, true) ~= nil and (gameNotes[1].msg:find('Maintenant', 1, true) or gameNotes[1].msg:find('Now', 1, true)) ~= nil, gameNotes[1] and gameNotes[1].msg)
+    tk()
+    check('calendar:delete : suppression', H['pop_tablet:calendar:delete'](40, ev.id).ok and EV[ev.id] == nil)
+
+    -- Rappels
+    tk()
+    local list = H['pop_tablet:reminders:listSave'](40, { name = 'Travail', color = '#ff8d28' })
+    check('reminders:listSave : création de liste', list.ok and list.name == 'Travail', list.err)
+    tk()
+    check('reminders:listSave : nom vide ou couleur invalide refusés', H['pop_tablet:reminders:listSave'](40, { name = '  ' }).ok == false
+        and H['pop_tablet:reminders:listSave'](40, { name = 'x', color = 'rouge' }).ok == false)
+    tk()
+    local rem = H['pop_tablet:reminders:save'](40, { list = list.id, title = 'Appeler le central', due = '2026-11-22 18:30', flag = true })
+    check('reminders:save : création avec échéance et drapeau', rem.ok and RM[rem.id].flag == 1 and RM[rem.id].due_game == '2026-11-22 18:30', rem.err)
+    tk()
+    check('reminders:save : liste d\'autrui refusée', H['pop_tablet:reminders:save'](41, { list = list.id, title = 'x' }).err == 'err_not_found')
+    tk()
+    check('reminders:save : échéance invalide et titre trop long refusés', H['pop_tablet:reminders:save'](40, { list = list.id, title = 'x', due = '2026-02-30 10:00' }).err == 'err_payload'
+        and H['pop_tablet:reminders:save'](40, { list = list.id, title = string.rep('a', 121) }).err == 'err_too_large')
+    tk()
+    local rl = H['pop_tablet:reminders:list'](40)
+    check('reminders:list : listes et rappels', rl.ok and #rl.lists == 1 and #rl.items == 1 and rl.items[1].done == false and rl.items[1].flag == true, rl.err)
+    tk()
+    check('reminders:toggle : cocher', H['pop_tablet:reminders:toggle'](40, { id = rem.id, done = true }).ok and RM[rem.id].done == 1)
+    tk()
+    check('reminders:toggle : rappel d\'autrui ou valeur non booléenne refusés', H['pop_tablet:reminders:toggle'](41, { id = rem.id, done = false }).err == 'err_not_found'
+        and H['pop_tablet:reminders:toggle'](40, { id = rem.id, done = 'oui' }).err == 'err_payload')
+    gameNotes = {}
+    fire(40, serial, rem.id, 'reminder', '2026-11-22 18:30')
+    check('rappel coché : aucune alerte', #gameNotes == 0)
+    tk()
+    H['pop_tablet:reminders:toggle'](40, { id = rem.id, done = false })
+    fire(40, serial, rem.id, 'reminder', '2026-11-22 18:00')
+    check('rappel : trop tôt, rien', #gameNotes == 0)
+    fire(40, serial, rem.id, 'reminder', '2026-11-22 18:30')
+    check('rappel : à l\'échéance, notification du jeu (tablette fermée)', #gameNotes == 1 and gameNotes[1].msg:find('Appeler le central', 1, true) ~= nil)
+    local rlimit = Tablet.Productivity.reminders
+    Tablet.Productivity.reminders = 1
+    tk()
+    check('reminders:save : plafond de rappels', H['pop_tablet:reminders:save'](40, { list = list.id, title = 'y' }).err == 'err_limit')
+    Tablet.Productivity.reminders = rlimit
+    tk()
+    check('reminders:listSave : supprimer la liste emporte ses rappels', H['pop_tablet:reminders:listSave'](40, { id = list.id, delete = true }).ok and RM[rem.id] == nil)
+
+    -- Horloge : alarmes
+    tk()
+    H['pop_tablet:device:open'](40, nil, '2026-11-22 08:00')
+    tk()
+    check('clock:saveAlarm : minute hors bornes, masque invalide, libellé trop long refusés',
+        H['pop_tablet:clock:saveAlarm'](40, { minute = 1440 }).err == 'err_payload' and H['pop_tablet:clock:saveAlarm'](40, { minute = 60, mask = 128 }).err == 'err_payload'
+        and H['pop_tablet:clock:saveAlarm'](40, { minute = 60, label = string.rep('a', 41) }).err == 'err_too_large')
+    tk()
+    local al = H['pop_tablet:clock:saveAlarm'](40, { label = 'Réveil', minute = 420, mask = 0 })
+    check('clock:saveAlarm : création', al.ok and AL[al.id].game_minute == 420 and AL[al.id].enabled == 1, al.err)
+    tk()
+    local week = H['pop_tablet:clock:saveAlarm'](40, { label = 'Semaine', minute = 420, mask = 31 }) -- lundi à vendredi
+    gameNotes = {}
+    H['pop_tablet:device:close'](40)
+    fire(40, serial, week.id, 'alarm', '2026-11-22 07:00') -- dimanche
+    check('alarme à répétition : pas le dimanche', #gameNotes == 0)
+    fire(40, serial, week.id, 'alarm', '2026-11-23 07:00') -- lundi
+    check('alarme à répétition : sonne le lundi, tablette fermée, reste active', #gameNotes == 1 and gameNotes[1].msg:find('Semaine', 1, true) ~= nil and AL[week.id].enabled == 1)
+    gameNotes = {}
+    fire(40, serial, al.id, 'alarm', '2026-11-22 06:00')
+    check('alarme : pas avant l\'heure', #gameNotes == 0)
+    fire(41, serial2, al.id, 'alarm', '2026-11-22 07:00')
+    check('alarme d\'autrui : rien', #gameNotes == 0)
+    fire(40, serial, al.id, 'alarm', '2026-11-22 07:01')
+    check('alarme unique : sonne et s\'éteint', #gameNotes == 1 and AL[al.id].enabled == 0)
+    fire(40, serial, al.id, 'alarm', '2026-11-22 07:01')
+    check('alarme éteinte : ne sonne plus', #gameNotes == 1)
+    tk()
+    H['pop_tablet:device:open'](40, nil, '2026-11-22 08:00')
+    tk()
+    local cl = H['pop_tablet:clock:list'](40)
+    check('clock:list : alarmes sans minuteurs', cl.ok and #cl.alarms == 2 and #cl.timers == 0, cl.err)
+    tk()
+    local alimit = Tablet.Productivity.alarms
+    Tablet.Productivity.alarms = 2
+    check('clock:saveAlarm : plafond d\'alarmes', H['pop_tablet:clock:saveAlarm'](40, { minute = 10 }).err == 'err_limit')
+    Tablet.Productivity.alarms = alimit
+    tk()
+    check('clock:deleteAlarm : alarme d\'autrui refusée, la sienne supprimée', H['pop_tablet:clock:deleteAlarm'](41, al.id).err == 'err_not_found'
+        and H['pop_tablet:clock:deleteAlarm'](40, al.id).ok and AL[al.id] == nil)
+
+    -- Horloge : minuteurs (une seule échéance serveur, aucune boucle)
+    Tablet.Scheduler.SetClock(function() return clock end)
+    local before = Tablet.Scheduler.Count()
+    tk()
+    check('clock:startTimer : durée nulle, trop longue ou non entière refusée', H['pop_tablet:clock:startTimer'](40, { seconds = 0 }).err == 'err_payload'
+        and H['pop_tablet:clock:startTimer'](40, { seconds = 86401 }).err == 'err_payload' and H['pop_tablet:clock:startTimer'](40, { seconds = 1.5 }).err == 'err_payload')
+    tk()
+    local tm = H['pop_tablet:clock:startTimer'](40, { seconds = 90, label = 'Pâtes' })
+    check('clock:startTimer : échéance serveur armée', tm.ok and tm.remaining == 90 and Tablet.Scheduler.Count() == before + 1 and AL[tm.id].ends_at == clock + 90, tm.err)
+    tk()
+    cl = H['pop_tablet:clock:list'](40)
+    check('clock:list : le minuteur avec son reste en secondes', #cl.timers == 1 and cl.timers[1].remaining == 85, cl.timers[1] and cl.timers[1].remaining)
+    local ids = { tm.id }
+    for _ = 1, 4 do tk() local t = H['pop_tablet:clock:startTimer'](40, { seconds = 600 }) ids[#ids + 1] = t.id end
+    tk()
+    check('clock:startTimer : plafond de 5 minuteurs', H['pop_tablet:clock:startTimer'](40, { seconds = 60 }).err == 'err_limit')
+    tk()
+    check('clock:cancelTimer : minuteur d\'autrui refusé', H['pop_tablet:clock:cancelTimer'](41, ids[2]).err == 'err_not_found')
+    check('clock:cancelTimer : annule et désarme', H['pop_tablet:clock:cancelTimer'](40, ids[2]).ok and AL[ids[2]] == nil and Tablet.Scheduler.Count() == before + 4)
+    for i = 3, 5 do H['pop_tablet:clock:cancelTimer'](40, ids[i]) end
+    tk()
+    check('clock:cancelTimer : alarme refusée (pas un minuteur)', H['pop_tablet:clock:cancelTimer'](40, week.id).err == 'err_not_found')
+    sent = {}
+    clock = clock + 100
+    Tablet.Scheduler.Run()
+    local done = false
+    for _, p in ipairs(sent) do if p.name == 'pop_tablet:client:notify' and p.data.title == 'Pâtes' then done = true end end
+    check('minuteur échu : notification, ligne supprimée, plus d\'échéance', done and AL[tm.id] == nil and Tablet.Scheduler.Count() == before)
+    -- Réarmement au démarrage : un minuteur en cours est repris, un minuteur échu est supprimé
+    local keep = DB.InsertAlarm(serial, { kind = 'timer', label = '', ends = clock + 50, enabled = true })
+    local gone = DB.InsertAlarm(serial, { kind = 'timer', label = '', ends = clock - 1, enabled = true })
+    Tablet.Clock.Rearm()
+    check('Rearm : minuteur en cours repris, minuteur échu supprimé', AL[keep] ~= nil and AL[gone] == nil and Tablet.Scheduler.Count() == before + 1)
+    Tablet.Scheduler.Cancel('timer:' .. keep)
+    Bridge.Notify = realBridgeNotify
+end
+
+------------------------------------------------------------------------
 section('client : ouverture, focus, animation, relais, mort, arrêt')
 do
     local cmds, keymaps, netEvents, gameHandlers, nuiCb, nuiMsgs, focus = {}, {}, {}, {}, {}, {}, {}

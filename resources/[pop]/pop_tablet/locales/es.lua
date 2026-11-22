@@ -58,4 +58,9 @@ Locales['es'] = {
     err_limit = 'Límite alcanzado',
     err_depth = 'Carpetas demasiado anidadas',
     err_token = 'Enlace para compartir no válido',
+    cal_now = 'Ahora',
+    rem_due = 'Recordatorio',
+    clock_alarm = 'Alarma',
+    clock_timer = 'Temporizador',
+    clock_timer_done = 'Temporizador terminado',
 }

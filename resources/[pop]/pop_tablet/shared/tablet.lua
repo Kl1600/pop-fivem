@@ -41,6 +41,17 @@ Tablet.Media = {
     fileKinds = { folder = true, doc = true, photo = true, audio = true, board = true },
 }
 
+-- Limites des applis Calendrier, Rappels et Horloge. Dates du jeu : 'AAAA-MM-JJ HH:MM' (CHAR(16)).
+Tablet.Productivity = {
+    events = 500, reminderLists = 20, reminders = 200, alarms = 20, timers = 5,
+    rangeDays = 90, timerMaxSeconds = 86400,
+    alerts = { [0] = true, [5] = true, [10] = true, [15] = true, [30] = true, [60] = true, [120] = true, [1440] = true, [2880] = true },
+    -- Texte (caractères) : lieu, notes d'événement, titre de rappel, nom de liste, libellé d'alarme.
+    place = 80, evNotes = 500, remTitle = 120, listName = 40, alarmLabel = 40,
+}
+Tablet.Max.place, Tablet.Max.evNotes, Tablet.Max.remTitle = 80, 500, 120
+Tablet.Max.listName, Tablet.Max.alarmLabel = 40, 40
+
 -- Version du système et modèle affichés dans Réglages > Général > Informations.
 Tablet.OsVersion = '1.0'
 Tablet.Model = 'POP Tab'

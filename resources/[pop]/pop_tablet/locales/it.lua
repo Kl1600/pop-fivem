@@ -58,4 +58,9 @@ Locales['it'] = {
     err_limit = 'Limite raggiunto',
     err_depth = 'Cartelle annidate troppo in profondità',
     err_token = 'Link di condivisione non valido',
+    cal_now = 'Adesso',
+    rem_due = 'Promemoria',
+    clock_alarm = 'Sveglia',
+    clock_timer = 'Timer',
+    clock_timer_done = 'Timer terminato',
 }
