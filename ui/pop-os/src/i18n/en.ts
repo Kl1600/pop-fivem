@@ -225,6 +225,7 @@ const en: Record<string, string> = {
   "fil.new": "New",
   "fil.pick": "Choose",
   "fil.edit": "Edit",
+  "fil.rename": "Rename",
   "fil.move_title": "Move to",
   "fil.none_pick": "Nothing to choose.",
   "fil.body": "Content",

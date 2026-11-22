@@ -324,6 +324,7 @@ const ar: Record<string, string> = {
   "fil.new": "جديد",
   "fil.pick": "اختيار",
   "fil.edit": "تعديل",
+  "fil.rename": "إعادة تسمية",
   "fil.move_title": "نقل إلى",
   "fil.none_pick": "لا شيء للاختيار.",
   "fil.body": "المحتوى",

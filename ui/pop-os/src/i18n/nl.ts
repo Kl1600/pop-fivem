@@ -324,6 +324,7 @@ const nl: Record<string, string> = {
   "fil.new": "Nieuw",
   "fil.pick": "Kies",
   "fil.edit": "Bewerken",
+  "fil.rename": "Hernoemen",
   "fil.move_title": "Verplaats naar",
   "fil.none_pick": "Niets om te kiezen.",
   "fil.body": "Inhoud",

@@ -324,6 +324,7 @@ const pl: Record<string, string> = {
   "fil.new": "Nowy",
   "fil.pick": "Wybierz",
   "fil.edit": "Edytuj",
+  "fil.rename": "Zmień nazwę",
   "fil.move_title": "Przenieś do",
   "fil.none_pick": "Nic do wyboru.",
   "fil.body": "Treść",

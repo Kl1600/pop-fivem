@@ -324,6 +324,7 @@ const tr: Record<string, string> = {
   "fil.new": "Yeni",
   "fil.pick": "Seç",
   "fil.edit": "Düzenle",
+  "fil.rename": "Yeniden adlandır",
   "fil.move_title": "Şuraya taşı",
   "fil.none_pick": "Seçilecek bir şey yok.",
   "fil.body": "İçerik",
