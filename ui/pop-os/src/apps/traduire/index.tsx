@@ -97,7 +97,7 @@ export default function App({ t, dark, nui }: AppProps) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', overflow: 'hidden', background: c.bg, color: c.fg, letterSpacing: '-0.01em' }}>
-      <nav aria-label={t('app.traduire')} style={{ width: 280, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderRight: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <nav aria-label={t('app.traduire')} style={{ width: 280, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderInlineEnd: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{ fontSize: 34, fontWeight: 700, padding: '0 10px 14px' }}>{t('app.traduire')}</span>
         {NAV.map(([id, key, d, col]) => (
           <button key={id} onClick={() => { setMode(id); setPicker(null); }} aria-pressed={mode === id} style={{ ...BTN, display: 'flex', alignItems: 'center', gap: 12, height: 46, padding: '0 10px', borderRadius: 10, background: mode === id ? BLUE : 'transparent', color: mode === id ? '#fff' : c.fg }}>

@@ -116,7 +116,7 @@ export default function App({ t, dark, nui }: AppProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', background: c.bg, color: c.fg, overflow: 'hidden', position: 'relative', letterSpacing: '-0.01em' }}>
-      <nav aria-label={t('app.rappels')} style={{ width: 400, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.side, borderRight: `1px solid ${c.sep}`, padding: '46px 18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <nav aria-label={t('app.rappels')} style={{ width: 400, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.side, borderInlineEnd: `1px solid ${c.sep}`, padding: '46px 18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <label style={{ height: 40, borderRadius: 20, background: c.fill, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', color: c.sub, marginTop: 8 }}>
           <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
           <input aria-label={t('rem.search')} placeholder={t('rem.search')} value={query} onChange={(e) => setQuery(e.target.value)} style={{ all: 'unset', flexGrow: 1, fontSize: 17, color: c.fg }} />

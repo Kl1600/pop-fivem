@@ -69,7 +69,7 @@ export default function App({ t, dark, nui }: AppProps) {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', overflow: 'hidden', background: c.bg, color: c.fg, letterSpacing: '-0.01em' }}>
       <style>{KEYFRAMES}</style>
-      <nav aria-label={t('met.places')} style={{ width: 320, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderRight: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 12, zIndex: 3 }}>
+      <nav aria-label={t('met.places')} style={{ width: 320, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderInlineEnd: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 12, zIndex: 3 }}>
         <span style={{ fontSize: 34, fontWeight: 700, padding: '0 8px' }}>{t('app.meteo')}</span>
         <label style={{ height: 40, borderRadius: 20, background: c.fill, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', color: c.sub, margin: '0 4px' }}>
           <Ico d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" size={17} sw={2.4} />

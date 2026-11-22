@@ -83,7 +83,7 @@ export default function App({ t, dark, nui }: AppProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', background: c.cell, color: c.fg, overflow: 'hidden', position: 'relative', letterSpacing: '-0.01em' }}>
-      <nav aria-label={t('cal.calendars')} style={{ width: 300, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.side, borderRight: `1px solid ${c.sep}`, padding: '46px 18px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <nav aria-label={t('cal.calendars')} style={{ width: 300, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.side, borderInlineEnd: `1px solid ${c.sep}`, padding: '46px 18px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px 8px' }}>
           <span style={{ fontSize: 20, fontWeight: 700 }}>{fmtDay(mini, lang, { month: 'long', year: 'numeric' })}</span>
           <span style={{ display: 'flex', gap: 14, fontSize: 22, color: RED }}>
@@ -130,7 +130,7 @@ export default function App({ t, dark, nui }: AppProps) {
 
         {view === 'day' || view === 'week' ? (
           <>
-            <div style={{ display: 'flex', flexShrink: 0, paddingLeft: 56, borderBottom: `1px solid ${c.sep}` }}>
+            <div style={{ display: 'flex', flexShrink: 0, paddingInlineStart: 56, borderBottom: `1px solid ${c.sep}` }}>
               {cols.map((k) => (
                 <div key={k} style={{ flex: 1, textAlign: 'center', padding: '6px 0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: c.sub, textTransform: 'uppercase' }}>{dayName(k, 'short')}</span>
@@ -146,13 +146,13 @@ export default function App({ t, dark, nui }: AppProps) {
                 <div style={{ flexGrow: 1, position: 'relative', display: 'flex' }}>
                   {Array.from({ length: 24 }, (_, h) => <span key={h} style={{ position: 'absolute', left: 0, right: 0, top: h * PX, borderTop: `1px solid ${c.sep}` }} />)}
                   {cols.map((k) => (
-                    <div key={k} style={{ flex: 1, position: 'relative', borderLeft: `1px solid ${c.sep}` }}>
+                    <div key={k} style={{ flex: 1, position: 'relative', borderInlineStart: `1px solid ${c.sep}` }}>
                       {eventsOn(events, k, hidden).map((e) => {
                         const b = blockOf(e, k);
                         const color = e.color || DEFAULT_COLOR;
                         const s = shades(color);
                         return (
-                          <button type="button" key={e.id} onClick={() => open(e, k)} style={{ ...BTN, position: 'absolute', left: 3, right: 3, top: b.top, height: b.height, boxSizing: 'border-box', borderRadius: 8, padding: '5px 8px', borderLeft: `4px solid ${color}`, background: s.bg, color: s.fg, overflow: 'hidden', fontSize: 13, fontWeight: 600, lineHeight: 1.25 }}>
+                          <button type="button" key={e.id} onClick={() => open(e, k)} style={{ ...BTN, position: 'absolute', left: 3, right: 3, top: b.top, height: b.height, boxSizing: 'border-box', borderRadius: 8, padding: '5px 8px', borderInlineStart: `4px solid ${color}`, background: s.bg, color: s.fg, overflow: 'hidden', fontSize: 13, fontWeight: 600, lineHeight: 1.25 }}>
                             <span style={{ display: 'block' }}>{e.title}</span>
                             <span style={{ display: 'block', fontWeight: 400, opacity: 0.8 }}>{e.allDay ? t('cal.all_day') : `${timePart(e.start)} – ${timePart(e.stop)}`}</span>
                           </button>
@@ -176,7 +176,7 @@ export default function App({ t, dark, nui }: AppProps) {
               {monthGrid(anchor).map((k) => {
                 const inMonth = k.slice(0, 7) === anchor.slice(0, 7);
                 return (
-                  <div key={k} style={{ borderRight: `1px solid ${c.sep}`, borderBottom: `1px solid ${c.sep}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, overflow: 'hidden', opacity: inMonth ? 1 : 0.4 }}>
+                  <div key={k} style={{ borderInlineEnd: `1px solid ${c.sep}`, borderBottom: `1px solid ${c.sep}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, overflow: 'hidden', opacity: inMonth ? 1 : 0.4 }}>
                     <button type="button" aria-label={fmtDay(k, lang, { day: 'numeric', month: 'long' })} onClick={() => goDay(k)} style={{ ...BTN, alignSelf: 'flex-end', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, background: k === today ? RED : 'transparent', color: k === today ? '#fff' : c.fg }}>{Number(k.slice(8))}</button>
                     {eventsOn(events, k, hidden).slice(0, 3).map((e) => {
                       const s = shades(e.color || DEFAULT_COLOR);

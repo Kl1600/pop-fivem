@@ -91,7 +91,7 @@ export default function App({ t, dark, nui }: AppProps) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', overflow: 'hidden', background: c.bg, color: c.fg, letterSpacing: '-0.01em' }}>
-      <nav aria-label={t('bou.watchlist')} style={{ width: 360, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderRight: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <nav aria-label={t('bou.watchlist')} style={{ width: 360, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderInlineEnd: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 34, fontWeight: 700, padding: '0 10px 4px' }}>{t('app.bourse')}</span>
         <span style={{ fontSize: 14, color: c.sub, padding: '0 10px 10px' }}>{t('bou.subtitle')}</span>
         {error && <span role="alert" style={{ fontSize: 13, color: RED, padding: '0 10px' }}>{error}</span>}

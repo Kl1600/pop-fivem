@@ -36,11 +36,10 @@ describe('ui-04 i18n', () => {
     expect(findLiterals('<span>Bonjour le monde</span>').length).toBe(1);
     expect(findLiterals('<button aria-label="Fermer" />').length).toBe(1);
   });
-  it('fr et en ont les mêmes clés ; les 8 autres langues retombent sur l’anglais', () => {
+  it('les 10 langues ont les mêmes clés que l’anglais (détail dans i18n/i18n.test.ts) ; une clé inconnue retombe sur la clé', () => {
     expect(Object.keys(fr).sort()).toEqual(Object.keys(en).sort());
-    for (const l of LANGUAGES) expect(Object.keys(TABLES[l]).length === 0 || l === 'fr' || l === 'en').toBe(true);
-    expect(missingKeys('es').length).toBe(Object.keys(en).length);
-    expect(makeT('es')('code.enter')).toBe('Enter passcode');
+    for (const l of LANGUAGES) expect(missingKeys(l)).toEqual([]);
+    expect(makeT('es')('code.enter')).not.toBe('Enter passcode');
     expect(makeT('fr')('code.wait', 7)).toBe('Réessayez dans 7 s');
     expect(makeT('fr', { err_x: 'Texte du client' })('err_x')).toBe('Texte du client');
     expect(makeT('fr')('cle.inconnue')).toBe('cle.inconnue');

@@ -131,7 +131,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', background: c.bg, color: c.fg, letterSpacing: '-0.01em', overflow: 'hidden', position: 'relative' }}>
-      <nav aria-label={t('app.telephone')} style={{ width: 300, flexShrink: 0, height: '100%', boxSizing: 'border-box', borderRight: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <nav aria-label={t('app.telephone')} style={{ width: 300, flexShrink: 0, height: '100%', boxSizing: 'border-box', borderInlineEnd: `1px solid ${c.sep}`, padding: '46px 14px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{ fontSize: 34, fontWeight: 700, padding: '0 10px 12px' }}>{t('app.telephone')}</span>
         {tabs.map(([id, key]) => {
           const on = tab === id;

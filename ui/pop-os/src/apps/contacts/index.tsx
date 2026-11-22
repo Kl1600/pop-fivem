@@ -91,7 +91,7 @@ export default function App({ t, dark, nui }: AppProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', background: c.bg, color: c.fg, letterSpacing: '-0.01em', overflow: 'hidden', position: 'relative' }}>
-      <nav aria-label={t('app.contacts')} style={{ width: 390, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderRight: `1px solid ${c.sep}`, display: 'flex', flexDirection: 'column' }}>
+      <nav aria-label={t('app.contacts')} style={{ width: 390, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderInlineEnd: `1px solid ${c.sep}`, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '46px 18px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 34, fontWeight: 700 }}>{t('app.contacts')}</span>

@@ -32,7 +32,7 @@ export default function App({ t, dark, layout }: AppProps) {
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', background: c.bg, color: c.fg, overflow: 'hidden', position: 'relative', letterSpacing: '-0.01em' }}>
       {showHist && layout === 'regular' ? (
-        <nav aria-label={t('calc.history')} style={{ width: 320, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderRight: `1px solid ${c.sep}`, padding: '46px 18px 20px', display: 'flex', flexDirection: 'column' }}>
+        <nav aria-label={t('calc.history')} style={{ width: 320, flexShrink: 0, height: '100%', boxSizing: 'border-box', background: c.bg, borderInlineEnd: `1px solid ${c.sep}`, padding: '46px 18px 20px', display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: 34, fontWeight: 700, padding: '0 6px 14px' }}>{t('calc.history')}</span>
           <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             {s.hist.map((h, i) => (

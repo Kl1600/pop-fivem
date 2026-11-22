@@ -142,7 +142,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', background: c.cell, color: c.fg, fontFamily: 'inherit', letterSpacing: '-0.01em', overflow: 'hidden', position: 'relative' }}>
-      <nav aria-label={t('app.messages')} style={{ width: 390, flexShrink: 0, height: '100%', boxSizing: 'border-box', borderRight: `1px solid ${c.sep}`, display: 'flex', flexDirection: 'column' }}>
+      <nav aria-label={t('app.messages')} style={{ width: 390, flexShrink: 0, height: '100%', boxSizing: 'border-box', borderInlineEnd: `1px solid ${c.sep}`, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '46px 18px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 34, fontWeight: 700 }}>{t('app.messages')}</span>
@@ -227,7 +227,7 @@ export default function App({ t, dark, nui, data }: AppProps) {
                           )}
                         </div>
                       </div>
-                      {m.me && last && <span style={{ display: 'block', textAlign: 'right', fontSize: 12, fontWeight: 500, color: c.sub, padding: '2px 4px' }}>{m.read ? t('msg.read') : t('msg.delivered')}</span>}
+                      {m.me && last && <span style={{ display: 'block', textAlign: 'end', fontSize: 12, fontWeight: 500, color: c.sub, padding: '2px 4px' }}>{m.read ? t('msg.read') : t('msg.delivered')}</span>}
                     </div>
                   );
                 })}
