@@ -12,6 +12,7 @@
 
 
 ## Gabarit POP (restructuration)
+- pop_affiche : gabarit complet (client/panels, editor, placement ; server/common, database, affiches), réglages VIP dans config.lua.
 - pop_boards : gabarit complet (client/panels, editor, placement, sync ; server/common, database, boards, sync), lib.callback → Callback, ox_lib retiré.
 - pop_emotes : gabarit (client/ aplati en emote, menu, events, crouch, favorites, radio_anim ; config, locales), évènements emotes:* renommés pop_emotes:*, aucune emote supprimée (en plus des 3 déjà retirées avec accord).
 - pop_medexam : gabarit complet (client/injuries+exam, server/main, locales), options ox_target renommées pop_medexam_examine / pop_medexam_treat.
