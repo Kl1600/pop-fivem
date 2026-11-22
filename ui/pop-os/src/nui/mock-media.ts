@@ -76,7 +76,7 @@ export function mediaCall(name: string, raw: unknown): unknown {
       p.albums = a.on ? [...p.albums, Number(a.albumId)] : p.albums.filter((x) => x !== Number(a.albumId));
       return { ok: true };
     }
-    case 'notes:list': return { ok: true, folders: mFolders, notes: mNotes.map((n) => ({ id: n.id, folder: n.folder, title: n.title, excerpt: excerptOf(n.blocks as never), hint: hintOf(n.blocks as never), pinned: n.pinned, deleted: n.deleted, updated: n.updated })) };
+    case 'notes:list': return { ok: true, folders: mFolders.map((f) => ({ ...f })), notes: mNotes.map((n) => ({ id: n.id, folder: n.folder, title: n.title, excerpt: excerptOf(n.blocks as never), hint: hintOf(n.blocks as never), pinned: n.pinned, deleted: n.deleted, updated: n.updated })) };
     case 'notes:get': { const n = mNotes.find((x) => x.id === id); return n ? { ok: true, note: n } : { ok: false, err: 'err_not_found' }; }
     case 'notes:save': {
       const blocks = (a.blocks ?? []) as never[];
