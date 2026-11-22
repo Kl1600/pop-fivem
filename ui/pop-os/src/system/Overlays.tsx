@@ -200,8 +200,8 @@ export function SearchOverlay() {
       void nuiApi.call<{ ok: boolean; items?: Array<{ id: number; name?: string; phone?: string; title?: string; excerpt?: string }> }>('contacts:list').then((r) => {
         if (alive && r.ok) setContacts((r.items ?? []).filter((c) => (c.name ?? '').toLowerCase().includes(query)).map((c) => ({ id: c.id, title: c.name ?? '', sub: c.phone })).slice(0, 5));
       });
-      void nuiApi.call<{ ok: boolean; items?: Array<{ id: number; title?: string; excerpt?: string }> }>('notes:list').then((r) => {
-        if (alive && r.ok) setNotes((r.items ?? []).filter((n) => (n.title ?? '').toLowerCase().includes(query)).map((n) => ({ id: n.id, title: n.title ?? '', sub: n.excerpt })).slice(0, 5));
+      void nuiApi.call<{ ok: boolean; notes?: Array<{ id: number; title?: string; excerpt?: string; deleted?: boolean }> }>('notes:list').then((r) => {
+        if (alive && r.ok) setNotes((r.notes ?? []).filter((n) => !n.deleted && (n.title ?? '').toLowerCase().includes(query)).map((n) => ({ id: n.id, title: n.title ?? '', sub: n.excerpt })).slice(0, 5));
       });
     }, 250);
     return () => { alive = false; clearTimeout(id); };

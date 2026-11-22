@@ -1,5 +1,5 @@
 import { AnimatePresence, m } from 'motion/react';
-import { Suspense, lazy, useMemo, type ComponentType } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { AppIcon, appBackground, glassVars, wallpaper, useT, type AppProps } from '../kit';
 import { getApp } from '../apps/registry';
 import { nuiApi } from '../nui/bridge';
@@ -17,6 +17,19 @@ function appComponent(id: string): ComponentType<AppProps> | null {
   let c = lazyCache.get(id);
   if (!c) { c = lazy(m.load); lazyCache.set(id, c); }
   return c;
+}
+
+/** Fond d'écran tiré d'une photo (`photo:<id>`) : lu au serveur une fois la tablette déverrouillée ; sinon fond automatique. */
+function useWallPhoto(wall: string | undefined, locked: boolean): string | null {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    const m = /^photo:(\d+)$/.exec(wall ?? '');
+    if (!m || locked) { if (!m) setSrc(null); return; }
+    let live = true;
+    void nuiApi.call<{ ok: boolean; photo?: { data: string } }>('photos:get', Number(m[1])).then((r) => { if (live) setSrc(r.ok && r.photo ? r.photo.data : null); });
+    return () => { live = false; };
+  }, [wall, locked]);
+  return src;
 }
 
 function StatusBar({ light, appName }: { light: boolean; appName: string }) {
@@ -97,7 +110,8 @@ export function Screen({ shell }: { shell: boolean }) {
   const blurWall = s.screen === 'code' || s.screen === 'setup' || overlay;
   const home = s.screen === 'home';
   const appVisible = !!s.app;
-  const wall = wallpaper(s.st.wall, dark);
+  const wallPhoto = useWallPhoto(s.st.wall, s.screen === 'lock' || s.screen === 'code' || s.screen === 'setup');
+  const wall = wallPhoto ? `url("${wallPhoto}") center / cover` : wallpaper(s.st.wall, dark);
   const inLightApp = appVisible && !dark && !overlay;
   const bright = Math.max(15, s.st.bright ?? 100);
   const appName = s.app ? t(getApp(s.app)?.nameKey ?? `app.${s.app}`) : '';

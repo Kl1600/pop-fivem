@@ -1,1 +1,0 @@
-import{l as e,n as t}from"./index-IPkYRyDW.js";var n=e();function r(e){return(0,n.jsx)(t,{...e})}export{r as default};

@@ -1,0 +1,1 @@
+import{d as e,n as t}from"./index-CPnROfvA.js";var n=e();function r(e){return(0,n.jsx)(t,{...e})}export{r as default};

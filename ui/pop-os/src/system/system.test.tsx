@@ -309,8 +309,8 @@ describe('ui-14 centre de contrôle', () => {
     act(() => os.set({ settings: { ...os.get().settings, air: true } }));
     act(() => openApp('messages'));
     await waitFor(() => expect(document.querySelector('[data-offline="messages"]')).toBeTruthy());
-    act(() => openApp('notes'));
-    await waitFor(() => expect(document.querySelector('[data-waiting="notes"]')).toBeTruthy());
+    act(() => openApp('dictaphone'));
+    await waitFor(() => expect(document.querySelector('[data-waiting="dictaphone"]')).toBeTruthy());
   });
 });
 
