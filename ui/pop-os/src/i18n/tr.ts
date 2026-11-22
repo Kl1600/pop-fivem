@@ -38,6 +38,8 @@ const tr: Record<string, string> = {
   "setup.name": "Aygıt adı",
   "setup.mail": "E-posta adresi",
   "setup.mail_hint": "ad@ornek.com",
+  "setup.mail_ph": "ad",
+  "setup.mail_rules": "3 ile 32 karakter arasında bir ad seçin: harf, rakam, nokta, tire veya alt çizgi. Adresiniz ad@%s olacak.",
   "setup.mismatch": "Parolalar eşleşmiyor",
   "setup.next": "Devam",
   "setup.back": "Geri",

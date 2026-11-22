@@ -197,6 +197,26 @@ describe('ui-10 premier allumage', () => {
     await waitFor(() => expect(os.get().screen).toBe('home'));
     expect(os.get().needSetup).toBe(false);
   });
+  it('adresse mail : domaine fixe, partie avant @ gardée, erreur avant envoi', async () => {
+    render(<Host />);
+    openTablet({ needSetup: true, mailDomain: 'exemple.test' });
+    fireEvent.click(screen.getByRole('button', { name: 'English' }));
+    await waitFor(() => expect(os.get().lang).toBe('en'));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await typeCode('2468');
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Confirm your passcode'));
+    await typeCode('2468');
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Device name'));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByTestId('mail-domain').textContent).toBe('@exemple.test');
+    const input = screen.getByLabelText('Email address') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Silvun@silvun.com' } });
+    expect(input.value).toBe('Silvun');
+    fireEvent.change(input, { target: { value: 'ab' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('name@exemple.test'));
+    expect(os.get().needSetup).toBe(true);
+  });
   it('codes différents : message et retour à la saisie', async () => {
     render(<Host />);
     openTablet({ needSetup: true });

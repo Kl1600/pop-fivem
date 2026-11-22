@@ -38,6 +38,8 @@ const ar: Record<string, string> = {
   "setup.name": "اسم الجهاز",
   "setup.mail": "عنوان البريد الإلكتروني",
   "setup.mail_hint": "name@example.com",
+  "setup.mail_ph": "الاسم",
+  "setup.mail_rules": "اختر اسمًا من 3 إلى 32 حرفًا: أحرف أو أرقام أو نقطة أو شرطة أو شرطة سفلية. سيكون عنوانك name@%s.",
   "setup.mismatch": "رمزا المرور غير متطابقين",
   "setup.next": "متابعة",
   "setup.back": "رجوع",

@@ -105,6 +105,7 @@ function C.Open(hint, openApp, silent)
             shell = Config.Shell == true or nil, -- absent = pas de coque en jeu
             clock = C.ClockSnapshot(), weather = C.WeatherSnapshot(), app = openApp,
             token = token,
+            mailDomain = Config.Mail.Domain, -- domaine affiché après le nom dans la création d'adresse
         }
         C.Post('tablet:open', lastOpen)
     end, hint, C.GameStamp())

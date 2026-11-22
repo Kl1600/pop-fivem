@@ -10,7 +10,7 @@ const en: Record<string, string> = {
   'lock.swipe': 'Swipe up to open',
   'code.enter': 'Enter passcode', 'code.wait': 'Try again in %s s', 'code.wrong': 'Wrong passcode', 'code.delete': 'Delete', 'code.cancel': 'Cancel',
   'setup.hello': 'Hello', 'setup.lang': 'Choose your language', 'setup.code': 'Choose a 4-digit passcode', 'setup.confirm': 'Confirm your passcode',
-  'setup.name': 'Device name', 'setup.mail': 'Email address', 'setup.mail_hint': 'name@example.com', 'setup.mismatch': 'The passcodes do not match',
+  'setup.name': 'Device name', 'setup.mail': 'Email address', 'setup.mail_hint': 'name@example.com', 'setup.mail_ph': 'name', 'setup.mail_rules': 'Choose a name of 3 to 32 characters: letters, digits, dot, dash or underscore. Your address will be name@%s.', 'setup.mismatch': 'The passcodes do not match',
   'setup.next': 'Continue', 'setup.back': 'Back', 'setup.finish': 'Finish',
   'widget.city': 'Los Santos', 'widget.calendar': 'Calendar', 'widget.no_event': 'No event', 'widget.no_reminder': 'Nothing to remember', 'widget.high_low': 'H:%s° L:%s°',
   'weather.clear': 'Sunny', 'weather.clouds': 'Cloudy', 'weather.rain': 'Rain', 'weather.thunder': 'Storm', 'weather.fog': 'Fog', 'weather.snow': 'Snow',

@@ -5,7 +5,8 @@ import { formatDate, formatTime, useGameDate } from './clock';
 import { cancelCode, setLanguage, submitCode, submitSetup } from './actions';
 import { os, useOS } from './store';
 import { relTime } from './format';
-import { Field, Button } from '../kit';
+import { Field, Button, palette, useDark } from '../kit';
+import { isValidMailLocal, mailLocalPart } from './mailLocal';
 
 // Écran verrouillé, saisie du code et premier allumage. Positions de la maquette Main.dc.html (référence 1348 x 1019).
 
@@ -144,6 +145,7 @@ const STEPS: Step[] = ['lang', 'code', 'confirm', 'name', 'mail'];
 export function SetupLayer({ active }: { active: boolean }) {
   const t = useT();
   const lang = useOS((s) => s.lang);
+  const domain = useOS((s) => s.mailDomain);
   const [step, setStep] = useState<Step>('lang');
   const [code, setCode] = useState('');
   const [first, setFirst] = useState('');
@@ -173,10 +175,12 @@ export function SetupLayer({ active }: { active: boolean }) {
     }
   };
   const finish = async () => {
+    // Même règle que le serveur : l'erreur s'affiche avant l'envoi.
+    if (!isValidMailLocal(mail)) { setError('setup.mail_rules'); return; }
     setBusy(true);
     const res = await submitSetup({ code: first, name: name.trim(), lang, mail: mail.trim() });
     setBusy(false);
-    if (!res.ok) setError(res.err ?? 'err_unavailable');
+    if (!res.ok) setError(res.err === 'err_mail_invalid' ? 'setup.mail_rules' : res.err ?? 'err_unavailable');
   };
   const idx = STEPS.indexOf(step);
   const title = { lang: 'setup.lang', code: 'setup.code', confirm: 'setup.confirm', name: 'setup.name', mail: 'setup.mail' }[step];
@@ -198,15 +202,39 @@ export function SetupLayer({ active }: { active: boolean }) {
         <div style={{ width: 420, marginTop: 30, color: '#000' }}><Field value={name} onChange={setName} label={t('setup.name')} maxLength={32} onEnter={() => name.trim() && setStep('mail')} /></div>
       )}
       {step === 'mail' && (
-        <div style={{ width: 420, marginTop: 30, color: '#000' }}><Field value={mail} onChange={setMail} label={t('setup.mail')} placeholder={t('setup.mail_hint')} type="email" inputMode="email" onEnter={() => void finish()} /></div>
+        <div style={{ width: 420, marginTop: 30, color: '#000' }}><MailField value={mail} onChange={(v) => { setMail(mailLocalPart(v)); setError(null); }} label={t('setup.mail')} placeholder={t('setup.mail_ph')} domain={domain} onEnter={() => void finish()} /></div>
       )}
-      {error && <span role="alert" style={{ marginTop: 18, fontSize: 16, fontWeight: 600 }}>{error === 'setup.mismatch' ? t('setup.mismatch') : t(error)}</span>}
+      {error && <span role="alert" style={{ marginTop: 18, fontSize: 16, fontWeight: 600 }}>{error === 'setup.mismatch' ? t('setup.mismatch') : error === 'setup.mail_rules' ? t(error, domain) : t(error)}</span>}
       <div style={{ display: 'flex', gap: 14, marginTop: 34 }}>
         {idx > 0 && step !== 'name' && step !== 'mail' ? <Button kind="plain" onClick={() => { setCode(''); setStep(STEPS[Math.max(0, idx - (step === 'confirm' ? 2 : 1))] as Step); }} style={{ color: '#fff' }}>{t('setup.back')}</Button> : null}
         {step === 'lang' && <Button onClick={() => setStep('code')}>{t('setup.next')}</Button>}
         {step === 'name' && <Button disabled={!name.trim()} onClick={() => setStep('mail')}>{t('setup.next')}</Button>}
         {step === 'mail' && <Button disabled={busy || !mail.trim()} onClick={() => void finish()}>{t('setup.finish')}</Button>}
       </div>
+    </div>
+  );
+}
+
+/** Champ du nom d'adresse : le domaine est un suffixe fixe, dans la même pastille que le champ (style Field). */
+function MailField({ value, onChange, label, placeholder, domain, onEnter }: { value: string; onChange: (v: string) => void; label: string; placeholder: string; domain: string; onEnter: () => void }) {
+  const c = palette(useDark());
+  return (
+    <div dir="ltr" style={{ display: 'flex', alignItems: 'center', height: 44, borderRadius: 14, padding: '0 14px', background: c.fill, color: c.fg, fontSize: 17 }}>
+      <input
+        aria-label={label}
+        placeholder={placeholder}
+        value={value}
+        maxLength={64}
+        type="text"
+        inputMode="email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') onEnter(); }}
+        style={{ flex: 1, minWidth: 0, height: '100%', background: 'transparent', color: 'inherit', fontSize: 'inherit' }}
+      />
+      <span data-testid="mail-domain" style={{ flexShrink: 0, color: c.sub }}>@{domain}</span>
     </div>
   );
 }

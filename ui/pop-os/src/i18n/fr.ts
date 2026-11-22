@@ -10,7 +10,7 @@ const fr: Record<string, string> = {
   'lock.swipe': 'Glisser vers le haut pour ouvrir',
   'code.enter': 'Saisissez le code', 'code.wait': 'Réessayez dans %s s', 'code.wrong': 'Code incorrect', 'code.delete': 'Supprimer', 'code.cancel': 'Annuler',
   'setup.hello': 'Bonjour', 'setup.lang': 'Choisissez votre langue', 'setup.code': 'Choisissez un code à 4 chiffres', 'setup.confirm': 'Confirmez votre code',
-  'setup.name': "Nom de l'appareil", 'setup.mail': 'Adresse mail', 'setup.mail_hint': 'nom@exemple.fr', 'setup.mismatch': 'Les codes ne correspondent pas',
+  'setup.name': "Nom de l'appareil", 'setup.mail': 'Adresse mail', 'setup.mail_hint': 'nom@exemple.fr', 'setup.mail_ph': 'nom', 'setup.mail_rules': "Choisissez un nom de 3 à 32 caractères : lettres, chiffres, point, tiret ou tiret bas. Votre adresse sera nom@%s.", 'setup.mismatch': 'Les codes ne correspondent pas',
   'setup.next': 'Continuer', 'setup.back': 'Retour', 'setup.finish': 'Terminer',
   'widget.city': 'Los Santos', 'widget.calendar': 'Calendrier', 'widget.no_event': 'Aucun événement', 'widget.no_reminder': 'Rien à retenir', 'widget.high_low': 'H:%s° B:%s°',
   'weather.clear': 'Ensoleillé', 'weather.clouds': 'Nuageux', 'weather.rain': 'Pluie', 'weather.thunder': 'Orage', 'weather.fog': 'Brouillard', 'weather.snow': 'Neige',

@@ -66,6 +66,8 @@ export interface OpenData {
   lang?: string;
   /** Afficher la coque (mode navigateur de développement). Absent en jeu : pas de coque. */
   shell?: boolean;
+  /** Domaine des adresses mail (Config.Mail.Domain), affiché après le nom au premier allumage. */
+  mailDomain?: string;
   clock: ClockSnap;
   weather?: Weather;
   app?: { app: string; data?: unknown };
