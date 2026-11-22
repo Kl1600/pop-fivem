@@ -74,7 +74,7 @@ Ce document est la référence commune : à lire en entier avant de commencer.
 - Flux de connexion : écran « Accéder au plateau de jeu », puis création de perso. À vérifier en jeu.
 - Blocage ESX « Cleaning stale player entry » (diagnostic dans `pop_admin`), et touche Échap qui ne marche pas chez le client.
 - `MapZones` et `vehicle_keys` absents : ce sont des dépendances de `pop_territories` et `pop_bikerental`.
-- Mission `pop_grandtheftauto` à valider en jeu.
+- `pop_grandtheftauto` (vol de véhicule) supprimé à la demande du client.
 
 ## Gabarit POP (restructuration)
 - Mode d'emploi : `docs/gabarit-pop.md`. Exemple : `pop_bank`.

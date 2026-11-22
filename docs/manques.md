@@ -32,7 +32,6 @@ Analyse de tout ce qui tourne sur le serveur (ressources ESX + 36 scripts pop_*)
 - **Test complet en jeu** après un redémarrage du serveur (la réorganisation n'a pas encore été testée sur la nouvelle version).
 - **Langues et multi-framework** : prévus « plus tard » ; le bridge est prêt, il reste les fichiers de langue.
 - **pop_tablet** : vérifier avec Silvun qu'il suit les règles du dépôt (KL, pas de rose, gabarit).
-- **kq_lasers** : licence à vérifier (dépendance payante de la mission).
 - Emotes : objets déclarés en double (sans effet en jeu).
 
 ## Ordre conseillé
