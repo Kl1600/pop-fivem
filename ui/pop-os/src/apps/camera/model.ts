@@ -52,3 +52,25 @@ export function outputSize(sw: number, sh: number, maxW = MAX_WIDTH): { w: numbe
   const w = Math.max(1, Math.min(sw, maxW));
   return { w, h: Math.max(1, Math.round((sh * w) / sw)) };
 }
+
+/** Qualités essayées, de la meilleure à la plus basse, à chaque largeur. */
+export const QUALITIES = [0.85, 0.7, 0.55];
+/** Largeurs de sortie essayées : la largeur maximale puis des paliers plus petits (px). */
+export const WIDTHS = [MAX_WIDTH, 720, 540];
+
+/** Cherche le premier encodage qui tient sous `limit` caractères : pour chaque largeur (la source si plus étroite), toutes les qualités.
+ *  `encode(largeur, qualité)` renvoie le data URI ; si rien ne passe, renvoie le dernier essai (le serveur le refusera). */
+export function fitEncoding(encode: (width: number, quality: number) => string, srcWidth: number, limit = MAX_DATA_CHARS): string {
+  let out = '';
+  let last = -1;
+  for (const target of WIDTHS) {
+    const width = Math.max(1, Math.min(srcWidth, target));
+    if (width === last) continue; // source plus étroite que ce palier : déjà essayé
+    last = width;
+    for (const q of QUALITIES) {
+      out = encode(width, q);
+      if (out.length <= limit) return out;
+    }
+  }
+  return out;
+}

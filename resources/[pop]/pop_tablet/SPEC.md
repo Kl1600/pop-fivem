@@ -202,7 +202,8 @@ Réponse standard : `{ ok = true, ... }` ou `{ ok = false, err = 'cle_locale' }`
 | `pop_tablet:files:list` / `:save` / `:delete` / `:move` / `:share` / `:open` | `parentId` / ... | `:share` crée `share_token` ; `:open` ouvre un jeton reçu | <= 500 entrées ; profondeur <= 6 |
 | `pop_tablet:board:list` / `:get` / `:save` / `:delete` | `{ id?, title, strokes }` | | `strokes` <= 128 Ko, <= 10 000 points, <= 30 tableaux |
 | `pop_tablet:clock:list` / `:saveAlarm` / `:deleteAlarm` / `:startTimer` / `:cancelTimer` | | alarmes, minuteurs ; recalcule la prochaine échéance | <= 20 alarmes, <= 5 minuteurs |
-| `pop_tablet:photos:capture` | | prend la capture côté serveur (section 9), `{ ok, photo }` | 1 / 3 s ; <= `Config.Photos.Max` photos ; joueur sans menu pause/en vol |
+| `pop_tablet:photos:capture` | `{ kind?, crop? = { x, y, w, h } }` (fractions 0..1) | prend la capture côté serveur (section 9). Sans `crop` : `{ ok, id }` (webp 960 enregistrée). Avec `crop` : `{ ok, token, img, crop, kind }`, rien n'est enregistré (capture 1280 x 720) | 1 / 3 s ; <= `Config.Photos.Max` photos (recompté avant chaque insertion) ; attente screencapture 7 s (< 10 s du client) ; brute <= 1,5 Mo ; joueur sans menu pause/en vol |
+| `pop_tablet:photos:save` | `{ token, img }` | `{ ok, id }` : enregistre l'image recadrée par l'interface | jeton 30 s, usage unique, lié au joueur et à la tablette ; 2 jetons actifs au plus par joueur (le plus ancien est évincé) ; `img` webp/jpeg/png <= 150 Ko (`err_too_large` laisse le jeton utilisable jusqu'à son expiration) ; le client réduit qualité puis largeur (960, 720, 540) pour tenir sous 140 000 car. |
 | `pop_tablet:photos:list` | `{ offset }` | 30 miniatures-ids par page | |
 | `pop_tablet:photos:get` | `id` | une photo (url ou base64) | |
 | `pop_tablet:photos:delete` / `:favorite` | `id` | | |
@@ -440,6 +441,7 @@ Note d'environnement relevée : sur ce poste `luac5.4` n'est pas dans le PATH (s
 - Mode Avion et Wi-Fi coupé : le serveur refuse `store:*` avec `err_offline` (option `online` de `Tablet.Guard`). Les rappels SMS, appels et mails reprendront cette option à leur création.
 - Rubriques de la maquette Réglages retirées faute de fonction réelle : Temps d'écran, Écran d'accueil et multitâche, Rechercher et demander. « Automatique » (thème) non fait.
 - `photos:capture` : mode `database` seulement (le mode `remote` renvoie `err_unavailable`).
+- `photos:capture` avec `crop` : compromis assumé. Avec un jeton valide, c'est le client qui fournit l'image recadrée (`photos:save`), car le serveur ne peut pas décoder le webp en Lua pour recadrer lui-même. Le jeton borne le nombre, la taille et le format des images, pas leur contenu.
 
 ## 16. Contradictions et points ouverts (à décider)
 

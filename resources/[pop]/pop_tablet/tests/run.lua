@@ -952,8 +952,8 @@ do
         local function count() local n = 0 for _ in pairs(P) do n = n + 1 end return n end
         tk()
         r = cap(30, { kind = 'square', crop = crop })
-        check('recadrage : capture pleine résolution (1920), jeton et image renvoyés, rien enregistré',
-            r.ok and type(r.token) == 'string' and #r.token >= 16 and r.img == raw and r.crop.w == 0.5 and lastOpts.maxWidth == 1920 and count() == before, r.err)
+        check('recadrage : capture 1280 x 720, jeton et image renvoyés, rien enregistré',
+            r.ok and type(r.token) == 'string' and #r.token >= 16 and r.img == raw and r.crop.w == 0.5 and lastOpts.maxWidth == 1280 and lastOpts.maxHeight == 720 and count() == before, r.err)
         local tok = r.token
         tk()
         check('recadrage : jeton d\'un autre joueur refusé', sav(31, { token = tok, img = raw }).err == 'err_payload' and count() == before)
@@ -995,6 +995,76 @@ do
         check('recadrage : zone pleine fenêtre acceptée', cap(30, { crop = { x = 0, y = 0, w = 1, h = 1 } }).ok)
         tk()
         check('recadrage : sans jeton ni session refusé', sav(3, { token = tok, img = raw }).err ~= nil and sav(30, { img = raw }).err == 'err_payload')
+
+        -- Durcissement du flux à jeton
+        tk()
+        local nTimers = #timers
+        cap(30, { crop = crop })
+        local waitMs
+        for i = nTimers + 1, #timers do waitMs = timers[i].ms end
+        check('capture : attente screencapture (7000 ms) < délai du client (10 s)', waitMs == 7000 and waitMs < 10000, tostring(waitMs))
+
+        tk()
+        check('capture : brute > 1,5 Mo refusée', (function()
+            def('exports', setmetatable({ screencapture = { serverCapture = function(_, _, _, cb) cb('data:image/webp;base64,' .. string.rep('A', 1600 * 1024)) end } }, { __call = function() end }))
+            local res = cap(30, { crop = crop })
+            def('exports', setmetatable({ screencapture = { serverCapture = function(_, _, _, cb) cb(raw) end } }, { __call = function() end }))
+            return res.err == 'err_too_large'
+        end)())
+
+        -- plafond recompté juste avant l'enregistrement (la prise a pu finir pendant l'attente)
+        local maxBefore = Config.Photos.Max
+        local function countNow() local n = 0 for _, row in pairs(P) do if row.serial == serial then n = n + 1 end end return n end
+        tk()
+        local tokFull = cap(30, { crop = crop }).token
+        Config.Photos.Max = countNow()
+        tk()
+        check('plafond : photos:save recompte et refuse err_photos_full', sav(30, { token = tokFull, img = raw }).err == 'err_photos_full' and countNow() == Config.Photos.Max)
+        Config.Photos.Max = maxBefore + 50
+        tk()
+        local capCount = countNow()
+        def('exports', setmetatable({ screencapture = { serverCapture = function(_, _, _, cb)
+            Config.Photos.Max = capCount -- le plafond est atteint pendant l'attente de la capture
+            cb(raw)
+        end } }, { __call = function() end }))
+        check('plafond : capture sans recadrage recompte avant insertion', cap(30, { kind = 'photo' }).err == 'err_photos_full' and countNow() == capCount)
+        Config.Photos.Max = maxBefore + 50
+        def('exports', setmetatable({ screencapture = { serverCapture = function(_, _, _, cb) cb(raw) end } }, { __call = function() end }))
+
+        -- err_too_large laisse le jeton utilisable ; un succès le consomme
+        tk()
+        tok = cap(30, { crop = crop }).token
+        tk()
+        check('jeton : err_too_large ne le consomme pas', sav(30, { token = tok, img = 'data:image/webp;base64,' .. string.rep('A', 150 * 1024) }).err == 'err_too_large')
+        tk()
+        local n0 = countNow()
+        r = sav(30, { token = tok, img = raw })
+        check('jeton : réutilisable après err_too_large, puis enregistré', r.ok and countNow() == n0 + 1, r.err)
+        tk()
+        check('jeton : usage unique après succès', sav(30, { token = tok, img = raw }).err == 'err_payload')
+        tk()
+        tok = cap(30, { crop = crop }).token
+        clock = clock + 31
+        check('jeton : expiré malgré un err_too_large antérieur', sav(30, { token = tok, img = raw }).err == 'err_payload')
+
+        -- deux prises simultanées : deux jetons valides, le 3e évince le 1er
+        tk()
+        local t1 = cap(30, { crop = crop }).token
+        tk()
+        local t2 = cap(30, { crop = crop }).token
+        check('2 jetons actifs : distincts', t1 ~= t2)
+        tk()
+        local n1 = countNow()
+        check('2 jetons actifs : le 1er est valide', sav(30, { token = t1, img = raw }).ok and countNow() == n1 + 1)
+        tk()
+        t1 = cap(30, { crop = crop }).token
+        tk()
+        local t3 = cap(30, { crop = crop }).token
+        tk()
+        check('3e jeton : évince le plus ancien (t2)', sav(30, { token = t2, img = raw }).err == 'err_payload')
+        tk()
+        check('3e jeton : t1 et t3 restent valides', sav(30, { token = t1, img = raw }).ok and (function() tk() return sav(30, { token = t3, img = raw }).ok end)())
+        Config.Photos.Max = maxBefore
     end
 
     -- Notes

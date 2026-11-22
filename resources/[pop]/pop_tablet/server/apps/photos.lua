@@ -3,6 +3,7 @@
 -- Le serveur demande la capture à screencapture (export serveur serverCapture) ; aucune clé ni URL d'envoi ne passe par le client.
 -- Avec `crop` (zone du viseur, fractions 0..1) : capture pleine résolution renvoyée à l'interface avec un jeton à usage unique ;
 -- l'interface recadre, ré-encode puis rend l'image par `photos:save` (le serveur ne l'enregistre qu'à ce moment).
+-- Compromis assumé : avec un jeton valide, c'est le client qui fournit l'image recadrée (le serveur ne décode pas le webp en Lua).
 
 Tablet = Tablet or {}
 Tablet.Photos = {}
@@ -10,16 +11,17 @@ local P = Tablet.Photos
 
 local MAX_BYTES = 150 * 1024 -- texte base64 de la capture
 local SHOT_GAP = 3           -- secondes entre deux prises
-local WAIT_MS = 10000
+local WAIT_MS = 7000 -- < 10 s : le client abandonne un callback après 10 s (shared/callback.lua), la réponse arrive toujours avant
 local PAGE = 30
 local MAX_ID = 4294967295
-local RAW_MAX = 3 * 1024 * 1024 -- capture brute (avant recadrage) renvoyée à l'interface
+local RAW_MAX = 1536 * 1024 -- capture brute (avant recadrage, 1280 x 720) renvoyée à l'interface (1,5 Mo)
 local TOKEN_TTL = 30            -- secondes de validité du jeton de recadrage
+local MAX_TOKENS = 2            -- jetons actifs par joueur (le plus ancien est évincé)
 local CROP_MIN = 0.05
 local CROP_EPS = 1e-6
 
 local lastShot = {} -- [src] = seconde
-local pending = {}  -- [src] = { token, serial, kind, exp } : un seul jeton en attente par joueur
+local pending = {}  -- [src] = { { token, serial, kind, exp }, ... } : au plus MAX_TOKENS par joueur, du plus ancien au plus récent
 
 local function photoId(v) return Tablet.Limits.Int(v, 1, MAX_ID) end
 
@@ -83,7 +85,7 @@ function P.Capture(src, data)
 
     local p = promise.new()
     -- Recadrage demandé : capture pleine résolution, la qualité doit survivre au recadrage côté interface.
-    local opts = crop and { encoding = 'webp', maxWidth = 1920, maxHeight = 1080 } or { encoding = 'webp', maxWidth = 960 }
+    local opts = crop and { encoding = 'webp', maxWidth = 1280, maxHeight = 720 } or { encoding = 'webp', maxWidth = 960 }
     exports.screencapture:serverCapture(src, opts, function(img) p:resolve(img) end)
     SetTimeout(WAIT_MS, function() p:resolve(nil) end)
     local img = Citizen.Await(p)
@@ -97,25 +99,37 @@ function P.Capture(src, data)
     end
     if crop then
         local token = newToken()
-        pending[src] = { token = token, serial = s.serial, kind = kind, exp = Tablet.Now() + TOKEN_TTL }
+        local list, now2 = {}, Tablet.Now()
+        for _, tk in ipairs(pending[src] or {}) do
+            if now2 <= tk.exp then list[#list + 1] = tk end
+        end
+        if #list >= MAX_TOKENS then table.remove(list, 1) end -- la liste ne dépasse jamais MAX_TOKENS
+        list[#list + 1] = { token = token, serial = s.serial, kind = kind, exp = now2 + TOKEN_TTL }
+        pending[src] = list
         return { ok = true, token = token, img = img, crop = crop, kind = kind }
     end
+    -- Recomptage : une autre prise a pu finir pendant l'attente de la capture.
+    if Tablet.DB.CountPhotos(s.serial) >= Config.Photos.Max then return Tablet.Fail('err_photos_full') end
     local id = Tablet.DB.InsertPhoto(s.serial, img, Tablet.Now(), kind)
     return { ok = true, id = id }
 end
 
 --- pop_tablet:photos:save  { token, img } : image recadrée par l'interface, enregistrée si le jeton de la prise est valide.
---- Le jeton est lié au joueur et à la tablette, expire en 30 s et ne sert qu'une fois (consommé dès qu'il est présenté).
+--- Le jeton est lié au joueur et à la tablette, expire en 30 s et ne sert qu'une fois : il est consommé dès que l'image passe
+--- le contrôle de taille ; une image trop grande (`err_too_large`) le laisse utilisable jusqu'à son expiration.
 function P.Save(src, data)
     local s, err = Tablet.Guard(src, nil, { name = 'photoSave', rate = 2, payload = data, maxBytes = MAX_BYTES + 512 })
     if not s then return Tablet.Fail(err) end
     if type(data) ~= 'table' or type(data.token) ~= 'string' or type(data.img) ~= 'string' then return Tablet.Fail('err_payload') end
-    local tk = pending[src]
-    if not tk or tk.token ~= data.token then return Tablet.Fail('err_payload') end
-    pending[src] = nil
-    if Tablet.Now() > tk.exp then return Tablet.Fail('err_payload') end
-    if tk.serial ~= s.serial then return Tablet.Fail('err_session') end
+    local list, tk, at = pending[src] or {}, nil, nil
+    for i, t in ipairs(list) do
+        if t.token == data.token then tk, at = t, i break end
+    end
+    if not tk then return Tablet.Fail('err_payload') end
+    if Tablet.Now() > tk.exp then table.remove(list, at) return Tablet.Fail('err_payload') end
     if #data.img > MAX_BYTES then return Tablet.Fail('err_too_large') end
+    table.remove(list, at)
+    if tk.serial ~= s.serial then return Tablet.Fail('err_session') end
     if not P.ImageValid(data.img) then return Tablet.Fail('err_payload') end
     if not Tablet.Device.Carries(src, s.serial) then return Tablet.Fail('err_session') end
     if Tablet.DB.CountPhotos(s.serial) >= Config.Photos.Max then return Tablet.Fail('err_photos_full') end
