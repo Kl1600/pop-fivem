@@ -142,7 +142,7 @@ local relayed = {
     'phone:call', 'phone:answer', 'phone:decline', 'phone:hangup', 'phone:history',
     'mail:folders', 'mail:list', 'mail:get', 'mail:send', 'mail:move', 'mail:flag', 'mail:delete',
     'contacts:list', 'contacts:save', 'contacts:delete',
-    'messages:pin', 'messages:group', 'messages:media', 'phone:voicemail', 'phone:voicemails',
+    'messages:pin', 'messages:group', 'messages:media', 'messages:block', 'messages:leave', 'phone:voicemail', 'phone:voicemails',
     'browser:sites', 'browser:save', 'music:stations', 'music:save', 'translate:run',
     'stocks:subscribe', 'stocks:unsubscribe', 'stocks:watch',
     'plans:state', 'plans:fav', 'plans:recent', 'translate:favs', 'translate:fav',

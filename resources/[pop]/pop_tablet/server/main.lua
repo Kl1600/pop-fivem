@@ -49,11 +49,12 @@ end)
 -- `stamp` : date du jeu 'AAAA-MM-JJ HH:MM' annoncée par le client (les gestionnaires la valident et la comparent à l'échéance).
 RegisterNetEvent('pop_tablet:server:due', function(id, kind, stamp)
     local src = source
-    if not Tablet.Limits.Rate(src, 'due', 5) then return end
+    -- Anti-spam : 2 signalements par seconde et par joueur, seulement tablette ouverte (la minuterie du client ne tourne que là).
+    if not Tablet.Limits.Rate(src, 'due', 2) then return end
     if math.type(id) ~= 'integer' or type(kind) ~= 'string' or #kind > 16 then return end
     if type(stamp) ~= 'string' or #stamp ~= 16 then stamp = nil end
     local s = Tablet.Device.GetSession(src)
-    if not s or not Bridge.GetPlayer(src) or not Tablet.Device.Carries(src, s.serial) then return end
+    if not s or not s.openedAt or not Bridge.GetPlayer(src) or not Tablet.Device.Carries(src, s.serial) then return end
     for _, handler in ipairs(Tablet.DueHandlers) do
         local ok, err = pcall(handler, src, s.serial, id, kind, stamp)
         if not ok and Config.Debug then print(('[%s] due handler: %s'):format(RES, tostring(err))) end

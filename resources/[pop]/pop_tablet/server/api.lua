@@ -157,7 +157,6 @@ end
 --- Notification venue d'une autre ressource. Renvoie true si une tablette (ou le joueur) a été prévenue.
 function Api.Notify(target, n, resource)
     if type(n) ~= 'table' then return false end
-    if not Tablet.Limits.Rate('res:' .. tostring(resource), 'notify', NOTIFY_PER_SECOND) then return false end
     local app = n.app
     if type(app) ~= 'string' or not validId(app) then return false end
     local registered = registry[app]
@@ -168,6 +167,8 @@ function Api.Notify(target, n, resource)
     if not src or not Bridge.GetPlayer(src) or not Tablet.Device.HasTablet(src) then return false end
     local s = Tablet.Device.GetSession(src)
     if type(target) == 'string' and (not s or s.serial ~= target) then return false end
+    -- Limite par tablette cible (et non par ressource) : une tablette ne reçoit jamais plus de NOTIFY_PER_SECOND par seconde.
+    if not Tablet.Limits.Rate('tab:' .. (s and s.serial or ('p' .. src)), 'notify', NOTIFY_PER_SECOND) then return false end
     local lang = s and s.settings and s.settings.lang
     if not Tablet.LanguageSet[lang] then lang = Config.Locale end
     local args = type(n.args) == 'table' and n.args or nil

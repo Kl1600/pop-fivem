@@ -16,6 +16,13 @@ local lastShot = {} -- [src] = seconde
 
 local function photoId(v) return Tablet.Limits.Int(v, 1, MAX_ID) end
 
+--- true si `img` est une image en data URI webp, jpeg ou png (base64 strict). Tout le reste (svg, html, autre type) est refusé.
+function P.ImageValid(img)
+    if type(img) ~= 'string' then return false end
+    local mime = img:match('^data:image/(%a+);base64,[%w%+/=]+$')
+    return mime == 'webp' or mime == 'jpeg' or mime == 'png'
+end
+
 --- Identifiant d'une charge `id` seul ou `{ id = ... }`.
 local function idOf(data)
     if type(data) == 'table' then return photoId(data.id) end
@@ -45,6 +52,7 @@ function P.Capture(src, data)
 
     if type(img) ~= 'string' or img == '' then return Tablet.Fail('err_unavailable') end
     if #img > MAX_BYTES then return Tablet.Fail('err_too_large') end
+    if not P.ImageValid(img) then return Tablet.Fail('err_unavailable') end
     -- La session peut avoir disparu pendant l'attente : la photo n'est enregistrée que pour la tablette encore portée.
     if not Tablet.Device.GetSession(src) or Tablet.Device.SerialOf(src) ~= s.serial or not Tablet.Device.Carries(src, s.serial) then
         return Tablet.Fail('err_session')
@@ -186,7 +194,7 @@ function P.Thumb(src, data)
     if type(data) ~= 'table' then return Tablet.Fail('err_payload') end
     local id, img = idOf(data), data.data
     if not id or type(img) ~= 'string' or #img > Tablet.Media.thumbBytes then return Tablet.Fail('err_too_large') end
-    if not img:match('^data:image/%a+;base64,[%w%+/=]+$') then return Tablet.Fail('err_payload') end
+    if not P.ImageValid(img) then return Tablet.Fail('err_payload') end
     if not Tablet.DB.SetPhotoField(s.serial, id, 'thumb', img) and not Tablet.DB.PhotoOwned(s.serial, id) then return Tablet.Fail('err_not_found') end
     return { ok = true }
 end

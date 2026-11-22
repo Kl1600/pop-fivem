@@ -54,6 +54,8 @@ function T.Run(src, data)
     local q = text(data.text, cfg.MaxChars or K.translateChars)
     if not q or not languages(data.src, data.dst) then return Tablet.Fail('err_payload') end
     if type(cfg.Url) ~= 'string' or not cfg.Url:match('^https?://') then return Tablet.Fail('err_unavailable') end
+    -- Une clé réglée ne part jamais en clair : https exigé dès que `pop_tablet_translate_key` est renseignée.
+    if GetConvar('pop_tablet_translate_key', '') ~= '' and not cfg.Url:match('^https://') then return Tablet.Fail('err_unavailable') end
     local k = data.src .. '|' .. data.dst .. '|' .. q
     if cache[k] then return { ok = true, text = cache[k], cached = true } end
     local out = request(cfg, data.src, q, data.dst)

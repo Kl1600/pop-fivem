@@ -90,6 +90,7 @@ function PH.Call(src, data)
     if s.lastCall and now - s.lastCall < 5 then return Tablet.Fail('err_rate') end
     local serial = Tablet.DB.SerialOfPhone(data.to)
     if not serial then return Tablet.Fail('err_not_found') end
+    if P.Blocked(serial, me) then return Tablet.Fail('err_unreachable') end -- numéro bloqué par le destinataire
     if byPlayer[src] then return Tablet.Fail('err_busy') end
     s.lastCall = now
     local id = Tablet.DB.InsertCall(me, data.to, now)
@@ -205,6 +206,8 @@ function PH.Voicemail(src, data)
     local me = P.PhoneOf(s)
     if data.to == me then return Tablet.Fail('err_payload') end
     if not Tablet.DB.PhoneExists(data.to) then return Tablet.Fail('err_not_found') end
+    local peer = Tablet.DB.SerialOfPhone(data.to)
+    if peer and P.Blocked(peer, me) then return Tablet.Fail('err_unreachable') end
     local now = Tablet.Now()
     local id = Tablet.DB.InsertMessage(me, data.to, data.text, 'text', 'vm', now)
     if not id then return Tablet.Fail('err_db') end

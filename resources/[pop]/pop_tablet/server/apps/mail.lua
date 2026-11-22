@@ -2,6 +2,7 @@
 -- « Drapeau ». Les mails sont rangés par tablette (300 au plus). Le serveur donne l'expéditeur : jamais le client.
 -- Aucune boucle : un envoi prévient le destinataire par push (tablette ouverte) ou notification du jeu (fermée).
 -- Export serveur `SendMail(to, subject, body, from?)` : une autre ressource envoie un mail à une tablette.
+-- Mode Avion / Wi-Fi coupé : lecture des mails déjà reçus autorisée, envoi bloqué (brouillons autorisés : rien ne part).
 
 Tablet = Tablet or {}
 Tablet.Mail = {}
@@ -38,8 +39,11 @@ local function alert(serial, from, subject, id)
 end
 
 --- Dépose un mail dans la boîte de réception de `serial`. Renvoie l'id, ou nil + clé d'erreur.
-local function deliver(serial, from, to, subject, body)
-    if Tablet.DB.CountMails(serial) >= B.max then return nil, 'err_limit' end
+--- `fromScript` : mail d'une autre ressource, jamais bloqué par le quota par expéditeur.
+--- Boîte pleine : le plus ancien mail reçu est retiré pour faire de la place (un expéditeur ne peut pas la bloquer).
+local function deliver(serial, from, to, subject, body, fromScript)
+    if not fromScript and Tablet.DB.CountInboxFrom(serial, from) >= B.perSender then return nil, 'err_limit' end
+    if Tablet.DB.CountMails(serial) >= B.max and not Tablet.DB.EvictOldestReceived(serial) then return nil, 'err_limit' end
     local id = Tablet.DB.InsertMail(serial, 'inbox', from, to, subject, body, Tablet.Now(), nil)
     if not id then return nil, 'err_db' end
     alert(serial, from, subject, id)
@@ -89,7 +93,7 @@ end
 
 --- pop_tablet:mail:send  { to, subject, body, draft?, id? } : envoie, ou enregistre un brouillon (`draft`) ; `id` : brouillon remplacé
 function M.Send(src, data)
-    local s, err = Tablet.Guard(src, nil, { name = 'mailSend', rate = 1, payload = data, maxBytes = 8192, online = true })
+    local s, err = Tablet.Guard(src, nil, { name = 'mailSend', rate = 1, payload = data, maxBytes = 8192, online = not (type(data) == 'table' and data.draft == true) })
     if not s then return Tablet.Fail(err) end
     if type(data) ~= 'table' or type(data.subject) ~= 'string' or type(data.body) ~= 'string' then return Tablet.Fail('err_payload') end
     local draft = data.draft == true
@@ -172,7 +176,7 @@ function M.SendFromScript(to, subject, body, from)
     if not ok then return false, ferr end
     local owner = Tablet.DB.MailboxOwner(a)
     if not owner then return false, 'err_not_found' end
-    local id, derr = deliver(owner, f, a, subject, body)
+    local id, derr = deliver(owner, f, a, subject, body, true)
     if not id then return false, derr end
     return true
 end

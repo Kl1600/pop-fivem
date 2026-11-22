@@ -36,6 +36,21 @@ local function pins(serial)
     return out
 end
 
+--- Numéros bloqués par la tablette.
+local function blocks(serial)
+    local d = Tablet.AppData.Get(serial, 'messages', {})
+    local out = {}
+    for _, p in ipairs(type(d.blocked) == 'table' and d.blocked or {}) do
+        if phoneOk(p) and #out < C.blocks then out[#out + 1] = p end
+    end
+    return out
+end
+
+--- Enregistre épinglées et bloqués ensemble (une seule ligne de données par appli).
+local function saveData(serial, pinList, blockList)
+    return Tablet.AppData.Set(serial, 'messages', { pins = pinList, blocked = blockList })
+end
+
 --- pop_tablet:messages:threads : conversations (dernier message, non-lus, épinglées), la plus récente d'abord
 function M.Threads(src)
     local s, err = Tablet.Guard(src, nil, { name = 'msgThreads', rate = 3, online = true })
@@ -57,7 +72,7 @@ function M.Threads(src)
     end
     table.sort(items, function(a, b) return a._id > b._id end)
     for _, it in ipairs(items) do it._id = nil end
-    return { ok = true, items = items, pins = pins(s.serial), me = me }
+    return { ok = true, items = items, pins = pins(s.serial), blocked = blocks(s.serial), me = me }
 end
 
 --- pop_tablet:messages:thread  { phone, before? } : 30 messages, du plus ancien au plus récent
@@ -103,6 +118,9 @@ function M.Send(src, data)
     else
         if not phoneOk(data.to) or data.to == me then return Tablet.Fail('err_payload') end
         if not Tablet.DB.PhoneExists(data.to) then return Tablet.Fail('err_not_found') end
+        -- Numéro qui a bloqué l'expéditeur : rien n'est enregistré ni livré.
+        local peer = Tablet.DB.SerialOfPhone(data.to)
+        if peer and P.Blocked(peer, me) then return Tablet.Fail('err_unreachable') end
         targets[1] = data.to
     end
     local body, ref = '', nil
@@ -166,8 +184,40 @@ function M.Pin(src, data)
         if #out >= C.pins then return Tablet.Fail('err_limit') end
         out[#out + 1] = data.phone
     end
-    Tablet.AppData.Set(s.serial, 'messages', { pins = out })
+    saveData(s.serial, out, blocks(s.serial))
     return { ok = true, pins = out }
+end
+
+--- pop_tablet:messages:block  { phone, on } : bloque ou débloque un numéro (50 au plus). Le numéro bloqué ne peut plus
+--- écrire ni appeler cette tablette (il reçoit « injoignable »).
+function M.Block(src, data)
+    local s, err = Tablet.Guard(src, nil, { name = 'msgPin', rate = 3, payload = data, maxBytes = 256 })
+    if not s then return Tablet.Fail(err) end
+    if type(data) ~= 'table' or type(data.on) ~= 'boolean' or not phoneOk(data.phone) then return Tablet.Fail('err_payload') end
+    if data.phone == P.PhoneOf(s) then return Tablet.Fail('err_payload') end
+    local out = {}
+    for _, p in ipairs(blocks(s.serial)) do if p ~= data.phone then out[#out + 1] = p end end
+    if data.on then
+        if #out >= C.blocks then return Tablet.Fail('err_limit') end
+        out[#out + 1] = data.phone
+    end
+    if not saveData(s.serial, pins(s.serial), out) then return Tablet.Fail('err_too_large') end
+    return { ok = true, blocked = out }
+end
+
+--- pop_tablet:messages:leave  { to = 'g<id>' } : quitte le groupe ; le groupe disparaît quand il est vide
+function M.Leave(src, data)
+    local s, err = Tablet.Guard(src, nil, { name = 'msgGroup', rate = 1, payload = data, maxBytes = 256, online = true })
+    if not s then return Tablet.Fail(err) end
+    local gid = type(data) == 'table' and groupId(data.to) or nil
+    if not gid then return Tablet.Fail('err_payload') end
+    local me = P.PhoneOf(s)
+    if not member(gid, me) or not Tablet.DB.RemoveMember(gid, me) then return Tablet.Fail('err_not_found') end
+    Tablet.DB.DeleteGroupIfEmpty(gid)
+    local out = {}
+    for _, p in ipairs(pins(s.serial)) do if p ~= 'g' .. gid then out[#out + 1] = p end end
+    saveData(s.serial, out, blocks(s.serial))
+    return { ok = true }
 end
 
 --- pop_tablet:messages:group  { name, members } : crée une conversation de groupe (3 à 8 numéros avec le créateur)
@@ -179,11 +229,18 @@ function M.Group(src, data)
     if not ok then return Tablet.Fail(ferr) end
     local me = P.PhoneOf(s)
     local list, seen = { me }, { [me] = true }
+    -- Plafond de membres vérifié avant toute requête : jamais plus de C.group lectures en base.
+    if #data.members > C.group then return Tablet.Fail('err_payload') end
     for _, p in ipairs(data.members) do
-        if not phoneOk(p) or not Tablet.DB.PhoneExists(p) then return Tablet.Fail('err_not_found') end
-        if not seen[p] then seen[p] = true list[#list + 1] = p end
+        if not phoneOk(p) then return Tablet.Fail('err_not_found') end
+        if not seen[p] then
+            if #list >= C.group then return Tablet.Fail('err_payload') end
+            if not Tablet.DB.PhoneExists(p) then return Tablet.Fail('err_not_found') end
+            seen[p] = true
+            list[#list + 1] = p
+        end
     end
-    if #list < 3 or #list > C.group then return Tablet.Fail('err_payload') end
+    if #list < 3 then return Tablet.Fail('err_payload') end
     local gid = Tablet.DB.CreateGroup(data.name, Tablet.Now())
     if not gid then return Tablet.Fail('err_db') end
     for _, p in ipairs(list) do Tablet.DB.AddMember(gid, p) end
@@ -227,4 +284,6 @@ Callback.Register('pop_tablet:messages:send', function(src, data) return M.Send(
 Callback.Register('pop_tablet:messages:read', function(src, data) return M.Read(src, data) end)
 Callback.Register('pop_tablet:messages:pin', function(src, data) return M.Pin(src, data) end)
 Callback.Register('pop_tablet:messages:group', function(src, data) return M.Group(src, data) end)
+Callback.Register('pop_tablet:messages:block', function(src, data) return M.Block(src, data) end)
+Callback.Register('pop_tablet:messages:leave', function(src, data) return M.Leave(src, data) end)
 Callback.Register('pop_tablet:messages:media', function(src, id) return M.Media(src, id) end)

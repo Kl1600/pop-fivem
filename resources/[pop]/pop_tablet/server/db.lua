@@ -600,6 +600,16 @@ function DB.AddMember(gid, phone)
     MySQL.update.await('INSERT IGNORE INTO pop_tablet_msg_members (group_id, phone) VALUES (?, ?)', { gid, phone })
 end
 
+--- Retire `phone` du groupe. true si le numéro en faisait partie.
+function DB.RemoveMember(gid, phone)
+    return (MySQL.update.await('DELETE FROM pop_tablet_msg_members WHERE group_id = ? AND phone = ?', { gid, phone }) or 0) > 0
+end
+
+--- Supprime le groupe s'il n'a plus aucun membre.
+function DB.DeleteGroupIfEmpty(gid)
+    MySQL.update.await('DELETE FROM pop_tablet_msg_groups WHERE id = ? AND NOT EXISTS (SELECT 1 FROM pop_tablet_msg_members WHERE group_id = ? AND phone IS NOT NULL)', { gid, gid })
+end
+
 --- Groupes de `phone` avec leur nom et le nombre de non-lus.
 function DB.GroupsOf(phone)
     return MySQL.query.await('SELECT g.id, g.name, mb.last_read, (SELECT COUNT(*) FROM pop_tablet_messages m WHERE m.to_phone = CONCAT(\'g\', g.id)'
@@ -710,6 +720,16 @@ end
 
 function DB.DeleteMail(serial, id)
     return (MySQL.update.await('DELETE FROM pop_tablet_mails WHERE id = ? AND serial = ?', { id, serial }) or 0) > 0
+end
+
+--- Mails d'un même expéditeur dans la Réception de `serial` (index (serial, folder, id), 300 lignes au plus).
+function DB.CountInboxFrom(serial, fromAddr)
+    return tonumber(MySQL.scalar.await('SELECT COUNT(*) FROM pop_tablet_mails WHERE serial = ? AND folder = \'inbox\' AND from_addr = ?', { serial, fromAddr })) or 0
+end
+
+--- Supprime le plus ancien mail reçu (Corbeille, Archive ou Réception ; sans drapeau d'abord). true si un mail a été retiré.
+function DB.EvictOldestReceived(serial)
+    return (MySQL.update.await('DELETE FROM pop_tablet_mails WHERE serial = ? AND folder IN (\'trash\', \'archive\', \'inbox\') ORDER BY flagged, id LIMIT 1', { serial }) or 0) > 0
 end
 
 function DB.UnreadMail(serial)

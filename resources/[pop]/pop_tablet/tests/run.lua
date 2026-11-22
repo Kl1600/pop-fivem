@@ -720,7 +720,7 @@ do
     shotData = 'data:' .. string.rep('x', 160000)
     check('photos:capture : > 150 Ko rejetée', handlers['pop_tablet:photos:capture'](20).err == 'err_too_large' and photos == 1)
     clock = clock + 4
-    shotData = 'data:ok'
+    shotData = 'data:image/webp;base64,AAAA' -- format exigé par ImageValid (la valeur n'importe pas pour ce test)
     photos = 3
     check('photos:capture : plafond Config.Photos.Max', handlers['pop_tablet:photos:capture'](20).err == 'err_photos_full')
     photos = 0
@@ -2152,6 +2152,17 @@ do
     DB.FlagMail = function(serial, id, on) local m = DB.GetMail(serial, id) if not m then return false end m.flagged = on and 1 or 0 return true end
     DB.DeleteMail = function(serial, id) if not DB.GetMail(serial, id) then return false end MAILS[id] = nil return true end
     DB.UnreadMail = function(serial) local n = 0 for _, m in pairs(MAILS) do if m.serial == serial and m.folder == 'inbox' and not m.read_at then n = n + 1 end end return n end
+    DB.CountInboxFrom = function(serial, from) local n = 0 for _, m in pairs(MAILS) do if m.serial == serial and m.folder == 'inbox' and m.from_addr == from then n = n + 1 end end return n end
+    DB.EvictOldestReceived = function(serial)
+        local best
+        for _, m in pairs(MAILS) do
+            if m.serial == serial and (m.folder == 'inbox' or m.folder == 'archive' or m.folder == 'trash')
+                and (not best or m.flagged < best.flagged or (m.flagged == best.flagged and m.id < best.id)) then best = m end
+        end
+        if not best then return false end
+        MAILS[best.id] = nil
+        return true
+    end
     DB.MailCounts = function(serial)
         local acc = {}
         for _, m in pairs(MAILS) do
@@ -2250,7 +2261,9 @@ do
     local sA = Tablet.Device.SerialOf(62)
     for _ = 1, Tablet.MailBox.max do DB.InsertMail(sA, 'inbox', 'x@y.z', boxOf[sA], 's', 'b', 1, 1) end
     tk()
-    check('mail:send : boîte pleine (300) refusée', err('mail:send', 60, { to = boxOf[sA], subject = 'a', body = 'b' }) == 'err_limit')
+    -- Décision de sécurité : une boîte pleine ne bloque plus l'envoi, le plus ancien mail reçu est retiré (voir le bloc dédié plus bas).
+    check('mail:send : boîte pleine (300) : livré, plus ancien retiré, toujours 300', err('mail:send', 60, { to = boxOf[sA], subject = 'a', body = 'b' }) == nil
+        and DB.CountMails(sA) == Tablet.MailBox.max)
     local badge = {}
     for _, h in ipairs(Tablet.BootHooks) do pcall(h, Tablet.Device.SerialOf(61), badge) end
     check('boot : badge de mails non lus', (badge.badges or {}).mail ~= nil and badge.badges.mail >= 1)
@@ -2458,6 +2471,136 @@ do
     check('voicemail : plus de 200 caractères refusé', H['pop_tablet:phone:voicemail'](60, { to = ph61, text = string.rep('a', 201) }).err == 'err_too_large')
     fresh(60) tk()
     check('voicemail : texte normal accepté', H['pop_tablet:phone:voicemail'](60, { to = ph61, text = 'Rappelle-moi' }).ok)
+
+    -- 4. Photos : data URI webp / jpeg / png seulement
+    local PV = Tablet.Photos.ImageValid
+    check('photos : webp, jpeg et png acceptés', PV('data:image/webp;base64,AAAA') and PV('data:image/jpeg;base64,QUJD/+==') and PV('data:image/png;base64,AAAA'))
+    check('photos : svg, gif, html, texte brut et injection refusés', not PV('data:image/svg+xml;base64,AAAA') and not PV('data:image/gif;base64,AAAA')
+        and not PV('data:text/html;base64,AAAA') and not PV('AAAA') and not PV('data:image/webp;base64,AA"onerror=x') and not PV('data:image/webp;base64,') and not PV(42))
+
+    -- 7. Mail : quota par expéditeur, éviction du plus ancien mail reçu, scripts toujours acceptés
+    local s60, s61, s62 = Tablet.Device.SerialOf(60), Tablet.Device.SerialOf(61), Tablet.Device.SerialOf(62)
+    local a60, a61, a62 = DB.MailAddress(s60), DB.MailAddress(s61), DB.MailAddress(s62)
+    local oldPer = Tablet.MailBox.perSender
+    Tablet.MailBox.perSender = DB.CountInboxFrom(s61, a60) + 2
+    local mres = {}
+    for i = 1, 3 do fresh(60) tk() mres[i] = H['pop_tablet:mail:send'](60, { to = a61, subject = 'Quota ' .. i, body = 'x' }) end
+    check('mail : quota par expéditeur atteint au 3e envoi (err_limit)', mres[1].ok and mres[2].ok and mres[3].ok == false and mres[3].err == 'err_limit', mres[3].err)
+    check('mail : un autre expéditeur n\'est pas bloqué', (function() fresh(61) tk() return H['pop_tablet:mail:send'](61, { to = a60, subject = 'Autre', body = 'x' }).ok end)())
+    check('mail : un script passe toujours (SendMail)', exportsApi.SendMail(a61, 'Convocation', 'Quota dépassé', a60) == true)
+    Tablet.MailBox.perSender = oldPer
+    -- boîte pleine : le plus ancien mail reçu part, un mail à drapeau est gardé
+    local oldest = DB.ListMails(s62, 'inbox', 1e9)
+    local first, second = oldest[#oldest].id, oldest[#oldest - 1].id
+    DB.FlagMail(s62, first, true)
+    while DB.CountMails(s62) < Tablet.MailBox.max do DB.InsertMail(s62, 'inbox', 'z@y.z', a62, 's', 'b', 1, 1) end
+    fresh(60) tk()
+    local full = H['pop_tablet:mail:send'](60, { to = a62, subject = 'Place', body = 'x' })
+    check('mail : boîte pleine, mail livré', full.ok and DB.CountMails(s62) == Tablet.MailBox.max, full.err)
+    check('mail : le plus ancien non marqué est retiré, le marqué reste', DB.GetMail(s62, first) ~= nil and DB.GetMail(s62, second) == nil)
+    -- Mode Avion : lecture autorisée, envoi bloqué, brouillon autorisé
+    Tablet.Device.GetSession(60).settings = { air = true }
+    fresh(60) tk()
+    check('mail en Mode Avion : liste des mails reçus lisible', H['pop_tablet:mail:list'](60, { folder = 'inbox' }).ok and H['pop_tablet:mail:folders'](60).ok)
+    fresh(60) tk()
+    check('mail en Mode Avion : envoi refusé (err_offline)', H['pop_tablet:mail:send'](60, { to = a61, subject = 'Air', body = 'x' }).err == 'err_offline')
+    fresh(60) tk()
+    check('mail en Mode Avion : brouillon enregistré (rien ne part)', H['pop_tablet:mail:send'](60, { to = '', subject = 'Plus tard', body = 'x', draft = true }).ok)
+    Tablet.Device.GetSession(60).settings = {}
+
+    -- 9. Notifications limitées par tablette cible, pas par ressource ; échéances
+    local note = { app = 'messages', title = 'T', body = 'B' }
+    local okN = 0
+    for _ = 1, 8 do if Tablet.Api.Notify(s60, note, 'res_a') then okN = okN + 1 end end
+    check('Notify : 5 par seconde pour une tablette cible', okN == 5, okN)
+    local outN = Tablet.Api.Notify(s60, note, 'res_b')
+    check('Notify : une autre ressource partage la limite de la tablette', outN == false)
+    check('Notify : une autre tablette n\'est pas touchée', Tablet.Api.Notify(s61, note, 'res_a') == true)
+    local mainText = io.open('server/main.lua'):read('a')
+    check('due : 2 signalements/s et tablette ouverte exigée', mainText:find("Rate(src, 'due', 2)", 1, true) ~= nil and mainText:find('not s.openedAt', 1, true) ~= nil)
+
+    -- 10. Groupes : plafond avant les requêtes, quitter, bloquer
+    local keepJson, jst, jn = json, {}, 0
+    def('json', { encode = function(v) jn = jn + 1 local k = 'S' .. jn jst[k] = v return k end, decode = function(k) return jst[k] end })
+    local GR, MB, gseq, gone = {}, {}, 0, {}
+    DB.CreateGroup = function(name) gseq = gseq + 1 GR[gseq] = name return gseq end
+    DB.AddMember = function(gid, p) MB[#MB + 1] = { gid = gid, phone = p } end
+    DB.GroupMembers = function(gid) local o = {} for _, m in ipairs(MB) do if m.gid == gid then o[#o + 1] = { phone = m.phone } end end return o end
+    DB.RemoveMember = function(gid, p) for i, m in ipairs(MB) do if m.gid == gid and m.phone == p then table.remove(MB, i) return true end end return false end
+    DB.DeleteGroupIfEmpty = function(gid) if #DB.GroupMembers(gid) == 0 then gone[gid] = true end end
+    local ph60 = rows[s60].phone
+    local lookups, realExists = 0, DB.PhoneExists
+    DB.PhoneExists = function(p) lookups = lookups + 1 return realExists(p) end
+    local nine = {}
+    for i = 1, 9 do nine[i] = ('555-%04d'):format(i) end
+    fresh(60) tk()
+    local tooMany = H['pop_tablet:messages:group'](60, { name = 'Foule', members = nine })
+    check('group : 9 membres refusés sans aucune requête en base', tooMany.err == 'err_payload' and lookups == 0, lookups)
+    fresh(60) tk()
+    local badFmt = H['pop_tablet:messages:group'](60, { name = 'Mal', members = { 'abc', ph61 } })
+    check('group : numéro mal formé refusé sans requête', badFmt.err == 'err_not_found' and lookups == 0)
+    fresh(60) tk()
+    local eight = { ph61, ph61, ph61, ph61, ph61, ph61, ph61, ph61 }
+    H['pop_tablet:messages:group'](60, { name = 'Doublons', members = eight })
+    check('group : doublons interrogés une seule fois', lookups == 1, lookups)
+    DB.PhoneExists = realExists
+    local ph62 = rows[s62].phone
+    Tablet.Device.GetSession(61).settings, Tablet.Device.GetSession(62).settings = {}, {}
+    fresh(60) tk()
+    local grp = H['pop_tablet:messages:group'](60, { name = 'Equipe', members = { ph61, ph62 } })
+    check('group : créé', grp.ok and grp.id:match('^g%d+$') ~= nil and GR[tonumber(grp.id:sub(2))] == 'Equipe', grp.err)
+    fresh(61) tk()
+    check('leave : membre sorti', H['pop_tablet:messages:leave'](61, { to = grp.id }).ok and #DB.GroupMembers(tonumber(grp.id:sub(2))) == 2)
+    fresh(61) tk()
+    check('leave : ancien membre refusé', H['pop_tablet:messages:leave'](61, { to = grp.id }).err == 'err_not_found')
+    fresh(61) tk()
+    check('leave : identifiant invalide refusé', H['pop_tablet:messages:leave'](61, { to = ph60 }).err == 'err_payload')
+    fresh(61) tk()
+    check('thread : plus d\'accès au groupe quitté', H['pop_tablet:messages:thread'](61, { phone = grp.id }).err == 'err_not_found')
+    fresh(62) tk() H['pop_tablet:messages:leave'](62, { to = grp.id })
+    fresh(60) tk() H['pop_tablet:messages:leave'](60, { to = grp.id })
+    check('leave : groupe supprimé quand il est vide', gone[tonumber(grp.id:sub(2))] == true)
+
+    fresh(61) tk()
+    local bl = H['pop_tablet:messages:block'](61, { phone = ph60, on = true })
+    check('block : numéro bloqué', bl.ok and bl.blocked[1] == ph60, bl.err)
+    fresh(61) tk()
+    check('block : soi-même et numéro invalide refusés', H['pop_tablet:messages:block'](61, { phone = ph61, on = true }).err == 'err_payload'
+        and (function() tk() return H['pop_tablet:messages:block'](61, { phone = 'abc', on = true }).err end)() == 'err_payload')
+    fresh(60) tk()
+    check('block : message du numéro bloqué refusé (injoignable)', H['pop_tablet:messages:send'](60, { to = ph61, body = 'Salut' }).err == 'err_unreachable')
+    fresh(60) tk()
+    check('block : appel du numéro bloqué refusé', H['pop_tablet:phone:call'](60, { to = ph61 }).err == 'err_unreachable')
+    fresh(60) tk()
+    check('block : message vocal du numéro bloqué refusé', H['pop_tablet:phone:voicemail'](60, { to = ph61, text = 'Allo' }).err == 'err_unreachable')
+    fresh(61) tk()
+    check('block : l\'épingle garde la liste des bloqués', H['pop_tablet:messages:pin'](61, { phone = ph62, on = true }).ok
+        and (function() tk() return H['pop_tablet:messages:threads'](61).blocked[1] end)() == ph60)
+    fresh(61) tk()
+    check('block : débloqué', H['pop_tablet:messages:block'](61, { phone = ph60, on = false }).ok)
+    fresh(60) tk()
+    check('block : après déblocage, le message passe', H['pop_tablet:messages:send'](60, { to = ph61, body = 'Salut' }).ok)
+    def('json', keepJson)
+
+    -- 14. Traduire : https obligatoire dès qu'une clé est réglée
+    local httpCalls, realConvar = 0, GetConvar
+    def('PerformHttpRequest', function(_, cb) httpCalls = httpCalls + 1 cb(500, '') end)
+    Config.Translate = { Url = 'http://service.test/t', MaxChars = 500, CacheSize = 200, TimeoutSeconds = 8 }
+    def('GetConvar', function(n, d) if n == 'pop_tablet_translate_key' then return 'secret-key' end return d end)
+    fresh(60) tk()
+    local clear = H['pop_tablet:translate:run'](60, { text = 'bonjour un', src = 'fr', dst = 'en' })
+    check('translate : clé réglée + http : refusé, aucune requête envoyée', clear.err == 'err_unavailable' and httpCalls == 0, httpCalls)
+    Config.Translate.Url = 'https://service.test/t'
+    fresh(60) tk()
+    H['pop_tablet:translate:run'](60, { text = 'bonjour deux', src = 'fr', dst = 'en' })
+    check('translate : clé réglée + https : requête envoyée', httpCalls == 1, httpCalls)
+    def('GetConvar', function(_, d) return d end)
+    Config.Translate.Url = 'http://service.test/t'
+    fresh(60) tk()
+    H['pop_tablet:translate:run'](60, { text = 'bonjour trois', src = 'fr', dst = 'en' })
+    check('translate : sans clé, http reste permis', httpCalls == 2, httpCalls)
+    def('GetConvar', realConvar)
+    Config.Translate.Url = ''
 end
 
 -- Revue statique (boucles, gardes, tailles, SQL, secrets, locales) : tests/audit.lua
