@@ -4,7 +4,7 @@ export interface ClockSnap {
   h: number;
   m: number;
   d: number;
-  /** Mois 0 à 11 (GetClockMonth, à valider en jeu). */
+  /** Mois 1 à 12 (le client ajoute 1 au natif GetClockMonth, 0 à 11). */
   mo: number;
   y: number;
   /** Millisecondes réelles par minute de jeu. */

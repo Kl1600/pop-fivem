@@ -1343,6 +1343,7 @@ do
     check('locale inconnue : langue du serveur', C.LocaleTable('zz').tablet_key == Locales.en.tablet_key)
     local snap = C.ClockSnapshot()
     check('horloge : heure, mois 1-12, ms par minute', snap.h == 8 and snap.m == 30 and snap.mo == 6 and snap.y == 2026 and snap.msPerMin == 2000)
+    check('horloge : GameStamp en mois 1-12 (2026-06-..)', C.GameStamp():sub(1, 7) == '2026-06')
 
     -- Ouverture par la touche
     serverReply['pop_tablet:device:open'] = { ok = false, err = 'err_no_tablet' }

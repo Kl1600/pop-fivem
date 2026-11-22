@@ -5,7 +5,7 @@ import type { ClockSnap } from '../nui/types';
 // Horloge du jeu : l'interface part d'un instantané (`tablet:open` / `tablet:clock`) et avance seule.
 // Un seul minuteur, armé uniquement tant qu'un composant lit l'heure (tablette ouverte), calé sur la minute de jeu suivante.
 
-const DEFAULT_SNAP: ClockSnap = { h: 12, m: 0, d: 1, mo: 0, y: 2026, msPerMin: 2000 };
+const DEFAULT_SNAP: ClockSnap = { h: 12, m: 0, d: 1, mo: 1, y: 2026, msPerMin: 2000 };
 
 /** Minutes de jeu écoulées depuis l'instantané. */
 export function elapsedGameMinutes(snap: ClockSnap, fromMs: number, nowMs: number): number {
@@ -16,7 +16,7 @@ export function elapsedGameMinutes(snap: ClockSnap, fromMs: number, nowMs: numbe
 /** Date de jeu (UTC, sans fuseau) à l'instant `nowMs` (performance.now). */
 export function gameDate(snap: ClockSnap | null, fromMs: number, nowMs: number): Date {
   const s = snap ?? DEFAULT_SNAP;
-  const base = Date.UTC(s.y, s.mo, s.d, s.h, s.m, 0);
+  const base = Date.UTC(s.y, s.mo - 1, s.d, s.h, s.m, 0);
   return new Date(base + elapsedGameMinutes(s, fromMs, nowMs) * 60_000);
 }
 
@@ -25,7 +25,7 @@ export function gameMsNow(): number {
   const s = os.get();
   const snap = s.clock ?? DEFAULT_SNAP;
   const per = snap.msPerMin > 0 ? snap.msPerMin : 2000;
-  return Date.UTC(snap.y, snap.mo, snap.d, snap.h, snap.m, 0) + (Math.max(0, performance.now() - s.clockAt) / per) * 60_000;
+  return Date.UTC(snap.y, snap.mo - 1, snap.d, snap.h, snap.m, 0) + (Math.max(0, performance.now() - s.clockAt) / per) * 60_000;
 }
 
 /** Délai (ms réelles) jusqu'à la prochaine minute de jeu. */

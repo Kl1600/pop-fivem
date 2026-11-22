@@ -140,7 +140,7 @@ describe('ui-08 écran verrouillé', () => {
     expect(within(document.querySelector('[data-layer="lock"]') as HTMLElement).getByText('On se retrouve ?')).toBeTruthy();
   });
   it('horloge de jeu : avance minute par minute, minuteur arrêté à la fermeture', () => {
-    const snap = { h: 23, m: 59, d: 30, mo: 10, y: 2026, msPerMin: 2000 };
+    const snap = { h: 23, m: 59, d: 30, mo: 11, y: 2026, msPerMin: 2000 };
     expect(formatTime(gameDate(snap, 0, 0))).toBe('23:59');
     expect(formatTime(gameDate(snap, 0, 2000))).toBe('00:00');
     expect(formatDate(gameDate(snap, 0, 2000), 'fr', 'long')).toBe('mardi 1 décembre');

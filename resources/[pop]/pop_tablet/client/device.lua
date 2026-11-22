@@ -16,7 +16,7 @@ function C.MsPerGameMinute()
     return Config.Clock.MsPerGameMinute
 end
 
---- Instantané de l'horloge du jeu. Le mois natif va de 0 à 11 (à valider en jeu), l'interface reçoit 1 à 12.
+--- Instantané de l'horloge du jeu. Convention unique : mois 1 à 12 partout (le natif GetClockMonth va de 0 à 11, à valider en jeu).
 function C.ClockSnapshot()
     return {
         h = GetClockHours(), m = GetClockMinutes(), s = GetClockSeconds(),
