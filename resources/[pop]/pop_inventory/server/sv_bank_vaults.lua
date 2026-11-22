@@ -34,17 +34,17 @@ end
 
 exports('AddItemToStaticChest', function(chestId, defId, qty, meta)
   if not chestId or not defId or not qty or qty <= 0 then
-    return false, 'parametres invalides'
+    return false, L('vault_invalid_params')
   end
 
   local def = getItemDef(defId)
   if not def then
-    return false, 'item inconnu'
+    return false, L('item_unknown_lower')
   end
 
   local sStore, sId = getOrLoadChestStore(chestId)
   if not sStore then
-    return false, 'coffre introuvable'
+    return false, L('vault_not_found')
   end
 
   local containerId, container = getOrCreateChestContainer(sStore)
@@ -75,14 +75,14 @@ exports('AddItemToStaticChest', function(chestId, defId, qty, meta)
     if not slot then
       markDirty(sId)
       saveStore(sId, sStore)
-      return false, 'coffre plein'
+      return false, L('vault_full')
     end
     local stackQty = math.min(maxStack, remaining)
     local itemId = createItem(sStore, defId, stackQty, meta)
     if not itemId then
       markDirty(sId)
       saveStore(sId, sStore)
-      return false, 'erreur creation item'
+      return false, L('item_create_error_lower')
     end
     placeItemInContainer(sStore, containerId, slot, itemId)
     remaining = remaining - stackQty
@@ -104,11 +104,11 @@ end)
 exports('RemoveItemFromStaticChest', function(chestId, defId, qty)
   local sStore, sId = getOrLoadChestStore(chestId)
   if not sStore then
-    return false, 'coffre introuvable'
+    return false, L('vault_not_found')
   end
 
   if countItemInStore(sStore, defId) < (qty or 0) then
-    return false, 'quantite insuffisante'
+    return false, L('vault_not_enough')
   end
 
   consumeItemInStore(sStore, defId, qty)

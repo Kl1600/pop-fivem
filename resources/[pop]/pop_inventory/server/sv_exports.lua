@@ -3,25 +3,25 @@
 
 exports('GiveAndEquip', function(target, defId, qty, meta)
   local identifier = getIdentifier(target)
-  if not identifier then return false, 'identifiant introuvable' end
-  
+  if not identifier then return false, L('identifier_not_found') end
+
   defId = normalizeSection(defId)
   local store = ensureStore(identifier)
   local def = getItemDef(defId)
-  if not def then return false, 'item inconnu' end
+  if not def then return false, L('item_unknown_lower') end
 
   local itemId = createItem(store, defId, 1, meta)
-  if not itemId then return false, 'erreur création' end
+  if not itemId then return false, L('create_error_lower') end
 
   if def.equipSlot then
       -- If slot occupied, try to unequip first (moves old item to inventory)
       if store.equipment[def.equipSlot] then
           unequipItem(store, def.equipSlot)
       end
-      
+
       -- Try to equip new item
       local equipped = equipItem(store, itemId)
-      
+
       -- If equip failed (e.g. unequip failed due to full inventory, slot still occupied),
       -- put new item in inventory as fallback
       if not equipped then
@@ -29,16 +29,16 @@ exports('GiveAndEquip', function(target, defId, qty, meta)
           if not inserted then
              -- Last resort: drop to ground or force inventory via specialized logic?
              -- For now, return false but item exists (maybe floating).
-             -- Actually autoInsertExistingItem handles most cases. 
+             -- Actually autoInsertExistingItem handles most cases.
              -- If it fails, we might lose the item reference unless we handle it.
              -- But createItem added it to store.items.
-             return false, err or 'Inventaire plein'
+             return false, err or L('inventory_full_short')
           end
       end
   else
       -- Not equipable, just insert
       local inserted, err = autoInsertExistingItem(store, itemId)
-      if not inserted then return false, err or 'Inventaire plein' end
+      if not inserted then return false, err or L('inventory_full_short') end
   end
 
   markDirty(identifier)
@@ -50,7 +50,7 @@ end)
 exports('ClearPlayerStore', function(target)
     local identifier = getIdentifier(target)
     if not identifier then return false end
-    
+
     local store = ensureStore(identifier)
     store.items = {}
     store.equipment = {}
@@ -58,7 +58,7 @@ exports('ClearPlayerStore', function(target)
     store.itemLocations = {}
     store.containerOwners = {}
     store.activeContainerId = nil
-    
+
     markDirty(identifier)
     sendState(target)
     TriggerClientEvent('pop_inventory:client:applyEquipment', target, {})
@@ -67,18 +67,18 @@ end)
 
 exports('addItemToContainer', function(source, containerId, defId, qty, meta)
   local identifier = getIdentifier(source)
-  if not identifier then return false, 'Joueur introuvable' end
-  
+  if not identifier then return false, L('player_not_found') end
+
   local store = ensureStore(identifier)
   local container = store.containers[containerId]
-  if not container then return false, 'Container introuvable' end
-  
+  if not container then return false, L('container_not_found') end
+
   local slot = findEmptySlot(container)
-  if not slot then return false, 'Container plein' end
-  
+  if not slot then return false, L('container_full') end
+
   local itemId = createItem(store, defId, qty, meta)
-  if not itemId then return false, 'Erreur creation item' end
-  
+  if not itemId then return false, L('item_create_error_short') end
+
   if placeItemInContainer(store, containerId, slot, itemId) then
     markDirty(identifier)
     local state = buildState(source, store)
@@ -87,7 +87,7 @@ exports('addItemToContainer', function(source, containerId, defId, qty, meta)
     TriggerClientEvent('pop_inventory:client:state', source, state)
     return true
   end
-  return false, 'Erreur lors du placement de l\'item'
+  return false, L('item_place_error')
 end)
 
 -- Déconnexion : un seul handler pour tout le serveur de l'inventaire.
@@ -120,7 +120,7 @@ AddEventHandler('onResourceStop', function(resourceName)
 end)
 
 CreateThread(function()
-  local interval = Config.Inventory.AutoSaveIntervalMs or 120000
+  local interval = Config.InventorySettings.AutoSaveIntervalMs or 120000
   while true do
     Wait(interval)
     -- Les inventaires joueurs sont sauvegardés par le thread de sv_stores.lua,
@@ -131,7 +131,7 @@ end)
 
 CreateThread(function()
   local interval = (Config.Persistence and Config.Persistence.GroundSaveIntervalMs)
-    or (Config.Inventory.AutoSaveIntervalMs or 120000)
+    or (Config.InventorySettings.AutoSaveIntervalMs or 120000)
   while true do
     Wait(interval)
     saveGround()

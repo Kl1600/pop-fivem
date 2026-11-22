@@ -40,7 +40,7 @@ local function handleOpenCasier(src, store, identifier, action, ownerItem)
   end
 
   if GetResourceState('pop_management') ~= 'started' or not job or not lockerNumber then
-    notify(src, 'Casier indisponible.')
+    notify(src, L('locker_unavailable'))
     finalizeInventoryAction(src, store, identifier, action)
     return
   end
@@ -55,7 +55,7 @@ local function handleOpenCasier(src, store, identifier, action, ownerItem)
     if ok then
       grantOpen()
     else
-      notify(src, 'Code incorrect.')
+      notify(src, L('wrong_code'))
       TriggerClientEvent('pop_inventory:client:requestLockerCode', src, containerId)
     end
   end)
@@ -79,7 +79,7 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
   if actionType == 'move' then
     local ok, err = moveItemCrossStore(src, action.fromContainerId, action.fromSlot, action.toContainerId, action.toSlot)
     if not ok then
-      notify(src, err or _U('action_impossible'))
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'equip' then
     local container = store.containers[action.containerId]
@@ -87,35 +87,35 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
       local itemId = container.items[action.slot]
       local ok, err = equipItem(store, itemId)
       if not ok then
-        notify(src, err or _U('action_impossible'))
+        notify(src, err or L('action_impossible'))
       end
     end
   elseif actionType == 'unequip' then
     local ok, err = unequipItem(store, action.slot)
     if not ok then
-      notify(src, err or _U('action_impossible'))
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'drop' then
     local fromType = action.fromType or 'container'
     local origin = { type = fromType, slot = action.slot, containerId = action.containerId }
     local ok, err = dropToGround(src, store, origin, action.qty, action.coords)
     if not ok then
-      notify(src, err or _U('action_impossible'))
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'pickup' then
     local ok, err = pickupFromGround(src, store, action.slot, action.coords)
     if not ok then
-      notify(src, err or _U('action_impossible'))
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'pickupToSlot' then
     local ok, err = pickupFromGroundToSlot(src, store, action.slot, action.toContainerId, action.toSlot, action.coords)
     if not ok then
-      notify(src, err or 'Action impossible')
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'unequipToSlot' then
     local ok, err = unequipToSlot(store, action.slot, action.toContainerId, action.toSlot)
     if not ok then
-      notify(src, err or 'Action impossible')
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'open' then
     local containerId = action.containerId
@@ -134,7 +134,7 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
     if standbyCId and isContainerInStore(store, standbyCId, containerId) then
       isStandbySub = true
     end
-    
+
     if isStandbySub then
       StandbyContainers[src] = containerId
     else
@@ -157,7 +157,7 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
       store.activeContainerId = nil
       ensureActiveContainer(store)
     end
-    
+
     -- If it's a standby container, find its parent and switch StandbyContainers[src] back
     local standbyCId = StandbyContainers[src]
     if standbyCId and standbyCId == containerId then
@@ -201,7 +201,7 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
     if itemId then
       local item = containerStore.items[itemId]
       local def = item and getItemDef(item.defId) or nil
-      
+
       if def and def.usable then
         local consumeItem = true
 
@@ -264,12 +264,12 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
   elseif actionType == 'pickupEquip' then
     local ok, err = pickupEquipFromGround(src, store, action.slot, action.equipSlot, action.coords)
     if not ok then
-      notify(src, err or 'Action impossible')
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'split' then
     local ok, err = splitStack(store, action.containerId, action.slot, math.floor(tonumber(action.qty) or 0))
     if not ok then
-      notify(src, err or 'Action impossible')
+      notify(src, err or L('action_impossible'))
     end
   elseif actionType == 'rename' then
     local itemId = nil
@@ -288,18 +288,18 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
     if #label > 30 then label = label:sub(1, 30) end
 
     if label == '' then
-      notify(src, 'Nom invalide')
+      notify(src, L('invalid_name'))
     elseif itemId and store.items[itemId] then
       local item = store.items[itemId]
       item.meta = item.meta or {}
       item.meta.customLabel = label
       markDirty(getIdentifier(src))
-      notify(src, 'Item renommé en : ' .. label)
+      notify(src, L('item_renamed', label))
     else
-      notify(src, 'Item introuvable')
+      notify(src, L('item_not_found'))
     end
   elseif actionType == 'weapon_attach' or actionType == 'weapon_detach' then
-    local weaponItem = nil
+    local weaponItem = nil -- luacheck: ignore 311
     local weaponItemId = nil
     if action.weaponLocation == 'equipment' then
       weaponItemId = store.equipment[action.equipSlot]
@@ -349,23 +349,23 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
       local wellId = weaponItem.containerId
       local well = store.containers[wellId]
       if not well then
-        notify(src, 'Puits de chargeur indisponible')
+        notify(src, L('magwell_unavailable'))
       elseif actionType == 'weapon_attach' then
         if (weaponItem.qty or 1) > 1 then
-          notify(src, 'Separez l\'arme avant d\'y inserer un chargeur')
+          notify(src, L('split_before_mag'))
         elseif findEmptySlot(well) == nil then
-          notify(src, 'Un chargeur est deja insere')
+          notify(src, L('mag_already_inserted'))
         else
           local magDef = action.attachDefId
           local def = magDef and getItemDef(magDef)
           if not magDef or not isMagazineDef(magDef) or not def then
-            notify(src, 'Chargeur invalide')
+            notify(src, L('mag_invalid'))
           elseif not isAllowedInContainer(well.defId, magDef, def) then
-            notify(src, 'Ce chargeur ne correspond pas a cette arme')
+            notify(src, L('mag_wrong_weapon'))
           else
             local magId, fromCId, fromSlot = findLooseInstance(magDef, wellId)
             if not magId then
-              notify(src, 'Chargeur absent de l\'inventaire')
+              notify(src, L('mag_not_in_inventory'))
             else
               local destSlot = findEmptySlot(well)
               local fromC = store.containers[fromCId]
@@ -377,29 +377,29 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
         end
       else -- weapon_detach
         local magId, magSlot
-        for slot, id in pairs(well.items) do magId, magSlot = id, slot; break end
+        for slot, id in pairs(well.items) do magId, magSlot = id, slot; break end -- luacheck: ignore 512
         if not magId then
-          notify(src, 'Aucun chargeur a retirer')
+          notify(src, L('mag_none_to_remove'))
         else
           well.items[magSlot] = nil
           removeItemLocation(store, magId)
           local ok, err = autoInsertExistingItem(store, magId)
           if not ok then
             placeItemInContainer(store, wellId, magSlot, magId)
-            notify(src, err or 'Pas de place pour le chargeur')
+            notify(src, err or L('mag_no_space'))
           end
         end
       end
     elseif not slotDef then
-      notify(src, 'Accessoire incompatible')
+      notify(src, L('attachment_incompatible'))
     elseif actionType == 'weapon_attach' then
       if (weaponItem.qty or 1) > 1 then
-        notify(src, 'Séparez l\'arme avant d\'y attacher un accessoire')
+        notify(src, L('split_before_attachment'))
       else
         weaponItem.meta = weaponItem.meta or {}
         weaponItem.meta.attachments = weaponItem.meta.attachments or {}
         if weaponItem.meta.attachments[action.attachmentSlot] then
-          notify(src, 'Un accessoire est déjà attaché à ce slot')
+          notify(src, L('attachment_slot_taken'))
         else
           -- Quel item consommer : pour le slot chargeur, le chargeur choisi par le joueur ;
           -- sinon l'item exact defini par la config de l'arme.
@@ -409,7 +409,7 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
           end
           local ok = exports[GetCurrentResourceName()]:removeItem(src, consumeDef, 1)
           if not ok then
-            notify(src, 'Accessoire absent de l\'inventaire')
+            notify(src, L('attachment_not_in_inventory'))
           else
             weaponItem.meta.attachments[action.attachmentSlot] = consumeDef
           end
@@ -420,11 +420,11 @@ RegisterNetEvent('pop_inventory:server:action', function(action)
       weaponItem.meta.attachments = weaponItem.meta.attachments or {}
       local currentDefId = weaponItem.meta.attachments[action.attachmentSlot]
       if not currentDefId then
-        notify(src, 'Aucun accessoire à retirer')
+        notify(src, L('attachment_none_to_remove'))
       else
         local ok, err = autoInsertItem(store, currentDefId, 1, nil)
         if not ok then
-          notify(src, err or 'Pas de place pour l\'accessoire')
+          notify(src, err or L('attachment_no_space'))
         else
           weaponItem.meta.attachments[action.attachmentSlot] = nil
         end
@@ -457,13 +457,13 @@ RegisterCommand('pop_inventory-give', function(source, args)
   local def = getItemDef(defId)
   if not def then
     print('[POP_INVENTORY] pop_inventory-give: Item inconnu:', defId)
-    notify(target, 'Item inconnu: ' .. defId)
+    notify(target, L('item_unknown_id', defId))
     return
   end
 
-  print('[POP_INVENTORY] pop_inventory-give: Tentative de donner', qty, 'x', defId, 'à', target)
+  if Config.Debug then print('[POP_INVENTORY] pop_inventory-give: Tentative de donner', qty, 'x', defId, 'à', target) end
 
-  local function cleanupOrphan(store, itemId)
+  local function cleanupOrphan(store, itemId) -- luacheck: ignore 431
     local item = store.items[itemId]
     if item and item.containerId then
       store.containers[item.containerId] = nil
@@ -475,13 +475,13 @@ RegisterCommand('pop_inventory-give', function(source, args)
   if def.equipSlot and def.container then
     -- Container-item (panta, hoddie, etc.): try to equip if possible
     local canEquip = not store.equipment[def.equipSlot]
-    
+
     if canEquip then
       local itemId = createItem(store, defId, 1)
       if itemId then
-        local ok, err = equipItem(store, itemId)
+        local ok, err = equipItem(store, itemId) -- luacheck: ignore 211
         if ok then
-          notify(target, 'Vous avez reçu et équipé ' .. itemQtyTag(1) .. ' ' .. (def.label or defId))
+          notify(target, L('received_equipped', itemQtyTag(1), def.label or defId))
           if defId == 'cardboard_box' then
             TriggerClientEvent('pop_inventory:client:equipCardboardBox', target)
           elseif defId == 'safe' then
@@ -500,29 +500,29 @@ RegisterCommand('pop_inventory-give', function(source, args)
     -- Fallback: try to put in inventory
     local ok, err = autoInsertItem(store, defId, 1)
     if ok then
-      notify(target, 'Vous avez reçu ' .. itemQtyTag(1) .. ' ' .. (def.label or defId) .. ' (rangé)')
+      notify(target, L('received_stored', itemQtyTag(1), def.label or defId))
     else
-      notify(target, err or 'Pas de place pour ranger cet item')
+      notify(target, err or L('no_space_store_item'))
     end
   elseif def.equipSlot and not store.equipment[def.equipSlot] then
     local itemId = createItem(store, defId, 1)
     if not itemId then
-      notify(target, 'Erreur lors de la création de l\'item')
+      notify(target, L('item_create_error_item'))
       return
     end
     local ok, err = equipItem(store, itemId)
     if not ok then
       cleanupOrphan(store, itemId)
-      notify(target, err or 'Impossible d\'équiper')
+      notify(target, err or L('cannot_equip'))
       return
     end
-    notify(target, 'Vous avez reçu ' .. itemQtyTag(1) .. ' ' .. (def.label or defId))
+    notify(target, L('received_item', itemQtyTag(1), def.label or defId))
   else
     local ok, err = autoInsertItem(store, defId, qty)
     if ok then
-      notify(target, 'Vous avez reçu ' .. itemQtyTag(qty) .. ' ' .. (def.label or defId))
+      notify(target, L('received_item', itemQtyTag(qty), def.label or defId))
     else
-      notify(target, err or 'Pas de place dans les containers')
+      notify(target, err or L('no_space_containers'))
     end
   end
 
@@ -533,14 +533,14 @@ end, true)
 
 RegisterCommand('pop_inventory-cleardrops', function(source)
   if source ~= 0 and not IsPlayerAceAllowed(source, 'pop_inventory.cleardrops') then
-    notify(source, 'Permissions insuffisantes pour supprimer les drops.')
+    notify(source, L('drops_no_permission'))
     return
   end
   clearAllGroundDrops()
   if source == 0 then
     print('[POP_INVENTORY] Tous les drops ont été supprimés.')
   else
-    notify(source, 'Tous les drops ont été supprimés.')
+    notify(source, L('drops_cleared'))
   end
 end, true)
 

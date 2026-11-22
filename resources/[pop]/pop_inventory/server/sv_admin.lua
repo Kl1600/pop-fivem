@@ -1,10 +1,10 @@
 lastBroadcastTime = 0
 isBroadcasting = false
-function broadcastGroundDrops()
+function broadcastGroundDrops() -- luacheck: ignore 131
   if isBroadcasting then return end
   local now = GetGameTimer()
   if now - lastBroadcastTime < 2500 then return end -- Échelonnage à 2.5s pour soulager le réseau
-  
+
   isBroadcasting = true
   lastBroadcastTime = now
 
@@ -12,17 +12,17 @@ function broadcastGroundDrops()
   if not CachedGroundSnapshot or groundDirty then
       CachedGroundSnapshot = getGroundDropSnapshot()
   end
-  
+
   local drops = CachedGroundSnapshot
   local players = GetPlayers()
-  
+
   -- Diffusion échelonnée (Staggered) pour éviter les micro-freezes
   CreateThread(function()
       for i=1, #players do
           local src = tonumber(players[i])
           if DoesPlayerExist(src) then
               local pCoords = getPlayerCoords(src)
-              
+
               if pCoords then
                   local filteredDrops = {}
                   for j=1, #drops do
@@ -31,16 +31,16 @@ function broadcastGroundDrops()
                       local dx = pCoords.x - drop.coords.x
                       local dy = pCoords.y - drop.coords.y
                       local distSquared = (dx*dx) + (dy*dy)
-                      
+
                       if distSquared < 10000.0 then -- 100m range suffit largement
                           table.insert(filteredDrops, drop)
                       end
                   end
-                  
+
                   TriggerClientEvent('pop_inventory:client:updateGroundDrops', src, filteredDrops)
               end
           end
-          
+
           -- Pause de 20ms tous les 5 joueurs pour étaler la charge CPU
           if i % 5 == 0 then Wait(20) end
       end
@@ -123,8 +123,10 @@ RegisterNetEvent('pop_inventory:server:adminGiveItem', function(itemId, qty, met
   if type(meta) ~= 'table' then meta = nil end
 
   local ok, err = GiveItem(src, itemId, qty, meta)
-  print(('[POP_INVENTORY] adminGiveItem src=%s id=%s qty=%d meta=%s ok=%s err=%s')
-    :format(tostring(src), tostring(itemId), qty, meta and json.encode(meta) or 'nil', tostring(ok), tostring(err)))
+  if Config.Debug then
+    print(('[POP_INVENTORY] adminGiveItem src=%s id=%s qty=%d meta=%s ok=%s err=%s')
+      :format(tostring(src), tostring(itemId), qty, meta and json.encode(meta) or 'nil', tostring(ok), tostring(err)))
+  end
 end)
 
 function sendUpdatedJobsList(src)
@@ -194,7 +196,7 @@ RegisterNetEvent('pop_inventory:server:adminSetJob', function(jobName, grade)
         local xPlayer = ESX.GetPlayerFromId(src)
         if xPlayer then
             xPlayer.setJob(jobName, grade)
-            notify(src, "Job défini sur : " .. jobName .. " (Grade: " .. tostring(grade) .. ")")
+            notify(src, L('admin_job_set', jobName, tostring(grade)))
         end
     end
 end)
@@ -203,7 +205,7 @@ RegisterNetEvent('pop_inventory:server:adminSetWeather', function(weather)
     local src = source
     if not isAdminAllowed(src) then return end
     TriggerClientEvent('pop_inventory:client:syncWeather', -1, weather)
-    notify(src, "Météo changée en : " .. tostring(weather))
+    notify(src, L('admin_weather_set', tostring(weather)))
 end)
 
 -- ===== EASYTIME : heure imposée (onglet Météo admin) =====
@@ -220,7 +222,7 @@ RegisterNetEvent('pop_inventory:server:adminSetTime', function(hour, minute)
     adminTimeState.minute = minute
     adminTimeState.frozen = true -- régler une heure la fige
     TriggerClientEvent('pop_inventory:client:syncTime', -1, hour, minute, true)
-    notify(src, ("Heure réglée sur %02d:%02d"):format(hour, minute))
+    notify(src, (L('admin_time_set')):format(hour, minute))
 end)
 
 RegisterNetEvent('pop_inventory:server:adminFreezeTime', function(frozen)
@@ -228,7 +230,7 @@ RegisterNetEvent('pop_inventory:server:adminFreezeTime', function(frozen)
     if not isAdminAllowed(src) then return end
     adminTimeState.frozen = (frozen ~= false)
     TriggerClientEvent('pop_inventory:client:syncTime', -1, adminTimeState.hour, adminTimeState.minute, adminTimeState.frozen)
-    notify(src, adminTimeState.frozen and "Temps figé" or "Temps réel")
+    notify(src, adminTimeState.frozen and L('admin_time_frozen') or L('admin_time_real'))
 end)
 
 -- Resync d'un client qui démarre (demande explicite, fiable).
@@ -277,15 +279,16 @@ RegisterNetEvent('pop_inventory:server:adminCreateJob', function(jobName, jobLab
     jobName = jobName:gsub('%s+', ''):lower()
 
     if Config.Framework ~= 'esx' or not ESX then
-        notify(src, "Incompatible avec ce framework")
+        notify(src, L('admin_framework_incompatible'))
         return
     end
     if not MySQL then
-        notify(src, "MySQL indisponible")
+        notify(src, L('admin_mysql_unavailable'))
         return
     end
 
     local function dbg(msg)
+        if not Config.Debug then return end
         print('[POP_INVENTORY] ' .. msg)
         TriggerClientEvent('pop_inventory:client:debugPrint', src, msg)
     end
@@ -332,7 +335,7 @@ RegisterNetEvent('pop_inventory:server:adminCreateJob', function(jobName, jobLab
                                 pcall(ESX.RefreshJobs)
                             end
 
-                            notify(src, "Job cree : " .. jobLabel .. " (" .. jobName .. ")")
+                            notify(src, L('admin_job_created', jobLabel, jobName))
                             dbg('adminCreateJob DONE: ' .. jobName)
                             sendUpdatedJobsList(src)
                         end
@@ -353,15 +356,16 @@ RegisterNetEvent('pop_inventory:server:adminAddGrade', function(jobName, gradeLe
     if type(gradeName) ~= 'string' or gradeName == '' or type(gradeLabel) ~= 'string' or gradeLabel == '' then return end
 
     if Config.Framework ~= 'esx' or not ESX then
-        notify(src, "Incompatible avec ce framework")
+        notify(src, L('admin_framework_incompatible'))
         return
     end
     if not MySQL then
-        notify(src, "MySQL indisponible")
+        notify(src, L('admin_mysql_unavailable'))
         return
     end
 
     local function dbg(msg)
+        if not Config.Debug then return end
         print('[POP_INVENTORY] ' .. msg)
         TriggerClientEvent('pop_inventory:client:debugPrint', src, msg)
     end
@@ -423,7 +427,7 @@ RegisterNetEvent('pop_inventory:server:adminAddGrade', function(jobName, gradeLe
                         pcall(ESX.RefreshJobs)
                     end
 
-                    notify(src, "Grade ajoute : " .. gradeLabel .. " (" .. tostring(gradeLevel) .. ")")
+                    notify(src, L('admin_grade_added', gradeLabel, tostring(gradeLevel)))
                     dbg('adminAddGrade DONE: ' .. jobName .. ' | Level: ' .. tostring(gradeLevel))
                     sendUpdatedJobsList(src)
                 end
@@ -444,7 +448,7 @@ RegisterNetEvent('pop_inventory:server:adminAddSocietyMoney', function(jobName, 
         checkRequiredTables(function()
             local accountName = 'society_' .. jobName
             local success = false
-            
+
             -- Try esx_addonaccount shared account retrieval
             TriggerEvent('esx_addonaccount:getSharedAccount', accountName, function(account)
                 if account then
@@ -452,24 +456,24 @@ RegisterNetEvent('pop_inventory:server:adminAddSocietyMoney', function(jobName, 
                     success = true
                 end
             end)
-            
+
             -- Fallback: If not found or not active in memory, update DB directly
             if not success then
                 if hasAddonAccountDataTable then
-                    mysqlUpdate('INSERT INTO addon_account_data (account_name, money, owner) VALUES (?, ?, NULL) ON DUPLICATE KEY UPDATE money = money + ?', 
+                    mysqlUpdate('INSERT INTO addon_account_data (account_name, money, owner) VALUES (?, ?, NULL) ON DUPLICATE KEY UPDATE money = money + ?',
                     {accountName, amount, amount}, function(affectedRows)
-                        notify(src, "Montant de " .. tostring(amount) .. "$ ajouté au compte " .. accountName .. " (Database)")
+                        notify(src, L('admin_money_added_db', tostring(amount), accountName))
                     end)
                 else
-                    notify(src, "Erreur : La table 'addon_account_data' est introuvable")
+                    notify(src, L('admin_addon_table_missing'))
                 end
             else
-                notify(src, "Montant de " .. tostring(amount) .. "$ ajouté au compte " .. accountName)
+                notify(src, L('admin_money_added', tostring(amount), accountName))
             end
-            print('[POP_INVENTORY] Dynamic Society Account Funded: ' .. accountName .. ' | Amount: ' .. tostring(amount))
+            if Config.Debug then print('[POP_INVENTORY] Dynamic Society Account Funded: ' .. accountName .. ' | Amount: ' .. tostring(amount)) end
         end)
     else
-        notify(src, "Incompatible avec ce framework")
+        notify(src, L('admin_framework_incompatible'))
     end
 end)
 
@@ -480,35 +484,35 @@ RegisterNetEvent('pop_inventory:server:adminDeleteJob', function(jobName)
     jobName = jobName:lower()
 
     if jobName == 'unemployed' then
-        notify(src, "Le job 'unemployed' ne peut pas etre supprime")
+        notify(src, L('admin_cannot_delete_unemployed'))
         return
     end
 
     if Config.Framework ~= 'esx' or not ESX then
-        notify(src, "Incompatible avec ce framework")
+        notify(src, L('admin_framework_incompatible'))
         return
     end
     if not MySQL then
-        notify(src, "MySQL indisponible")
+        notify(src, L('admin_mysql_unavailable'))
         return
     end
 
-    print(('[POP_INVENTORY] adminDeleteJob START job=%s src=%s'):format(jobName, tostring(src)))
+    if Config.Debug then print(('[POP_INVENTORY] adminDeleteJob START job=%s src=%s'):format(jobName, tostring(src))) end
     local accountName = 'society_' .. jobName
 
     -- Chain de callbacks séquentiels
     MySQL.update("UPDATE users SET job = 'unemployed', job_grade = 0 WHERE job = ?", { jobName }, function(rR1)
-        print(('[POP_INVENTORY] adminDeleteJob: UPDATE users job -> affectedRows=%s'):format(tostring(rR1)))
+        if Config.Debug then print(('[POP_INVENTORY] adminDeleteJob: UPDATE users job -> affectedRows=%s'):format(tostring(rR1))) end
         -- (requête sur job2 retirée : cette colonne n'existe pas en ESX 1.16)
         do
             MySQL.update("DELETE FROM job_grades WHERE job_name = ?", { jobName }, function(rDG)
-                print(('[POP_INVENTORY] adminDeleteJob: DELETE job_grades -> affectedRows=%s'):format(tostring(rDG)))
+                if Config.Debug then print(('[POP_INVENTORY] adminDeleteJob: DELETE job_grades -> affectedRows=%s'):format(tostring(rDG))) end
                 MySQL.update("DELETE FROM jobs WHERE name = ?", { jobName }, function(rDJ)
-                    print(('[POP_INVENTORY] adminDeleteJob: DELETE jobs -> affectedRows=%s'):format(tostring(rDJ)))
+                    if Config.Debug then print(('[POP_INVENTORY] adminDeleteJob: DELETE jobs -> affectedRows=%s'):format(tostring(rDJ))) end
                     MySQL.update("DELETE FROM addon_account_data WHERE account_name = ?", { accountName }, function(rDAD)
-                        print(('[POP_INVENTORY] adminDeleteJob: DELETE addon_account_data -> affectedRows=%s'):format(tostring(rDAD)))
+                        if Config.Debug then print(('[POP_INVENTORY] adminDeleteJob: DELETE addon_account_data -> affectedRows=%s'):format(tostring(rDAD))) end
                         MySQL.update("DELETE FROM addon_account WHERE name = ?", { accountName }, function(rDA)
-                            print(('[POP_INVENTORY] adminDeleteJob: DELETE addon_account -> affectedRows=%s'):format(tostring(rDA)))
+                            if Config.Debug then print(('[POP_INVENTORY] adminDeleteJob: DELETE addon_account -> affectedRows=%s'):format(tostring(rDA))) end
 
                             if ESX.Jobs then ESX.Jobs[jobName] = nil end
 
@@ -528,8 +532,8 @@ RegisterNetEvent('pop_inventory:server:adminDeleteJob', function(jobName)
                                 pcall(ESX.RefreshJobs)
                             end
 
-                            notify(src, "Job supprime : " .. jobName)
-                            print('[POP_INVENTORY] adminDeleteJob DONE: ' .. jobName)
+                            notify(src, L('admin_job_deleted', jobName))
+                            if Config.Debug then print('[POP_INVENTORY] adminDeleteJob DONE: ' .. jobName) end
                             sendUpdatedJobsList(src)
                         end)
                     end)

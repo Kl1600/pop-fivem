@@ -31,14 +31,8 @@ local function getLockerRoomConfig(id)
 end
 
 local function getPlayerJobName(src)
-  if Config.Framework == 'esx' and ESX then
-    local xPlayer = ESX.GetPlayerFromId(src)
-    return xPlayer and xPlayer.job and xPlayer.job.name or nil
-  elseif Config.Framework == 'qbcore' and QBCore then
-    local xPlayer = QBCore.Functions.GetPlayer(src)
-    return xPlayer and xPlayer.PlayerData and xPlayer.PlayerData.job and xPlayer.PlayerData.job.name or nil
-  end
-  return nil
+  local job = Bridge.GetJob(src)
+  return job and job.name or nil
 end
 
 -- Charge (ou crée + peuple) le conteneur partagé de la salle de casiers.
@@ -132,7 +126,7 @@ local function checkLockerRoomAccess(src, lockerConfig)
   if lockerConfig.job then
     local job = getPlayerJobName(src)
     if job ~= lockerConfig.job then
-      notify(src, "Vous n'avez pas le travail requis pour accéder à ces casiers.")
+      notify(src, L('locker_wrong_job'))
       return false
     end
   end
@@ -193,7 +187,7 @@ RegisterNetEvent('pop_inventory:server:openMyLocker', function(lockerRoomId)
   if not checkLockerRoomAccess(src, lockerConfig) then return end
 
   if GetResourceState('pop_management') ~= 'started' then
-    notify(src, 'Système de matricule indisponible (pop_management).')
+    notify(src, L('locker_system_unavailable'))
     return
   end
 
@@ -201,7 +195,7 @@ RegisterNetEvent('pop_inventory:server:openMyLocker', function(lockerRoomId)
 
   exports['pop_management']:getEmployeeLockerNumber(identifier, job, function(lockerNumber)
     if not lockerNumber then
-      notify(src, "Vous n'avez pas de casier attribué pour ce métier.")
+      notify(src, L('locker_none_assigned'))
       return
     end
 
@@ -220,7 +214,7 @@ RegisterNetEvent('pop_inventory:server:openMyLocker', function(lockerRoomId)
     end
 
     if not myContainerId then
-      notify(src, 'Casier introuvable.')
+      notify(src, L('locker_not_found'))
       return
     end
 

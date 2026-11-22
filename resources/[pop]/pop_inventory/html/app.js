@@ -1015,7 +1015,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'attachments-cell-icon';
       const img = document.createElement('img');
-      img.src = opts.iconSrc || 'img/unknown.png';
+      img.src = opts.iconSrc || 'img/unknown.webp';
       img.alt = opts.accessoryLabel || '';
       wrap.appendChild(img);
       cell.appendChild(wrap);
@@ -1030,7 +1030,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'attachments-cell-icon';
       const img = document.createElement('img');
-      img.src = opts.iconSrc || 'img/unknown.png';
+      img.src = opts.iconSrc || 'img/unknown.webp';
       img.alt = '';
       wrap.appendChild(img);
       cell.appendChild(wrap);
@@ -1149,7 +1149,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'attachments-cell-icon';
       const img = document.createElement('img');
-      img.src = accDef.icon || 'img/unknown.png';
+      img.src = accDef.icon || 'img/unknown.webp';
       img.alt = accDef.label || '';
       wrap.appendChild(img);
       cell.appendChild(wrap);
@@ -1212,7 +1212,7 @@
     // derrière la NUI. On garde l'élément (au cas où la 3D échoue / fermeture).
     const weaponImg = document.getElementById('attachments-weapon-img');
     if (weaponImg) {
-      weaponImg.src = item.icon || 'img/unknown.png';
+      weaponImg.src = item.icon || 'img/unknown.webp';
       weaponImg.alt = item.label || '';
       weaponImg.style.display = 'none';
     }
@@ -1258,7 +1258,7 @@
       const cell = buildAttachmentCell({
         cx: cellCx,
         cy: cellCy,
-        iconSrc: accDef.icon || 'img/unknown.png',
+        iconSrc: accDef.icon || 'img/unknown.webp',
         accessoryLabel: accDef.label || iconDefId,
         slotLabel: (slotDef.label || slotName),
         attached: isAttached,

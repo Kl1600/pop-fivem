@@ -5,7 +5,7 @@ RegisterNetEvent('pop_inventory:server:playerReady', function(coords)
   if not identifier then
     return
   end
-  
+
   -- Inventaire déjà en mémoire : on ne le recharge pas depuis la base (sinon un
   -- playerReady répété écraserait l'état courant et permettrait de dupliquer).
   if not Stores[identifier] then
@@ -36,17 +36,17 @@ function syncVehicleContainerChanges(store)
         Stores[vId] = loadStore(vId)
       end
       local vStore = Stores[vId]
-      
+
       -- Rebuild vehicle store: clean slate for this container
       vStore.containers[cId] = {
         id = cId,
         defId = 'vehicle_trunk',
         slots = container.slots,
         maxWeight = container.maxWeight,
-        items = {}, 
+        items = {},
       }
       vStore.items = {}
-      
+
       -- Copy current items from player store into vehicle store
       for slot, itemId in pairs(container.items or {}) do
         local pItem = store.items[itemId]
@@ -56,9 +56,9 @@ function syncVehicleContainerChanges(store)
             item._isTemporary = nil
             item._vehiclePlate = nil
           end)
-          
+
           vStore.containers[cId].items[slot] = itemId
-          
+
           -- Keep player-side item tree marked as temporary
           local function markTreeTemporary(iId)
             local item = store.items[iId]
@@ -78,12 +78,12 @@ function syncVehicleContainerChanges(store)
           markTreeTemporary(itemId)
         end
       end
-      
+
       -- Save the vehicle store to DB
       saveStore(vId, vStore)
     end
   end
-  
+
   -- 2. Clean up items that were moved OUT of vehicle container
   -- Use itemLocations to check if the item is still inside a vehicle container
   for itemId, item in pairs(store.items) do
@@ -109,7 +109,7 @@ function syncVehicleContainerChanges(store)
           current = ownerLoc.containerId
         end
       end
-      
+
       if not inVehicle then
         item._isTemporary = nil
         item._vehiclePlate = nil
@@ -127,7 +127,7 @@ function syncRemoteStandbyChanges(store)
   local groundChanged = false
 
   for cId, container in pairs(store.containers) do
-    if container.defId ~= '__remote_standby__' then
+    if container.defId ~= '__remote_standby__' then -- luacheck: ignore 542
       -- not a standby container, skip
     elseif cId:sub(1, #PREFIX_REMOTE) == PREFIX_REMOTE then
       -- Sync back to RemoteContainers
@@ -229,7 +229,7 @@ function syncRemoteStandbyChanges(store)
           end
           current = ownerLoc.containerId
         end
-        
+
         if not inStandbyOrVehicle then
           item._isTemporary = nil
         end
@@ -258,7 +258,7 @@ function syncStaticChestChanges(store)
               item._staticChestId = nil
             end)
             sContainer.items[slot] = itemId
-            
+
             -- Keep player-side items in the tree marked as temporary
             local function markTreeTemporary(iId)
               local item = store.items[iId]
@@ -308,7 +308,7 @@ function syncStaticChestChanges(store)
           current = ownerLoc.containerId
         end
       end
-      
+
       if not inStatic then
         item._isTemporary = nil
         item._staticChestId = nil
@@ -381,7 +381,7 @@ local function forceCloseSharedContainer(src, key)
     end
   end
   markDirty(identifier)
-  notify(src, 'Vous êtes trop loin du coffre.')
+  notify(src, L('chest_too_far'))
   sendState(src)
 end
 

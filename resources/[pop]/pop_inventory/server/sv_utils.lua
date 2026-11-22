@@ -1,5 +1,5 @@
 function debugPrint(...)
-  if Config.Debug and Config.Debug.PrintActions then
+  if Config.Debug or Config.DebugOptions.PrintActions then
     print('[POP_INVENTORY]', ...)
   end
 end
@@ -137,30 +137,30 @@ function rebuildLocations(store)
   if not store then return end
   store.itemLocations = {}
   store.containerOwners = {}
-  
+
   -- Fusion de toutes les itérations en une seule boucle pour les items
   local it = 0
   for itemId, item in pairs(store.items) do
     it = it + 1
     if it % 250 == 0 then Wait(0) end -- Anti-freeze
-    
+
     if item and item.containerId then
       store.containerOwners[item.containerId] = itemId
     end
   end
-  
+
   -- Nettoyage et reconstruction des conteneurs
   for containerId, container in pairs(store.containers) do
     it = it + 1
     if it % 200 == 0 then Wait(0) end
-    
+
     local rebuilt = {}
     for slot, itemId in pairs(container.items or {}) do
       local slotIndex = tonumber(slot)
       if slotIndex then
         rebuilt[slotIndex] = itemId
-        if itemId then 
-          store.itemLocations[itemId] = { type = 'container', containerId = containerId, slot = slotIndex } 
+        if itemId then
+          store.itemLocations[itemId] = { type = 'container', containerId = containerId, slot = slotIndex }
         end
       end
     end
@@ -203,7 +203,7 @@ function pruneEmptyGroundPiles()
   for pileId, pile in pairs(GroundPiles) do
     count = count + 1
     if count % 100 == 0 then Wait(0) end -- Timeout anti-freeze
-    
+
     local containerId = pile and pile.containerId
     local container = containerId and GroundStore.containers[containerId] or nil
     local hasItems = false
@@ -248,16 +248,16 @@ function saveGround(force)
   if not force and not groundDirty then
     return
   end
-  
+
   -- Rebuild cache before encoding
   pruneEmptyGroundPiles()
-  
+
   local payload = json.encode({
     piles = GroundPiles,
     items = GroundStore.items,
     containers = GroundStore.containers,
   })
-  
+
   mysqlUpdate(
     string.format('INSERT INTO `%s` (id, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)', tableName),
     { getGroundSaveId(), payload },
@@ -390,7 +390,7 @@ function loadGround()
   GroundStore.containers = decoded.containers or (decoded.store and decoded.store.containers) or {}
   GroundStore.itemLocations = {}
   GroundStore.containerOwners = {}
-  
+
   -- Initialiser la grille spatiale
   GroundGrid = {}
   for _, pile in pairs(GroundPiles) do

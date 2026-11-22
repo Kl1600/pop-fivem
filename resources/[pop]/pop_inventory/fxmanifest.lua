@@ -1,45 +1,128 @@
 fx_version 'cerulean'
-
 game 'gta5'
 lua54 'yes'
-name 'POP Inventory'
+
+name 'pop_inventory'
 author 'KL'
+version '0.3.0'
+description 'Inventaire POP : conteneurs, équipement, armes, coffres, boutiques, craft et objets RP'
 
-description 'Advanced POP Inventory NUI resource'
-
-version '0.2.0'
-
-dependency 'oxmysql'
-dependency 'es_extended'
-dependency 'ox_target'
-dependency 'utility_lib'
+dependencies {
+  'oxmysql',
+  'es_extended',
+  'ox_target',
+  'utility_lib',
+}
 
 ui_page 'html/index.html'
 
 shared_scripts {
   'config.lua',
-  'paint_config.lua', -- Pistolet a peinture : couleurs GTA + config (global PaintGun)
-  'chargeurs_config.lua', -- Module chargeurs (ex tab_chargeurs) : ChargeursConfig
-  'vehiclekeys_config.lua', -- Module clés véhicule (ex vehicle_keys) : VehicleKeysConfig
-  'douilles_config.lua', -- Module douilles (ex tab_douilles) : DouillesConfig
-  'sabot_config.lua' -- Module sabot de roue (ex tab_sabot) : SabotConfig
+  -- Suite de la configuration, dans cet ordre (mêmes tables Config.*)
+  'config/props.lua',
+  'config/items_1.lua',
+  'config/items_2.lua',
+  'config/items_3.lua',
+  'config/items_4.lua',
+  'config/items_5.lua',
+  'config/attachments.lua', -- après les objets : complète Config.Items
+  'config/clothing.lua',
+  'config/shops.lua',
+  'config/chests.lua',
+  'config/recipes.lua',
+  'config/paint.lua',       -- PaintGun
+  'config/chargeurs.lua',   -- ChargeursConfig
+  'config/vehiclekeys.lua', -- VehicleKeysConfig
+  'config/douilles.lua',    -- DouillesConfig
+  'config/sabot.lua',       -- SabotConfig
+  'shared/*.lua',
+  'locales/*.lua',
+}
+
+client_scripts {
+  'bridge/client.lua',
+  'client/common.lua',   -- table Inv, ESX direct, notifications
+  'client/lib_shim.lua', -- lib.* minimal (pas d'ox_lib) : avant les modules
+  'client/main.lua',
+  'client/wheel.lua',
+  'client/admin.lua',
+  'client/drag.lua',
+  'client/state.lua',
+  'client/equipment.lua',
+  'client/zones.lua',
+  'client/malette_weapon.lua',
+  'client/containers/carry.lua',
+  'client/containers/targets.lua',
+  'client/items/usables.lua',
+  'client/items/handcuffs.lua',
+  'client/items/tyres.lua',
+  'client/items/stretcher.lua',
+  'client/standby.lua',
+  'client/radio.lua',
+  'client/interactions.lua',
+  'client/chargeurs.lua',
+  'client/vehiclekeys.lua',
+  'client/douilles.lua',
+  'client/paint.lua',
+  'client/weapon_preview.lua',
+  'client/sabot.lua',
+  'client/uvpocketlight.lua',
+}
+
+server_scripts {
+  '@oxmysql/lib/MySQL.lua',
+  'bridge/server.lua',
+  'server/common.lua',
+  -- Cœur de l'inventaire : même ordre que l'ancien chargement par server.lua
+  -- (les fichiers partagent leurs fonctions en globales).
+  'server/sv_database.lua',
+  'server/sv_ground.lua',
+  'server/sv_utils.lua',
+  'server/sv_stores.lua',
+  'server/sv_stores_insert.lua',
+  'server/sv_inventory_state.lua',
+  'server/sv_state_build.lua',
+  'server/sv_ground_drop.lua',
+  'server/sv_sync.lua',
+  'server/sv_actions.lua',
+  'server/sv_exports.lua',
+  'server/sv_remote_containers.lua',
+  'server/sv_standby.lua',
+  'server/sv_static_chests.lua',
+  'server/sv_lockers.lua',
+  'server/sv_player_items.lua',
+  'server/sv_craft_exports.lua',
+  'server/sv_bank_vaults.lua',
+  'server/sv_admin.lua',
+  -- Modules
+  'server/items/usables.lua',
+  'server/items/stretcher.lua',
+  'server/interactions.lua',
+  'server/chargeurs.lua',
+  'server/vehiclekeys.lua',
+  'server/douilles.lua',
+  'server/paint.lua',
+  'server/engine.lua',  -- capot / moteur : conteneur distant (moteur 3x3 + batterie)
+  'server/sabot.lua',
 }
 
 files {
   'html/index.html',
   'html/*.css',
   'html/*.js',
+  'html/img/*.webp',
+  -- PNG gardés pour pop_bennys et pop_management, qui pointent encore vers
+  -- nui://pop_inventory/html/img/<nom>.png (voir README).
   'html/img/*.png',
-  'html/torso/*.png',
+  'html/torso/*.webp',
   'html/svg/*',
-  -- Module coffre (ex standby_ui) : l'iframe partage les assets du parent (html/svg, html/*.css)
-  -- -> plus de doublons svg/css. (Fusion complete sans iframe prevue ensuite.)
+  -- Coffre : l'iframe partage les assets du parent (html/svg, html/*.css)
   'html/standby/index.html',
-  -- Radio (ex resource [interact]/radio) importée : NUI inline dans index.html
+  -- Radio : NUI inline dans index.html
   'html/radio/script.js',
   'html/radio/style.css',
-  'html/radio/img/*.png', -- inclut radio_80s.png (skin SECURECOM)
-  -- Pistolet a peinture : metas de l'arme WEAPON_PRESSURE1
+  'html/radio/img/*.webp', -- inclut radio_80s (skin SECURECOM)
+  -- Pistolet à peinture : metas de l'arme WEAPON_PRESSURE1
   'weaponarchetypes.meta',
   'weaponanimations.meta',
   'weaponpressurewand.meta',
@@ -47,54 +130,29 @@ files {
   'weaponpocketlight_archetypes.meta',
   'weaponpocketlight.meta',
   -- Sabot de roue : type definition pour le prop clamp
-  'stream/clamp.ytyp'
+  'stream/clamp.ytyp',
 }
 
--- Pistolet a peinture : declaration de l'arme (modele streame depuis stream/)
+-- Pistolet à peinture : déclaration de l'arme (modèle streamé depuis stream/)
 data_file 'WEAPON_METADATA_FILE'   'weaponarchetypes.meta'
 data_file 'WEAPON_ANIMATIONS_FILE' 'weaponanimations.meta'
 data_file 'WEAPONINFO_FILE'        'weaponpressurewand.meta'
 
--- Lampe UV de poche : declaration de l'arme WEAPON_POCKETLIGHT
+-- Lampe UV de poche : déclaration de l'arme WEAPON_POCKETLIGHT
 data_file 'WEAPON_METADATA_FILE' 'weaponpocketlight_archetypes.meta'
 data_file 'WEAPONINFO_FILE'      'weaponpocketlight.meta'
 
 -- Sabot de roue : type definition du prop clamp
 data_file 'DLC_ITYP_REQUEST' 'stream/clamp.ytyp'
 
--- stream/ : assets streamés (auto-détecté par FiveM)
--- stream/p_cs_cuffs_02_s.ydr  -> British Speedcuffs model
--- stream/w_ar_pressure1*      -> modele du pistolet a peinture
--- stream/w_me_pocketlight*    -> modele de la lampe UV de poche
+-- stream/ : assets streamés (détectés par FiveM)
+-- stream/p_cs_cuffs_02_s.ydr  -> menottes (British Speedcuffs)
+-- stream/w_ar_pressure1*      -> pistolet à peinture
+-- stream/w_me_pocketlight*    -> lampe UV de poche
 
-client_scripts {
-  -- config.lua déjà chargé via shared_scripts (évite un double chargement)
-  'lib_shim.lua', -- Shim lib.* (pas d'ox_lib dans pop_inventory) : DOIT être avant les modules
-  'client.lua',
-  'malette_weapon.lua',
-  'remote_container.lua',
-  'items_client.lua',
-  'standby_client.lua',
-  'radio_client.lua', -- Radio (ex [interact]/radio) importée
-  'interactions_client.lua', -- Interactions (ex tab_interactions) importées
-  'chargeurs_client.lua', -- Module chargeurs (ex tab_chargeurs)
-  'vehiclekeys_client.lua', -- Module clés véhicule (ex vehicle_keys)
-  'douilles_client.lua', -- Module douilles (ex tab_douilles)
-  'paint_client.lua', -- Pistolet a peinture (logique client + spray)
-  'weapon_preview.lua', -- Prévisualisation 3D d'arme (section accessoires)
-  'sabot_client.lua', -- Module sabot de roue (ex tab_sabot)
-  'uvpocketlight_client.lua' -- Lampe UV de poche : composant UV force sur WEAPON_POCKETLIGHT
-}
-
-server_scripts {
-  '@oxmysql/lib/MySQL.lua',
-  'server.lua',
-  'items_server.lua',
-  'interactions_server.lua', -- Interactions (ex tab_interactions) importées
-  'chargeurs_server.lua', -- Module chargeurs (ex tab_chargeurs)
-  'vehiclekeys_server.lua', -- Module clés véhicule (ex vehicle_keys)
-  'douilles_server.lua', -- Module douilles (ex tab_douilles)
-  'paint_server.lua', -- Pistolet a peinture (pots / reservoir)
-  'engine_server.lua', -- Capot / moteur : conteneur distant du capot (moteur 3x3 + batterie)
-  'sabot_server.lua' -- Module sabot de roue (ex tab_sabot)
+escrow_ignore {
+  'config.lua',
+  'config/*.lua',
+  'locales/*.lua',
+  'bridge/*.lua',
 }

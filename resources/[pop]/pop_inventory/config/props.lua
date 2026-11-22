@@ -1,0 +1,195 @@
+-- Props des objets posés au sol et coffres de véhicules.
+
+Config.GroundProps = {
+  default = 'prop_overalls_01',
+  backpack = 'prop_big_bag_01',
+  briefcase = 'prop_ld_case_01',
+  cardboard_box = 'prop_cs_cardbox_01',
+  safe = 'prop_ld_int_safe_01',
+  wallet = 'prop_ld_wallet_01',
+  smg = 'w_sb_smg',
+  phone = 'prop_phone_ing',
+  radio = 'prop_cs_hand_radio',
+  bouteille = 'prop_ld_flow_bottle',
+  cash = 'prop_anim_cash_pile_01',
+  carkeys = 'p_car_keys_01',
+  tyre = 'prop_wheel_tyre',
+  tyre_burst = 'prop_wheel_tyre',
+
+  -- EMS Props
+  civiere = 'combicarrier2',
+  bequille = 'crutch',
+  defib = 'lifepak15',
+  lucas = 'lucas3',
+  brancard = 'strykergurney',
+  fauteuil = 'iak_wheelchair',
+  aed = 'lifepak15',
+  kitsoins = 'prop_ld_case_01',
+  repakit = 'prop_ld_case_01',
+
+  -- =========================================================================
+  -- Régularisation props au sol (>=80% des items).
+  -- Les VETEMENTS (panta, hoddie, tshirt, shoes, hat, glasses, mask, tie,
+  -- kevlar, policevest, ears, watch, bracelet, accessory, decal) sont laissés
+  -- volontairement sur `default = prop_overalls_01`, qui leur convient déjà.
+  -- Tout nom de modèle inconnu de GTA est auto-remplacé par `default` et loggué
+  -- (audit client -> pop_inventory:server:reportInvalidGroundProps).
+  -- Les génériques s'appuient sur des props déjà éprouvés (cardbox/case/bag/bottle).
+  -- =========================================================================
+
+  -- Documents / papier / cartes / électronique
+  idcard            = 'prop_notepad_01',
+  idcard_mx         = 'prop_notepad_01',
+  passport_us       = 'prop_notepad_01',
+  passport_mx       = 'prop_notepad_01',
+  creditcard        = 'prop_ld_wallet_01',
+  file              = 'prop_notepad_01',
+  newspaper         = 'prop_notepad_01',
+  paper             = 'prop_notepad_01',
+  print_document    = 'prop_notepad_01',
+  notepad           = 'prop_notepad_01',
+  tableau           = 'prop_cs_cardbox_01',
+  plaque            = 'prop_cs_cardbox_01',
+  polaroid_card     = 'prop_notepad_01',
+  polaroid_cam      = 'prop_pap_camera_01',
+  printer           = 'prop_cs_cardbox_01',
+  sim_card          = 'prop_phone_ing',
+  tpe               = 'prop_cs_tablet',
+  pcb               = 'prop_cs_cardbox_01',
+  pager             = 'prop_phone_ing',
+  retrophone        = 'prop_phone_ing',
+  walkman           = 'prop_phone_ing',
+  megaphone         = 'prop_cs_hand_radio',
+
+  -- Cassettes / pièces audio (custom, pas d'équivalent natif -> petite boîte)
+  cassette_duz_it                  = 'prop_cs_cardbox_01',
+  cassette_tnt                     = 'prop_cs_cardbox_01',
+  cassette_bad_boys                = 'prop_cs_cardbox_01',
+  cassette_smooth_criminal         = 'prop_cs_cardbox_01',
+  cassette_cant_c_me               = 'prop_cs_cardbox_01',
+  cassette_think_about_the_way     = 'prop_cs_cardbox_01',
+  cassette_get_a_way               = 'prop_cs_cardbox_01',
+  composant_cassette               = 'prop_cs_cardbox_01',
+  bande_magnetique                 = 'prop_cs_cardbox_01',
+
+  -- Argent
+
+  -- Drogues / chimie
+  pot               = 'prop_meth_bag_01',
+  grainecana        = 'prop_meth_bag_01',
+  weed              = 'bkr_prop_weed_bag_01',
+  pochon            = 'prop_meth_bag_01',
+  pochonweed        = 'bkr_prop_weed_bag_01',
+  empty_baggy       = 'prop_meth_bag_01',
+  cocaine_powder    = 'prop_meth_bag_01',
+  baking_soda       = 'prop_meth_bag_01',
+  meth_pure         = 'prop_meth_bag_01',
+  crack_rock        = 'prop_meth_bag_01',
+  methylamine       = 'prop_ld_flow_bottle',
+  chemical_substance= 'prop_ld_flow_bottle',
+  battery_acid      = 'prop_ld_flow_bottle',
+
+  -- Armes (modèles d'arme = props valides)
+  pistol            = 'w_pi_pistol',
+  revolver          = 'w_pi_revolver',
+  carabine          = 'w_ar_carbinerifle',
+  tazer             = 'w_pi_stungun',
+  flipper           = 'prop_cs_cardbox_01',
+
+  -- Accessoires d'arme / chargeurs (composants -> boîte générique, sûr)
+  chargeur_pistol   = 'prop_cs_cardbox_01',
+  chargeur_smg      = 'prop_cs_cardbox_01',
+  chargeur_fusil    = 'prop_cs_cardbox_01',
+  suppressor_pistol = 'prop_cs_cardbox_01',
+  flashlight_pistol = 'prop_cs_cardbox_01',
+  ext_clip_pistol   = 'prop_cs_cardbox_01',
+  suppressor_rifle  = 'prop_cs_cardbox_01',
+  scope_rifle       = 'prop_cs_cardbox_01',
+  flashlight_rifle  = 'prop_cs_cardbox_01',
+  ext_clip_rifle    = 'prop_cs_cardbox_01',
+  grip_rifle        = 'prop_cs_cardbox_01',
+  suppressor_smg    = 'prop_cs_cardbox_01',
+  scope_smg         = 'prop_cs_cardbox_01',
+  flashlight_smg    = 'prop_cs_cardbox_01',
+  ext_clip_smg      = 'prop_cs_cardbox_01',
+
+  -- Outils / serrurerie
+  menottes          = 'prop_cs_cardbox_01',
+  sabot             = 'prop_cs_cardbox_01',
+  cle_sabot         = 'p_car_keys_01',
+  cle               = 'p_car_keys_01',
+  house_key         = 'p_car_keys_01',
+  lockpick          = 'prop_tool_screwdvr01',
+  pliers            = 'prop_tool_adjspanner',
+  ciseaux           = 'prop_tool_screwdvr01',
+  insulating_tape   = 'prop_cs_cardbox_01',
+  ressort           = 'prop_cs_cardbox_01',
+  cylindre          = 'prop_cs_cardbox_01',
+  police_barrier    = 'prop_barrier_work06a',
+  police_stormram   = 'prop_ld_case_01',
+  lampe             = 'prop_cs_hand_radio',
+  uvpocketlight     = 'prop_cs_hand_radio',
+  douille           = 'prop_cs_cardbox_01',
+
+  -- Pièces véhicule / carburant
+  huile_moteur          = 'prop_jerrycan_01a',
+  carburant             = 'prop_jerrycan_01a',
+  jerry                 = 'prop_jerrycan_01a',
+  baril                 = 'prop_barrel_02a',
+  batterie              = 'prop_car_battery_01',
+  pneu                  = 'prop_wheel_tyre',
+  freins                = 'prop_cs_cardbox_01',
+  pieces_moteur         = 'prop_cs_cardbox_01',
+  pieces_transmission   = 'prop_cs_cardbox_01',
+  pieces_suspension     = 'prop_cs_cardbox_01',
+  pieces_carrosserie    = 'prop_cs_cardbox_01',
+  moteur                = 'prop_cs_cardbox_01',
+  bloc_moteur           = 'prop_cs_cardbox_01',
+  piston_casse          = 'prop_cs_cardbox_01',
+  kit_reparation_vegatech = 'prop_ld_case_01',
+
+  -- Peinture
+  peinture_rouge    = 'prop_cs_cardbox_01',
+  peinture_jaune    = 'prop_cs_cardbox_01',
+  peinture_bleue    = 'prop_cs_cardbox_01',
+  pistolet_peinture = 'prop_cs_cardbox_01',
+  pot_peinture      = 'prop_paints_can01',
+
+  -- Nourriture / boissons (générique boîte/sac/bouteille/canette)
+  hotdog            = 'prop_cs_burger_01',
+  soda              = 'prop_ecola_can',
+  cola              = 'prop_ecola_can',
+  sparkling_water   = 'prop_ld_flow_bottle',
+  sugar_syrup       = 'prop_ld_flow_bottle',
+  blue_curacao_syrup= 'prop_ld_flow_bottle',
+  pineapple_juice   = 'prop_ld_flow_bottle',
+  tonic_water       = 'prop_ld_flow_bottle',
+  limonade_fermiere = 'prop_ld_flow_bottle',
+  mocktail_lagon_bleu = 'prop_ld_flow_bottle',
+  cooking_oil       = 'prop_ld_flow_bottle',
+  bbq_sauce         = 'prop_ld_flow_bottle',
+  lemon_butter      = 'prop_paper_bag_01',
+  cocktail_glass    = 'prop_cs_cardbox_01',
+  plastic_cup       = 'prop_cs_cardbox_01',
+  porcelain_plate   = 'prop_cs_cardbox_01',
+  raw_chicken       = 'prop_paper_bag_01',
+  nuggets_poulailler= 'prop_paper_bag_01',
+  seau_du_coq       = 'prop_paper_bag_01',
+  brioche_bun       = 'prop_paper_bag_01',
+  sandwich_homard   = 'prop_paper_bag_01',
+  lemon             = 'prop_paper_bag_01',
+  lemon_slice       = 'prop_paper_bag_01',
+  crushed_ice       = 'prop_paper_bag_01',
+  fresh_oysters     = 'prop_paper_bag_01',
+  fresh_lobster     = 'prop_paper_bag_01',
+  plateau_huitres   = 'prop_paper_bag_01',
+  pearls_wrapper    = 'prop_paper_bag_01',
+  paper_bag         = 'prop_paper_bag_01',
+  lucky_box         = 'prop_cs_cardbox_01',
+  secret_breadcrumbs= 'prop_paper_bag_01',
+}
+
+Config.VehicleTrunks = {
+  default = { slots = 60, maxWeight = 200.0 },
+  ['ambulance'] = { slots = 80, maxWeight = 500.0 },
+}

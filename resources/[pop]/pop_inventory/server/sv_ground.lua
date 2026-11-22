@@ -13,13 +13,13 @@ RegisterNetEvent('pop_inventory:server:startSearchingPlayer', function(targetId)
     local src = source
     local targetPed = GetPlayerPed(targetId)
     if not DoesEntityExist(targetPed) then return end
-    
+
     local dist = #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(targetPed))
-    if dist > 3.0 then 
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = _U('too_far') })
-        return 
+    if dist > 3.0 then
+        Inv.NotifyTyped(src, { type = 'error', message = L('inv_too_far') })
+        return
     end
-    
+
     -- Nouveau flux : fouille en mode standby (cf. openSearchStandby). On ne pose plus
     -- SearchingPlayers (ancien affichage target_ superposé à l'inventaire principal).
     TriggerClientEvent('pop_inventory:client:openSearch', src, targetId)
@@ -72,20 +72,20 @@ function getGroundDropSnapshot()
 
   local drops = {}
   local iterationCount = 0
-  
+
   for _, pile in pairs(GroundPiles or {}) do
     iterationCount = iterationCount + 1
     if iterationCount % 50 == 0 then Wait(0) end -- Laisser respirer le thread principal
-    
+
     if pile and pile.coords then
       local container = GroundStore.containers[pile.containerId]
       if container and container.items then
         local visualCount = 0
         local cashPropModel = nil
-        
+
         for _, itemId in pairs(container.items) do
           if visualCount >= 5 then break end -- MAX 5 props par pile pour éviter le crash réseau
-          
+
           if itemId then
             local item = GroundStore.items[itemId]
             if item then
@@ -95,10 +95,10 @@ function getGroundDropSnapshot()
                 end
               else
                 local propModel = resolveGroundProp(item.defId)
-                
+
                 local offsetX = (visualCount > 0) and (math.cos(visualCount * 2.0) * 0.15) or 0.0
                 local offsetY = (visualCount > 0) and (math.sin(visualCount * 2.0) * 0.15) or 0.0
-                
+
                 table.insert(drops, {
                   id = pile.id .. '_' .. itemId,
                   -- On arrondit pour gagner du poids en JSON
@@ -111,7 +111,7 @@ function getGroundDropSnapshot()
             end
           end
         end
-        
+
         if cashPropModel then
            table.insert(drops, {
              id = pile.id .. '_cash',

@@ -1,103 +1,78 @@
-# 🎒 Tab Inventory
+# pop_inventory
 
----
+Inventaire du serveur POP : conteneurs imbriqués (sacs, portefeuille, mallette…), équipement porté (vêtements, armes), sol, coffres de véhicule et capot, coffres fixes, casiers, fouille, boutiques, fabrication et objets RP (TPE, menottes, AED, brancard, roues, radio, douilles, sabot, pistolet à peinture, lampe UV…).
 
-### 🏷️ Fiche Produit & Caractéristiques
-* **Prix** : `79.99€`
-* **Preview Vidéo** : 🎥 [Regarder sur YouTube](https://www.youtube.com/watch?v=6hjfBYaP9TA)
-* **Optimisation** : ⚡ `0.1 ms` (Activement optimisé)
-* **Licence** : 🔓 **Open Source (Unlock)** — En achetant, vous bénéficiez d'un accès complet au code source de l'inventaire pour le modifier, l'adapter et le configurer à votre convenance.
+C'est **l'inventaire détecté par le bridge** des autres scripts POP : `ensure pop_inventory` avant `ensure [pop]`.
 
----
+## Fonctionnement
+- **TAB** : appui court = inventaire, maintenu = roue façon GTA (armes équipées + objets utilisables). **I** ouvre / ferme aussi l'inventaire. La roue d'armes native de GTA est bloquée.
+- **1 à 4** : arme de poing, tazer, arme blanche, outil. Une arme lourde équipée reste en main.
+- Glisser un objet hors de l'inventaire : don au joueur visé ou dépôt sur une cible enregistrée (`registerDragTarget`).
+- Le serveur est autoritaire : il garde l'inventaire de chaque joueur (table `tab_inventory_inventories`) et le sol (`tab_inventory_ground`), sauvegardés régulièrement.
+- Coffres de véhicule (`/coffre`), capot moteur (`/capot`), coffres fixes et casiers (`config/chests.lua`), cartons et coffres-forts posés (ox_target).
+- Boutiques et établis : zones de `config/shops.lua` et `config/recipes.lua` (prompt pop_v3dui ou aide GTA).
+- Notifications : pop_notify via le bridge, même style qu'avant (titre, icône, badge).
 
-**Tab Inventory** est un système complet et configurable d'inventaire container (gestion des vêtements, du torse, livré avec les items essentiels au RP, gestion des armes, drag&drop et plus). Il est hautement personnalisable et supporte plusieurs frameworks nativement.
+## Dépendances
+oxmysql, es_extended, ox_target, utility_lib (props au sol). Optionnels : pop_notify, pop_v3dui, pop_clothes, pop_management (casiers, codes), pma-voice (radio), object_gizmo (déplacement des cartons), lb-phone, pop_dealing.
 
-## 🌟 Fonctionnalités Commerciales
-* **Système de Craft** intégré pour permettre la fabrication d'items directement dans l'interface.
-* **Magasin de Vêtements** complet intégré à l'inventaire.
-* **Création de Personnage Avancée** (taille persistante, transidentité, choix de vêtements, détails approfondis du visage, etc.).
-* **Coffres Polyvalents** (propriétés, véhicules, coffres de stockage).
-* **Cartes d'Identités et Licences** gérées nativement sous forme d'items physiques ou virtuels.
-* **Glisser-Déposer (Drag & Drop)** fluide et performant (y compris les raccourcis admin rapides).
-* **Conteneurs Distants** (gestion des inventaires des autres joueurs, des coffres et contenants distants).
-* **Clés en Item & Verrouillage des Véhicules** pour une meilleure immersion RP.
-* **Vêtements en Item** : équipez-vous/déséquipez-vous à la volée.
-* **Items Essentiels RP Livrés Clé en Main** : menottes, kit de réparation (`repakit`), cash physique, cartes de crédit, défibrillateur (`aed`), clés de voiture, armes en items et bien plus !
+## Fichiers
+| Fichier | Rôle |
+|---|---|
+| `config.lua` | réglages communs POP + réglages généraux (sol, persistance, aide, debug) |
+| `config/items_1.lua` … `items_5.lua` | `Config.Items`, chargés dans l'ordre |
+| `config/attachments.lua` | accessoires d'armes (complète `Config.Items`) |
+| `config/props.lua` | props au sol, coffres de véhicule |
+| `config/clothing.lua` | animations de port, restrictions, tenue « nue », vêtements |
+| `config/shops.lua`, `chests.lua`, `recipes.lua` | boutiques, coffres fixes / casiers, recettes / établis |
+| `config/paint.lua`, `chargeurs.lua`, `vehiclekeys.lua`, `douilles.lua`, `sabot.lua` | réglages des modules |
+| `locales/fr.lua` | tous les textes affichés par le Lua |
+| `client/common.lua` | table `Inv`, ESX direct, notifications |
+| `client/main.lua`, `wheel.lua`, `admin.lua`, `drag.lua`, `state.lua`, `equipment.lua`, `zones.lua` | inventaire, roue, menu admin, glisser-déposer, état et exports, tenue et armes, établis / boutiques |
+| `client/containers/` | port des cartons / coffres, cibles ox_target |
+| `client/items/` | objets utilisables, menottes et escorte, roues, brancard |
+| `client/standby.lua`, `radio.lua`, `interactions.lua`, autres `client/*.lua` | coffres, radio, interactions, modules |
+| `server/common.lua` | socle serveur (`TabInventory`, `Inv`, ESX direct, état global) |
+| `server/sv_*.lua` | cœur de l'inventaire, même ordre de chargement qu'avant (globales partagées) |
+| `server/items/`, autres `server/*.lua` | objets et modules côté serveur |
+| `html/` | NUI (images en WebP) |
+| `bridge/`, `shared/` | fichiers communs POP (ne pas modifier ici : `templates/pop_base`) |
 
+## Commandes et touches
+| Commande | Touche | Rôle |
+|---|---|---|
+| `+pop_inventory_key` | TAB | inventaire / roue |
+| `pop_inventory_alt` | I | inventaire |
+| `pop_inventory` | – | inventaire (utilisée par d'autres scripts) |
+| `pop_inventory_slot1` … `slot4` | 1 à 4 | armes des petites cases |
+| `+radio`, `+volumeUp`, `+volumeDown` | P, Page haut, Page bas | radio |
+| `+levermain` | X | lever les mains |
+| `fouiller` (`DouillesConfig.Search.Command`) | – | chercher des douilles |
+| `coffre`, `capot` | – | coffre / capot du véhicule proche |
+| `carton_deplacer_mode` | – | déplacer un carton posé |
+| `givekey` | – | donner la clé du véhicule proche |
+| `pop_inventory-give [id] [objet] [qté]`, `pop_inventory-cleardrops` | – | admin |
+| `showcasings`, `popjobschema` | – | admin (douilles visibles, schéma SQL) |
 
-## 📦 Dépendances
-- **oxmysql** : Pour toutes les sauvegardes et la persistance des objets des joueurs et des objets au sol en base de données.
-- **ox_target** : Utilisé pour les interactions de type "ciblage" sur le terrain (ouverture des coffres, de la fouille des autres joueurs, ou du ramassage/interaction avec de plus gros containers).
+## Exports
+Serveur : `getItemCount`, `addItem`, `GiveItem`, `removeItem`, `RemoveItem`, `removeItemById`, `GiveAndEquip`, `addItemToContainer`, `ClearPlayerStore`, `GetPlayerItems`, `getInventory`, `getStore`, `GetItemMetadata`, `UpdateItemMetadata`, `GiveCardboardBoxWithItems`, `openContainer`, `AddItemToStaticChest`, `GetStaticChestItemCount`, `RemoveItemFromStaticChest`, `SetPlayerHandcuffed`, `onUseAmmo`, `onUseDouille`.
 
-## ⚙️ Compatibilité des Frameworks
-Le script est pensé pour être "Plug & Play" avec **ESX** et **QBCore**, ou même utilisé en mode Standalone. Configurez simplement le framework désiré dans `config.lua` :
-```lua
-Config.Framework = 'esx' -- Options possibles: 'esx', 'qbcore', 'none'
-```
-Il intègre les fonctions de récupération de joueur (`ESX.GetPlayerFromId` ou `QBCore.Functions.GetPlayer`), l'affichage de notifications, et la gestion des comptes bancaires (pour le TPE).
+Client : `IsInventoryOpen`, `getItemCount`, `GetPlayerItems`, `GetItemDef`, `RefreshEquipment`, `registerDragTarget`, `unregisterDragTarget`, `OpenStaticChestUI`, `isUVLightOn`.
 
-## 🚀 Fonctionnalités principales
-- **UI Avancée** : Glissez-déposez, raccourcis clavier. Support d'une vue transparente et d'interactions avec l'environnement.
-- **Conteneurs Imbriqués** : Placez un portefeuille dans un sac à dos, ou des objets dans une veste tactique. Chaque conteneur dispose de restrictions (ex: le portefeuille ne prend que de l'argent et des cartes).
-- **Équipement** : Emplacements dédiés pour s'équiper physiquement des vêtements (qui modifient le Ped) et des armes.
-- **Interaction "Drag to World"** : Glissez un item d'un conteneur vers un joueur à proximité pour lui donner.
-- **Items Utilisables** : Exemples préconfigurés (AED, TPE, Menottes, Nourriture).
-- **Menu Admin Intuitif** :
-  - **Glisser-Déposer Direct** : Glissez un item depuis la liste admin (à droite) vers la partie gauche de l'écran pour vous octroyer instantanément **1** unité de cet item de manière ultra-rapide.
-  - **Clic-Gauche Quantité** : Effectuez un clic gauche sur un item de la liste admin pour ouvrir la boîte de dialogue classique de quantité personnalisée.
-  - **Ergonomie Admin** : Le glissement vers le haut de l'écran (`clientY < 180`) ne masque plus l'interface par erreur.
-- **Persistance** : Sauvegarde des inventaires joueurs, et sauvegarde potentielle des objets au sol en base de données selon configuration.
+Le bridge des autres scripts utilise `getItemCount`, `addItem`, `removeItem`, `getInventory`. pop_inventory, lui, n'appelle jamais `Bridge.AddItem` / `GetMoney` (il est l'inventaire) : le bridge ne sert ici qu'aux notifications, au joueur et au job.
 
-## ⌨️ Commandes
-| Commande | Touche(s) par défaut | Description |
-| :--- | :--- | :--- |
-| `/pop_inventory` | `TAB` ou `I` | Ouvre/ferme l'interface de l'inventaire principal. |
-| `/tab_inventory_slot1` | `1` | Équipe/Déséquipe l'arme courte (pistolet) du slot rapide 1. |
-| `/tab_inventory_slot2` | `2` | Équipe/Déséquipe l'arme longue du slot rapide 2. |
-| `/tab_inventory_slot3` | `3` | Équipe/Déséquipe l'arme tazer du slot rapide 3. |
-| `/pop_inventory-give` | (Admin) | `pop_inventory-give [ID joueur] [item] [quantité]`. S'attribue à soi-même si pas d'ID. |
-| `/pop_inventory-cleardrops` | (Admin) | Nettoie et supprime tous les items laissés au sol par les joueurs. |
-| `/carton_deplacer_mode` | - | Active ou désactive le mode permettant de déplacer à la main des gros cartons/coffres prop. |
+## Évènements utiles
+| Nom | Sens | Rôle |
+|---|---|---|
+| `pop_inventory:client:notify` (message) | serveur / scripts → client | notification simple |
+| `pop_inventory:client:forceClose`, `pop_inventory:client:openInventory` | client | fermer / ouvrir l'inventaire |
+| `pop_inventory:client:applyEquipment` | serveur → client | tenue et armes |
+| `vg_engine:*` | partagés avec ox_target | moteur / capot |
 
-## 🛠️ Exports Disponibles
+Les callbacks internes (`pop_chargeurs:getRounds`, `pop_douilles:search`) passent par `shared/callback.lua`.
 
-### Client (`client.lua`)
-Renvoie le nombre (la quantité totale) d'un item spécifique que possède le joueur (dans son équipement et dans n'importe lequel de ses conteneurs).
-```lua
-local count = exports['pop_inventory']:getItemCount("nom_de_l_item")
-```
+## Images
+Icônes, torses et radio en WebP. Les PNG encore présents dans `html/img/` ne servent qu'à **pop_bennys** (`config.lua`) et **pop_management** (`html/app.js`), qui pointent vers `nui://pop_inventory/html/img/<nom>.png` : à supprimer quand ces deux scripts passeront en `.webp`.
 
-### Serveur (`server.lua`)
-Le serveur possède ses propres exports pour interagir finement avec l'inventaire des joueurs.
-
-```lua
--- Obtenir la quantité d'un objet (équipé ou dans des sacs)
-local count = exports['pop_inventory']:getItemCount(source, itemDefId)
-
--- Supprimer un montant d'un objet depuis l'inventaire du joueur
--- Retourne true si l'objet a été supprimé avec succès
-local success = exports['pop_inventory']:removeItem(source, itemDefId, qty)
-
--- Donner un objet à un joueur de manière générique
-exports['pop_inventory']:GiveItem(target, defId, qty, meta)
-exports['pop_inventory']:addItem(source, itemDefId, qty, meta) -- Alias de GiveItem
-
--- Donner un vêtement/arme et forcer le joueur à s'en équiper instantanément
-exports['pop_inventory']:GiveAndEquip(target, defId, qty, meta)
-
--- Ajouter de force un objet MÊME SI l'inventaire/le conteneur spécifique est plein.
-exports['pop_inventory']:addItemToContainer(source, containerId, defId, qty, meta)
-
--- Obtenir une table brute contenant tous les objets correspondant à un defId donné 
-local itemsTable = exports['pop_inventory']:GetPlayerItems(source, itemDefId)
-
--- Obtenir l'objet store complet d'un joueur contenant tous ses items, containers et équipements 
-local playerStore = exports['pop_inventory']:getInventory(source)
-```
-
-## 📦 Items Intégrés
-Le fichier `items_client.lua` / `items_server.lua` démontre l'utilisation d'objets interactifs et gère la logique de manière compatible (ESX / QBCore) :
-- **TPE (`tpe`)** : Permet de facturer une somme à un joueur proche via une interface de confirmation (l'argent est prélevé de la `bank`).
-- **Menottes (`menottes`)** : Restreint les mouvements et contrôle du joueur menotté.
-- **Défibrillateur / Kit de soin (`aed` / `medikit`)** : Animation de réanimation et de soins (`NetworkResurrectLocalPlayer` ou modification de l'entité de vie).
-- **Nourriture (`hotdog`)** : Restauration de la faim (compatible `esx_basicneeds` ou `consumables:client:Eat` sous QBCore).
+## Relancer
+`restart pop_inventory` (puis relancer les scripts qui dépendent de ses exports si besoin).

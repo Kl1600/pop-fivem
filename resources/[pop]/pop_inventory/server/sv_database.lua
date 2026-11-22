@@ -42,12 +42,14 @@ function checkRequiredTables(cb)
     end)
     hasJobGradesTable = ok4
 
-    print(('[POP_INVENTORY] Verification base de donnees: addon_account=%s, addon_account_data=%s, jobs=%s, job_grades=%s'):format(
-      tostring(hasAddonAccountTable),
-      tostring(hasAddonAccountDataTable),
-      tostring(hasJobsTable),
-      tostring(hasJobGradesTable)
-    ))
+    if Config.Debug then
+      print(('[POP_INVENTORY] Verification base de donnees: addon_account=%s, addon_account_data=%s, jobs=%s, job_grades=%s'):format(
+        tostring(hasAddonAccountTable),
+        tostring(hasAddonAccountDataTable),
+        tostring(hasJobsTable),
+        tostring(hasJobGradesTable)
+      ))
+    end
     if cb then cb() end
   end)
 end
@@ -58,12 +60,12 @@ function autoRepairMissingJobGrades(cb)
     if cb then cb() end
     return
   end
-  
+
   CreateThread(function()
     -- Fetch all jobs and all job grades
     local dbJobs = mysqlFetch("SELECT name FROM jobs", {})
     local dbGrades = mysqlFetch("SELECT job_name FROM job_grades", {})
-    
+
     if dbJobs and dbJobs ~= 'ERROR' and type(dbJobs) == 'table' then
       local jobsWithGrades = {}
       if dbGrades and dbGrades ~= 'ERROR' and type(dbGrades) == 'table' then
@@ -74,7 +76,7 @@ function autoRepairMissingJobGrades(cb)
           end
         end
       end
-      
+
       local missingGradesJobs = {}
       for _, job in ipairs(dbJobs) do
         local jName = job.name or ''
@@ -82,15 +84,15 @@ function autoRepairMissingJobGrades(cb)
           table.insert(missingGradesJobs, jName)
         end
       end
-      
+
       if #missingGradesJobs > 0 then
-        print(('[POP_INVENTORY] Reparation de %d jobs sans grades...'):format(#missingGradesJobs))
+        if Config.Debug then print(('[POP_INVENTORY] Reparation de %d jobs sans grades...'):format(#missingGradesJobs)) end
         local completed = 0
         for _, jName in ipairs(missingGradesJobs) do
           mysqlUpdate("INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female) VALUES (?, 0, 'recrue', 'Recrue', 100, '{}', '{}') ON DUPLICATE KEY UPDATE name = name", {jName}, function()
             completed = completed + 1
             if completed == #missingGradesJobs then
-              print('[POP_INVENTORY] Reparation des grades terminee !')
+              if Config.Debug then print('[POP_INVENTORY] Reparation des grades terminee !') end
               if type(ESX.RefreshJobs) == 'function' then
                 pcall(ESX.RefreshJobs)
               end
@@ -150,9 +152,9 @@ function loadRemoteContainers()
   local results = mysqlFetch("SELECT data FROM " .. Config.Persistence.GroundTable .. " WHERE id = 'remote_containers'", {})
   if results and results[1] and results[1].data then
     local data = json.decode(results[1].data)
-    if data then 
-      RemoteContainers = data 
-      print('[POP_INVENTORY] ' .. tableCount(RemoteContainers) .. ' conteneurs distants chargés.')
+    if data then
+      RemoteContainers = data
+      if Config.Debug then print('[POP_INVENTORY] ' .. tableCount(RemoteContainers) .. ' conteneurs distants chargés.') end
     end
   end
 end
@@ -163,11 +165,11 @@ CreateThread(function()
   loadRemoteContainers()
 end)
 
--- Diagnostic au demarrage : dump le schema de job_grades pour identifier les colonnes
--- NOT NULL qu'on doit obligatoirement renseigner.
+-- Diagnostic au demarrage (Config.Debug) : dump le schema de job_grades pour identifier
+-- les colonnes NOT NULL qu'on doit obligatoirement renseigner.
 CreateThread(function()
   Wait(2500)
-  if not MySQL then return end
+  if not MySQL or not Config.Debug then return end
   MySQL.query("SHOW COLUMNS FROM job_grades", {}, function(cols)
     if type(cols) ~= 'table' then
       print('[POP_INVENTORY][SCHEMA] job_grades: impossible de lire les colonnes (' .. tostring(cols) .. ')')
