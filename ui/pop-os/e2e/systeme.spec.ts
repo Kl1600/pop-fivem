@@ -3,11 +3,14 @@ import { expect, test } from './fixtures';
 const HOME_BAR = /barre d.accueil/i;
 
 test.describe('Premier allumage', () => {
-  test('langue, code, confirmation, nom, adresse mail avec suffixe et validation', async ({ tab }) => {
+  test('Bonjour, langue, apparence, code, nom, mail, fond, bienvenue', async ({ tab }) => {
     const { page } = tab;
     await tab.open({ setup: true });
     await expect(page.getByText('Bonjour')).toBeVisible();
+    await page.getByRole('button', { name: /Glisser vers le haut/ }).click();
     await page.getByRole('button', { name: 'Français' }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Apparence' })).toBeVisible();
     await page.getByRole('button', { name: 'Continuer' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Choisissez un code' })).toBeVisible();
     for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
@@ -22,23 +25,29 @@ test.describe('Premier allumage', () => {
     await expect(page.getByTestId('mail-domain')).toHaveText('@pop.ls');
     const mail = page.getByLabel('Adresse mail');
     await mail.fill('ab');
-    await page.getByRole('button', { name: 'Terminer' }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
     await expect(page.getByRole('alert')).toContainText('3 à 32 caractères');
-    expect(await tab.calls('device:setup')).toHaveLength(0);
     await mail.fill('a..b');
-    await page.getByRole('button', { name: 'Terminer' }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
     await expect(page.getByRole('alert')).toBeVisible();
     await mail.fill('moi.test@autre.fr'); // tout ce qui suit « @ » est ignoré : le domaine est imposé
     await expect(mail).toHaveValue('moi.test');
-    await page.getByRole('button', { name: 'Terminer' }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    expect(await tab.calls('device:setup')).toHaveLength(0);
+    await page.getByRole('button', { name: 'Fond d’écran 4' }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Bienvenue sur POP Tab' })).toBeVisible();
+    await page.getByRole('button', { name: 'Commencer' }).click();
     await expect(tab.screen.getByRole('button', { name: 'Réglages' })).toBeVisible();
     const call = await tab.waitCall('device:setup');
-    expect(call.data).toMatchObject({ code: '2468', name: 'Tablette Test', lang: 'fr', mail: 'moi.test' });
+    expect(call.data).toMatchObject({ code: '2468', name: 'Tablette Test', lang: 'fr', mail: 'moi.test', dark: false, wall: '3' });
   });
 
   test('code de confirmation différent : message et retour à la saisie', async ({ tab }) => {
     const { page } = tab;
     await tab.open({ setup: true });
+    await page.getByRole('button', { name: /Glisser vers le haut/ }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
     for (const d of '1111') await page.getByRole('button', { name: d, exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Confirmez' })).toBeVisible();
@@ -48,11 +57,46 @@ test.describe('Premier allumage', () => {
     expect(await tab.calls('device:setup')).toHaveLength(0);
   });
 
-  test('changement de langue envoyé au client', async ({ tab }) => {
+  test('choix de langue : envoyé au client et textes traduits', async ({ tab }) => {
     await tab.open({ setup: true });
+    await tab.page.getByRole('button', { name: /Glisser vers le haut/ }).click();
     await tab.page.getByRole('button', { name: 'English' }).click();
     await tab.waitCall('tablet:locale');
-    await expect(tab.page.getByText('Hello')).toBeVisible();
+    await expect(tab.page.getByRole('status').filter({ hasText: 'Choose your language' })).toBeVisible();
+    await expect(tab.page.getByRole('button', { name: 'Continue' })).toBeVisible();
+  });
+
+  test('choix Sombre : écran sombre, accueil sombre, réglages conservés à la réouverture', async ({ tab }) => {
+    const { page } = tab;
+    await tab.open({ setup: true });
+    await page.getByRole('button', { name: /Glisser vers le haut/ }).click();
+    await page.getByRole('button', { name: 'English' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.locator('.pop')).toHaveAttribute('data-theme', 'light');
+    await page.getByRole('button', { name: 'Dark' }).click();
+    await expect(page.locator('.pop')).toHaveAttribute('data-theme', 'dark');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Confirm your passcode' })).toBeVisible();
+    for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
+    await page.getByLabel('Device name').fill('Nuit');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByLabel('Email address').fill('nuit.test');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Get started' }).click();
+    await expect(tab.screen.getByRole('button', { name: 'Settings' })).toBeVisible();
+    await expect(page.locator('.pop')).toHaveAttribute('data-theme', 'dark');
+    expect((await tab.waitCall('device:setup')).data).toMatchObject({ lang: 'en', dark: true });
+
+    // Réouverture : écran verrouillé sombre, code choisi, accueil sombre et en anglais.
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'POP Tab', exact: true }).click();
+    await expect(page.locator('.pop')).toHaveAttribute('data-theme', 'dark');
+    await page.getByRole('button', { name: /home bar/i }).click();
+    for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
+    await expect(tab.screen.getByRole('button', { name: 'Settings' })).toBeVisible();
+    await expect(page.locator('.pop')).toHaveAttribute('data-theme', 'dark');
   });
 });
 
