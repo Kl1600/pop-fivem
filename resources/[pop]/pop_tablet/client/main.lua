@@ -28,7 +28,8 @@ local token = nil
 
 local function newToken()
     local t = {}
-    math.randomseed((GetGameTimer and GetGameTimer() or 0) + os.time())
+    -- Pas de bibliothèque `os` côté client FiveM : graine = horloge du jeu + heure réseau.
+    math.randomseed((GetGameTimer and GetGameTimer() or 0) + (GetCloudTimeAsInt and GetCloudTimeAsInt() or 0))
     for i = 1, 32 do t[i] = ('%x'):format(math.random(0, 15)) end
     return table.concat(t)
 end
@@ -86,6 +87,7 @@ function C.Open(hint, openApp, silent)
         if type(res) ~= 'table' or not res.ok then
             state = 'closed'
             local err = type(res) == 'table' and res.err or 'err_timeout'
+            print(('[pop_tablet] open refused: %s'):format(tostring(err))) -- visible dans F8, seulement en cas d'échec
             if not (silent and err == 'err_no_tablet') then Bridge.Notify(L(err), 'error') end
             return
         end
