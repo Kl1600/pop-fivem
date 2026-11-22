@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { checkImports } from '../../scripts/check-imports.mjs';
 import { checkStrings, findLiterals } from '../../scripts/check-strings.mjs';
 import { registerApiApp } from '../apps/registry';
-import { LANGUAGES, TABLES, makeT, missingKeys } from '../i18n';
+import { LANGUAGES, makeT, missingKeys } from '../i18n';
 import en from '../i18n/en';
 import fr from '../i18n/fr';
 import { mockOpen, resetMock } from '../nui/mock';
