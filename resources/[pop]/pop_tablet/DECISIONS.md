@@ -7,7 +7,7 @@ canevas Claude Design « POP Tablet maquettes » (fichiers `.dc.html` copiés da
 - Tablette façon iPad récent (iPadOS 27, verre liquide), plein écran, paysage uniquement, thème clair et sombre.
 - Aucun nom, icône, police ni fond d'Apple. Système « POP OS », appareil « POP Tab ».
 - Données liées à l'OBJET : une tablette volée garde ses données ; il faut son code (4 chiffres, choisi au premier allumage).
-- Ouverture : utiliser l'objet dans l'inventaire, ou touche réglable (F5 par défaut) si l'on en porte une.
+- Ouverture : utiliser l'objet dans l'inventaire, ou touche réglable (F2 par défaut ; F5 = menu emotes) si l'on en porte une.
 - TOUTES les applis fonctionnent vraiment en jeu : Réglages, Boutique, Appareil photo, Photos, Notes, Calendrier,
   Rappels, Fichiers, Tableau (dessin), Horloge (alarmes, minuteur, chrono, horloges), Calculette, Météo (météo du jeu),
   Plans (carte GTA, recherche de lieux, itinéraire GPS natif), Dictaphone, Traduire, Bourse (marché simulé serveur),

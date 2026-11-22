@@ -3,7 +3,7 @@
 export const p2 = (n: number): string => String(n).padStart(2, '0');
 
 export interface Zone { name: string; offset: number }
-/** Horloges du monde fictives : décalage en heures sur l'heure du jeu (Config.Clock.Zones côté serveur). */
+/** Horloges du monde fictives : décalage en heures sur l'heure locale du joueur. */
 export const ZONES: Zone[] = [
   { name: 'Los Santos', offset: 0 },
   { name: 'Liberty City', offset: 3 },

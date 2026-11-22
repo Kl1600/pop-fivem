@@ -8,7 +8,7 @@ local DB = Tablet.DB
 -- Calendrier, Rappels, Horloge (requêtes préparées, index serial)
 ------------------------------------------------------------------------
 
---- Événements dont la plage recoupe [from, to] (dates jeu 'AAAA-MM-JJ HH:MM').
+--- Événements dont la plage recoupe [from, to] (dates réelles 'AAAA-MM-JJ HH:MM').
 function DB.ListEvents(serial, from, to)
     return MySQL.query.await('SELECT id, title, place, notes, start_game, end_game, all_day, alert_min, color FROM pop_tablet_events'
         .. ' WHERE serial = ? AND start_game <= ? AND end_game >= ? ORDER BY start_game, id LIMIT 500', { serial, to, from }) or {}

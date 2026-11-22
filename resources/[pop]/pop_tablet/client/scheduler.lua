@@ -1,5 +1,5 @@
--- Échéances côté client (alarmes, rappels, événements) : UNE SetTimeout vers la prochaine, en minutes de jeu.
--- À l'échéance on relit l'heure du jeu, on prévient le serveur (qui revérifie tout) puis on re-planifie.
+-- Échéances côté client (alarmes, rappels, événements) : UNE SetTimeout vers la prochaine, sur l'heure réelle.
+-- À l'échéance on relit l'heure réelle, on prévient le serveur (qui revérifie tout) puis on re-planifie.
 
 Tablet = Tablet or {}
 Tablet.Client = Tablet.Client or {}
@@ -30,13 +30,13 @@ function S.Sanitize(list)
     return out
 end
 
---- Prochaine échéance : renvoie l'élément et le délai en millisecondes réelles (heure du jeu h:m:s, msPerMin par minute).
---- Un élément dont la minute est déjà entamée est reporté au lendemain de jeu.
+--- Prochaine échéance : renvoie l'élément et le délai en millisecondes réelles (heure réelle h:m:s, msPerMin par minute).
+--- Un élément dont la minute est déjà entamée est reporté au lendemain.
 function S.Next(list, h, m, sec, msPerMin)
     local nowMinute = h * 60 + m
     local best, bestDelta
     for _, it in ipairs(list) do
-        local delta = ((it.minute - nowMinute) % 1440) * 60 - sec -- secondes de jeu
+        local delta = ((it.minute - nowMinute) % 1440) * 60 - sec -- secondes
         if delta <= 0 then delta = delta + 86400 end
         if not bestDelta or delta < bestDelta then best, bestDelta = it, delta end
     end
@@ -48,11 +48,13 @@ local function plan(retries)
     generation = generation + 1
     local mine = generation
     if #items == 0 then return end
-    local best, delay = S.Next(items, GetClockHours(), GetClockMinutes(), GetClockSeconds(), C.MsPerGameMinute())
+    local now = C.ClockSnapshot()
+    local best, delay = S.Next(items, now.h, now.m, now.s, now.msPerMin)
     if not best then return end
     SetTimeout(math.max(50, math.floor(delay)), function()
         if mine ~= generation then return end
-        local nowMinute = GetClockHours() * 60 + GetClockMinutes()
+        local at = C.ClockSnapshot()
+        local nowMinute = at.h * 60 + at.m
         local fired = false
         local stamp = C.GameStamp()
         for _, it in ipairs(items) do
@@ -64,7 +66,7 @@ local function plan(retries)
         if fired then
             plan(0)
         elseif retries < MAX_RETRIES then
-            plan(retries + 1) -- minuterie arrivée trop tôt ou temps du jeu modifié : on recale
+            plan(retries + 1) -- minuterie arrivée trop tôt ou heure système modifiée : on recale
         else
             plan(0)
         end

@@ -35,7 +35,7 @@ Tout est commenté dans le fichier. Les réglages utiles :
 | Clé | Rôle |
 | --- | --- |
 | `Config.Locale` | langue par défaut (10 langues : en, fr, es, de, it, pt, nl, pl, tr, ar) |
-| `Config.Item`, `Config.Key` | nom de l'objet, touche d'ouverture (F5, réglable dans les touches de FiveM) |
+| `Config.Item`, `Config.Key` | nom de l'objet, touche d'ouverture (F2, commande `pop_tablet_open`, réglable dans les touches de FiveM). Toute la tablette suit l'heure réelle du joueur (`GetLocalTime`) ; seule la météo reste sur l'heure du jeu |
 | `Config.Session.IdleLockSeconds` | verrouillage après inactivité |
 | `Config.Security` | itérations du hachage, essais avant blocage, durées de blocage |
 | `Config.Battery`, `Config.Phone`, `Config.Mail` | batterie, format et canal des numéros, domaine des adresses |

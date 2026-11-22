@@ -1343,13 +1343,8 @@ do
     def('StopAnimTask', function() end)
     def('RemoveAnimDict', function() end)
     def('IsPedDeadOrDying', function() return deadPed end)
-    def('GetClockHours', function() return hour end)
-    def('GetClockMinutes', function() return minute end)
-    def('GetClockSeconds', function() return second end)
-    def('GetClockDayOfMonth', function() return 14 end)
-    def('GetClockMonth', function() return 5 end)
-    def('GetClockYear', function() return 2026 end)
-    def('GetMillisecondsPerGameMinute', function() return 2000 end)
+    def('GetLocalTime', function() return 2026, 6, 14, hour, minute, second end) -- heure réelle, mois 1-12
+    def('GetClockHours', function() return hour end) -- météo seulement : température selon l'heure du jeu
     Bridge.OnUiClose = function(fn) nuiCb['__uiclose'] = fn end
     Bridge.Notify = function(msg) notifs[#notifs + 1] = msg end
     Callback = {
@@ -1389,9 +1384,9 @@ do
     end
 
     check('aucune boucle ni thread au chargement (0,00 ms fermée)', threadsAtLoad == 0, threadsAtLoad)
-    check('touche : RegisterKeyMapping(commande, texte traduit, keyboard, F5)',
-        keymaps[1] and keymaps[1][1] == 'pop_tablet_toggle' and keymaps[1][2] == 'Open the tablet'
-        and keymaps[1][3] == 'keyboard' and keymaps[1][4] == 'F5')
+    check('touche : RegisterKeyMapping(commande, texte traduit, keyboard, F2)',
+        keymaps[1] and keymaps[1][1] == 'pop_tablet_open' and keymaps[1][2] == 'Open the tablet'
+        and keymaps[1][3] == 'keyboard' and keymaps[1][4] == 'F2')
     check('exports IsOpen/Close/OpenApp', exportsReg.IsOpen and exportsReg.Close and exportsReg.OpenApp)
 
     -- Textes
@@ -1400,12 +1395,12 @@ do
     check('locale fr : repli anglais pour une clé absente', C.LocaleTable('fr').tablet_key == Locales.fr.tablet_key and not C.LocaleTable('fr')._rtl)
     check('locale inconnue : langue du serveur', C.LocaleTable('zz').tablet_key == Locales.en.tablet_key)
     local snap = C.ClockSnapshot()
-    check('horloge : heure, mois 1-12, ms par minute', snap.h == 8 and snap.m == 30 and snap.mo == 6 and snap.y == 2026 and snap.msPerMin == 2000)
+    check('horloge : heure, mois 1-12, ms par minute', snap.h == 8 and snap.m == 30 and snap.mo == 6 and snap.y == 2026 and snap.s == 0 and snap.msPerMin == 60000)
     check('horloge : GameStamp en mois 1-12 (2026-06-..)', C.GameStamp():sub(1, 7) == '2026-06')
 
     -- Ouverture par la touche
     serverReply['pop_tablet:device:open'] = { ok = false, err = 'err_no_tablet' }
-    cmds.pop_tablet_toggle()
+    cmds.pop_tablet_open()
     check('touche sans objet : aucune notification, rien d\'ouvert', #notifs == 0 and not C.IsOpen() and #focus == 0)
     netEvents['pop_tablet:client:use']('PT-ABCDEFGH23')
     check('objet utilisé sans tablette valide : message d\'erreur', #notifs == 1 and not C.IsOpen())
@@ -1414,7 +1409,7 @@ do
     reset()
     serverReply['pop_tablet:device:open'] = { ok = true, serial = 'PT-ABCDEFGH23', needSetup = false, locked = true,
         boot = { settings = { lang = 'ar' } } }
-    cmds.pop_tablet_toggle()
+    cmds.pop_tablet_open()
     check('ouverture : focus NUI (true, true)', C.IsOpen() and focus[1] and focus[1][1] == true and focus[1][2] == true)
     check('ouverture : message tablet:open (locale, rtl, accent, horloge)', lastMsg().action == 'tablet:open'
         and lastMsg().data.rtl == true and lastMsg().data.accent == Config.AccentColor and lastMsg().data.clock.h == 8
@@ -1531,7 +1526,7 @@ do
     Config.Camera.mode = 'native'
     nuiCb['tablet:camera']({ action = 'start' }, function(r) got = r end)
     check('caméra : tablette fermée refusée', got.ok == false and got.err == 'err_session')
-    cmds.pop_tablet_toggle()
+    cmds.pop_tablet_open()
     removedHandlers = 0
 
     -- Horloge et resynchronisation
@@ -1560,7 +1555,7 @@ do
     check('fermer deux fois : sans effet', #focus == f)
 
     -- Mort, objet perdu, arrêt
-    cmds.pop_tablet_toggle()
+    cmds.pop_tablet_open()
     check('réouverture', C.IsOpen())
     gameHandlers[#gameHandlers]('CEventNetworkEntityDamage', { 12 })
     check('dégât sur un autre : reste ouverte', C.IsOpen())
@@ -1568,10 +1563,10 @@ do
     gameHandlers[#gameHandlers]('CEventNetworkEntityDamage', { 77 })
     check('mort du joueur : fermeture + focus rendu', not C.IsOpen() and focus[#focus][1] == false)
     deadPed = false
-    cmds.pop_tablet_toggle()
+    cmds.pop_tablet_open()
     netEvents['pop_tablet:client:forceClose']({ reason = 'lost' })
     check('forceClose (objet perdu) : fermée', not C.IsOpen())
-    cmds.pop_tablet_toggle()
+    cmds.pop_tablet_open()
     reset()
     netEvents.onResourceStop('autre')
     check('arrêt d\'une autre ressource : ignoré', C.IsOpen())
@@ -1612,9 +1607,9 @@ do
 
     clientTimers, serverEvents = {}, {}
     S.Set({ { id = 7, kind = 'alarm', minute = 8 * 60 + 32 } })
-    check('une seule minuterie planifiée', #clientTimers == 1 and clientTimers[1].ms == 4000)
+    check('une seule minuterie planifiée (heure réelle : 2 min = 120000 ms)', #clientTimers == 1 and clientTimers[1].ms == 120000)
     S.Set({ { id = 7, kind = 'alarm', minute = 8 * 60 + 32 }, { id = 8, kind = 'event', minute = 8 * 60 + 31 } })
-    check('re-planification : nouvelle minuterie, l\'ancienne est périmée', #clientTimers == 2 and clientTimers[2].ms == 2000)
+    check('re-planification : nouvelle minuterie, l\'ancienne est périmée', #clientTimers == 2 and clientTimers[2].ms == 60000)
     clientTimers[1].fn()
     check('minuterie périmée sans effet', #serverEvents == 0 and #clientTimers == 2)
     minute = 31

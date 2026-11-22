@@ -2,36 +2,42 @@ import { useEffect, useState } from 'react';
 import { os } from './store';
 import type { ClockSnap } from '../nui/types';
 
-// Horloge du jeu : l'interface part d'un instantané (`tablet:open` / `tablet:clock`) et avance seule.
-// Un seul minuteur, armé uniquement tant qu'un composant lit l'heure (tablette ouverte), calé sur la minute de jeu suivante.
+// Horloge : heure locale réelle du joueur. L'interface part d'un instantané (`tablet:open` / `tablet:clock`) et avance seule.
+// Un seul minuteur, armé uniquement tant qu'un composant lit l'heure (tablette ouverte), calé sur la minute suivante.
 
-const DEFAULT_SNAP: ClockSnap = { h: 12, m: 0, d: 1, mo: 1, y: 2026, msPerMin: 2000 };
+const DEFAULT_SNAP: ClockSnap = { h: 12, m: 0, d: 1, mo: 1, y: 2026, msPerMin: 60000 };
+const DEFAULT_PER = 60000;
 
-/** Minutes de jeu écoulées depuis l'instantané. */
-export function elapsedGameMinutes(snap: ClockSnap, fromMs: number, nowMs: number): number {
-  const per = snap.msPerMin > 0 ? snap.msPerMin : 2000;
-  return Math.floor(Math.max(0, nowMs - fromMs) / per);
+/** Part de la minute déjà écoulée à l'instantané (ms réelles) : les secondes comptent, sinon le changement de minute dérive. */
+function secondsOffset(snap: ClockSnap, per: number): number {
+  return ((snap.s ?? 0) / 60) * per;
 }
 
-/** Date de jeu (UTC, sans fuseau) à l'instant `nowMs` (performance.now). */
+/** Minutes écoulées depuis l'instantané (minute entamée comprise). */
+export function elapsedGameMinutes(snap: ClockSnap, fromMs: number, nowMs: number): number {
+  const per = snap.msPerMin > 0 ? snap.msPerMin : DEFAULT_PER;
+  return Math.floor((secondsOffset(snap, per) + Math.max(0, nowMs - fromMs)) / per);
+}
+
+/** Date locale du joueur (UTC, sans fuseau) à l'instant `nowMs` (performance.now). */
 export function gameDate(snap: ClockSnap | null, fromMs: number, nowMs: number): Date {
   const s = snap ?? DEFAULT_SNAP;
   const base = Date.UTC(s.y, s.mo - 1, s.d, s.h, s.m, 0);
   return new Date(base + elapsedGameMinutes(s, fromMs, nowMs) * 60_000);
 }
 
-/** Temps du jeu continu (ms, UTC sans fuseau) : avance de 60 000 ms par minute de jeu écoulée. */
+/** Temps continu (ms, UTC sans fuseau) : avance de 60 000 ms par minute écoulée. */
 export function gameMsNow(): number {
   const s = os.get();
   const snap = s.clock ?? DEFAULT_SNAP;
-  const per = snap.msPerMin > 0 ? snap.msPerMin : 2000;
-  return Date.UTC(snap.y, snap.mo - 1, snap.d, snap.h, snap.m, 0) + (Math.max(0, performance.now() - s.clockAt) / per) * 60_000;
+  const per = snap.msPerMin > 0 ? snap.msPerMin : DEFAULT_PER;
+  return Date.UTC(snap.y, snap.mo - 1, snap.d, snap.h, snap.m, snap.s ?? 0) + (Math.max(0, performance.now() - s.clockAt) / per) * 60_000;
 }
 
-/** Délai (ms réelles) jusqu'à la prochaine minute de jeu. */
+/** Délai (ms réelles) jusqu'à la prochaine minute. */
 export function msToNextMinute(snap: ClockSnap | null, fromMs: number, nowMs: number): number {
-  const per = snap && snap.msPerMin > 0 ? snap.msPerMin : 2000;
-  const into = Math.max(0, nowMs - fromMs) % per;
+  const per = snap && snap.msPerMin > 0 ? snap.msPerMin : DEFAULT_PER;
+  const into = ((snap ? secondsOffset(snap, per) : 0) + Math.max(0, nowMs - fromMs)) % per;
   return Math.max(16, per - into);
 }
 
@@ -65,7 +71,7 @@ export function clockTimerActive(): boolean {
   return timer !== null;
 }
 
-/** Date de jeu courante, rafraîchie à chaque minute de jeu. */
+/** Date locale courante, rafraîchie à chaque minute. */
 export function useGameDate(): Date {
   const [, tick] = useState(0);
   useEffect(() => subscribe(() => tick((n) => n + 1)), []);

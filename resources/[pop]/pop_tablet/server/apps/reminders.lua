@@ -1,4 +1,4 @@
--- Rappels : listes colorées, rappels avec échéance en date du jeu, drapeau, case à cocher. Alerte par échéance client.
+-- Rappels : listes colorées, rappels avec échéance en date réelle, drapeau, case à cocher. Alerte par échéance client.
 -- <= 20 listes, <= 200 rappels. Une liste supprimée emporte ses rappels (clé étrangère).
 
 Tablet = Tablet or {}
@@ -95,7 +95,7 @@ function R.ListSave(src, data)
     return { ok = true, id = Tablet.DB.InsertReminderList(s.serial, name, col), name = name, color = col }
 end
 
---- Échéance signalée par le client : le rappel `rid` est dû si la date du jeu annoncée est son échéance (à 2 minutes près).
+--- Échéance signalée par le client : le rappel `rid` est dû si la date réelle annoncée est son échéance (à 2 minutes près).
 function R.Due(src, serial, rid, kind, stamp)
     if kind ~= 'reminder' then return end
     local r = Tablet.DB.GetReminder(serial, rid)

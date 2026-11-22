@@ -260,7 +260,7 @@ Lua -> NUI : `SendNUIMessage({ action = 'tablet:<nom>', data = ... })`. NUI -> L
 
 | Sens | Nom | Données |
 |---|---|---|
-| Lua -> NUI | `tablet:open` | `{ serial, needSetup, locked, boot, locale = { ...table }, rtl, accent, lang, shell?, clock = { h, m, d, mo, y, msPerMin }, weather = { temp, kind, hi, lo, city }, app? }`. `lang` : langue de la tablette (écran verrouillé sans `boot`). `shell` : présent seulement si `Config.Shell` est vrai (navigateur de développement) ; absent = pas de coque, plein écran en jeu. `boot` (après déverrouillage) : `{ serial, name, phone, battery, settings, apps, apiApps, badges, widgets = { events = { { title, time, color } }, reminders = { { id, text, done } } }, music = { title, artist, playing } ou nil, model, os, created, lastOpen }`. `widgets.events` : 3 prochains événements d'après la date du jeu envoyée par le client en 2e argument de `device:open` (filtre d'affichage, aucun droit) ; `widgets.reminders` : 4 rappels |
+| Lua -> NUI | `tablet:open` | `{ serial, needSetup, locked, boot, locale = { ...table }, rtl, accent, lang, shell?, clock = { h, m, s, d, mo, y, msPerMin = 60000 }, weather = { temp, kind, hi, lo, city }, app? }`. `lang` : langue de la tablette (écran verrouillé sans `boot`). `shell` : présent seulement si `Config.Shell` est vrai (navigateur de développement) ; absent = pas de coque, plein écran en jeu. `boot` (après déverrouillage) : `{ serial, name, phone, battery, settings, apps, apiApps, badges, widgets = { events = { { title, time, color } }, reminders = { { id, text, done } } }, music = { title, artist, playing } ou nil, model, os, created, lastOpen }`. `widgets.events` : 3 prochains événements d'après la date du jeu envoyée par le client en 2e argument de `device:open` (filtre d'affichage, aucun droit) ; `widgets.reminders` : 4 rappels |
 | Lua -> NUI | `tablet:close` | (animation de fermeture) |
 | Lua -> NUI | `tablet:notify` | relais de `pop_tablet:client:notify` |
 | Lua -> NUI | `tablet:message` / `:mail` / `:call` / `:market` / `:share` | relais des events 7.3 |
@@ -278,7 +278,7 @@ Lua -> NUI : `SendNUIMessage({ action = 'tablet:<nom>', data = ... })`. NUI -> L
 | NUI -> Lua | `tablet:resync` | demande d'horloge/météo (ouverture des applis Horloge/Météo seulement) |
 
 Focus : `SetNuiFocus(true, true)` à l'ouverture, `SetNuiFocus(false, false)` à la fermeture (utilisé par `bridge/client.lua` ; **cette native n'a pas été trouvée dans les docs locales** `fivem`/`fivem-natives` : elle est déjà employée par le bridge, à confirmer sur docs.fivem.net avant la première utilisation). `SetNuiFocusKeepInput` : non utilisé (le joueur ne bouge pas, tablette en main).
-Touche d'ouverture : `RegisterKeyMapping('pop_tablet_toggle', <clé de locale>, 'keyboard', Config.Key)` (signature vérifiée : `RegisterKeyMapping(commande, description, 'keyboard', touche)`), défaut `F5`. La commande appelle `pop_tablet:device:open` ; le serveur refuse sans objet. Description du keybinding : texte traduit au chargement.
+Touche d'ouverture : `RegisterKeyMapping('pop_tablet_open', <clé de locale>, 'keyboard', Config.Key)` (signature vérifiée : `RegisterKeyMapping(commande, description, 'keyboard', touche)`), défaut `F2` (F5 = emotes ; commande renommée pour que F2 s'applique même aux joueurs ayant une touche enregistrée pour l'ancien nom). La commande appelle `pop_tablet:device:open` ; le serveur refuse sans objet. Description du keybinding : texte traduit au chargement.
 Animation + prop : `RequestAnimDict`/`TaskPlayAnim` + objet tenu attaché par `AttachEntityToEntity` (signature vérifiée), supprimés à la fermeture et à `onResourceStop`. Prop : `Config.Prop` (modèle de tablette ; défaut un modèle du jeu, à valider en jeu).
 
 ## 9. Applis : natif / existant / à construire
@@ -292,11 +292,11 @@ Légende : **N** natif GTA/FiveM, **E** existant (pop_base, oxmysql, pma-voice, 
 | Appareil photo (`camera`) | **N** + E | `CreateMobilePhone(0)`, `CellCamActivate(true, true)`, `CellCamActivateSelfieMode(toggle)` (natives vérifiées) ; fermeture `DestroyMobilePhone`. Obturateur : le client masque l'interface, le serveur appelle `exports.screencapture:remoteUpload(source, url, options, cb)` ou `serverCapture(source, options, cb)` (exports serveur vérifiés) |
 | Photos (`photos`) | C | Galerie, favoris, suppression ; `url` si hébergeur configuré, sinon repli base de données (webp réduit) |
 | Notes (`notes`) | C | CRUD, épinglage |
-| Calendrier (`calendar`) | C + N | Dates du jeu (`GetClockDayOfMonth`, `GetClockMonth`, `GetClockYear`, `GetClockHours`, `GetClockMinutes`, vérifiées) ; alerte par `scheduler` |
+| Calendrier (`calendar`) | C + N | Dates réelles du joueur (`GetLocalTime`, mois 1-12, décision : toute la tablette suit l'heure réelle, seule la météo reste sur l'heure du jeu) ; alerte par `scheduler` |
 | Rappels (`reminders`) | C | Listes, échéances (date jeu), alerte |
 | Fichiers (`files`) | C | Dossiers, documents texte, raccourcis vers photos/enregistrements/tableaux, lien de partage (jeton) |
 | Tableau (`board`) | C | Dessin canvas côté NUI, traits quantifiés, sauvegarde serveur |
-| Horloge (`clock`) | N + C | Heure du jeu (`GetClockHours/Minutes`) ; alarmes, minuteur : échéance dans `scheduler` ; chronomètre 100 % NUI ; horloges du monde = fuseaux fictifs `Config.Clock.Zones` (décalage en heures sur l'heure du jeu) |
+| Horloge (`clock`) | N + C | Heure réelle (`GetLocalTime`) ; alarmes, minuteur : échéance dans `scheduler` ; chronomètre 100 % NUI ; horloges du monde = fuseaux fictifs (décalage en heures sur l'heure réelle) |
 | Calculette (`calculator`) | C | 100 % NUI, aucune donnée |
 | Météo (`weather`) | **N** | Type de météo du jeu : `GetPrevWeatherTypeHashName`, `GetNextWeatherTypeHashName`, `GetWeatherTypeTransition` ; pluie `GetRainLevel`, vent `GetWindSpeed` (natives vérifiées) ; prévision = enchaînement jeu actuel -> suivant (pas d'invention) ; heure du jeu pour le jour/nuit |
 | Plans (`maps`) | **N** | Position `GetEntityCoords` + rue `GetStreetNameAtCoord` ; recherche dans `shared/places.lua` ; itinéraire `SetNewWaypoint(x, y)` (GPS natif) ; `SetWaypointOff` ; carte : `ActivateFrontendMenu(hash, false, -1)` ouvre la carte du menu pause (le hash de la page carte du menu pause est à valider en jeu) ; au retour, `IsWaypointActive` + `GetFirstBlipInfoId(8)` + `GetBlipInfoIdCoord` donnent le point choisi (sprite 8 = marqueur, à valider). Pas de carte dessinée dans la NUI |
@@ -362,7 +362,7 @@ Détail : `docs/api-applis.md`. Résumé : `RegisterApp({ id, nameKey|name, icon
 | Cache | Session par joueur en mémoire (série, déverrouillé, dernière activité) ; table `numberToSrc` ; réglages lus à l'ouverture ; invalidation à la fermeture/`playerDropped`/`OnPlayerUnloaded` |
 | Mesure | `resmon` : client et serveur à 0,00 ms au repos, <= 0,05 ms pendant l'usage normal, <= 0,10 ms en caméra ; mémoire client < 40 Mo avec la NUI ouverte (chiffres à relever en jeu, section 14) |
 
-Alarmes, minuteur, rappels, événements : `scheduler.lua` (client) calcule la prochaine échéance (en minutes de jeu -> millisecondes réelles via `Config.Clock.MsPerGameMinute`, défaut 2000), pose **une** `SetTimeout`, re-lit l'heure du jeu à l'échéance, déclenche `pop_tablet:server:due` (le serveur revérifie l'objet porté et l'existence de l'alarme, puis pousse la notification) et recalcule. Désynchronisation (script de temps externe) : re-planification, 3 essais. Côté serveur, `scheduler.lua` ne sert qu'aux minuteurs en secondes réelles (`ends_at`).
+Alarmes, minuteur, rappels, événements : `scheduler.lua` (client) calcule la prochaine échéance (heure réelle `GetLocalTime`, 60000 ms par minute), pose **une** `SetTimeout`, re-lit l'heure réelle à l'échéance, déclenche `pop_tablet:server:due` (le serveur revérifie l'objet porté et l'existence de l'alarme, puis pousse la notification) et recalcule. Désynchronisation (script de temps externe) : re-planification, 3 essais. Côté serveur, `scheduler.lua` ne sert qu'aux minuteurs en secondes réelles (`ends_at`).
 Batterie : calculée **paresseusement** par horodatage (`battery`, `battery_at`) : usage = -1 % / `Config.Battery.DrainMinutes` ouvertes, recharge = +1 % / `Config.Battery.ChargeMinutes` fermées. Aucune minuterie.
 
 ## 12. Configuration : `config.lua`
@@ -371,14 +371,13 @@ Clés de pop_base conservées (Locale, Debug, Framework, Inventory, Target, Noti
 
 ```lua
 Config.Item = 'pop_tablet'
-Config.Key = 'F5'                       -- touche par défaut (modifiable par le joueur)
+Config.Key = 'F2'                       -- touche par défaut (modifiable par le joueur)
 Config.Prop = { model = 'prop_cs_tablet', bone = 28422, offset = vec3(0,0,0), rot = vec3(0,0,0) } -- à valider en jeu
 Config.Anim = { dict = 'amb@code_human_in_bus_passenger_idles@female@tablet@base', clip = 'base' } -- à valider en jeu
 Config.Session = { IdleLockSeconds = 120 }
 Config.Battery = { Enabled = true, MinToOpen = 5, DrainMinutes = 6, ChargeMinutes = 1 }
 Config.Phone = { Format = '###-####', ChannelBase = 9000, RingSeconds = 25 }
 Config.Mail = { Domain = 'pop.ls' }
-Config.Clock = { Source = 'game', MsPerGameMinute = 2000, Zones = { ... } }
 Config.Photos = { Mode = 'database', Url = '', FormField = 'file', UrlPath = 'url', Max = 200 }
 Config.Translate = { Url = '' }         -- clé : convar set pop_tablet_translate_key
 Config.Music = { Stations = { { name = 'Radio ...', url = 'https://...' } } }

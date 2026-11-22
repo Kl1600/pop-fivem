@@ -102,7 +102,7 @@ export function placeNow(w: WeatherIn, place: Place, hour: number): Now {
 
 export interface HourRow { label: 'now' | number; moon: boolean; sky: Sky; temp: number; pct: number | null }
 
-/** 12 heures à partir de l'heure du jeu : courbe de température sinusoïdale (maximum vers 15 h), lune la nuit par ciel dégagé. */
+/** 12 heures à partir de l'heure locale : courbe de température sinusoïdale (maximum vers 15 h), lune la nuit par ciel dégagé. */
 export function hourly(n: Now, hour: number): HourRow[] {
   const mid = (n.hi + n.lo) / 2;
   const amp = (n.hi - n.lo) / 2;

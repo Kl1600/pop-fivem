@@ -53,7 +53,7 @@ export function estimateKm(from: { mx: number; my: number }, to: { mx: number; m
 
 export interface Trip { km: number; min: number; arrival: string }
 
-/** Durée (voiture 38 km/h de moyenne en ville, à pied 5 km/h) et heure d'arrivée à partir de l'heure du jeu. */
+/** Durée (voiture 38 km/h de moyenne en ville, à pied 5 km/h) et heure d'arrivée à partir de l'heure locale. */
 export function tripOf(km: number, travel: Travel, hour: number, minute: number): Trip {
   const min = Math.max(1, Math.round((km / (travel === 'walk' ? 5 : 38)) * 60));
   const total = hour * 60 + minute + min;

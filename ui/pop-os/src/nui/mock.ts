@@ -44,7 +44,7 @@ export function mockOpen(over: Partial<OpenData> = {}): OpenData {
     rtl: false,
     shell: true,
     mailDomain: 'pop.ls',
-    clock: { h: 14, m: 32, d: 22, mo: 11, y: 2026, msPerMin: 2000 },
+    clock: { h: 14, m: 32, d: 22, mo: 11, y: 2026, msPerMin: 60000 },
     weather: { temp: 24, kind: 'clear', hi: 27, lo: 18, city: 'Los Santos' },
     ...over,
   };

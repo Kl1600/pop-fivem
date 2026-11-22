@@ -4,10 +4,12 @@ export interface ClockSnap {
   h: number;
   m: number;
   d: number;
-  /** Mois 1 à 12 (le client ajoute 1 au natif GetClockMonth, 0 à 11). */
+  /** Secondes de l'instantané (heure locale réelle), 0 si absentes. */
+  s?: number;
+  /** Mois 1 à 12 (convention de la tablette, GetLocalTime). */
   mo: number;
   y: number;
-  /** Millisecondes réelles par minute de jeu. */
+  /** Millisecondes réelles par minute : 60000 (heure réelle). */
   msPerMin: number;
 }
 

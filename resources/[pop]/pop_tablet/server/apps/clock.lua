@@ -1,4 +1,4 @@
--- Horloge : alarmes (heure du jeu, déclenchées par UNE échéance côté client, tablette fermée comprise) et minuteurs
+-- Horloge : alarmes (heure réelle du joueur, déclenchées par UNE échéance côté client, tablette fermée comprise) et minuteurs
 -- (secondes réelles, UNE échéance serveur via Tablet.Scheduler). Le chronomètre et les horloges du monde sont 100 % interface.
 -- Aucune boucle : rien ne tourne tant qu'aucun minuteur ou alarme n'est armé.
 

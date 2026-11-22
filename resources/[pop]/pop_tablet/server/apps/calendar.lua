@@ -1,4 +1,4 @@
--- Calendrier : événements en dates du jeu ('AAAA-MM-JJ HH:MM'), alerte par échéance client (une seule minuterie).
+-- Calendrier : événements en dates réelles ('AAAA-MM-JJ HH:MM'), alerte par échéance client (une seule minuterie).
 -- Le serveur revérifie tout : propriété, formats, bornes, plage <= 90 jours, <= 500 événements.
 
 Tablet = Tablet or {}
@@ -7,7 +7,7 @@ local Cal = Tablet.Calendar
 local P = Tablet.Productivity
 
 ------------------------------------------------------------------------
--- Dates du jeu (partagées avec Rappels et Horloge)
+-- Dates réelles (partagées avec Rappels et Horloge)
 ------------------------------------------------------------------------
 Tablet.Dates = Tablet.Dates or {}
 local Dates = Tablet.Dates
@@ -167,7 +167,7 @@ function Cal.Delete(src, id)
     return { ok = true }
 end
 
---- Échéance signalée par le client : l'alerte de l'événement `id` est due si la date du jeu annoncée est l'heure de l'alerte.
+--- Échéance signalée par le client : l'alerte de l'événement `id` est due si la date réelle annoncée est l'heure de l'alerte.
 function Cal.Due(src, serial, id, kind, stamp)
     if kind ~= 'event' then return end
     local e = Tablet.DB.GetEvent(serial, id)

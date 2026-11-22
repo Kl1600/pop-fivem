@@ -36,7 +36,7 @@ Config.CallbackRateLimit = 10
 Config.Item = 'pop_tablet'
 
 -- Touche d'ouverture par défaut (le joueur la change dans les paramètres de touches de FiveM).
-Config.Key = 'F5'
+Config.Key = 'F2'
 
 -- Objet tenu en main et animation. Valeurs à valider en jeu (elles dépendent des fichiers du jeu).
 Config.Prop = { model = 'prop_cs_tablet', bone = 28422, offset = vec3(0.0, 0.0, 0.0), rot = vec3(0.0, 0.0, 0.0) }
@@ -64,8 +64,7 @@ Config.Phone = { Format = '###-####', ChannelBase = 9000, RingSeconds = 25 }
 -- Adresses mail : <nom>@<Domain>.
 Config.Mail = { Domain = 'pop.ls' }
 
--- Horloge : MsPerGameMinute sert si la native du jeu ne répond pas. Zones = horloges du monde fictives (décalage en heures).
-Config.Clock = { Source = 'game', MsPerGameMinute = 2000, Zones = {} }
+-- Horloge : heure réelle du joueur (GetLocalTime), rien à régler.
 
 -- Photos : 'database' (défaut, aucun secret). 'remote' n'est PAS disponible (renvoie err_unavailable), voir README.
 Config.Photos = { Mode = 'database', Url = '', FormField = 'file', UrlPath = 'url', Max = 200 }

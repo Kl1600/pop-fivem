@@ -1,4 +1,4 @@
--- Horloge du jeu envoyée à l'interface : un instantané à l'ouverture, l'interface avance l'heure seule.
+-- Heure réelle du joueur envoyée à l'interface : un instantané à l'ouverture, l'interface avance l'heure seule.
 -- Resynchronisation toutes les 60 s seulement tant que Horloge/Météo est au premier plan (chaîne de SetTimeout, pas de boucle).
 
 Tablet = Tablet or {}
@@ -9,23 +9,14 @@ local RESYNC_MS = 60000
 local resyncGeneration = 0
 local resyncActive = false
 
---- Millisecondes réelles par minute de jeu : native du jeu, sinon la config.
-function C.MsPerGameMinute()
-    local ms = GetMillisecondsPerGameMinute()
-    if type(ms) == 'number' and ms > 0 then return ms end
-    return Config.Clock.MsPerGameMinute
-end
-
---- Instantané de l'horloge du jeu. Convention unique : mois 1 à 12 partout (le natif GetClockMonth va de 0 à 11, à valider en jeu).
+--- Instantané de l'heure locale réelle du joueur (natif GetLocalTime, le client n'a pas `os`).
+--- Convention unique : mois 1 à 12 partout. Une minute réelle = 60000 ms.
 function C.ClockSnapshot()
-    return {
-        h = GetClockHours(), m = GetClockMinutes(), s = GetClockSeconds(),
-        d = GetClockDayOfMonth(), mo = GetClockMonth() + 1, y = GetClockYear(),
-        msPerMin = C.MsPerGameMinute(),
-    }
+    local y, mo, d, h, m, s = GetLocalTime()
+    return { h = h, m = m, s = s, d = d, mo = mo, y = y, msPerMin = 60000 }
 end
 
---- Date du jeu 'AAAA-MM-JJ HH:MM' envoyée au serveur à l'ouverture (filtre des widgets, aucun droit).
+--- Date réelle 'AAAA-MM-JJ HH:MM' envoyée au serveur à l'ouverture (filtre des widgets, aucun droit).
 function C.GameStamp()
     local s = C.ClockSnapshot()
     return ('%04d-%02d-%02d %02d:%02d'):format(s.y, s.mo, s.d, s.h, s.m)

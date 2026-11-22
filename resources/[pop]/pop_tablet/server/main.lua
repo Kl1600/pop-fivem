@@ -49,7 +49,7 @@ AddEventHandler('onResourceStop', function(resource)
 end)
 
 -- Échéance signalée par le client (alarme, rappel, événement) : le serveur revérifie l'objet porté.
--- `stamp` : date du jeu 'AAAA-MM-JJ HH:MM' annoncée par le client (les gestionnaires la valident et la comparent à l'échéance).
+-- `stamp` : date réelle 'AAAA-MM-JJ HH:MM' annoncée par le client (les gestionnaires la valident et la comparent à l'échéance).
 RegisterNetEvent('pop_tablet:server:due', function(id, kind, stamp)
     local src = source
     -- Anti-spam : 2 signalements par seconde et par joueur, seulement tablette ouverte (la minuterie du client ne tourne que là).

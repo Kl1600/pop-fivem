@@ -111,15 +111,16 @@ function C.Open(hint, openApp, silent)
     end, hint, C.GameStamp())
 end
 
--- Touche réglable (F5 par défaut) : sans objet, le serveur refuse et la touche ne fait rien.
-RegisterCommand('pop_tablet_toggle', function()
+-- Touche réglable (F2 par défaut) : sans objet, le serveur refuse et la touche ne fait rien.
+-- Commande nommée pop_tablet_open : FiveM garde la touche déjà choisie par le joueur pour l'ancien nom.
+RegisterCommand('pop_tablet_open', function()
     if state == 'open' then
         C.Close('key')
     elseif state == 'closed' then
         C.Open(nil, nil, true)
     end
 end, false)
-RegisterKeyMapping('pop_tablet_toggle', L('tablet_key'), 'keyboard', Config.Key)
+RegisterKeyMapping('pop_tablet_open', L('tablet_key'), 'keyboard', Config.Key)
 
 -- Utilisation de l'objet : le serveur envoie la série de la pile utilisée.
 RegisterNetEvent('pop_tablet:client:use', function(serial)

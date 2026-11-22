@@ -80,7 +80,7 @@ function DB.SetApps(serial, apps)
     MySQL.update.await('UPDATE pop_tablet_devices SET apps = ? WHERE serial = ?', { json.encode(apps), serial })
 end
 
---- Widgets de l'accueil : les 3 prochains événements (fin >= date du jeu) et 4 rappels, index (serial, ...).
+--- Widgets de l'accueil : les 3 prochains événements (fin >= date réelle) et 4 rappels, index (serial, ...).
 function DB.WidgetEvents(serial, fromGame)
     return MySQL.query.await(
         'SELECT title, start_game, end_game, all_day, color FROM pop_tablet_events WHERE serial = ? AND end_game >= ? ORDER BY start_game LIMIT 3',

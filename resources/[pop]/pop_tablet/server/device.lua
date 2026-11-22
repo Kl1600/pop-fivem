@@ -379,7 +379,7 @@ end
 --- pop_tablet:device:open
 function D.Open(src, hint, gameNow)
     if not Bridge.GetPlayer(src) then return fail('err_no_player') end
-    -- Date du jeu 'AAAA-MM-JJ HH:MM' donnée par le client : sert seulement à filtrer les widgets (aucun droit).
+    -- Date réelle du joueur 'AAAA-MM-JJ HH:MM' donnée par le client : sert seulement à filtrer les widgets (aucun droit).
     if type(gameNow) ~= 'string' or not gameNow:match('^%d%d%d%d%-%d%d%-%d%d %d%d:%d%d$') then gameNow = nil end
     if Bridge.IsDead(src) then return fail('err_dead') end
     if not Tablet.Limits.Rate(src, 'open', 5) then return fail('err_rate') end
