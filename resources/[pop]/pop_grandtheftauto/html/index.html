@@ -1,16 +1,39 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <title>Cursor</title>
-    <style>
-        body {
-            background: transparent;
-            overflow: hidden;
-            cursor: default;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>pop_grandtheftauto</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="kit/pop.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Fenêtre de piratage (« stop au bon moment »), en bas au centre. Masquée par défaut. -->
+  <div id="hack" class="hack-card pop-fade">
+    <div class="hack-head">
+      <div class="hack-circle"><i class="fas fa-microchip"></i></div>
+      <div class="hack-titles">
+        <div class="hack-title" data-locale="hack_ui_title"></div>
+        <div class="hack-hint" data-locale="hack_ui_hint"></div>
+      </div>
+      <div class="hack-rounds" id="hack-rounds"></div>
+    </div>
+
+    <div class="hack-track" id="hack-track">
+      <div class="hack-zone" id="hack-zone"></div>
+      <div class="hack-cursor" id="hack-cursor"></div>
+    </div>
+
+    <div class="hack-foot">
+      <div class="hack-keys">
+        <span class="hack-key">E</span><span data-locale="hack_ui_validate"></span>
+        <span class="hack-key">Échap</span><span data-locale="hack_ui_abort"></span>
+      </div>
+      <div class="hack-fails" id="hack-fails"></div>
+    </div>
+  </div>
+
+  <script src="kit/pop.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

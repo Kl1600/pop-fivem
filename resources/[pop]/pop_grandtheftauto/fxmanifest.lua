@@ -10,7 +10,6 @@ description 'Casse de la concession Benefactor (Vinewood ouest) : vol de sportiv
 dependencies {
     'clm_ProgressBar',
     'chHyperSound',
-    'ultra-voltlab',
     'interact-sound',
     'pop_inventory',
     'pop_notify',
@@ -52,7 +51,11 @@ server_scripts {
 ui_page 'html/index.html'
 
 files {
-    'html/index.html'
+    'html/index.html',
+    'html/style.css',
+    'html/script.js',
+    'html/kit/pop.css',
+    'html/kit/pop.js',
 }
 
 escrow_ignore {

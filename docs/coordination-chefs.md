@@ -13,7 +13,7 @@ Ce document est la référence commune : à lire en entier avant de commencer.
   - Pas de multi-framework ni de traductions pour l'instant.
 - Auteur dans chaque `fxmanifest.lua` : `author 'KL'`. Pas de mention tab, Tabernac ou Vanguard dans les noms, descriptions ou commandes.
 - Dépendances tierces dans `resources/[pop]/` (noms d'origine, ne pas renommer) :
-  `utility_lib`, `checksystem`, `object_gizmo`, `ox_target` (version Vanguard), `chHyperSound`, `clm_ProgressBar`, `interact-sound`, `pma_voice_challenge`, `ultra-voltlab`.
+  `utility_lib`, `checksystem`, `object_gizmo`, `ox_target` (version Vanguard), `chHyperSound`, `clm_ProgressBar`, `interact-sound`, `pma_voice_challenge`.
 
 ## 2. Serveur de test et déploiement
 

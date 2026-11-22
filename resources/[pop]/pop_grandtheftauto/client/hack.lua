@@ -1,26 +1,24 @@
--- Piratage d'une voiture : verrou serveur, placement du module (caméra), mini-jeu, fin validée par le serveur.
+-- Piratage d'une voiture, en étapes courtes :
+--   1. Brancher le module : [E] près du capot, capot ouvert, 3 s d'animation (barre annulable).
+--   2. Pirater : fenêtre NUI « stop au bon moment » (3 manches, [E] valider, [Échap] abandonner).
+--   3. Réussite : le serveur valide (distance, plaque, mission, pcb) puis déverrouille la voiture.
+--      3 erreurs : alarme, module non consommé, nouvel essai après Config.Hack.retryDelay secondes.
 
 -- =========================
 -- CONFIG
 -- =========================
 local PLATE_PATTERN = "BEN"
-local PROP_MODEL = "hei_prop_heist_card_hack_02"
-local ROTATION_SPEED = 5.0
-local WIN_RADIUS = 0.12
+local PLUG_DISTANCE = 2.2 -- distance au capot pour brancher le module
 
 -- SUIVI DES ÉTATS
-local HackedVehicles = {}
 local CompletedMissions = {}
+local HackedVehicles = {} -- conservé pour pcb.lua (plus utilisé : le piratage se fait d'une traite)
+local retryAt = 0         -- GetGameTimer() avant lequel on ne peut pas réessayer (après l'alarme)
+local busy = false        -- un piratage (ou le branchement) est en cours
 
 -- =========================
 -- SYNCHRO COOP (LOCKS / ÉTATS)
 -- =========================
-
-
-
-
--- Utilisation de ShowPrompt et HidePrompt globaux (depuis utils.lua)
-
 local PendingHackLocks = {}
 local RemoteHackLockedBy = {} -- plate -> serverId
 
@@ -75,21 +73,9 @@ end
 local function ReleaseHackLock(plate)
     if not plate or plate == '' then return end
     TriggerServerEvent('mission:server:releaseHackLock', plate)
+    Debug(('verrou %s rendu'):format(plate))
 end
 
-local function clamp(v, min, max) return math.max(min, math.min(max, v)) end
-
--- =========================
--- CONFIG CAMÉRAS
--- =========================
-local VehicleCamConfig = {
-    schlagen = { camOffset = vector3(0.3, 2.1, 1.3), pointOffset = vector3(0.0, -0.2, 0.25), invertX = true },
-    schweizer2 = { camOffset = vector3(0.0, 3.2, 1.5), pointOffset = vector3(0.0, 0.0, 0.0), invertX = true },
-    krieger = { camOffset = vector3(0.0, 0.0, 1.5), pointOffset = vector3(0.0, 0.0, 0.0), invertX = true },
-    sm722 = { camOffset = vector3(0.0, 0.0, 1.5), pointOffset = vector3(0.0, 0.0, 0.0), invertX = false }
-}
-
--- Les voitures viennent de shared/config.lua (Cars), avec leur modèle de repli
 deliveryStarted = false
 local PendingFinalize = {}
 RegisterNetEvent('mission:client:finalizeResult')
@@ -119,49 +105,6 @@ local function AggressiveEngineStart(vehicle)
     end
 end
 
--- =========================
--- SCALEFORM CONTROLS
--- =========================
-local buttonsScaleform = nil
-
-local function DrawHackControls()
-    if not buttonsScaleform then
-        buttonsScaleform = RequestScaleformMovie("instructional_buttons")
-        while not HasScaleformMovieLoaded(buttonsScaleform) do Wait(0) end
-
-        PushScaleformMovieFunction(buttonsScaleform, "CLEAR_ALL")
-        PopScaleformMovieFunctionVoid()
-
-        PushScaleformMovieFunction(buttonsScaleform, "SET_DATA_SLOT")
-        PushScaleformMovieFunctionParameterInt(0)
-        PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 322, true))
-        PushScaleformMovieMethodParameterString(L('hack_cancel'))
-        PopScaleformMovieFunctionVoid()
-
-        PushScaleformMovieFunction(buttonsScaleform, "SET_DATA_SLOT")
-        PushScaleformMovieFunctionParameterInt(1)
-        PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 38, true))
-        PushScaleformMovieMethodParameterString(L('hack_validate'))
-        PopScaleformMovieFunctionVoid()
-
-        PushScaleformMovieFunction(buttonsScaleform, "SET_DATA_SLOT")
-        PushScaleformMovieFunctionParameterInt(2)
-        PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 241, true))
-        PushScaleformMovieMethodParameterString(L('hack_scroll'))
-        PopScaleformMovieFunctionVoid()
-
-        PushScaleformMovieFunction(buttonsScaleform, "SET_DATA_SLOT")
-        PushScaleformMovieFunctionParameterInt(3)
-        PushScaleformMovieMethodParameterString(GetControlInstructionalButton(0, 25, true))
-        PushScaleformMovieMethodParameterString(L('hack_move'))
-        PopScaleformMovieFunctionVoid()
-
-        PushScaleformMovieFunction(buttonsScaleform, "DRAW_INSTRUCTIONAL_BUTTONS")
-        PopScaleformMovieFunctionVoid()
-    end
-    DrawScaleformMovieFullscreen(buttonsScaleform, 255, 255, 255, 255, 0)
-end
-
 local function GetVehicleByPlatePattern(pattern)
     if #(GetEntityCoords(PlayerPedId()) - Config.ShowroomPos) > 80.0 then return nil end
     local vehicles = GetGamePool("CVehicle")
@@ -177,56 +120,58 @@ local function GetVehicleByPlatePattern(pattern)
     return closest
 end
 
-local function GetVehicleModelName(veh)
-    local model = GetEntityModel(veh)
-    for _, v in ipairs(Cars) do
-        if joaat(v.model) == model or (v.fallback and joaat(v.fallback) == model) then return v.model end
-    end
-    return nil
+-- Position du capot (os « bonnet », sinon l'avant de la voiture)
+local function BonnetCoords(veh)
+    local bone = GetEntityBoneIndexByName(veh, "bonnet")
+    if bone ~= -1 then return GetWorldPositionOfEntityBone(veh, bone) end
+    local _, max = GetModelDimensions(GetEntityModel(veh))
+    return GetOffsetFromEntityInWorldCoords(veh, 0.0, max.y, 0.2)
 end
 
 -- =========================
--- GESTION HACK
+-- MINI-JEU NUI « STOP AU BON MOMENT » (aussi utilisé par le panneau électrique)
 -- =========================
-local ActiveHacks = {}
+local hackResult = nil
+RegisterNUICallback('hackResult', function(data, cb)
+    hackResult = data and data.result or 'abort'
+    cb('ok')
+end)
 
-local function CreateHackInstance(veh, modelName)
-    local startOffset = (modelName == "schweizer2") and vector3(0.35, 0.35, 0.0) or vector3(0.25, 0.25, 0.0)
-    local inst = {
-        ped = PlayerPedId(), veh = veh, cam = nil, prop = nil, placeholder = nil,
-        rotX = 0.0, rotZ = 0.0, offset = startOffset, success = false, modelName = modelName, lockPlate = nil
-    }
-    ActiveHacks[inst.ped] = inst
-    return inst
+-- Renvoie 'success', 'fail' (trop d'erreurs) ou 'abort' (Échap / Retour arrière / mort)
+function RunHackGame(title)
+    local h = Config.Hack
+    hackResult = nil
+    SendNUIMessage({
+        action = 'hack:open', title = title,
+        rounds = h.rounds, zoneStart = h.zoneStart, zoneShrink = h.zoneShrink,
+        speedStart = h.speedStart, speedStep = h.speedStep, maxFails = h.maxFails,
+    })
+    Debug('mini-jeu ouvert')
+
+    -- Pas de focus NUI : le jeu lit [E] et [Échap] ; le joueur ne bouge pas pendant le mini-jeu
+    local limit = GetGameTimer() + 90000
+    while hackResult == nil do
+        DisableAllControlActions(0)
+        DisableControlAction(0, 199, true)
+        DisableControlAction(0, 200, true)
+        EnableControlAction(0, 1, true) -- caméra libre
+        EnableControlAction(0, 2, true)
+        if IsDisabledControlJustPressed(0, 38) then
+            SendNUIMessage({ action = 'hack:stop' })
+        elseif IsDisabledControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 177)
+            or IsEntityDead(PlayerPedId()) or GetGameTimer() > limit then
+            SendNUIMessage({ action = 'hack:close' })
+            hackResult = 'abort'
+        end
+        Wait(0)
+    end
+    Debug(('mini-jeu terminé : %s'):format(hackResult))
+    return hackResult
 end
 
-local function StopHack(inst)
-    RenderScriptCams(false, true, 800, true, true)
-    if DoesCamExist(inst.cam) then DestroyCam(inst.cam, false) end
-    if DoesEntityExist(inst.prop) then DeleteEntity(inst.prop) end
-    if DoesEntityExist(inst.placeholder) then DeleteEntity(inst.placeholder) end
-
-    if DoesEntityExist(inst.veh) and not inst.success then
-        SetVehicleDoorShut(inst.veh, 4, false)
-    end
-
-    FreezeEntityPosition(inst.ped, false)
-    SetNuiFocus(false, false)
-    SetNuiFocusKeepInput(false)
-
-    if buttonsScaleform then
-        SetScaleformMovieAsNoLongerNeeded(buttonsScaleform)
-        buttonsScaleform = nil
-    end
-
-    ActiveHacks[inst.ped] = nil
-
-    if inst.lockPlate and not inst.success then
-        ReleaseHackLock(inst.lockPlate)
-        Debug(('piratage annulé (%s) : verrou libéré'):format(inst.lockPlate))
-    end
-end
-
+-- =========================
+-- FIN DU PIRATAGE (validée par le serveur)
+-- =========================
 local function FinalizeHack(veh)
     local plate = trim(GetVehicleNumberPlateText(veh))
 
@@ -240,9 +185,7 @@ local function FinalizeHack(veh)
     if not res or not res.ok then
         local reason = res and res.reason or 'timeout'
         Debug(('fin du piratage refusée par le serveur (%s) : %s'):format(plate, reason))
-        -- Le verrou est rendu : le joueur peut réessayer (DÉMARRER) sans rester bloqué
         ReleaseHackLock(plate)
-        if reason == 'completed' then HackedVehicles[plate] = nil end
         if reason == 'nopcb' then
             MissionNotify(L('need_pcb'), 5000)
         elseif reason == 'completed' then
@@ -250,18 +193,17 @@ local function FinalizeHack(veh)
         else
             MissionNotify(L('hack_failed'), 5000)
         end
-        return
+        return false
     end
 
     Debug(('piratage réussi (%s) : voiture déverrouillée par le serveur'):format(plate))
     NetworkRequestControlOfEntity(veh)
     local ctrlLimit = GetGameTimer() + 1000
     while not NetworkHasControlOfEntity(veh) and GetGameTimer() < ctrlLimit do Wait(10) end
-    SetVehicleDoorOpen(veh, 4, false, true)
 
-    HackedVehicles[plate] = nil
     CompletedMissions[plate] = true
     deliveryStarted = true
+    SetVehicleDoorShut(veh, 4, false)
     AggressiveEngineStart(veh)
 
     -- Alertes police (positions et véhicules suivis déterminés par le serveur)
@@ -273,76 +215,27 @@ local function FinalizeHack(veh)
     TriggerEvent('ondeliveryblip')
     TriggerEvent('spawncamion')
 
-    for i = 0, 5 do SetVehicleDoorOpen(veh, i, false, true) end
-    Wait(1000)
-    for i = 0, 5 do SetVehicleDoorShut(veh, i, false) end
-
-        MissionNotify(L('security_off'), 7000)
+    MissionNotify(L('security_off'), 7000)
+    return true
 end
 
-local function StartCableHack(veh)
-    NetworkRequestControlOfEntity(veh)
-    local timeout = 0
-    while not NetworkHasControlOfEntity(veh) and timeout < 50 do
-        Wait(10)
-        timeout = timeout + 1
-    end
-
-    local modelName = GetVehicleModelName(veh)
-    local inst = CreateHackInstance(veh, modelName)
-    inst.lockPlate = trim(GetVehicleNumberPlateText(veh))
-    local cfg = VehicleCamConfig[modelName]
-
-    SetVehicleDoorOpen(veh, 4, false, true)
-    if IsCoopActive() then
-        Relay("command", { cmd = "opencapot" }, false)
-    end
-
-    FreezeEntityPosition(inst.ped, true)
-
-    local bone = GetEntityBoneIndexByName(veh, "engine")
-    if bone == -1 then bone = GetEntityBoneIndexByName(veh, "bonnet") end
-
-    local model = LoadModel(PROP_MODEL)
-    if not model then
-        FreezeEntityPosition(inst.ped, false)
-        ActiveHacks[inst.ped] = nil
-        ReleaseHackLock(inst.lockPlate)
-        return
-    end
-
-    local attachZ = (modelName == "schweizer2") and 0.22 or 0.1
-
-    inst.placeholder = CreateObject(model, 0, 0, 0, false, false, false)
-    SetEntityCollision(inst.placeholder, false, false)
-    AttachEntityToEntity(inst.placeholder, veh, bone, 0.0, 0.0, attachZ, 0.0, 90.0, 0.0, false, false, false, false, 2, true)
-    SetEntityAlpha(inst.placeholder, 100, false)
-    SetEntityDrawOutline(inst.placeholder, true)
-    SetEntityDrawOutlineColor(0, 255, 0, 255)
-
-    inst.prop = CreateObject(model, 0, 0, 0, false, false, false)
-    SetEntityCollision(inst.prop, false, false)
-    SetEntityDrawOutline(inst.prop, true)
-
-    inst.cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-    local camOffset = cfg and cfg.camOffset or vector3(0.0, 0.0, 1.5)
-    local camPos = GetOffsetFromEntityInWorldCoords(veh, camOffset.x, camOffset.y, camOffset.z)
-    SetCamCoord(inst.cam, camPos.x, camPos.y, camPos.z)
-    PointCamAtEntity(inst.cam, inst.placeholder, 0.0, 0.0, 0.0, true)
-
-    SetCamActive(inst.cam, true)
-    RenderScriptCams(true, true, 800, true, true)
-    -- Pas de focus NUI : la souris est lue par les contrôles du jeu (plus d'Échap ou de focus bloqué)
-    Debug(('placement du module commencé (%s)'):format(inst.lockPlate))
-end
-
-local function StartCableHackCoop(veh)
+-- =========================
+-- DÉROULÉ COMPLET SUR UNE VOITURE
+-- =========================
+local function HackVehicle(veh)
+    if busy then return end
     local plate = trim(GetVehicleNumberPlateText(veh))
+
     if CompletedMissions[plate] then
-            MissionNotify(L('already_hacked'), 7000)
+        MissionNotify(L('already_hacked'), 7000)
+        return
+    end
+    if GetGameTimer() < retryAt then
+        MissionNotify(L('hack_retry_wait', math.ceil((retryAt - GetGameTimer()) / 1000)), 5000)
         return
     end
 
+    busy = true
     local ok, reason = RequestHackLock(plate)
     Debug(('verrou %s : %s (%s)'):format(plate, ok and 'obtenu' or 'refusé', tostring(reason)))
     if not ok then
@@ -352,132 +245,99 @@ local function StartCableHackCoop(veh)
             MissionNotify(L('being_hacked'), 7000)
         elseif reason == 'nomission' then
             MissionNotify(L('no_heist'), 7000)
+        elseif reason == 'cooldown' then
+            MissionNotify(L('hack_retry_wait', Config.Hack.retryDelay), 5000)
         else
             MissionNotify(L('hack_failed_retry'), 5000)
         end
+        busy = false
         return
     end
-    StartCableHack(veh)
+
+    -- 1. Brancher le module : capot ouvert, mécano penché sur le moteur
+    local ped = PlayerPedId()
+    NetworkRequestControlOfEntity(veh)
+    local ctrlLimit = GetGameTimer() + 500
+    while not NetworkHasControlOfEntity(veh) and GetGameTimer() < ctrlLimit do Wait(10) end
+    SetVehicleDoorOpen(veh, 4, false, false)
+    Relay("command", { cmd = "opencapot" }, false)
+    TaskTurnPedToFaceCoord(ped, GetEntityCoords(veh), 800)
+    Wait(800)
+
+    local plugged = Bridge.Progress(L('hack_plug'), Config.Hack.plugTime, {
+        anim = { dict = 'mini@repair', clip = 'fixing_a_player', flag = 1 },
+        canCancel = true,
+    })
+    ClearPedTasks(ped)
+    if not plugged then
+        Debug(('branchement annulé (%s)'):format(plate))
+        SetVehicleDoorShut(veh, 4, false)
+        ReleaseHackLock(plate)
+        busy = false
+        return
+    end
+    Debug(('module branché (%s)'):format(plate))
+
+    -- 2. Pirater
+    local result = RunHackGame(L('hack_ui_title'))
+
+    if result == 'success' then
+        -- 3. Le serveur valide tout (distance, plaque, mission, module)
+        FinalizeHack(veh)
+    elseif result == 'fail' then
+        -- Trop d'erreurs : alarme, module non consommé, nouvel essai plus tard
+        retryAt = GetGameTimer() + Config.Hack.retryDelay * 1000
+        TriggerServerEvent('mission:server:hackFailed', plate)
+        ReleaseHackLock(plate)
+        SetVehicleDoorShut(veh, 4, false)
+        TriggerEvent('grandtheftauto:alarme')
+        MissionNotify(L('hack_alarm', Config.Hack.retryDelay), 7000)
+    else
+        ReleaseHackLock(plate)
+        SetVehicleDoorShut(veh, 4, false)
+        MissionNotify(L('hack_aborted'), 5000)
+    end
+    busy = false
 end
 
-local startBusy = false
+local function StartHackFlow(veh)
+    CreateThread(function() HackVehicle(veh) end)
+end
+
+-- =========================
+-- INVITE « BRANCHER LE MODULE » PRÈS DU CAPOT
+-- =========================
 CreateThread(function()
     while true do
-        local wait = 500
-        local ped = PlayerPedId()
-
-        if not IsCoopActive() and next(ActiveHacks) == nil then
-            wait = 1500
-            HidePrompt("start_module")
-        elseif next(ActiveHacks) ~= nil then
-            for _, inst in pairs(ActiveHacks) do
-                wait = 0
-                DisableAllControlActions(0)
-                DisableControlAction(0, 199, true) -- pas de menu pause pendant le placement
-                DisableControlAction(0, 200, true)
-                if IsDisabledControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 177) then
-                    HidePrompt("fix_module_"..tostring(inst.ped))
-                    StopHack(inst)
-                    break
-                end
-
-                DrawHackControls()
-
-                if not inst.success then
-                    local my = GetDisabledControlNormal(0, 2)
-                    local scrollMove = 0.0
-                    if IsDisabledControlJustPressed(0, 241) then scrollMove = 0.08
-                    elseif IsDisabledControlJustPressed(0, 242) then scrollMove = -0.08 end
-
-                    if IsDisabledControlPressed(0, 24) then
-                        inst.rotZ = inst.rotZ - GetDisabledControlNormal(0, 1) * ROTATION_SPEED
-                        inst.rotX = clamp(inst.rotX + my * ROTATION_SPEED, -45.0, 45.0)
-                    end
-
-                    if IsDisabledControlPressed(0, 25) then
-                        inst.offset = inst.offset + vector3(my * 0.02, 0.0, 0.0)
-                    end
-
-                    if scrollMove ~= 0.0 then
-                        inst.offset = inst.offset + vector3(0.0, scrollMove, 0.0)
-                    end
-
-                    inst.offset = vector3(clamp(inst.offset.x, -0.6, 0.6), clamp(inst.offset.y, -0.6, 0.6), 0.0)
-
-                    local finalPos = GetOffsetFromEntityInWorldCoords(inst.placeholder, inst.offset.x, inst.offset.y, inst.offset.z)
-                    SetEntityCoordsNoOffset(inst.prop, finalPos.x, finalPos.y, finalPos.z, true, true, true)
-                    SetEntityRotation(inst.prop, inst.rotX, 90.0, inst.rotZ + GetEntityHeading(inst.veh), 2, true)
-
-                    if #(GetEntityCoords(inst.prop) - GetEntityCoords(inst.placeholder)) < WIN_RADIUS then
-                        inst.success = true
-                        local plate = trim(GetVehicleNumberPlateText(inst.veh))
-                        HackedVehicles[plate] = true
-                        Debug(('module placé (%s)'):format(plate))
-                        PlaySoundFrontend(-1, "Challenge_Unlock", "HUD_AWARDS", true)
-                        HidePrompt("fix_module_"..tostring(inst.ped))
-                    end
-                else
-                    ShowPrompt("fix_module_"..tostring(inst.ped), GetEntityCoords(inst.prop) + vector3(0,0,0.2), L('prompt_fix'), "fas fa-microchip")
-                    if IsDisabledControlJustReleased(0, 38) then
-                        local v = inst.veh
-                        StopHack(inst)
-                        HidePrompt("fix_module_"..tostring(inst.ped))
-                        CreateThread(function()
-                            Wait(100)
-                            if RunVoltlab(30) then
-                                FinalizeHack(v)
-                            else
-                                Debug('mini-jeu du module raté ou abandonné')
-                                MissionNotify(L('hack_failed_restart'), 5000)
-                            end
-                        end)
-                        break
-                    end
-                end
-            end
-        else
+        local wait = 1000
+        if IsCoopActive() and not busy then
             local veh = GetVehicleByPlatePattern(PLATE_PATTERN)
+            local shown = false
             if veh then
                 local plate = trim(GetVehicleNumberPlateText(veh))
-                if HackedVehicles[plate] and not CompletedMissions[plate] then
-                    local vCoords = GetEntityCoords(veh)
-                    local dist = #(GetEntityCoords(ped) - vCoords)
-                    if dist < 4.0 then
+                if not CompletedMissions[plate] then
+                    wait = 300
+                    local bonnet = BonnetCoords(veh)
+                    if #(GetEntityCoords(PlayerPedId()) - bonnet) < PLUG_DISTANCE and not IsPedInAnyVehicle(PlayerPedId(), false) then
                         wait = 0
-                        ShowPrompt("start_module", vCoords + vector3(0,0,1.0), L('prompt_start'), "fas fa-power-off")
-                        if IsControlJustReleased(0, 38) and not startBusy then
-                            HidePrompt("start_module")
-                            startBusy = true
-                            CreateThread(function()
-                                -- Le verrou a pu expirer ou être rendu : on le reprend avant le mini-jeu
-                                local ok, reason = RequestHackLock(plate)
-                                Debug(('DÉMARRER %s : verrou %s (%s)'):format(plate, ok and 'obtenu' or 'refusé', tostring(reason)))
-                                if not ok then
-                                    if reason == 'completed' then
-                                        HackedVehicles[plate] = nil
-                                        MissionNotify(L('already_hacked'), 7000)
-                                    elseif reason == 'locked' then
-                                        MissionNotify(L('being_hacked'), 7000)
-                                    else
-                                        MissionNotify(L('hack_failed_retry'), 5000)
-                                    end
-                                elseif RunVoltlab(30) then
-                                    FinalizeHack(veh)
+                        shown = true
+                        ShowPrompt("plug_module", bonnet + vector3(0, 0, 0.4), L('prompt_plug'), "fas fa-microchip")
+                        if IsControlJustReleased(0, 38) then
+                            HidePrompt("plug_module")
+                            CheckItem('pcb', function(hasItem)
+                                if hasItem then
+                                    StartHackFlow(veh)
                                 else
-                                    MissionNotify(L('hack_failed'), 5000)
+                                    MissionNotify(L('need_pcb'), 5000)
                                 end
-                                startBusy = false
                             end)
                         end
-                    else
-                        HidePrompt("start_module")
                     end
-                else
-                    HidePrompt("start_module")
                 end
-            else
-                HidePrompt("start_module")
             end
+            if not shown then HidePrompt("plug_module") end
+        else
+            HidePrompt("plug_module")
         end
         Wait(wait)
     end
@@ -487,28 +347,32 @@ end)
 -- FIN DE MISSION : remise à zéro
 -- =========================
 AddEventHandler('mission:local:reset', function()
-    for _, inst in pairs(ActiveHacks) do StopHack(inst) end
+    if hackResult == nil then SendNUIMessage({ action = 'hack:close' }) end
+    hackResult = 'abort'
+    busy = false
+    retryAt = 0
     deliveryStarted = false
     -- vidées sur place : pcb.lua garde une référence vers ces tables
     for k in pairs(HackedVehicles) do HackedVehicles[k] = nil end
     for k in pairs(CompletedMissions) do CompletedMissions[k] = nil end
     for k in pairs(RemoteHackLockedBy) do RemoteHackLockedBy[k] = nil end
     for k in pairs(PendingHackLocks) do PendingHackLocks[k] = nil end
-    HidePrompt("start_module")
+    HidePrompt("plug_module")
 end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    for _, inst in pairs(ActiveHacks) do StopHack(inst) end
+    HidePrompt("plug_module")
 end)
 
 -- Partagé avec pcb.lua (commande, glisser-déposer, livraison coop)
 PCB = {
     PATTERN = PLATE_PATTERN,
-    Active = ActiveHacks,
+    Active = {},          -- (ancien placement 3D) : toujours vide, gardé pour pcb.lua
     Hacked = HackedVehicles,
     Completed = CompletedMissions,
     trim = trim,
     FindVehicle = GetVehicleByPlatePattern,
-    StartCoop = StartCableHackCoop,
+    StartCoop = StartHackFlow,
+    IsBusy = function() return busy end,
 }
