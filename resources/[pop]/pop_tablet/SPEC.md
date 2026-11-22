@@ -128,7 +128,7 @@ Contraintes : numéro de téléphone `Config.Phone.Format` (défaut `###-####` c
 
 Vite + React + TypeScript + `motion` (animations). Sortie : `resources/[pop]/pop_tablet/web/dist/` (`build.outDir`, `base: './'`). `dist` est versionné ; aucun build au déploiement.
 `ui/pop-os/package.json` : scripts `dev`, `build`, `typecheck` (`tsc --noEmit`), `test` (vitest). Gestionnaire : pnpm + lockfile.
-Dépendances minimales : react, react-dom, motion. Pas de bibliothèque de composants, pas de CDN, pas de requête réseau au chargement. Bundle visé : `dist` JS total <= 450 Ko non compressé hors polices (mesuré par la commande de build, voir feature `perf-bundle`).
+Dépendances minimales : react, react-dom, motion. Pas de bibliothèque de composants, pas de CDN, pas de requête réseau au chargement. Bundle visé : point d'entrée JS <= 450 Ko, total `dist` JS <= 2 Mo, non compressé hors polices, fichiers locaux, applis chargées à la demande (décision du chef du 22/11/2026 ; mesuré par `pnpm verify`, voir feature `perf-bundle`).
 
 ### 6.2 Séparation système appareil / applis (obligatoire)
 
