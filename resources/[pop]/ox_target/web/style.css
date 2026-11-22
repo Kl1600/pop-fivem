@@ -77,12 +77,6 @@ p { margin: 0; }
   border-bottom: 1px solid var(--pop-border);
 }
 
-.pop-target-head .circle {
-  display: flex;
-  align-items: center;
-  color: #fff;
-}
-
 .pop-target-head .title {
   font-size: 13px;
   font-weight: 700;
