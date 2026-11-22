@@ -11,7 +11,8 @@
 - pop_bennys : prix recalculé côté serveur (items), distance au Benny's vérifiée, `/bennys` réservé aux admins (ACE `pop.admin`), texte de plaque non modifiable (style seulement), `lua54`.
 
 
-## Gabarit POP (restructuration)
+## Gabarit POP (restructuration) — terminé le 22/11
+Les 13 scripts du lot sont au gabarit (luacheck 0/0 sur 141 fichiers, luac5.4 et node --check OK). pop_notify et pop_bank : faits par le Chef 1. vg_engine gardé (partagé avec ox_target, tiers).
 - pop_doorlock : gabarit complet (client/doors, builder ; server/common, doors, builder), callbacks ESX → Callback, textes dans locales/fr.lua, README réécrit.
 - pop_affiche : gabarit complet (client/panels, editor, placement ; server/common, database, affiches), réglages VIP dans config.lua.
 - pop_boards : gabarit complet (client/panels, editor, placement, sync ; server/common, database, boards, sync), lib.callback → Callback, ox_lib retiré.
