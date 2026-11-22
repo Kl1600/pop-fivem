@@ -49,6 +49,7 @@ Config.Security = {
     LockBaseSeconds  = 60,   -- premier blocage, doublé à chaque échec suivant
     LockMaxSeconds   = 3600,
     UnlockRatePerSec = 2,    -- tentatives max par seconde et par joueur
+    HashBudgetPerSec = 20,   -- hachages de code max par seconde, tous joueurs confondus
 }
 
 -- Batterie calculée par horodatage, sans minuterie : -1 % par DrainMinutes ouvertes, +1 % par ChargeMinutes fermées.

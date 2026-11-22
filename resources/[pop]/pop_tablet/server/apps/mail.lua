@@ -27,11 +27,12 @@ end
 local function alert(serial, from, subject, id)
     local src = P.Carrier(serial)
     if not src then return end
-    local s = Tablet.Device.GetSession(src)
-    if s and not P.Online(s) then return end
+    local settings = P.SettingsOf(serial) -- session, sinon base (cache)
+    if not P.NetworkOk(settings) then return end
+    local s = P.SessionFor(serial)
     if s and s.openedAt then
         Tablet.Push.To(src, 'mail', { id = id, from = from:sub(1, 80), subject = subject:sub(1, 80) })
-    elseif not (s and s.settings and s.settings.notif and s.settings.notif.mail == false) then
+    elseif not (settings.notif and settings.notif.mail == false) then
         Bridge.Notify(src, L('mail_notif', from, subject), 'info')
     end
 end

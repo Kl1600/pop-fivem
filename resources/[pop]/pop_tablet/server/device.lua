@@ -142,6 +142,18 @@ local function hashCode(salt, code)
     return Tablet.Hash.code(pepper(), salt, code, Config.Security.HashIterations)
 end
 
+-- Budget global de hachages par seconde, tous joueurs confondus : le HMAC itéré coûte du temps serveur, donc
+-- plusieurs joueurs ne peuvent pas, ensemble, saturer le serveur en essais de code.
+local hashWindow = { t = 0, n = 0 }
+
+--- Prend un hachage sur le budget de la seconde. false si le budget est épuisé.
+local function hashBudget()
+    local t = Tablet.Now()
+    if hashWindow.t ~= t then hashWindow.t, hashWindow.n = t, 0 end
+    hashWindow.n = hashWindow.n + 1
+    return hashWindow.n <= (Config.Security.HashBudgetPerSec or 20)
+end
+
 local function codeFormat(code)
     return type(code) == 'string' and #code == 4 and code:match('^%d%d%d%d$') ~= nil
 end
@@ -288,12 +300,16 @@ end
 function D.DropSession(src)
     local s = sessions[src]
     converting[src] = nil
-    Tablet.Limits.Forget(src)
+    -- Les limites de débit ne sont PAS remises à zéro ici : changer de session (perte, autre tablette) ne doit pas
+    -- rendre des appels. Elles sont vidées au départ du joueur seulement (server/main.lua : Limits.Forget).
+    if Tablet.Peer then Tablet.Peer.Unindex(src) end
     if not s then return end
     pcall(endUse, s)
     if Tablet.Phone then pcall(Tablet.Phone.Forget, src) end -- appel en cours : fin propre des deux côtés
     if serialSrc[s.serial] == src then serialSrc[s.serial] = nil end
     sessions[src] = nil
+    if Tablet.Peer then Tablet.Peer.ForgetSettings(s.serial) end
+    Tablet.Limits.Forget('tab:' .. s.serial)
 end
 
 function D.StopAll()
@@ -403,6 +419,7 @@ function D.Open(src, hint, gameNow)
     s.openedAt, s.last, s.gameNow = t, t, gameNow
     DB().TouchOpen(serial, battery, t)
     row.battery = battery
+    if Tablet.Peer then Tablet.Peer.Index(src) end -- annuaire des porteurs : mis à jour à l'ouverture
 
     local needSetup = row.code_hash == nil
     local out = { ok = true, serial = serial, needSetup = needSetup, locked = needSetup or not s.unlocked }
@@ -416,6 +433,7 @@ function D.Close(src)
     if not s then return fail(err) end
     endUse(s)
     if Tablet.Phone then Tablet.Phone.Forget(src) end -- fermer la tablette raccroche tout de suite (le contrôle de 20 s reste un filet)
+    if Tablet.Peer then Tablet.Peer.Index(src) end -- annuaire des porteurs : mis à jour à la fermeture
     return { ok = true }
 end
 
@@ -457,6 +475,10 @@ function D.Setup(src, data)
     if not DB().ClaimMailbox(address, s.serial) then
         return fail(DB().MailboxOwner(address) == s.serial and 'err_setup_done' or 'err_mail_taken')
     end
+    if not hashBudget() then
+        DB().DeleteMailbox(address, s.serial)
+        return fail('err_rate')
+    end
     local salt = newSalt()
     local settings = json.encode({ lang = data.lang, dark = false, mail = address })
     local apps = json.encode(Tablet.Store and Tablet.Store.DefaultApps() or {})
@@ -474,6 +496,7 @@ local function attempt(row, code)
     if (row.locked_until or 0) > t then
         return fail('err_code_blocked', { wait = row.locked_until - t })
     end
+    if not hashBudget() then return fail('err_rate') end
     if Tablet.Hash.equals(hashCode(row.code_salt, code), row.code_hash) then
         if (row.fails or 0) > 0 then DB().SetFails(row.serial, 0, 0) end
         return true
@@ -493,6 +516,8 @@ function D.Unlock(src, code)
     local row = DB().GetDevice(s.serial)
     if not row then return fail('err_db') end
     if row.code_hash == nil then return fail('err_setup_needed') end
+    -- Session déjà déverrouillée : aucun nouveau hachage (un client ne peut pas faire payer du calcul en boucle).
+    if s.unlocked then return { ok = true, boot = D.Boot(row) } end
     if not codeFormat(code) then return fail('err_code_format') end
     local result = attempt(row, code)
     if result ~= true then return result end
@@ -509,6 +534,7 @@ function D.ChangeCode(src, old, new)
     if not codeFormat(old) or not codeFormat(new) then return fail('err_code_format') end
     local result = attempt(row, old)
     if result ~= true then return result end
+    if not hashBudget() then return fail('err_rate') end
     local salt = newSalt()
     DB().SetCode(s.serial, hashCode(salt, new), salt)
     return { ok = true }
@@ -540,6 +566,7 @@ function D.Give(target)
         Bridge.RemoveItem(target, Config.Item, 1, { serial = serial })
         return false, nil, 'err_db'
     end
+    if Tablet.Peer then Tablet.Peer.Index(target) end
     return true, serial
 end
 

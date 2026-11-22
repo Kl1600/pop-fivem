@@ -12,6 +12,7 @@ local function start()
     local purged, purgedCalls = Tablet.DB.Purge(Config.Retention.Days, Tablet.Now())
     if purged > 0 or purgedCalls > 0 then log('log_purged', purged, purgedCalls) end
     if Tablet.Clock then Tablet.Clock.Rearm() end -- minuteurs en cours : une seule échéance serveur
+    for _, p in ipairs(Bridge.GetPlayers()) do Tablet.Peer.Index(p) end -- joueurs déjà chargés : annuaire des porteurs, une seule fois
     log(Tablet.Device.Mode() == 'item' and 'log_mode_item' or 'log_mode_owner')
     if GetConvar('pop_tablet_pepper', '') == '' then log('log_pepper_missing') end
     -- Utiliser l'objet ouvre la tablette (le serial de la pile utilisée sert d'indice, revérifié à l'ouverture).
@@ -29,6 +30,8 @@ end
 -- Nettoyage : drop, retour au choix du personnage, arrêt de la ressource.
 local function forget(src)
     Tablet.Device.DropSession(src)
+    Tablet.Limits.Forget(src) -- limites de débit : vidées au départ du joueur seulement, pas au changement de session
+    Tablet.Limits.Forget('tab:p' .. tostring(src))
     if Tablet.Share then Tablet.Share.Forget(src) end
     if Tablet.Recorder then Tablet.Recorder.Forget(src) end
     if Tablet.Stocks then Tablet.Stocks.Forget(src) end

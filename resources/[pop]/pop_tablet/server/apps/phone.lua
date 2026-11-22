@@ -95,8 +95,8 @@ function PH.Call(src, data)
     local id = Tablet.DB.InsertCall(me, data.to, now)
     if not id then return Tablet.Fail('err_db') end
     local to = P.Carrier(serial)
-    local ts = to and Tablet.Device.GetSession(to)
-    if not to or (ts and not P.Online(ts)) then
+    local ts = P.SessionFor(serial)
+    if not to or not P.NetworkOk(P.SettingsOf(serial)) then
         Tablet.DB.UpdateCall(id, 'missed', nil, now)
         return Tablet.Fail('err_unreachable', { callId = id })
     end
@@ -133,6 +133,8 @@ function PH.Answer(src, callId)
     if not s then return Tablet.Fail(err) end
     local c = mine(src, callId)
     if not c or c.to ~= src or c.state ~= 'ring' then return Tablet.Fail('err_not_found') end
+    -- La session ouverte doit être la tablette appelée (un joueur peut en porter plusieurs).
+    if P.PhoneOf(s) ~= c.tp then return Tablet.Fail('err_not_found') end
     c.state, c.answeredAt = 'active', Tablet.Now()
     Tablet.Scheduler.Cancel('call:' .. c.id)
     local channel = Config.Phone.ChannelBase + c.id
@@ -197,9 +199,9 @@ end
 function PH.Voicemail(src, data)
     local s, err = Tablet.Guard(src, nil, { name = 'phoneVm', rate = 1, payload = data, maxBytes = 1024, online = true })
     if not s then return Tablet.Fail(err) end
-    if type(data) ~= 'table' or not phoneOk(data.to) or type(data.text) ~= 'string' then return Tablet.Fail('err_payload') end
-    local len = utf8.len(data.text)
-    if not len or len < 1 or len > Tablet.Comm.voicemail then return Tablet.Fail('err_payload') end
+    if type(data) ~= 'table' or not phoneOk(data.to) then return Tablet.Fail('err_payload') end
+    local ok, ferr = Tablet.Limits.Field('voicemail', data.text, { min = 1 })
+    if not ok then return Tablet.Fail(ferr) end
     local me = P.PhoneOf(s)
     if data.to == me then return Tablet.Fail('err_payload') end
     if not Tablet.DB.PhoneExists(data.to) then return Tablet.Fail('err_not_found') end

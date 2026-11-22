@@ -2338,6 +2338,128 @@ do
     def('json', keep)
 end
 
+------------------------------------------------------------------------
+section('Corrections de sécurité (relecture) : rename, hachages, annuaire, réglages hors session, appel, messagerie vocale')
+------------------------------------------------------------------------
+do
+    local H = handlers
+    local function tk() clock = clock + 6 end
+    local function fresh(src)
+        local s = Tablet.Device.GetSession(src)
+        s.last, s.unlocked = clock, true
+        return s
+    end
+    local notes = {}
+    Bridge.Notify = function(src, msg) notes[#notes + 1] = { src = src, msg = msg } end
+
+    -- 1. Trim linéaire et borne de taille de settings:rename
+    check('Trim : blancs retirés des deux côtés', Limits.Trim('  \t a b \n ') == 'a b' and Limits.Trim('   ') == '' and Limits.Trim('') == '' and Limits.Trim('x') == 'x')
+    local t1 = os.clock()
+    local long = 'a' .. string.rep(' ', 200000) .. 'b' .. string.rep(' ', 200000)
+    check('Trim : 400 000 blancs sans coût quadratique', Limits.Trim(long) == 'a' .. string.rep(' ', 200000) .. 'b' and os.clock() - t1 < 0.5, os.clock() - t1)
+    check('Trim : plus de motif %s+$', not io.open('server/limits.lua'):read('a'):find('%%s%+%$', 1))
+    DB.SetName = function(serial, name) rows[serial].name = name end
+    fresh(60) tk()
+    local huge = H['pop_tablet:settings:rename'](60, string.rep(' ', 1000000) .. 'x')
+    check('settings:rename : 1 Mo refusé avant tout découpage', huge.ok == false and huge.err == 'err_too_large', huge.err)
+    fresh(60) tk()
+    local rn = H['pop_tablet:settings:rename'](60, '  Zed  ')
+    check('settings:rename : nom normal accepté et nettoyé', rn.ok and rn.name == 'Zed', rn.err)
+
+    -- 2. Hachages : aucun recalcul si déjà déverrouillée, budget global par seconde
+    local hashed, origCode = 0, Tablet.Hash.code
+    Tablet.Hash.code = function(...) hashed = hashed + 1 return origCode(...) end
+    fresh(60) tk()
+    local un = H['pop_tablet:device:unlock'](60, '0000')
+    check('unlock : session déjà déverrouillée, aucun hachage', un.ok and hashed == 0, hashed)
+    local oldBudget = Config.Security.HashBudgetPerSec
+    Config.Security.HashBudgetPerSec = 2
+    tk()
+    local res = {}
+    for i, src in ipairs({ 60, 61, 62 }) do
+        fresh(src).unlocked = false
+        Tablet.Limits.Forget(src)
+        res[i] = H['pop_tablet:device:unlock'](src, '0000').err
+    end
+    check('unlock : budget global de 2 hachages par seconde, 3e joueur refusé', hashed == 2 and res[1] == 'err_code_wrong' and res[2] == 'err_code_wrong' and res[3] == 'err_rate',
+        tostring(hashed) .. ' ' .. tostring(res[3]))
+    tk()
+    Config.Security.HashBudgetPerSec = oldBudget
+    for _, src in ipairs({ 60, 61, 62 }) do fresh(src) rows[Tablet.Device.SerialOf(src)].fails, rows[Tablet.Device.SerialOf(src)].locked_until = 0, 0 end
+    Tablet.Hash.code = origCode
+
+    -- 8. Limites de débit : pas de remise à zéro au changement de session
+    check('Rate : 1er appel passe', Limits.Rate(77, 'sonde', 1) == true)
+    D.DropSession(77)
+    check('Rate : DropSession ne rend pas les appels', Limits.Rate(77, 'sonde', 1) == false)
+    Limits.Forget(77)
+    check('Rate : départ du joueur (Forget) les rend', Limits.Rate(77, 'sonde', 1) == true)
+    Limits.Forget(77)
+
+    -- 5. Annuaire des porteurs
+    local getPlayers, realGetPlayers = 0, Bridge.GetPlayers
+    Bridge.GetPlayers = function() getPlayers = getPlayers + 1 return realGetPlayers() end
+    players[63] = 'peerchar63'
+    inv[63] = {}
+    local okGive, serialZ = D.Give(63)
+    check('Give : tablette créée pour le joueur 63', okGive and D.SerialValid(serialZ))
+    check('Carrier : trouvé par l\'annuaire, sans parcourir les joueurs', Tablet.Peer.Carrier(serialZ) == 63 and getPlayers == 0, getPlayers)
+    check('Carrier : série inconnue = nil sans parcours', Tablet.Peer.Carrier('PT-ZZZZZZZZZZ') == nil and getPlayers == 0)
+    inv[63] = {}
+    check('Carrier : objet disparu de l\'inventaire = nil (revérifié)', Tablet.Peer.Carrier(serialZ) == nil)
+    inv[63] = { { name = 'pop_tablet', count = 1, slot = 1, metadata = { serial = serialZ } } }
+    Tablet.Peer.Index(63)
+    check('Carrier : réindexé à l\'ouverture/fermeture', Tablet.Peer.Carrier(serialZ) == 63)
+    D.DropSession(63)
+    check('Carrier : oublié au départ du joueur', Tablet.Peer.Carrier(serialZ) == nil)
+    Bridge.GetPlayers = realGetPlayers
+    Tablet.Peer.Index(63)
+
+    -- 6. Réglages lus en base quand la tablette n'a pas de session (avec cache)
+    local phoneZ = rows[serialZ].phone
+    rows[serialZ].settings = { air = true }
+    notes = {}
+    check('Alert : tablette sans session en Mode Avion (base) : rien', Tablet.Peer.Alert(phoneZ, 'messages', { name = 'message', data = {} }, 'txt') == nil and #notes == 0)
+    rows[serialZ].settings = {}
+    check('Alert : réglage relu depuis le cache (pas encore expiré)', Tablet.Peer.Alert(phoneZ, 'messages', { name = 'message', data = {} }, 'txt') == nil)
+    Tablet.Peer.ForgetSettings(serialZ)
+    check('Alert : après oubli du cache, notification du jeu', Tablet.Peer.Alert(phoneZ, 'messages', { name = 'message', data = {} }, 'txt') == 63 and #notes == 1)
+    rows[serialZ].settings = { notif = { messages = false } }
+    Tablet.Peer.ForgetSettings(serialZ)
+    notes = {}
+    Tablet.Peer.Alert(phoneZ, 'messages', { name = 'message', data = {} }, 'txt')
+    check('Alert : notifications coupées en base respectées sans session', #notes == 0)
+    rows[serialZ].settings = { air = true }
+    Tablet.Peer.ForgetSettings(serialZ)
+    fresh(60) tk()
+    local callAir = H['pop_tablet:phone:call'](60, { to = phoneZ })
+    check('phone:call : cible en Mode Avion (base) injoignable', callAir.ok == false and callAir.err == 'err_unreachable', callAir.err)
+    rows[serialZ].settings = {}
+    Tablet.Peer.ForgetSettings(serialZ)
+
+    -- 12. Answer : la session ouverte doit être la tablette appelée
+    fresh(61)
+    local okG2, serialY = D.Give(61)
+    local phoneY = rows[serialY].phone
+    fresh(60) tk() tk()
+    local ring = H['pop_tablet:phone:call'](60, { to = phoneY })
+    check('phone:call : tablette non ouverte du joueur 61 sonne', okG2 and ring.ok, ring.err)
+    fresh(61) tk()
+    local wrong = H['pop_tablet:phone:answer'](61, ring.callId)
+    check('phone:answer : session ouverte différente de la tablette appelée refusée', wrong.ok == false and wrong.err == 'err_not_found', wrong.err)
+    fresh(60) tk()
+    H['pop_tablet:phone:hangup'](60, ring.callId)
+
+    -- 16. Messagerie vocale passe par Limits.Field
+    local ph61 = rows[Tablet.Device.SerialOf(61)].phone
+    fresh(60) tk()
+    check('voicemail : retour à la ligne refusé', H['pop_tablet:phone:voicemail'](60, { to = ph61, text = 'a\nb' }).err == 'err_payload')
+    fresh(60) tk()
+    check('voicemail : plus de 200 caractères refusé', H['pop_tablet:phone:voicemail'](60, { to = ph61, text = string.rep('a', 201) }).err == 'err_too_large')
+    fresh(60) tk()
+    check('voicemail : texte normal accepté', H['pop_tablet:phone:voicemail'](60, { to = ph61, text = 'Rappelle-moi' }).ok)
+end
+
 -- Revue statique (boucles, gardes, tailles, SQL, secrets, locales) : tests/audit.lua
 dofile('tests/audit.lua')(check, section)
 

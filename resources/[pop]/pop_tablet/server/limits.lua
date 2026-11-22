@@ -71,8 +71,22 @@ function Limits.Enum(v, set)
     return type(v) == 'string' and set[v] == true
 end
 
+-- Octets que `%s` reconnaît : tabulation, retours à la ligne, VT, FF, CR et espace.
+local function isSpace(b) return b == 32 or (b >= 9 and b <= 13) end
+
+--- Retire les blancs au début et à la fin. Deux boucles linéaires, sans motif d'ancrage final : celui-ci est
+--- quadratique sur une longue suite de blancs suivie d'un autre caractère.
 function Limits.Trim(s)
-    return (s:gsub('^%s+', ''):gsub('%s+$', ''))
+    local n = #s
+    local first, last = n + 1, n
+    for i = 1, n do
+        if not isSpace(s:byte(i)) then first = i break end
+    end
+    for i = n, first, -1 do
+        if not isSpace(s:byte(i)) then last = i break end
+        last = i - 1
+    end
+    return s:sub(first, last)
 end
 
 -- Anti-spam par joueur et par clé : `max` appels par seconde.

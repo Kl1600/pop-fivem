@@ -72,12 +72,14 @@ function S.Save(src, patch)
     for k, v in pairs(clean) do merged[k] = v end
     Tablet.DB.SetSettings(s.serial, merged)
     s.settings = merged
+    if Tablet.Peer then Tablet.Peer.ForgetSettings(s.serial) end
     return { ok = true }
 end
 
 --- pop_tablet:settings:rename
 function S.Rename(src, name)
-    local s, err = Tablet.Guard(src, nil, { name = 'rename', rate = 2 })
+    -- Taille bornée avant toute copie ou découpe : un nom valide fait au plus 4 octets par caractère.
+    local s, err = Tablet.Guard(src, nil, { payload = name, maxBytes = Tablet.Max.name * 4, name = 'rename', rate = 2 })
     if not s then return Tablet.Fail(err) end
     if type(name) ~= 'string' then return Tablet.Fail('err_name_invalid') end
     name = Tablet.Limits.Trim(name)
