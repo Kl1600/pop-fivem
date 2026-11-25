@@ -86,3 +86,11 @@ Un script qui écrit un fichier sur le serveur (SaveResourceFile, io.open) doit 
 
 ## ESX et inventaire externe (22/11)
 ESX est réglé avec `Config.CustomInventory = true` (pop_inventory). ESX 1.16 ne gère ce mode qu'avec ox_inventory : sa sauvegarde plantait sur `getInventory(true)` (inventory.lua:112), donc banque, job et position n'étaient plus enregistrés et le joueur restait bloqué (« stale player entry »). Corrigé sur le serveur par l'action `fix_esx_save` de Server tools (copie de l'original : `inventory.lua.pop-backup`). **À refaire après chaque mise à jour d'ESX.** Ne jamais appeler `xPlayer.getInventory` / `addInventoryItem` d'ESX : passer par pop_inventory ou le bridge.
+
+## Chantier « 5 langues + tous serveurs » (lancé le 25/11/2026)
+Règles : `docs/standard-international.md`. Un script à la fois : on le note dans `docs/en-cours.md`, on le finit, `tools/check-locales.lua` affiche OK, on pousse, puis on passe au suivant.
+- **Chef 1** : pop_admin, pop_management, pop_interim, pop_duiengine, pop_computer, pop_death, pop_affiche, pop_boards, pop_livraison.
+- **Chef 2** : pop_inventory, pop_clothes, pop_charcreator, pop_idcard, pop_passport, pop_medexam, pop_loading.
+- **Chef 3** : pop_dealing, pop_weed, pop_crew, pop_territories.
+- **Chef 4** : pop_hud, pop_notify, pop_chat, pop_emotes, pop_doorlock, pop_bank, pop_fuel, pop_speedometer, pop_kilometrage, pop_vehiclepersistence, pop_enterprisegarage, pop_bennys, pop_bikerental, pop_voice_ui, pop_v3dui.
+- Hors chantier : pop_police (mis de côté) et pop_tablet (Silvun, déjà en 10 langues : on vérifie seulement fr, en, es, de et ar).
