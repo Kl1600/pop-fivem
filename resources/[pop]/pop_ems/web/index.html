@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <title>pop_ems</title>
+  <link rel="stylesheet" href="kit/pop.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Appels : colonne en haut, sur le côté -->
+  <section id="calls" class="ems-calls pop-fade">
+    <div id="callList" class="ems-call-list"></div>
+    <div id="callFooter" class="ems-panel ems-footer pop-hidden">
+      <span id="callKey" class="pop-key"></span>
+      <span data-locale="call_accept_key"></span>
+    </div>
+  </section>
+
+  <!-- Colonne côté, centrée verticalement : menu de soins puis diagnostic -->
+  <div class="ems-side">
+  <section id="menu" class="ems-panel ems-menu pop-fade pop-hidden">
+    <header class="ems-head">
+      <span class="ems-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><path d="M6.5 2h3v4.5H14v3H9.5V14h-3V9.5H2v-3h4.5z"/></svg>
+      </span>
+      <span class="ems-title" data-locale="menu_title"></span>
+    </header>
+    <div id="menuList" class="ems-menu-list"></div>
+    <button id="menuClose" class="ems-btn ems-close" type="button" data-locale="close"></button>
+  </section>
+
+  <section id="diag" class="ems-panel ems-diag pop-fade pop-hidden">
+    <header class="ems-head">
+      <span class="ems-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><path d="M6.5 2h3v4.5H14v3H9.5V14h-3V9.5H2v-3h4.5z"/></svg>
+      </span>
+      <span class="ems-title" data-locale="diag_title"></span>
+    </header>
+    <ul id="diagList" class="ems-lines"></ul>
+  </section>
+  </div>
+
+  <script src="kit/pop.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
