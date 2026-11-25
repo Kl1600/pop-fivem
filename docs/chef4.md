@@ -27,6 +27,9 @@ Les 13 scripts du lot sont au gabarit (luacheck 0/0 sur 141 fichiers, luac5.4 et
 - pop_speedometer : gabarit (config.lua, client/main.lua, README), sans bridge comme pop_notify.
 - pop_v3dui : gabarit (config.lua, client/main.lua, README), exports Create/Remove/Update/UpdateCoords/ClearAll inchangés.
 
+## Chantier 5 langues + tous serveurs
+- pop_v3dui (25/11) : locales fr/en/es/de/ar (kit commun + icon_alt), langue envoyée à la NUI au démarrage, RTL (touche à droite), README en+fr, version 1.0.0. Pas de bridge, SQL ni objets (script d'affichage). Les textes des prompts viennent des scripts appelants. luacheck : seul le W131 « L non utilisé » du modèle shared/locale.lua.
+
 ## Bugs connus / risques
 - Persistance : véhicules non réseau (sans netId) plus sauvegardés. Comparaison du modèle modulo 2^32 à confirmer en jeu.
 - pop_boards : les anciens tableaux n'ont pas de propriétaire (seuls les admins peuvent les déplacer). Peindre reste ouvert à tous (d'origine).

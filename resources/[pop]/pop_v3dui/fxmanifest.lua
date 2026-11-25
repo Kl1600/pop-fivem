@@ -4,10 +4,9 @@ lua54 'yes'
 
 name 'pop_v3dui'
 author 'KL'
-version '2.1.0'
-description 'Interface 3D (prompts, textes, icônes) affichée dans le monde, en HTML/CSS'
+description '3D world UI (prompts, texts, icons) rendered in HTML/CSS'
 
--- Script d'affichage sans framework : pas de bridge (c'est une brique utilisée par les autres scripts).
+-- Display-only resource, no framework: no bridge (it is a building block used by other scripts).
 
 ui_page 'html/index.html'
 
@@ -18,13 +17,21 @@ files {
     'html/icons/garage.svg',
 }
 
-client_scripts {
+shared_scripts {
     'config.lua',
+    'shared/locale.lua',
+    'locales/*.lua',
+}
+
+client_scripts {
     'client/main.lua',
 }
 
--- Exports déclarés dans client/main.lua : Create, Remove, Update, UpdateCoords, ClearAll.
+-- Exports declared in client/main.lua: Create, Remove, Update, UpdateCoords, ClearAll.
 
 escrow_ignore {
     'config.lua',
+    'locales/*.lua',
 }
+
+version '1.0.0'

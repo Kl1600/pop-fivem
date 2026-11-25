@@ -1,10 +1,28 @@
 const uiElements = new Map();
 const pendingRemovals = new Map();
+let locale = {};
+
+// Texte traduit (envoyé par le Lua via GetLocaleTable)
+function t(key) {
+    return typeof locale[key] === 'string' ? locale[key] : key;
+}
+
+function applyLocale(table) {
+    locale = table || {};
+    document.documentElement.dir = locale._rtl ? 'rtl' : 'ltr';
+    document.documentElement.classList.toggle('rtl', !!locale._rtl);
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+        el.textContent = t(el.getAttribute('data-i18n'));
+    });
+}
 
 window.addEventListener('message', (event) => {
     const data = event.data;
 
     switch (data.action) {
+        case 'locale':
+            applyLocale(data.data);
+            break;
         case 'create':
             createElement(data.id, data.type, data.content, data.style);
             break;
@@ -63,7 +81,7 @@ function createElement(id, type, content, customStyle = {}) {
                 : '';
             element.innerHTML = `
                 <div class="ui-prompt">
-                    <div class="ui-prompt-key">${content.key}</div>
+                    <div class="ui-prompt-key">${content.key || ''}</div>
                     <div class="ui-prompt-content">
                         ${content.label}
                         ${iconHtml}
@@ -75,7 +93,7 @@ function createElement(id, type, content, customStyle = {}) {
         case 'icon-text':
             element.innerHTML = `
                 <div class="ui-icon-text">
-                    ${content.icon ? `<img src="${content.icon}" alt="icon">` : ''}
+                    ${content.icon ? `<img src="${content.icon}" alt="${t('icon_alt')}">` : ''}
                     <span>${content.text}</span>
                 </div>
             `;

@@ -196,6 +196,12 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- Langue : envoyée à la NUI au démarrage (textes par défaut + sens d'écriture RTL)
+Citizen.CreateThread(function()
+    Wait(500)
+    SendNUIMessage({ action = 'locale', data = GetLocaleTable() })
+end)
+
 -- Export functions
 exports('Create', Create3DUI)
 exports('Remove', Remove3DUI)

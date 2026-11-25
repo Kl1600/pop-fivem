@@ -11,6 +11,16 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Arabe (RTL) : police avec glyphes arabes en secours */
+html[dir="rtl"] body,
+html[dir="rtl"] .ui-element,
+html[dir="rtl"] .ui-element * {
+    font-family: 'TT Firs Neue', 'TT Firs Neue Trl', 'Segoe UI', Tahoma, sans-serif !important;
+}
+
+body {
     overflow: hidden;
     background: transparent;
 }
