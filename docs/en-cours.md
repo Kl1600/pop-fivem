@@ -6,6 +6,7 @@ Répartition de l'audit (`docs/audit.md`) : démarrage au GO du client.
 
 - pop.cfg, .github/, CLAUDE.md, docs/coordination-chefs.md : Chef 1 (coordination)
 - pop_crew : Chef 3 (5 langues + tous serveurs)
+- pop_v3dui : Chef 4 (5 langues + tous serveurs)
 - Hors travaux : pop_police (mis de côté par le client). pop_police80 supprimé (copie de pop_police, demande du client). pop_grandtheftauto (vol de véhicule) supprimé (demande du client) : ne pas le recréer.
 - Plus tard (décision du client) : système bancaire complet (pop_bank + chéquier pop_inventory au même comptoir). Ne pas y toucher pour l'instant.
 - Pour le Chef 1 (gabarit, signalé par le Chef 2) : 1) le bridge détecte l'inventaire au démarrage ; dans `[pop]`, un script qui paie via `Bridge.*Money(src, 'cash')` doit déclarer `dependency 'pop_inventory'` (sinon l'argent ESX est débité si pop_inventory démarre après). 2) `templates/pop_base/README.md` (« Contrat de pop_inventory ») cite des exports GetItemCount/AddItem/Search… que pop_inventory n'a pas ; le bridge utilise bien getItemCount/addItem/removeItem/getInventory.
