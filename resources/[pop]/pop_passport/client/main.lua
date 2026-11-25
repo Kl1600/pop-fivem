@@ -31,7 +31,6 @@ local function startEscThread()
 end
 
 -- Mois pour formater les dates "JJ MMM AAAA"
-local MONTHS = { 'JAN','FÉV','MARS','AVR','MAI','JUIN','JUIL','AOÛT','SEP','OCT','NOV','DÉC' }
 
 -- Formate une date stockée 'AAAA-MM-JJ' (ou 'JJ/MM/AAAA') -> "JJ MMM AAAA"
 local function formatDate(str)
@@ -42,7 +41,8 @@ local function formatDate(str)
     end
     if not y then return str end
     y, m, d = tonumber(y), tonumber(m), tonumber(d)
-    return string.format('%02d %s %d', d, MONTHS[m] or '???', y)
+    local month = (m and m >= 1 and m <= 12) and L('month_' .. m) or '???'
+    return string.format('%02d %s %d', d, month, y)
 end
 
 -- Affichage générique pour un type de passeport ('us' | 'mx')
@@ -92,6 +92,11 @@ RegisterNUICallback('close', function(_, cb)
     SetNuiFocus(false, false)
     if cb then cb('ok') end
 end)
+
+-- Aide de la commande admin dans le chat
+TriggerEvent('chat:addSuggestion', '/' .. Config.GiveCommand, L('cmd_help'), {
+    { name = 'id', help = L('cmd_arg_id') }, { name = 'type', help = L('cmd_arg_type') },
+})
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end

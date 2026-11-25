@@ -5,15 +5,30 @@ AddEventHandler('pop_passport:server:issueInternal', function(targetId, passport
     Passport.Issue(targetId, passportType, containerId, customData)
 end)
 
--- Photo : renvoie le server id du titulaire du passeport (identifiant ESX stocké dans l'item)
+-- Objets utilisables : pop_inventory les déclare dans sa config (onUse) ; avec un autre
+-- inventaire, on les enregistre ici. Sans métadonnées, on montre le passeport du joueur lui-même.
+CreateThread(function()
+    if Bridge.Inventory == 'pop_inventory' then return end
+    for pType, info in pairs({ us = Config.USA, mx = Config.Mexico }) do
+        Bridge.RegisterUsableItem(info.item, function(src, _, metadata)
+            local meta = metadata
+            if type(meta) ~= 'table' or not meta.firstname then
+                local first, last = (Bridge.GetName(src) or ''):match('^(%S+)%s+(.+)$')
+                meta = Passport.BuildMetadata(src, pType, first, last)
+            end
+            TriggerClientEvent('pop_passport:display:' .. pType, src, { meta = meta })
+        end)
+    end
+end)
+
+-- Photo : renvoie le server id du titulaire du passeport (identifiant stocké dans l'objet)
 -- uniquement s'il est connecté et proche du lecteur, sinon 0.
 RegisterNetEvent('pop_passport:server:holder', function(reqId, identifier)
     local src = source
     local holderId = 0
     if type(identifier) == 'string' and identifier ~= '' and #identifier <= 80 then
-        local xHolder = Passport.ESX.GetPlayerFromIdentifier(identifier) -- ESX direct
-        if xHolder then
-            local target = xHolder.source
+        local target = Passport.FindSource(identifier)
+        if target then
             if target == src then
                 holderId = target
             else

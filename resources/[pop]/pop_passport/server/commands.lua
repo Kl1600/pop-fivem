@@ -1,17 +1,14 @@
--- pop_passport : commande admin givepassport (ESX direct : ESX.RegisterCommand, groupe admin).
+-- pop_passport : commande admin /givepassport [id] [us/mx] (ACE pop.admin ou groupe admin
+-- du framework, via le bridge), utilisable depuis la console.
 
-Passport.ESX.RegisterCommand('givepassport', 'admin', function(xPlayer, args, showError)
-    -- Depuis la console, xPlayer est nil : l'ID du joueur est alors obligatoire
-    local target = args.id or (xPlayer and xPlayer.source)
-    if not target or not GetPlayerName(target) then
-        return print(L('cmd_usage'))
+RegisterCommand(Config.GiveCommand, function(src, args)
+    if src ~= 0 and not Bridge.IsAdmin(src) then
+        return Bridge.Notify(src, { icon = 'fas fa-passport', message = L('no_permission') })
     end
-    local pType = (args.type == 'mx') and 'mx' or 'us'
-    Passport.Issue(target, pType)
-end, true, {
-    help = L('cmd_help'),
-    arguments = {
-        { name = 'id',   help = L('cmd_arg_id'),   type = 'number' },
-        { name = 'type', help = L('cmd_arg_type'), type = 'string' }
-    }
-})
+    local target = tonumber(args[1]) or (src ~= 0 and src or nil)
+    if not target or not GetPlayerName(target) then
+        if src == 0 then return print(L('cmd_usage', Config.GiveCommand)) end
+        return Bridge.Notify(src, { icon = 'fas fa-passport', message = L('cmd_usage', Config.GiveCommand) })
+    end
+    Passport.Issue(target, args[2] == 'mx' and 'mx' or 'us')
+end, false)
