@@ -5,7 +5,7 @@ Ajouter sa ligne avant de commencer, la retirer quand c'est fini.
 Répartition de l'audit (`docs/audit.md`) : démarrage au GO du client.
 
 - pop.cfg, .github/, CLAUDE.md, docs/coordination-chefs.md : Chef 1 (coordination)
-- pop_hud : Chef 4 (5 langues + tous serveurs)
+- pop_mechanic (nouveau), pop_impound (nouveau) : Chef 4 (scripts indispensables). pop_hud 5 langues en pause.
 - pop_police (refonte), pop_prison (nouveau) : Chef 3 (scripts indispensables)
 - Hors travaux : pop_police80 supprimé (copie de pop_police, demande du client). pop_grandtheftauto (vol de véhicule) supprimé (demande du client) : ne pas le recréer.
 - Plus tard (décision du client) : système bancaire complet (pop_bank + chéquier pop_inventory au même comptoir). Ne pas y toucher pour l'instant.
