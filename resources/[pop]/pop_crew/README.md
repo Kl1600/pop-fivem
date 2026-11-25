@@ -1,46 +1,42 @@
 # pop_crew
 
-Système de crew minimal : créer un crew, recruter, quitter, dissoudre, choisir une couleur. Base d'appartenance pour la guerre de territoires (pop_territories).
+**EN** — Simple crew system: create a crew (tag + name), recruit nearby players, choose a color, leave or disband. Works on ESX, QBCore, Qbox and standalone. 5 languages: fr, en, es, de, ar.
+**FR** — Système de crew simple : créer un crew (tag + nom), recruter un joueur proche, choisir une couleur, quitter ou dissoudre. Fonctionne sur ESX, QBCore, Qbox et standalone. 5 langues : fr, en, es, de, ar.
 
-## Fonctionnement
-- `/crew` ouvre le menu NUI : créer un crew (tag 2 à 12 caractères + nom), accepter / refuser une invitation, voir les membres, quitter ou dissoudre, changer la couleur (chef).
-- Recrutement : le chef vise un joueur proche avec ox_target, option **Recruter dans le crew**. Le serveur vérifie que la cible est à moins de 10 m (`Config.RecruitMaxDistance`).
-- Données en base : tables `crews` et `crew_members` (créées au démarrage si absentes), gardées en mémoire côté serveur.
-- Un crew dissous ou recoloré prévient pop_territories par évènement serveur.
+## Installation (3 steps / 3 étapes)
+1. Drop `pop_crew` in your resources (dépose le dossier dans tes ressources).
+2. Make sure `oxmysql` starts before it, then add `ensure pop_crew` to your server.cfg (tables are created automatically / tables créées automatiquement).
+3. Pick your language in `config.lua`: `Config.Locale = 'en'` (choisis ta langue).
 
-## Dépendances
-es_extended (via le bridge), oxmysql, ox_target, pop_notify (notifications, via le bridge).
+Optional (facultatif): ox_target or qb-target (otherwise the E key is used / sinon touche E), pop_notify (notifications), pop_territories (map colors / couleurs sur la carte).
 
-## Fichiers
-| Fichier | Rôle |
-|---|---|
-| `config.lua` | commande, longueur du tag / nom, couleur par défaut, distances, durée des notifications |
-| `locales/fr.lua` | textes du jeu (notifications, option ox_target) ; ceux du menu sont dans `html/app.js` |
-| `client/main.lua` | menu NUI, cache d'état, option ox_target de recrutement |
-| `server/common.lua` | fonctions partagées (`Crew.*`) : notifications, nettoyage tag / nom, état du menu |
-| `server/database.lua` | création des tables et chargement |
-| `server/exports.lua` | exports pour les autres scripts |
-| `server/actions.lua` | créer, inviter, accepter, refuser, quitter, dissoudre, couleur ; callback d'état |
-| `html/` | menu NUI |
-| `bridge/`, `shared/` | fichiers communs POP (ne pas modifier ici : `templates/pop_base`) |
+## Usage / Utilisation
+- `/crew` opens the menu (ouvre le menu): create a crew, accept or decline an invite, see members, change the color (leader), leave or disband.
+- Recruit (recruter): the leader targets a nearby player (ox_target / qb-target) and picks **Recruit into crew**, or walks up to them and presses **E**. The server checks the distance (`Config.RecruitMaxDistance`).
 
-## Commandes / touches
-| Commande | Rôle |
-|---|---|
-| `/crew` (`Config.Command`) | ouvre / ferme le menu (ignorée si F7 est enfoncée, ancien raccourci) |
-
-## Évènements, callbacks et exports
-| Nom | Sens | Rôle |
+## Configuration
+| Setting | Default | |
 |---|---|---|
-| `pop_crew:getState` (Callback) | client → serveur | état du joueur pour le menu |
-| `pop_crew:state` | serveur → client | nouvel état après une action |
-| `pop_crew:create` (tag, label) / `accept` / `decline` / `leave` / `disband` / `invite` (targetId) / `setColor` (color) | client → serveur | actions du menu |
-| `pop_crew:disbanded` (crewId) | serveur (local) | crew dissous (pop_territories) |
-| `pop_crew:colorChanged` (crewId, rgb) | serveur (local) | couleur changée (pop_territories) |
-| `exports.pop_crew:getCrew(src)` | serveur | `{ id, name, label, color }` ou nil |
-| `exports.pop_crew:getCrewById(crewId)` | serveur | idem |
-| `exports.pop_crew:getCrewIdByIdentifier(identifier)` | serveur | id du crew ou nil |
-| `exports.pop_crew:getOnlineMemberSources(crewId)` | serveur | sources des membres connectés |
+| `Config.Locale` | `'fr'` | fr, en, es, de, ar |
+| `Config.Framework` / `Inventory` / `Target` / `Notify` | `'auto'` | auto-detected (détection automatique) |
+| `Config.Command` | `'crew'` | menu command |
+| `Config.MaxTagLen` / `MaxLabelLen` | 12 / 32 | tag and name length |
+| `Config.DefaultColor` | `{93,144,236}` | color of a new crew |
+| `Config.RecruitTargetDistance` / `RecruitMaxDistance` | 2.5 / 10.0 | recruit distances |
 
-## Relancer
-`restart pop_crew`
+## Exports (server)
+| Export | Returns |
+|---|---|
+| `exports.pop_crew:getCrew(src)` | crew of a player `{ id, name, label, color }` or nil |
+| `exports.pop_crew:getCrewById(crewId)` | crew table or nil |
+| `exports.pop_crew:getCrewIdByIdentifier(identifier)` | crew id or nil |
+| `exports.pop_crew:getOnlineMemberSources(crewId)` | list of online player sources |
+
+## Events (server)
+| Event | Args |
+|---|---|
+| `pop_crew:disbanded` | crewId |
+| `pop_crew:colorChanged` | crewId, color |
+
+## Files / Fichiers
+`config.lua` settings · `locales/` 5 languages · `bridge/` + `shared/` POP kit (do not edit) · `client/main.lua` menu · `client/recruit.lua` recruiting (target or E) · `server/` crews, database, exports · `html/` menu · `install/` SQL.

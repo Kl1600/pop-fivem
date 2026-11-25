@@ -4,8 +4,7 @@ lua54 'yes'
 
 name 'pop_crew'
 author 'KL'
-version '1.1.0'
-description 'Système de crew minimal (base pour la guerre de territoires)'
+description 'Simple crew system (create, recruit, colors) for any framework'
 
 shared_scripts {
     'config.lua',
@@ -16,7 +15,10 @@ shared_scripts {
 client_scripts {
     'bridge/client.lua',
     'client/main.lua',
+    'client/recruit.lua',
 }
+
+dependency 'oxmysql'
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
@@ -40,3 +42,5 @@ escrow_ignore {
     'locales/*.lua',
     'bridge/*.lua',
 }
+
+version '1.0.0'

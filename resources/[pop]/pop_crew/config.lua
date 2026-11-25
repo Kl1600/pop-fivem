@@ -1,15 +1,15 @@
 Config = {}
 
 ------------------------------------------------------------------------
--- Réglages communs POP (ne pas supprimer)
+-- Common POP settings (Réglages communs POP) — do not remove
 ------------------------------------------------------------------------
-Config.Locale = 'fr'
-Config.Debug = false
-Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
-Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
-Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
-Config.Notify    = 'auto' -- pop_notify s'il est lancé
-Config.AccentColor = '#ffffff'
+Config.Locale    = 'fr'   -- 'fr' | 'en' | 'es' | 'de' | 'ar' (English is the fallback)
+Config.Debug     = false  -- console messages (messages console)
+Config.Framework = 'auto' -- 'auto' | 'esx' | 'qbcore' | 'qbox' | 'standalone'
+Config.Inventory = 'auto' -- 'auto' | 'pop_inventory' | 'ox_inventory' | 'qb-inventory' | ...
+Config.Target    = 'auto' -- 'auto' | 'ox_target' | 'qb-target' | 'prompt' (E key / touche E)
+Config.Notify    = 'auto' -- 'auto' : pop_notify if running, else framework, else native
+Config.AccentColor = '#5d90ec'
 Config.CashItem = 'cash'
 Config.Keys = {
     Interact = { control = 38, label = 'E' },
@@ -21,17 +21,17 @@ Config.CallbackRateLimit = 10
 -- pop_crew
 ------------------------------------------------------------------------
 
--- Commande qui ouvre / ferme le menu
+-- Command that opens / closes the menu (commande qui ouvre / ferme le menu)
 Config.Command   = 'crew'
 
 -- Longueur max du tag (name) et du label affiché
 Config.MaxTagLen   = 12   -- identifiant court unique, ex: "BLLS"
 Config.MaxLabelLen = 32   -- nom affiché, ex: "Ballas"
 
--- Couleur par défaut d'un crew { r, g, b } (utilisée par pop_territories pour colorer la map)
-Config.DefaultColor = { 200, 70, 190 }
+-- Default crew color { r, g, b }, used on the map by pop_territories (couleur par défaut d'un crew)
+Config.DefaultColor = { 93, 144, 236 }
 
--- Recrutement (ox_target sur un joueur)
+-- Recruiting a nearby player: ox_target, qb-target or E key (recrutement d'un joueur proche)
 Config.RecruitTargetDistance = 2.5  -- distance de l'option ox_target
 Config.RecruitMaxDistance    = 10.0 -- distance max chef ↔ cible vérifiée par le serveur
 

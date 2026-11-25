@@ -83,6 +83,9 @@ Parcours complet (déclencheur → ce que voit le joueur → ce qui le guide ens
 
 - pop_chat : icône de la saisie centrée verticalement sur la barre (positionnée au milieu, quelle que soit la hauteur de la saisie).
 
+### Chantier 5 langues + tous serveurs (25/11/2026)
+- **pop_crew** (1.0.0) : textes du menu sortis de `html/app.js` vers `locales/` (NUI : message `locale` avec `GetLocaleTable()`, `data-i18n`, `T()`), en/es/de/ar ajoutés (ar en RTL vérifié : menu à gauche, textes à droite). Recrutement : ox_target, qb-target ou touche E selon ce qui est lancé (`client/recruit.lua` ; le bridge n'a pas de ciblage « tous les joueurs », signalé au Chef 1). `dependency 'oxmysql'`, `install/sql.sql`, README en + fr, accent `#5d90ec`, couleur par défaut d'un nouveau crew passée du rose (200,70,190) au bleu POP. Texte « utilise /crew disband » corrigé (cette sous-commande n'existe pas).
+
 ### Reste
 - Tester la mission en jeu avec le client (après la restructuration).
 - `pop.cfg` : `add_ace resource.object_gizmo command.add_ace allow` inutile et risqué (Chef 1).

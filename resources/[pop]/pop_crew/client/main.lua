@@ -1,7 +1,10 @@
 -- Menu NUI du crew (/crew), cache d'état et recrutement via ox_target.
 
-local CrewState = { inCrew = false, isOwner = false }
+local crewState = { inCrew = false, isOwner = false }
 local menuOpen  = false
+
+-- État courant, lu aussi par client/recruit.lua
+function CrewState() return crewState end
 
 -- ─────────────────────────────────────────────
 -- Récupération de l'état (cache pour ox_target + menu)
@@ -9,16 +12,16 @@ local menuOpen  = false
 
 local function refreshState(cb)
     Callback.Trigger('pop_crew:getState', function(state)
-        CrewState = state or { inCrew = false, isOwner = false }
-        if cb then cb(CrewState) end
+        crewState = state or { inCrew = false, isOwner = false }
+        if cb then cb(crewState) end
     end)
 end
 
 -- Push serveur après chaque mutation
 RegisterNetEvent('pop_crew:state', function(state)
-    CrewState = state or { inCrew = false, isOwner = false }
+    crewState = state or { inCrew = false, isOwner = false }
     if menuOpen then
-        SendNUIMessage({ type = 'state', state = CrewState })
+        SendNUIMessage({ type = 'state', state = crewState })
     end
 end)
 
@@ -26,11 +29,25 @@ end)
 -- Ouverture / fermeture du menu
 -- ─────────────────────────────────────────────
 
+-- Textes de la NUI (langue de Config.Locale, anglais en secours)
+local function sendLocale()
+    local data = GetLocaleTable()
+    data._lang = Config.Locale
+    SendNUIMessage({
+        action = 'locale', data = data,
+        opts = {
+            maxTag = Config.MaxTagLen, maxLabel = Config.MaxLabelLen,
+            targetMode = Bridge.TargetSystem, keyLabel = Config.Keys.Interact.label,
+        },
+    })
+end
+
 local function openMenu()
     if menuOpen then return end
     refreshState(function(state)
         menuOpen = true
         SetNuiFocus(true, true)
+        sendLocale()
         SendNUIMessage({ type = 'open', state = state })
     end)
 end
@@ -89,47 +106,9 @@ RegisterNUICallback('setColor', function(data, cb)
 end)
 
 -- ─────────────────────────────────────────────
--- Recrutement via ox_target (chef de crew uniquement)
--- ox_target direct : addGlobalPlayer n'existe pas dans le bridge.
--- ─────────────────────────────────────────────
-
-AddEventHandler('onClientResourceStart', function(resourceName)
-    if resourceName ~= 'ox_target' and resourceName ~= GetCurrentResourceName() then return end
-    if GetResourceState('ox_target') ~= 'started' then return end
-    -- Retirée avant d'être remise : évite le doublon « Replacing existing target option »
-    pcall(function() exports.ox_target:removeGlobalPlayer('pop_crew_recruit') end)
-    exports.ox_target:addGlobalPlayer({
-        {
-            name = 'pop_crew_recruit',
-            icon = 'fas fa-user-plus',
-            label = L('target_recruit'),
-            distance = Config.RecruitTargetDistance,
-            canInteract = function(entity)
-                return CrewState.inCrew == true and CrewState.isOwner == true
-            end,
-            onSelect = function(data)
-                local targetId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(data.entity))
-                if targetId and targetId > 0 then
-                    TriggerServerEvent('pop_crew:invite', targetId)
-                else
-                    Bridge.Notify({
-                        title = L('crew_title'), message = L('player_unknown'), type = 'error', duration = Config.ClientNotifyDuration,
-                    })
-                end
-            end
-        }
-    })
-end)
-
--- ─────────────────────────────────────────────
 -- État initial : tout de suite si le personnage est déjà chargé, puis à chaque chargement
 -- ─────────────────────────────────────────────
 
 Bridge.OnPlayerLoaded(function()
     refreshState()
-end)
-
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() or GetResourceState('ox_target') ~= 'started' then return end
-    pcall(function() exports.ox_target:removeGlobalPlayer('pop_crew_recruit') end)
 end)
