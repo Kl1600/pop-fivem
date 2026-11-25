@@ -8,13 +8,13 @@ $(document).ready(function(){
             $("#us-lastname").text(d.lastname);
             $("#us-firstname").text(d.firstname);
             $("#us-sex").text(d.sex);
-            $("#us-nationality").text(isMx ? "Mexicaine" : "Américaine");
+            $("#us-nationality").text(d.nationality);
 
             // Remplir les champs MX
             $("#mx-lastname").text(d.lastname);
             $("#mx-firstname").text(d.firstname);
             $("#mx-sex").text(d.sex);
-            // nationalité MX est déjà statique "Mexicaine" dans le HTML
+            $("#mx-nationality").text(d.nationality);
 
             // Photo
             // Pas de photo du titulaire : on masque l'image, le fond gris par défaut reste visible

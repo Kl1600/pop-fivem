@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr" dir="ltr">
 <head>
     <meta charset="utf-8">
     <link rel="stylesheet" href="style.css">
@@ -37,8 +37,8 @@
                         <div class="mx-flag-red"></div>
                     </div>
                     <div class="mx-header-text">
-                        <div class="mx-title">ESTADOS UNIDOS MEXICANOS</div>
-                        <div class="mx-subtitle">NUEVO PASO</div>
+                        <div class="mx-title" data-i18n="mx_title"></div>
+                        <div class="mx-subtitle" data-i18n="mx_subtitle"></div>
                     </div>
                     <div class="mx-badge-right">
                         <div class="mx-shield">🛡️</div>
@@ -55,22 +55,22 @@
                     <!-- Champs -->
                     <div class="mx-fields">
                         <div class="mx-field">
-                            <div class="mx-label">NOM / SURNAME /</div>
+                            <div class="mx-label" data-i18n="mx_label_surname"></div>
                             <div class="val" id="mx-lastname"></div>
                         </div>
                         <div class="mx-field">
-                            <div class="mx-label">PRÉNOM / NAME /</div>
+                            <div class="mx-label" data-i18n="mx_label_name"></div>
                             <div class="val" id="mx-firstname"></div>
                         </div>
                         <div class="mx-field-row">
                             <div class="mx-field">
-                                <div class="mx-label">SEXE / SEX /</div>
+                                <div class="mx-label" data-i18n="mx_label_sex"></div>
                                 <div class="val" id="mx-sex"></div>
                             </div>
                         </div>
                         <div class="mx-field">
-                            <div class="mx-label">NATIONALITÉ / CITIZENSHIP /</div>
-                            <div class="val mx-nationality" id="mx-nationality">Mexicaine</div>
+                            <div class="mx-label" data-i18n="mx_label_nationality"></div>
+                            <div class="val mx-nationality" id="mx-nationality"></div>
                         </div>
                     </div>
                 </div>
@@ -80,7 +80,7 @@
             </div>
 
         </div>
-        <div class="instructions">Appuyez sur [ESC] ou [ENTRÉE] pour fermer</div>
+        <div class="instructions" data-i18n="ui_close_hint"></div>
     </div>
 
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
@@ -93,6 +93,7 @@
             rsp();
         })();
     </script>
+    <script src="i18n.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

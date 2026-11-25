@@ -9,7 +9,7 @@ Config.Framework = 'auto' -- 'esx' | 'qbcore' | 'qbox' | 'standalone'
 Config.Inventory = 'auto' -- 'pop_inventory' | 'ox_inventory' | ...
 Config.Target    = 'auto' -- 'ox_target' | 'qb-target' | 'prompt'
 Config.Notify    = 'auto' -- pop_notify s'il est lancé
-Config.AccentColor = '#ffffff'
+Config.AccentColor = '#5d90ec'
 Config.CashItem = 'cash'
 Config.Keys = {
     Interact = { control = 38, label = 'E' },
@@ -35,6 +35,9 @@ Config.HolderServerRange = 20.0
 
 -- Délai max (ms) d'attente de la réponse du serveur pour la photo.
 Config.HolderTimeout = 2000
+
+-- Commande admin pour donner une carte : /giveidcard [id]
+Config.GiveCommand = 'giveidcard'
 
 -- Durée des notifications (ms).
 Config.NotifyUnreadableDuration = 3000

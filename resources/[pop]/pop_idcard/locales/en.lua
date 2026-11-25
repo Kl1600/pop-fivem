@@ -1,0 +1,38 @@
+-- English (default and fallback)
+Locales['en'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancel',
+    confirm            = 'Confirm',
+    close              = 'Close',
+    interact           = 'Interact',
+    progress_cancelled = 'Action cancelled',
+    no_permission      = "You don't have permission",
+    wrong_job          = "You don't have the required job",
+    too_far            = 'You are too far away',
+    not_enough_money   = 'Not enough money',
+    missing_item       = 'You need: %s',
+    inventory_full     = 'Your inventory is full',
+    cooldown           = 'Please wait %ss',
+    busy               = 'You are already busy',
+    error              = 'Something went wrong',
+
+    -- Textes propres au script :
+    card_unreadable      = 'This card is unreadable.',
+    card_received        = 'You received your ID card.',
+    sex_male             = 'Male',
+    sex_female           = 'Female',
+    nationality_us       = 'American',
+    nationality_mx       = 'Mexican',
+    unknown_name         = 'Unknown',
+    card_description     = 'Name: %s %s',
+    cmd_help             = 'Give an ID card',
+    cmd_arg_id           = 'Player ID',
+    cmd_usage            = '[pop_idcard] Usage: %s <online player id>',
+    ui_close_hint        = 'Press [ESC] or [ENTER] to close',
+    mx_title             = 'ESTADOS UNIDOS MEXICANOS',
+    mx_subtitle          = 'NUEVO PASO',
+    mx_label_surname     = 'APELLIDO / SURNAME /',
+    mx_label_name        = 'NOMBRE / NAME /',
+    mx_label_sex         = 'SEXO / SEX /',
+    mx_label_nationality = 'NACIONALIDAD / CITIZENSHIP /',
+}

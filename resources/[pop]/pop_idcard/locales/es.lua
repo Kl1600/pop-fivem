@@ -1,0 +1,38 @@
+-- Español
+Locales['es'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Cancelar',
+    confirm            = 'Confirmar',
+    close              = 'Cerrar',
+    interact           = 'Interactuar',
+    progress_cancelled = 'Acción cancelada',
+    no_permission      = 'No tienes permiso',
+    wrong_job          = 'No tienes el trabajo necesario',
+    too_far            = 'Estás demasiado lejos',
+    not_enough_money   = 'No tienes suficiente dinero',
+    missing_item       = 'Necesitas: %s',
+    inventory_full     = 'Tu inventario está lleno',
+    cooldown           = 'Espera %s s',
+    busy               = 'Ya estás ocupado',
+    error              = 'Algo salió mal',
+
+    -- Textes propres au script :
+    card_unreadable      = 'Esta tarjeta es ilegible.',
+    card_received        = 'Has recibido tu documento de identidad.',
+    sex_male             = 'Hombre',
+    sex_female           = 'Mujer',
+    nationality_us       = 'Estadounidense',
+    nationality_mx       = 'Mexicana',
+    unknown_name         = 'Desconocido',
+    card_description     = 'Nombre: %s %s',
+    cmd_help             = 'Dar un documento de identidad',
+    cmd_arg_id           = 'ID del jugador',
+    cmd_usage            = '[pop_idcard] Uso: %s <id de un jugador conectado>',
+    ui_close_hint        = 'Pulsa [ESC] o [ENTER] para cerrar',
+    mx_title             = 'ESTADOS UNIDOS MEXICANOS',
+    mx_subtitle          = 'NUEVO PASO',
+    mx_label_surname     = 'APELLIDO / SURNAME /',
+    mx_label_name        = 'NOMBRE / NAME /',
+    mx_label_sex         = 'SEXO / SEX /',
+    mx_label_nationality = 'NACIONALIDAD / CITIZENSHIP /',
+}

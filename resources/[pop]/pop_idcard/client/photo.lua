@@ -29,7 +29,7 @@ local function fetchHolderServerId(identifier)
     return Citizen.Await(p)
 end
 
--- NOTE: la photo n'est pas stockée dans l'item, seul l'identifiant ESX du titulaire l'est.
+-- NOTE: la photo n'est pas stockée dans l'item, seul l'identifiant (bridge) du titulaire l'est.
 -- On photographie donc le ped du titulaire : le sien si c'est sa propre carte, sinon celui
 -- du titulaire s'il est connecté et à portée (server id fourni par le serveur). Dans tous
 -- les autres cas, aucun visage : le fond gris par défaut de la photo reste affiché,
