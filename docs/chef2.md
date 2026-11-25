@@ -72,3 +72,8 @@ Modèle suivi : `templates/pop_base` + `docs/gabarit-pop.md` (bridge en `bridge/
 - Inventaire : TAB court/maintenu (roue), radio puis I/TAB, carton, coffre de véhicule, capot, fouille, TPE, menottes, brancard, boutique, établi, casiers, chargeurs, douilles.
 - Vêtements : achat cash puis carte, barbier, tatoueur, fermeture sans achat.
 - Créateur, carte d'identité, passeport, écran de connexion (musique, touche M).
+
+## Chantier 5 langues + tous serveurs (25/11/2026)
+Méthode commune à mes scripts : `html/i18n.js` (petit fichier identique partout : demande `pop:ready` au bridge, remplit `data-i18n`, met `dir="rtl"` pour l'arabe, fonction `T()` pour le JS) ; `locales/fr|en|es|de|ar.lua` ; dossier `install/` (items_ox.lua, items_qb.lua, items_esx.sql, items_pop.lua, sql.sql, images/) ; README en + fr ; `version '1.0.0'` en fin de manifeste. Captures fr/ar faites avec Chrome sans interface (mock de `pop:ready`).
+- **pop_idcard** : plus aucun appel ESX / pop_inventory obligatoire. Nom par `Bridge.GetName`, sexe par le modèle du ped, titulaire retrouvé par `Bridge.GetIdentifier`, commande `/giveidcard` en `RegisterCommand` + `Bridge.IsAdmin` (console OK), objets utilisables enregistrés par `Bridge.RegisterUsableItem` hors pop_inventory (sans métadonnées : carte du joueur lui-même). pop_inventory facultatif (portefeuille). Plus de dépendance oxmysql. Textes de la carte MX et consigne de fermeture en `data-i18n`. La carte US garde ses libellés imprimés dans l'image (fr/en).
+

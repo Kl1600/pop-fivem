@@ -4,14 +4,14 @@ lua54 'yes'
 
 name 'pop_idcard'
 author 'KL'
-version '1.1.0'
-description "Carte d'identité (US / Mexique) avec photo du titulaire"
+description 'ID card (US / Mexico) with holder photo - ESX, QBCore, Qbox, standalone'
 
 ui_page 'html/index.html'
 
 files {
     'html/index.html',
     'html/style.css',
+    'html/i18n.js',
     'html/script.js',
     'html/bg.webp',
     'html/bg_mx.webp',
@@ -30,7 +30,6 @@ client_scripts {
 }
 
 server_scripts {
-    '@oxmysql/lib/MySQL.lua',
     'bridge/server.lua',
     'server/common.lua',
     'server/main.lua',
@@ -41,3 +40,5 @@ escrow_ignore {
     'locales/*.lua',
     'bridge/*.lua',
 }
+
+version '1.0.0'

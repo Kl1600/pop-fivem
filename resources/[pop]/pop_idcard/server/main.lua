@@ -1,4 +1,4 @@
--- pop_idcard serveur : évènements, photo du titulaire, commande admin.
+-- pop_idcard serveur : évènements, objets utilisables, photo du titulaire, commande admin.
 
 -- Sécurité : un client ne peut pas se générer (ou générer à un autre) des cartes à volonté.
 -- L'événement n'est accepté que s'il vient du serveur (source vide).
@@ -14,15 +14,31 @@ AddEventHandler('pop_idcard:server:issueCardInternal', function(targetId, contai
     IdCard.Issue(targetId, containerId, customData)
 end)
 
--- Photo : renvoie le server id du titulaire de la carte (identifiant ESX stocké dans l'item)
+-- Objets utilisables : pop_inventory les déclare dans sa config (onUse) ; avec un autre
+-- inventaire, on les enregistre ici. Sans métadonnées (inventaire de base), on montre
+-- la carte du joueur lui-même.
+CreateThread(function()
+    if Bridge.Inventory == 'pop_inventory' then return end
+    for _, item in ipairs({ Config.CardItem, Config.CardItemMx }) do
+        Bridge.RegisterUsableItem(item, function(src, _, metadata)
+            local meta = metadata
+            if type(meta) ~= 'table' or not meta.firstname then
+                local first, last = (Bridge.GetName(src) or ''):match('^(%S+)%s+(.+)$')
+                meta = IdCard.BuildMetadata(src, first, last, nil, item == Config.CardItemMx and Config.MexicoNationality or nil)
+            end
+            TriggerClientEvent('pop_idcard:display', src, { meta = meta })
+        end)
+    end
+end)
+
+-- Photo : renvoie le server id du titulaire de la carte (identifiant stocké dans l'objet)
 -- uniquement s'il est connecté et proche du lecteur, sinon 0.
 RegisterNetEvent('pop_idcard:server:holder', function(reqId, identifier)
     local src = source
     local holderId = 0
     if type(identifier) == 'string' and identifier ~= '' and #identifier <= 80 then
-        local xHolder = IdCard.ESX.GetPlayerFromIdentifier(identifier) -- ESX direct
-        if xHolder then
-            local target = xHolder.source
+        local target = IdCard.FindSource(identifier)
+        if target then
             if target == src then
                 holderId = target
             else
@@ -36,15 +52,16 @@ RegisterNetEvent('pop_idcard:server:holder', function(reqId, identifier)
     TriggerClientEvent('pop_idcard:client:holder', src, tonumber(reqId) or 0, holderId)
 end)
 
--- ESX direct : commande réservée au groupe admin ESX, utilisable depuis la console.
-IdCard.ESX.RegisterCommand('giveidcard', 'admin', function(xPlayer, args, showError)
-    -- Depuis la console, xPlayer est nil : l'ID du joueur est alors obligatoire
-    local target = args.id or (xPlayer and xPlayer.source)
+-- Commande admin (ACE pop.admin ou groupe admin du framework), utilisable depuis la console.
+RegisterCommand(Config.GiveCommand, function(src, args)
+    if src ~= 0 and not Bridge.IsAdmin(src) then
+        return Bridge.Notify(src, { icon = 'fas fa-id-card', message = L('no_permission') })
+    end
+    local target = tonumber(args[1]) or (src ~= 0 and src or nil)
     if not target or not GetPlayerName(target) then
-        return print(L('cmd_usage'))
+        if src == 0 then return print(L('cmd_usage', Config.GiveCommand)) end
+        return Bridge.Notify(src, { icon = 'fas fa-id-card', message = L('cmd_usage', Config.GiveCommand) })
     end
     IdCard.Issue(target)
-end, true, {
-    help = L('cmd_help'),
-    arguments = {{name = 'id', help = L('cmd_arg_id'), type = 'number'}}
-})
+end, false)
+

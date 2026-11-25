@@ -4,7 +4,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Outfit', 'Segoe UI', Tahoma, sans-serif;
 }
 
 body {
@@ -269,3 +269,11 @@ body {
     transform-origin: center center;
     white-space: nowrap;
 }
+
+/* Arabe (dir="rtl") : la carte garde sa mise en page, seuls les textes s'alignent à droite. */
+html[dir="rtl"] .card { direction: ltr; }
+html[dir="rtl"] .val,
+html[dir="rtl"] .mx-label,
+html[dir="rtl"] .instructions { direction: rtl; unicode-bidi: plaintext; }
+html[dir="rtl"] .card .val,
+html[dir="rtl"] .card .mx-label { text-align: left; }

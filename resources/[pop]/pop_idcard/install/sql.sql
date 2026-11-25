@@ -1,0 +1,2 @@
+-- pop_idcard n'a besoin d'aucune table : les données sont dans les métadonnées de l'objet.
+-- (pop_idcard does not need any table: data is stored in the item metadata.)

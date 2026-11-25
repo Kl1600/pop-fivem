@@ -69,6 +69,9 @@ RegisterNUICallback('close', function(_, cb)
     cb('ok')
 end)
 
+-- Aide de la commande admin dans le chat
+TriggerEvent('chat:addSuggestion', '/' .. Config.GiveCommand, L('cmd_help'), { { name = 'id', help = L('cmd_arg_id') } })
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     isOpen = false

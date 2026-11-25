@@ -1,0 +1,38 @@
+-- Deutsch
+Locales['de'] = {
+    -- Kit commun (ne pas supprimer)
+    cancel             = 'Abbrechen',
+    confirm            = 'Bestätigen',
+    close              = 'Schließen',
+    interact           = 'Interagieren',
+    progress_cancelled = 'Aktion abgebrochen',
+    no_permission      = 'Dazu hast du keine Berechtigung',
+    wrong_job          = 'Du hast nicht den erforderlichen Job',
+    too_far            = 'Du bist zu weit entfernt',
+    not_enough_money   = 'Nicht genug Geld',
+    missing_item       = 'Du brauchst: %s',
+    inventory_full     = 'Dein Inventar ist voll',
+    cooldown           = 'Bitte warte noch %s s',
+    busy               = 'Du bist bereits beschäftigt',
+    error              = 'Etwas ist schiefgelaufen',
+
+    -- Textes propres au script :
+    card_unreadable      = 'Dieser Ausweis ist unleserlich.',
+    card_received        = 'Du hast deinen Personalausweis erhalten.',
+    sex_male             = 'Mann',
+    sex_female           = 'Frau',
+    nationality_us       = 'Amerikanisch',
+    nationality_mx       = 'Mexikanisch',
+    unknown_name         = 'Unbekannt',
+    card_description     = 'Name: %s %s',
+    cmd_help             = 'Einen Ausweis geben',
+    cmd_arg_id           = 'Spieler-ID',
+    cmd_usage            = '[pop_idcard] Verwendung: %s <ID eines Online-Spielers>',
+    ui_close_hint        = 'Drücke [ESC] oder [ENTER] zum Schließen',
+    mx_title             = 'ESTADOS UNIDOS MEXICANOS',
+    mx_subtitle          = 'NUEVO PASO',
+    mx_label_surname     = 'NACHNAME / SURNAME /',
+    mx_label_name        = 'VORNAME / NAME /',
+    mx_label_sex         = 'GESCHLECHT / SEX /',
+    mx_label_nationality = 'STAATSANGEHÖRIGKEIT / CITIZENSHIP /',
+}
