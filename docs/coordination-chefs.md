@@ -94,3 +94,11 @@ Règles : `docs/standard-international.md`. Un script à la fois : on le note da
 - **Chef 3** : pop_dealing, pop_weed, pop_crew, pop_territories.
 - **Chef 4** : pop_hud, pop_notify, pop_chat, pop_emotes, pop_doorlock, pop_bank, pop_fuel, pop_speedometer, pop_kilometrage, pop_vehiclepersistence, pop_enterprisegarage, pop_bennys, pop_bikerental, pop_voice_ui, pop_v3dui.
 - Hors chantier : pop_police (mis de côté) et pop_tablet (Silvun, déjà en 10 langues : on vérifie seulement fr, en, es, de et ar).
+
+## Priorité : les scripts indispensables (décision du client, 25/11/2026)
+Ces scripts passent **avant** le chantier des langues. Ils sont écrits directement au standard (`docs/standard-international.md` : 5 langues, tous frameworks, gabarit `templates/pop_base`, DA POP). Méthode : SPEC.md (agent fivem-architecte), puis dev, puis audit. On montre un aperçu au client avant de publier.
+- **Chef 1** : `pop_ems`. Métier ambulancier : prise de service, tenue, ambulance, réanimation, soins, transport à l'hôpital, système de blessures simple. Branché sur pop_death (`pop_death:emsCalled`, export `isDead`) et pop_medexam.
+- **Chef 2** : `pop_vehicleshop`. Concession : catalogue en NUI, essai, achat en espèces ou par carte, plaque, remise des clés via pop_inventory (vehiclekeys) ou le système de clés du serveur, enregistrement via pop_vehiclepersistence.
+- **Chef 3** : `pop_police` (refonte) + `pop_prison`. Prise de service, menottes, escorte, fouille (pop_inventory), amendes, mise en cellule avec durée, dispatch existant à reprendre. Prison : peine, travaux pour réduire la peine, libération.
+- **Chef 4** : `pop_mechanic` + `pop_impound`. Mécano : réparation, diagnostic, pièces, facture. Fourrière : dépanneuse, mise en fourrière, récupération payante d'un véhicule perdu ou détruit (lié à pop_vehiclepersistence).
+- Les clés de véhicule existent déjà dans pop_inventory (`server/vehiclekeys.lua`) : on les réutilise.
