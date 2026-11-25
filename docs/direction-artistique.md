@@ -10,8 +10,8 @@
 ## Visuel — HUD façon GTA 6
 - Discret et contextuel : l'info apparaît seulement quand c'est utile, puis disparaît.
 - Petit et placé sur le côté, jamais de grosse fenêtre au centre.
-- Fond uni sombre, texte blanc, une seule couleur d'accent (rose ou cyan néon Vice City).
-- Pas de dégradés, pas de glassmorphism, police système, fondu de 150 ms.
+- Style du serveur choisi par le client (22/11/2026), le même que pop_notify : carte en verre sombre flouté rgba(10,10,12,.4) avec blur(12px), bordure blanche à 10 %, rayon de 4px, police TT Firs Neue, icônes dans un rond blanc, accent bleu #5d90ec. Pas de rose.
+- Pas de dégradés, fondu de 150 ms.
 - Touches affichées simplement : « [E] Crocheter ».
 
 ## Idées en réserve
